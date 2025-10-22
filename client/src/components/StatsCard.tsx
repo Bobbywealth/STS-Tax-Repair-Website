@@ -15,8 +15,9 @@ interface StatsCardProps {
 
 export function StatsCard({ title, value, icon: Icon, trend, iconColor = "bg-primary" }: StatsCardProps) {
   return (
-    <Card className="hover-lift animate-fade-in overflow-visible">
-      <CardContent className="p-6 relative overflow-visible">
+    <Card className="hover-lift animate-fade-in overflow-visible relative">
+      <div className="absolute inset-0 bg-flow-gradient opacity-50 rounded-lg" />
+      <CardContent className="p-6 relative overflow-visible z-10">
         <div className="flex items-center justify-between">
           <div className="flex-1">
             <p className="text-sm text-muted-foreground">{title}</p>
