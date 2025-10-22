@@ -9,6 +9,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 
 import Dashboard from "@/pages/Dashboard";
 import Clients from "@/pages/Clients";
+import ClientDetail from "@/pages/ClientDetail";
 import Leads from "@/pages/Leads";
 import Tasks from "@/pages/Tasks";
 import Manager from "@/pages/Manager";
@@ -23,6 +24,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/clients" component={Clients} />
+      <Route path="/clients/:id" component={ClientDetail} />
       <Route path="/leads" component={Leads} />
       <Route path="/tasks" component={Tasks} />
       <Route path="/manager" component={Manager} />

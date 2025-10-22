@@ -72,7 +72,7 @@ export default function Clients() {
 
       <ClientsTable
         clients={mockClients}
-        onViewClient={(id) => console.log('View client:', id)}
+        onViewClient={(id) => window.location.href = `/clients/${id}`}
         onEditClient={(id) => console.log('Edit client:', id)}
       />
     </div>
