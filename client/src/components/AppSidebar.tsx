@@ -1,5 +1,6 @@
 import { Home, Users, UserPlus, CheckSquare, Crown, Ticket, BookOpen, BarChart3, Settings, LogOut } from "lucide-react";
 import { Link, useLocation } from "wouter";
+import logoUrl from "@assets/sts-logo.png";
 import {
   Sidebar,
   SidebarContent,
@@ -41,13 +42,15 @@ export function AppSidebar({ user }: AppSidebarProps) {
   return (
     <Sidebar>
       <SidebarHeader className="p-4 border-b border-sidebar-border">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-sm">STS</span>
-          </div>
+        <div className="flex items-center gap-3">
+          <img 
+            src={logoUrl} 
+            alt="STS TaxRepair Logo" 
+            className="h-12 w-auto object-contain"
+          />
           <div className="flex flex-col">
             <span className="font-semibold text-sm">STS TaxRepair</span>
-            <span className="text-xs text-muted-foreground">Tax CRM</span>
+            <span className="text-xs text-sidebar-foreground/70">Tax CRM</span>
           </div>
         </div>
       </SidebarHeader>
