@@ -97,7 +97,7 @@ export function ClientsTable({ clients, onViewClient, onEditClient, onStatusChan
                 <tr 
                   key={client.id} 
                   className="border-b hover-elevate animate-fade-in" 
-                  style={{ animationDelay: `${index * 50}ms` }}
+                  style={{ animationDelay: `${index * 100}ms` }}
                   data-testid={`client-row-${client.id}`}
                 >
                   <td className="p-3">
