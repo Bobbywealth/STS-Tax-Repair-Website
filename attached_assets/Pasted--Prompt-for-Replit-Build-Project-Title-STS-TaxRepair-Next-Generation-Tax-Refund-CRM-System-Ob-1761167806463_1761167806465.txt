@@ -1,0 +1,210 @@
+💻 Prompt for Replit Build
+
+Project Title: STS TaxRepair – Next-Generation Tax Refund CRM System
+
+Objective:
+Build a secure, next-generation CRM web application for STS TaxRepair, a tax-refund company that manages clients, leads, and tax-filing operations.
+
+The system should let clients sign up, upload tax documents, track refund progress, and message their assigned preparer.
+
+Admins and staff must be able to manage clients, leads, tasks, and reports through a unified dashboard with a left-side navigation bar that includes all key business tools.
+
+⸻
+
+🧱 Core Requirements
+
+1. Authentication & Roles
+	•	Secure login/signup using email + password.
+	•	Roles: Admin, Staff/Manager, Client.
+	•	JWT or session-based authentication.
+	•	Email verification & password reset (via SendGrid or similar).
+	•	Admin can invite or create internal users.
+
+⸻
+
+2. Main Sidebar / Navigation Bar
+
+Persistent left-side menu visible on all pages (collapsible).
+
+Navigation items:
+	1.	🏠 Dashboard
+	2.	👥 Clients
+	3.	📇 Leads
+	4.	✅ Tasks
+	5.	🧑‍💼 Manager
+	6.	🎫 Support Tickets
+	7.	📘 Knowledge Base
+	8.	📊 Reports
+	9.	⚙️ Settings
+	10.	🚪 Logout
+
+Each opens its own route or page with breadcrumbs.
+Show the user’s profile picture and role at the bottom of the sidebar.
+Active page highlighted.
+
+⸻
+
+3. Dashboard
+	•	Overview cards: total clients, leads, refunds in progress, completed, pending docs.
+	•	Graphs: refunds by month, client growth, staff workload.
+	•	Quick-action buttons: Add Client, New Lead, Create Task, Create Ticket.
+	•	Activity feed (latest uploads, messages, or status changes).
+
+⸻
+
+4. Clients Module
+	•	Searchable client list (filter by name, phone, status, year).
+	•	Click a client to open their profile with tabs:
+	•	Profile Info: name, contact, tax year, status.
+	•	Documents: secure upload & download section.
+	•	Refund Progress: visual tracker (New → Review → Filed → Approved → Paid).
+	•	Chat: real-time client/staff messaging.
+	•	Notes: internal staff notes (not visible to client).
+	•	Admin can assign or reassign staff to a client.
+	•	Export client list as CSV/Excel.
+
+⸻
+
+5. Leads Module
+	•	Add leads manually or capture via public form.
+	•	Lead stages: New → Contacted → Qualified → Converted → Lost.
+	•	Convert Lead → Client with one click.
+	•	Track lead source (Referral, Web, Ad, Walk-in).
+	•	Future: AI-based lead scoring.
+
+⸻
+
+6. Tasks Module
+	•	Create and assign tasks to staff.
+	•	Fields: title, description, due date, priority, assigned to.
+	•	Task board view (To Do / In Progress / Done).
+	•	Manager can track overdue and completed tasks.
+
+⸻
+
+7. Manager Page
+	•	Overview of all staff performance.
+	•	Ability to reassign clients and tasks.
+	•	Internal messaging with team members.
+	•	Staff workload and progress tracking.
+
+⸻
+
+8. Support Tickets
+	•	Clients and staff can create tickets.
+	•	Ticket fields: subject, category, description, attachments.
+	•	Ticket statuses: Open → In Progress → Resolved → Closed.
+	•	Comment thread and attachment uploads.
+	•	Email notifications for updates.
+
+⸻
+
+9. Knowledge Base
+	•	Searchable FAQ + tutorial articles.
+	•	Markdown editor for staff to add/update content.
+	•	Example topics:
+	•	“How to Upload Your W-2”
+	•	“Understanding Refund Status”
+	•	“Updating Account Info”
+
+⸻
+
+10. Reports
+	•	Dynamic data visualization and export:
+	•	Refund totals by month/year.
+	•	Staff performance.
+	•	Missing documents summary.
+	•	Client source breakdown.
+	•	Downloadable as PDF or CSV.
+
+⸻
+
+11. Settings
+	•	Personal Profile: name, photo, contact, password.
+	•	Company Settings: STS TaxRepair logo, colors, contact info, tax year default.
+	•	Notification preferences (email, SMS, in-app).
+	•	Integrations (Twilio, SendGrid, AWS, Stripe, IRS API).
+
+⸻
+
+12. Logout
+	•	Secure logout clears tokens/sessions.
+	•	Redirect to login page.
+
+⸻
+
+📁 Document Management
+	•	Drag-and-drop uploader.
+	•	Accepted files: PDF, JPG, PNG (≤ 10 MB).
+	•	Auto-sort into folders by type (W-2, 1099, ID).
+	•	File preview & download.
+	•	File tagging and approval flow.
+	•	Storage: AWS S3 or Supabase Storage.
+
+⸻
+
+💬 Communication System
+	•	Real-time chat (Socket.io or Firebase) between client ↔ staff.
+	•	Email & in-app notifications for:
+	•	New document upload.
+	•	Refund status change.
+	•	New message.
+	•	Optional SMS notifications (Twilio).
+
+⸻
+
+📊 Analytics Dashboard
+	•	Total refunds processed, pending, completed.
+	•	Top 5 performing staff.
+	•	Average refund processing time.
+	•	Monthly revenue chart.
+
+⸻
+
+🔒 Security
+	•	HTTPS + SSL.
+	•	Role-based access control (RBAC).
+	•	Encrypted database fields for sensitive data.
+	•	Audit logs for uploads and changes.
+	•	Auto logout after 15 minutes of inactivity.
+
+⸻
+
+🧠 Future Add-ons
+	•	AI Document Reader (auto-extract W-2/1099 data).
+	•	IRS Refund Tracker API.
+	•	Built-in e-signature (HelloSign / DocuSign).
+	•	Auto email reminders for missing docs.
+	•	AI Assistant Chatbot for FAQ.
+	•	Stripe integration for tax filing fees.
+
+⸻
+
+⚙️ Recommended Tech Stack
+	•	Frontend: React + Vite + TailwindCSS
+	•	Backend: Node.js + Express + Prisma ORM
+	•	Database: PostgreSQL (Supabase or Neon)
+	•	Storage: AWS S3 / Supabase Storage
+	•	Auth: JWT / Clerk / Auth.js
+	•	Notifications: SendGrid (email) + Twilio (SMS)
+	•	Deployment: Render (backend) + Vercel / Netlify (frontend)
+
+⸻
+
+🧩 Developer Steps
+	1.	Scaffold full-stack app with React (frontend) + Express (backend).
+	2.	Create database models:
+users, clients, leads, tasks, tickets, documents, messages, knowledge_articles, reports, audit_logs.
+	3.	Add authentication & role-based routing.
+	4.	Implement sidebar layout and page routes.
+	5.	Build API endpoints for CRUD operations.
+	6.	Integrate file upload (AWS/Supabase) + chat (Socket.io).
+	7.	Add notifications (email/SMS).
+	8.	Apply TailwindCSS for modern UI.
+	9.	Deploy live and connect domain (e.g., app.ststaxrepair.com).
+
+⸻
+
+🧠 AI Build Command
+
+“Create a full-stack web CRM for STS TaxRepair with role-based auth (Admin, Staff, Client), a sidebar navigation (Dashboard, Clients, Leads, Tasks, Manager, Support Tickets, Knowledge Base, Reports, Settings, Logout), client document upload and tracking, refund status workflow, internal chat, task management, and analytics. Use React + TailwindCSS frontend, Node.js + Express backend, PostgreSQL database, AWS or Supabase storage, and deploy to Render + Vercel. Prioritize speed, security, and ease of use.”
