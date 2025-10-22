@@ -11,6 +11,11 @@ import Dashboard from "@/pages/Dashboard";
 import Clients from "@/pages/Clients";
 import ClientDetail from "@/pages/ClientDetail";
 import Leads from "@/pages/Leads";
+import TaxDeadlines from "@/pages/TaxDeadlines";
+import Appointments from "@/pages/Appointments";
+import Payments from "@/pages/Payments";
+import Documents from "@/pages/Documents";
+import ESignatures from "@/pages/ESignatures";
 import Tasks from "@/pages/Tasks";
 import Manager from "@/pages/Manager";
 import Tickets from "@/pages/Tickets";
@@ -26,6 +31,11 @@ function Router() {
       <Route path="/clients" component={Clients} />
       <Route path="/clients/:id" component={ClientDetail} />
       <Route path="/leads" component={Leads} />
+      <Route path="/deadlines" component={TaxDeadlines} />
+      <Route path="/appointments" component={Appointments} />
+      <Route path="/payments" component={Payments} />
+      <Route path="/documents" component={Documents} />
+      <Route path="/signatures" component={ESignatures} />
       <Route path="/tasks" component={Tasks} />
       <Route path="/manager" component={Manager} />
       <Route path="/tickets" component={Tickets} />
