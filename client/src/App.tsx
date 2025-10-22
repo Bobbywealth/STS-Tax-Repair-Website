@@ -56,7 +56,7 @@ function App() {
           <div className="flex h-screen w-full">
             <AppSidebar user={mockUser} />
             <div className="flex flex-col flex-1 overflow-hidden">
-              <header className="flex items-center justify-between p-4 border-b border-border bg-background sticky top-0 z-10">
+              <header className="flex items-center justify-between p-4 border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-10">
                 <SidebarTrigger data-testid="button-sidebar-toggle" />
                 <ThemeToggle />
               </header>

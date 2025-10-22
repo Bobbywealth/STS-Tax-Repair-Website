@@ -16,65 +16,65 @@
 
   --background: 0 0% 100%;
 
-  --foreground: 222 47% 11%;
+  --foreground: 0 0% 20%;
 
-  --border: 220 13% 91%;
+  --border: 0 0% 90%;
 
-  --card: 0 0% 98%;
+  --card: 0 0% 100%;
 
-  --card-foreground: 222 47% 11%;
+  --card-foreground: 0 0% 20%;
 
-  --card-border: 220 13% 88%;
+  --card-border: 0 0% 88%;
 
-  --sidebar: 220 14% 96%;
+  --sidebar: 220 9% 46%;
 
-  --sidebar-foreground: 222 47% 11%;
+  --sidebar-foreground: 0 0% 100%;
 
-  --sidebar-border: 220 13% 91%;
+  --sidebar-border: 220 9% 40%;
 
-  --sidebar-primary: 217 91% 60%;
+  --sidebar-primary: 142 69% 48%;
 
   --sidebar-primary-foreground: 0 0% 100%;
 
-  --sidebar-accent: 220 14% 92%;
+  --sidebar-accent: 220 9% 52%;
 
-  --sidebar-accent-foreground: 222 47% 11%;
+  --sidebar-accent-foreground: 0 0% 100%;
 
-  --sidebar-ring: 217 91% 60%;
+  --sidebar-ring: 142 69% 48%;
 
-  --popover: 220 14% 94%;
+  --popover: 0 0% 100%;
 
-  --popover-foreground: 222 47% 11%;
+  --popover-foreground: 0 0% 20%;
 
-  --popover-border: 220 13% 88%;
+  --popover-border: 0 0% 88%;
 
-  --primary: 217 91% 60%;
+  --primary: 142 69% 48%;
 
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 220 14% 90%;
+  --secondary: 0 0% 96%;
 
-  --secondary-foreground: 222 47% 11%;
+  --secondary-foreground: 0 0% 20%;
 
-  --muted: 220 14% 96%;
+  --muted: 0 0% 96%;
 
-  --muted-foreground: 220 9% 46%;
+  --muted-foreground: 0 0% 45%;
 
-  --accent: 220 14% 93%;
+  --accent: 0 0% 96%;
 
-  --accent-foreground: 222 47% 11%;
+  --accent-foreground: 0 0% 20%;
 
   --destructive: 0 84% 60%;
 
   --destructive-foreground: 0 0% 100%;
 
-  --input: 220 13% 85%;
-  --ring: 217 91% 60%;
-  --chart-1: 217 91% 55%;
-  --chart-2: 142 76% 40%;
+  --input: 0 0% 90%;
+  --ring: 142 69% 48%;
+  --chart-1: 142 69% 48%;
+  --chart-2: 142 50% 60%;
   --chart-3: 38 92% 50%;
   --chart-4: 199 89% 48%;
-  --chart-5: 271 81% 56%;
+  --chart-5: 220 9% 60%;
 
   --font-sans: Open Sans, sans-serif;
   --font-serif: Georgia, serif;
@@ -132,53 +132,53 @@
   --elevate-1: rgba(255,255,255, .04);
   --elevate-2: rgba(255,255,255, .09);
 
-  --background: 222 47% 11%;
+  --background: 220 9% 46%;
 
   --foreground: 0 0% 98%;
 
-  --border: 217 33% 24%;
+  --border: 220 9% 35%;
 
-  --card: 217 33% 17%;
+  --card: 220 9% 40%;
 
   --card-foreground: 0 0% 98%;
 
-  --card-border: 217 33% 22%;
+  --card-border: 220 9% 35%;
 
-  --sidebar: 222 47% 14%;
+  --sidebar: 220 9% 38%;
 
   --sidebar-foreground: 0 0% 98%;
 
-  --sidebar-border: 217 33% 20%;
+  --sidebar-border: 220 9% 30%;
 
-  --sidebar-primary: 217 91% 60%;
+  --sidebar-primary: 142 69% 48%;
 
   --sidebar-primary-foreground: 0 0% 100%;
 
-  --sidebar-accent: 217 33% 19%;
+  --sidebar-accent: 220 9% 45%;
 
   --sidebar-accent-foreground: 0 0% 98%;
 
-  --sidebar-ring: 217 91% 60%;
+  --sidebar-ring: 142 69% 48%;
 
-  --popover: 217 33% 20%;
+  --popover: 220 9% 40%;
 
   --popover-foreground: 0 0% 98%;
 
-  --popover-border: 217 33% 25%;
+  --popover-border: 220 9% 35%;
 
-  --primary: 217 91% 60%;
+  --primary: 142 69% 48%;
 
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 217 33% 23%;
+  --secondary: 220 9% 50%;
 
   --secondary-foreground: 0 0% 98%;
 
-  --muted: 217 33% 17%;
+  --muted: 220 9% 40%;
 
-  --muted-foreground: 215 20% 65%;
+  --muted-foreground: 0 0% 75%;
 
-  --accent: 217 33% 19%;
+  --accent: 220 9% 45%;
 
   --accent-foreground: 0 0% 98%;
 
@@ -186,13 +186,13 @@
 
   --destructive-foreground: 0 0% 100%;
 
-  --input: 217 33% 30%;
-  --ring: 217 91% 60%;
-  --chart-1: 217 91% 65%;
-  --chart-2: 142 76% 50%;
+  --input: 220 9% 50%;
+  --ring: 142 69% 48%;
+  --chart-1: 142 69% 55%;
+  --chart-2: 142 50% 65%;
   --chart-3: 38 92% 60%;
   --chart-4: 199 89% 58%;
-  --chart-5: 271 81% 66%;
+  --chart-5: 220 9% 70%;
 
   --shadow-2xs: 0px 2px 0px 0px hsl(0 0% 0% / 0.08);
   --shadow-xs: 0px 2px 0px 0px hsl(0 0% 0% / 0.12);
@@ -239,6 +239,95 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
+  }
+
+  /* Smooth transitions for theme changes */
+  * {
+    transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease;
+  }
+}
+
+@layer utilities {
+  /* Gradient backgrounds for cards */
+  .gradient-card {
+    background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%);
+  }
+
+  .gradient-primary {
+    background: linear-gradient(135deg, hsl(142 69% 48%) 0%, hsl(142 69% 58%) 100%);
+  }
+
+  .gradient-header {
+    background: linear-gradient(to right, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
+  }
+
+  /* Animated gradient for special elements */
+  @keyframes gradient-shift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradient-shift 8s ease infinite;
+  }
+
+  /* Smooth hover lift effect */
+  .hover-lift {
+    transition: transform 200ms ease, box-shadow 200ms ease;
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Fade in animation */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 400ms ease-out;
+  }
+
+  /* Slide in from left */
+  @keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .animate-slide-in-left {
+    animation: slideInLeft 300ms ease-out;
+  }
+
+  /* Pulse animation for notifications/badges */
+  @keyframes pulse-green {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
+  .animate-pulse-green {
+    animation: pulse-green 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* Shimmer effect for loading states */
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.1) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
   }
 }
 

@@ -15,22 +15,25 @@ interface StatsCardProps {
 
 export function StatsCard({ title, value, icon: Icon, trend, iconColor = "bg-primary" }: StatsCardProps) {
   return (
-    <Card>
-      <CardContent className="p-6">
+    <Card className="hover-lift animate-fade-in overflow-visible">
+      <CardContent className="p-6 relative overflow-visible">
         <div className="flex items-center justify-between">
           <div className="flex-1">
             <p className="text-sm text-muted-foreground">{title}</p>
             <p className="text-3xl font-bold mt-2">{value}</p>
             {trend && (
               <p className={cn(
-                "text-xs mt-2",
+                "text-xs mt-2 font-medium",
                 trend.isPositive ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
               )}>
                 {trend.isPositive ? "↑" : "↓"} {trend.value}
               </p>
             )}
           </div>
-          <div className={cn("h-12 w-12 rounded-full flex items-center justify-center", iconColor)}>
+          <div className={cn(
+            "h-12 w-12 rounded-full flex items-center justify-center gradient-primary shadow-lg",
+            "transition-transform hover:scale-110"
+          )}>
             <Icon className="h-6 w-6 text-white" />
           </div>
         </div>

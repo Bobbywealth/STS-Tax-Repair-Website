@@ -76,8 +76,13 @@ export function ClientsTable({ clients, onViewClient, onEditClient }: ClientsTab
               </tr>
             </thead>
             <tbody>
-              {filteredClients.map((client) => (
-                <tr key={client.id} className="border-b hover-elevate" data-testid={`client-row-${client.id}`}>
+              {filteredClients.map((client, index) => (
+                <tr 
+                  key={client.id} 
+                  className="border-b hover-elevate animate-fade-in" 
+                  style={{ animationDelay: `${index * 50}ms` }}
+                  data-testid={`client-row-${client.id}`}
+                >
                   <td className="p-3">
                     <div className="flex items-center gap-3">
                       <Avatar className="h-9 w-9">

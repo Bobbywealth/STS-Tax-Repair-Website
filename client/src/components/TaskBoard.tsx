@@ -44,8 +44,13 @@ export function TaskBoard({ tasks }: TaskBoardProps) {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {columnTasks.map((task) => (
-                  <Card key={task.id} className="hover-elevate cursor-pointer" data-testid={`task-${task.id}`}>
+                {columnTasks.map((task, index) => (
+                  <Card 
+                    key={task.id} 
+                    className="hover-lift cursor-pointer animate-fade-in" 
+                    style={{ animationDelay: `${index * 75}ms` }}
+                    data-testid={`task-${task.id}`}
+                  >
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <h4 className="font-medium text-sm">{task.title}</h4>

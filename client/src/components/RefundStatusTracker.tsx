@@ -26,8 +26,11 @@ export function RefundStatusTracker({ currentStatus }: RefundStatusTrackerProps)
         <div className="relative">
           <div className="absolute top-5 left-0 right-0 h-0.5 bg-border" />
           <div 
-            className="absolute top-5 left-0 h-0.5 bg-primary transition-all duration-500"
-            style={{ width: `${(currentIndex / (statuses.length - 1)) * 100}%` }}
+            className="absolute top-5 left-0 h-0.5 bg-primary transition-all duration-1000 ease-out"
+            style={{ 
+              width: `${(currentIndex / (statuses.length - 1)) * 100}%`,
+              boxShadow: '0 0 8px rgba(76, 175, 80, 0.5)'
+            }}
           />
           
           <div className="relative flex justify-between">
@@ -39,10 +42,11 @@ export function RefundStatusTracker({ currentStatus }: RefundStatusTrackerProps)
                 <div key={status.id} className="flex flex-col items-center" data-testid={`status-${status.id}`}>
                   <div
                     className={cn(
-                      "h-10 w-10 rounded-full flex items-center justify-center mb-2 transition-all",
+                      "h-10 w-10 rounded-full flex items-center justify-center mb-2 transition-all duration-500",
                       isCompleted 
-                        ? "bg-primary text-primary-foreground" 
-                        : "bg-muted text-muted-foreground"
+                        ? "bg-primary text-primary-foreground shadow-lg scale-110" 
+                        : "bg-muted text-muted-foreground",
+                      isCurrent && "animate-pulse-green"
                     )}
                   >
                     {isCompleted ? (

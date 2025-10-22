@@ -47,14 +47,14 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text">Dashboard</h1>
           <p className="text-muted-foreground mt-1">Welcome back! Here's your overview.</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button data-testid="button-add-client">
+          <Button data-testid="button-add-client" className="gradient-primary border-0">
             <Users className="h-4 w-4 mr-2" />
             Add Client
           </Button>
