@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Eye, Edit, MoreVertical } from "lucide-react";
 import {
   DropdownMenu,
@@ -11,6 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
 
 interface Client {
   id: string;
@@ -34,10 +36,25 @@ interface ClientsTableProps {
   clients: Client[];
   onViewClient?: (id: string) => void;
   onEditClient?: (id: string) => void;
+  onStatusChange?: (id: string, newStatus: Client["status"]) => void;
 }
 
-export function ClientsTable({ clients, onViewClient, onEditClient }: ClientsTableProps) {
+export function ClientsTable({ clients, onViewClient, onEditClient, onStatusChange }: ClientsTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [clientStatuses, setClientStatuses] = useState<Record<string, Client["status"]>>(
+    clients.reduce((acc, client) => ({ ...acc, [client.id]: client.status }), {})
+  );
+  const { toast } = useToast();
+
+  const handleStatusChange = (clientId: string, newStatus: Client["status"]) => {
+    setClientStatuses(prev => ({ ...prev, [clientId]: newStatus }));
+    onStatusChange?.(clientId, newStatus);
+    
+    toast({
+      title: "Status Updated",
+      description: `Client status changed to ${newStatus}`,
+    });
+  };
 
   const filteredClients = clients.filter((client) =>
     client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -100,9 +117,51 @@ export function ClientsTable({ clients, onViewClient, onEditClient }: ClientsTab
                     </div>
                   </td>
                   <td className="p-3">
-                    <Badge variant="secondary" className={statusColors[client.status]}>
-                      {client.status}
-                    </Badge>
+                    <Select
+                      value={clientStatuses[client.id] || client.status}
+                      onValueChange={(value) => handleStatusChange(client.id, value as Client["status"])}
+                    >
+                      <SelectTrigger 
+                        className="w-32 h-7 text-xs border-0"
+                        data-testid={`select-status-${client.id}`}
+                      >
+                        <Badge variant="secondary" className={statusColors[clientStatuses[client.id] || client.status]}>
+                          <SelectValue />
+                        </Badge>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="New" data-testid="status-option-new">
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-blue-500" />
+                            New
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="Review" data-testid="status-option-review">
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-yellow-500" />
+                            Review
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="Filed" data-testid="status-option-filed">
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-purple-500" />
+                            Filed
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="Approved" data-testid="status-option-approved">
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-green-500" />
+                            Approved
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="Paid" data-testid="status-option-paid">
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                            Paid
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                   </td>
                   <td className="p-3 text-sm">{client.taxYear}</td>
                   <td className="p-3 text-sm">{client.assignedTo}</td>

@@ -74,6 +74,7 @@ export default function Clients() {
         clients={mockClients}
         onViewClient={(id) => window.location.href = `/clients/${id}`}
         onEditClient={(id) => console.log('Edit client:', id)}
+        onStatusChange={(id, newStatus) => console.log(`Client ${id} status changed to ${newStatus}`)}
       />
     </div>
   );
