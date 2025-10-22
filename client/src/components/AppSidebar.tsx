@@ -41,17 +41,13 @@ export function AppSidebar({ user }: AppSidebarProps) {
 
   return (
     <Sidebar>
-      <SidebarHeader className="p-4 border-b border-sidebar-border">
-        <div className="flex items-center gap-3">
+      <SidebarHeader className="p-6 border-b border-sidebar-border">
+        <div className="flex items-center justify-center">
           <img 
             src={logoUrl} 
             alt="STS TaxRepair Logo" 
-            className="h-12 w-auto object-contain"
+            className="h-16 w-auto object-contain"
           />
-          <div className="flex flex-col">
-            <span className="font-semibold text-sm">STS TaxRepair</span>
-            <span className="text-xs text-sidebar-foreground/70">Tax CRM</span>
-          </div>
         </div>
       </SidebarHeader>
 
