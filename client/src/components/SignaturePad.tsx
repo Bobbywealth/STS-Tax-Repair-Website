@@ -40,6 +40,11 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(
       onSignatureChange?.(!isEmpty);
     };
 
+    const handleBegin = () => {
+      // Once the user starts drawing, the canvas is no longer empty
+      onSignatureChange?.(false);
+    };
+
     return (
       <div className="space-y-4">
         <div className="border-2 border-dashed border-border rounded-lg bg-background relative">
@@ -49,6 +54,7 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(
               className: "w-full h-48 cursor-crosshair rounded-lg",
             }}
             onEnd={handleEnd}
+            onBegin={handleBegin}
           />
           <div className="absolute top-2 left-2 text-xs text-muted-foreground pointer-events-none">
             Sign here

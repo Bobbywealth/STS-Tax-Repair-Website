@@ -24,7 +24,6 @@ export default function ESignatures() {
   const [selectedSignature, setSelectedSignature] = useState<ESignature | null>(null);
   const [showSignDialog, setShowSignDialog] = useState(false);
   const [showPDFDialog, setShowPDFDialog] = useState(false);
-  const [hasSignature, setHasSignature] = useState(false);
   const signaturePadRef = useRef<SignaturePadRef>(null);
 
   const { data: signatures, isLoading } = useQuery<ESignature[]>({
@@ -64,7 +63,6 @@ export default function ESignatures() {
   const handleSign = (signature: ESignature) => {
     setSelectedSignature(signature);
     setShowSignDialog(true);
-    setHasSignature(false);
   };
 
   const handleViewPDF = (signature: ESignature) => {
@@ -237,7 +235,6 @@ export default function ESignatures() {
             </div>
             <SignaturePad 
               ref={signaturePadRef}
-              onSignatureChange={(isEmpty) => setHasSignature(!isEmpty)}
             />
             <p className="text-xs text-muted-foreground">
               By signing this document, you certify that you have reviewed and agree to its contents.
@@ -254,7 +251,7 @@ export default function ESignatures() {
             </Button>
             <Button
               onClick={handleSubmitSignature}
-              disabled={!hasSignature || signMutation.isPending}
+              disabled={signMutation.isPending}
               className="gradient-primary border-0"
               data-testid="button-submit-signature"
             >
