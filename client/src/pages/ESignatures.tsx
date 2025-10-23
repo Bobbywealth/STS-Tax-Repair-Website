@@ -33,13 +33,11 @@ export default function ESignatures() {
 
   const signMutation = useMutation({
     mutationFn: async ({ id, signatureData }: { id: string; signatureData: string }) => {
-      // Get client IP and user agent for audit trail
-      const ipAddress = "client-ip"; // In production, get from server
+      // Get user agent for audit trail (IP captured on server side)
       const userAgent = navigator.userAgent;
       
       await apiRequest(`/api/signatures/${id}`, "PATCH", {
         signatureData,
-        ipAddress,
         userAgent,
         signedAt: new Date().toISOString(),
         status: "signed",

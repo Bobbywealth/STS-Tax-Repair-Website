@@ -245,7 +245,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/signatures/:id", async (req, res) => {
     try {
-      const signature = await storage.updateESignature(req.params.id, req.body);
+      // Capture real client IP address from request
+      const ipAddress = req.ip || req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || "unknown";
+      
+      // Merge IP address with request body for audit trail
+      const updateData = {
+        ...req.body,
+        ipAddress,
+      };
+      
+      const signature = await storage.updateESignature(req.params.id, updateData);
       if (!signature) {
         return res.status(404).json({ error: "Signature not found" });
       }
