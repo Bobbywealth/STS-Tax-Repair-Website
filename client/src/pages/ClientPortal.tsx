@@ -1,14 +1,52 @@
+import { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FileText, Upload, MessageSquare, DollarSign, Calendar } from "lucide-react";
 import { RefundStatusTracker } from "@/components/RefundStatusTracker";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ClientPortal() {
-  // Mock client data - in production, this would come from the authenticated user
+  const { toast } = useToast();
+  const { user, isAuthenticated, isLoading } = useAuth();
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      toast({
+        title: "Unauthorized",
+        description: "You are logged out. Logging in again...",
+        variant: "destructive",
+      });
+      setTimeout(() => {
+        window.location.href = "/client-login";
+      }, 500);
+      return;
+    }
+  }, [isAuthenticated, isLoading, toast]);
+
+  // Show loading while checking auth
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-animated-mesh flex items-center justify-center">
+        <div className="text-center">
+          <div className="h-12 w-12 rounded-full border-4 border-primary border-t-transparent animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render until authenticated
+  if (!isAuthenticated || !user) {
+    return null;
+  }
+
+  // Use real user data from auth
   const clientData = {
-    name: "John Smith",
-    email: "john.smith@email.com",
+    name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || "Client",
+    email: user.email || "",
     phone: "(555) 123-4567",
     refundStatus: "Filed" as const,
     refundAmount: "$4,500",
