@@ -1,5 +1,6 @@
 import { 
   type User, 
+  type UpsertUser,
   type InsertUser,
   type TaxDeadline,
   type InsertTaxDeadline,
@@ -19,10 +20,9 @@ import {
 import { randomUUID } from "crypto";
 
 export interface IStorage {
-  // Users
+  // Users (Replit Auth required)
   getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  upsertUser(user: UpsertUser): Promise<User>;
 
   // Tax Deadlines
   getTaxDeadlines(): Promise<TaxDeadline[]>;
@@ -168,20 +168,25 @@ export class MemStorage implements IStorage {
     });
   }
 
-  // Users
+  // Users (Replit Auth required methods)
   async getUser(id: string): Promise<User | undefined> {
     return this.users.get(id);
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const id = userData.id || randomUUID();
+    const existing = this.users.get(id);
+    
+    const user: User = {
+      id,
+      email: userData.email ?? null,
+      firstName: userData.firstName ?? null,
+      lastName: userData.lastName ?? null,
+      profileImageUrl: userData.profileImageUrl ?? null,
+      createdAt: existing?.createdAt ?? new Date(),
+      updatedAt: new Date(),
+    };
+    
     this.users.set(id, user);
     return user;
   }
