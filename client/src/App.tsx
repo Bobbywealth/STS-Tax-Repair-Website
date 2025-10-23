@@ -22,11 +22,15 @@ import Tickets from "@/pages/Tickets";
 import Knowledge from "@/pages/Knowledge";
 import Reports from "@/pages/Reports";
 import Settings from "@/pages/Settings";
+import ClientLogin from "@/pages/ClientLogin";
+import ClientPortal from "@/pages/ClientPortal";
 import NotFound from "@/pages/not-found";
 
 function Router() {
   return (
     <Switch>
+      <Route path="/client-login" component={ClientLogin} />
+      <Route path="/client-portal" component={ClientPortal} />
       <Route path="/" component={Dashboard} />
       <Route path="/clients" component={Clients} />
       <Route path="/clients/:id" component={ClientDetail} />
