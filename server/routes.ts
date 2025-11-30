@@ -12,6 +12,8 @@ import {
   insertDocumentRequestTemplateSchema
 } from "@shared/mysql-schema";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
+import { testPerfexConnection, getPerfexTables, queryPerfex } from "./perfex-db";
+import { mysqlPool } from "./mysql-db";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup Authentication
@@ -444,6 +446,225 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "File not found" });
       }
       return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // ============ PERFEX CRM MIGRATION ROUTES ============
+
+  // Test Perfex CRM database connection
+  app.get("/api/admin/perfex/test", async (req, res) => {
+    try {
+      const connected = await testPerfexConnection();
+      if (connected) {
+        const tables = await getPerfexTables();
+        res.json({ success: true, message: "Perfex CRM database connected!", tables });
+      } else {
+        res.status(500).json({ success: false, message: "Failed to connect to Perfex CRM database" });
+      }
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Get Perfex clients count
+  app.get("/api/admin/perfex/clients/count", async (req, res) => {
+    try {
+      const result = await queryPerfex("SELECT COUNT(*) as count FROM tblclients");
+      res.json({ count: result[0]?.count || 0 });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Preview Perfex clients (first 20)
+  app.get("/api/admin/perfex/clients/preview", async (req, res) => {
+    try {
+      const clients = await queryPerfex(`
+        SELECT userid, company, vat, phonenumber, city, state, zip, country, 
+               address, website, datecreated, active, leadid, billing_street,
+               billing_city, billing_state, billing_zip, billing_country
+        FROM tblclients 
+        ORDER BY datecreated DESC 
+        LIMIT 20
+      `);
+      res.json(clients);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get Perfex contacts for a client
+  app.get("/api/admin/perfex/contacts", async (req, res) => {
+    try {
+      const contacts = await queryPerfex(`
+        SELECT id, userid, is_primary, firstname, lastname, email, phonenumber,
+               title, datecreated, active
+        FROM tblcontacts 
+        ORDER BY datecreated DESC 
+        LIMIT 50
+      `);
+      res.json(contacts);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get Perfex files count
+  app.get("/api/admin/perfex/files/count", async (req, res) => {
+    try {
+      const result = await queryPerfex("SELECT COUNT(*) as count FROM tblfiles WHERE rel_type = 'customer'");
+      res.json({ count: result[0]?.count || 0 });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Delete all WordPress signups from users table
+  app.delete("/api/admin/clear-wordpress-clients", async (req, res) => {
+    try {
+      const [result] = await mysqlPool.query("DELETE FROM users WHERE original_submission_id IS NOT NULL");
+      const affected = (result as any).affectedRows || 0;
+      res.json({ success: true, message: `Deleted ${affected} WordPress signup clients` });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Migrate Perfex clients to CRM
+  app.post("/api/admin/migrate-perfex-clients", async (req, res) => {
+    try {
+      // Get all Perfex clients with their primary contact
+      const clients = await queryPerfex(`
+        SELECT 
+          c.userid, c.company, c.phonenumber as company_phone, c.city, c.state, c.zip, c.country,
+          c.address, c.datecreated, c.active,
+          ct.id as contact_id, ct.firstname, ct.lastname, ct.email, ct.phonenumber as contact_phone
+        FROM tblclients c
+        LEFT JOIN tblcontacts ct ON c.userid = ct.userid AND ct.is_primary = 1
+        ORDER BY c.datecreated DESC
+      `);
+
+      let migrated = 0;
+      let errors: string[] = [];
+
+      for (const client of clients) {
+        try {
+          const id = `perfex-${client.userid}`;
+          const firstName = client.firstname || client.company?.split(' ')[0] || 'Unknown';
+          const lastName = client.lastname || client.company?.split(' ').slice(1).join(' ') || '';
+          const email = client.email || null;
+          const phone = client.contact_phone || client.company_phone || null;
+
+          await mysqlPool.query(`
+            INSERT INTO users (id, email, first_name, last_name, phone, address, city, state, zip_code, country, client_type, notes, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+            ON DUPLICATE KEY UPDATE
+              email = VALUES(email),
+              first_name = VALUES(first_name),
+              last_name = VALUES(last_name),
+              phone = VALUES(phone),
+              address = VALUES(address),
+              city = VALUES(city),
+              state = VALUES(state),
+              zip_code = VALUES(zip_code),
+              country = VALUES(country),
+              updated_at = NOW()
+          `, [
+            id,
+            email,
+            firstName,
+            lastName,
+            phone,
+            client.address,
+            client.city,
+            client.state,
+            client.zip,
+            client.country,
+            client.active === 1 ? 'Active Client' : 'Inactive',
+            `Company: ${client.company || 'N/A'} | Perfex ID: ${client.userid}`,
+            client.datecreated || new Date()
+          ]);
+
+          migrated++;
+        } catch (err: any) {
+          errors.push(`Client ${client.userid}: ${err.message}`);
+        }
+      }
+
+      res.json({
+        success: true,
+        message: `Migrated ${migrated} clients from Perfex CRM`,
+        totalFound: clients.length,
+        migrated,
+        errors: errors.slice(0, 10)
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Migrate Perfex files/documents
+  app.post("/api/admin/migrate-perfex-documents", async (req, res) => {
+    try {
+      // Get all customer-related files from Perfex
+      const files = await queryPerfex(`
+        SELECT id, rel_id, rel_type, file_name, filetype, dateadded, 
+               staffid, contact_id, visible_to_customer, subject
+        FROM tblfiles 
+        WHERE rel_type = 'customer'
+        ORDER BY dateadded DESC
+      `);
+
+      let migrated = 0;
+      let errors: string[] = [];
+
+      for (const file of files) {
+        try {
+          const clientId = `perfex-${file.rel_id}`;
+          
+          // Determine document type from filename
+          let documentType = 'Other';
+          const lowerName = (file.file_name || '').toLowerCase();
+          if (lowerName.includes('w2') || lowerName.includes('w-2')) {
+            documentType = 'W-2';
+          } else if (lowerName.includes('1099')) {
+            documentType = '1099';
+          } else if (lowerName.includes('id') || lowerName.includes('license') || lowerName.includes('passport')) {
+            documentType = 'ID';
+          } else if (lowerName.includes('tax') || lowerName.includes('return')) {
+            documentType = 'Tax Return';
+          }
+
+          // File URL points to Perfex uploads folder structure
+          const fileUrl = `/perfex-uploads/uploads/customers/${file.rel_id}/${file.file_name}`;
+
+          await mysqlPool.query(`
+            INSERT INTO document_versions (id, client_id, document_name, document_type, file_url, version, uploaded_by, notes, uploaded_at)
+            VALUES (UUID(), ?, ?, ?, ?, 1, 'perfex-import', ?, ?)
+          `, [
+            clientId,
+            file.file_name,
+            documentType,
+            fileUrl,
+            file.subject || 'Imported from Perfex CRM',
+            file.dateadded || new Date()
+          ]);
+
+          migrated++;
+        } catch (err: any) {
+          errors.push(`File ${file.id}: ${err.message}`);
+        }
+      }
+
+      res.json({
+        success: true,
+        message: `Imported ${migrated} document records from Perfex CRM`,
+        totalFound: files.length,
+        migrated,
+        errors: errors.slice(0, 10)
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
     }
   });
 
