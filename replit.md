@@ -63,11 +63,10 @@ Preferred communication style: Simple, everyday language.
 
 **Data Access Layer**
 - Storage abstraction interface (IStorage) enabling flexible backend implementations
-- Hybrid storage approach: MemStorage class with PostgreSQL backing for critical entities
-- User operations (getUser, getUsers, upsertUser) fully backed by PostgreSQL via Drizzle ORM
-- E-signature operations (CRUD) fully backed by PostgreSQL via Drizzle ORM
-- Other entities (appointments, payments, etc.) still use in-memory Maps for development
+- MySQL storage (MySQLStorage class) connected to cPanel/GoDaddy MySQL database
+- All entities fully backed by MySQL via Drizzle ORM (users, appointments, payments, e-signatures, etc.)
 - Storage methods for CRUD operations with proper async/await patterns
+- Ready for deployment to Render with cPanel MySQL backend
 
 **Authentication Strategy**
 - JWT or session-based authentication (implementation pending)
@@ -78,19 +77,20 @@ Preferred communication style: Simple, everyday language.
 ### Data Storage Solutions
 
 **Database System**
-- PostgreSQL as the production database via Neon serverless platform
+- MySQL/MariaDB as the production database via cPanel/GoDaddy hosting
 - Drizzle ORM for type-safe database queries and schema management
-- Connection pooling through @neondatabase/serverless with WebSocket support
-- Database configuration via DATABASE_URL environment variable
+- Connection pooling through mysql2/promise with keepalive support
+- Database configuration via MYSQL_HOST, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD environment variables
+- Remote MySQL access enabled for external connections (Render deployment ready)
 
 **Schema Design**
-- Initial schema includes users table with UUID primary keys
+- MySQL-compatible schema with UUID primary keys generated via MySQL UUID() function
 - Drizzle-Zod integration for automatic Zod schema generation from database schema
-- Migration system using drizzle-kit (migrations stored in /migrations directory)
-- Shared schema definitions in /shared/schema.ts for type consistency across frontend/backend
+- Schema definitions in /shared/mysql-schema.ts for MySQL-specific types
+- Tables: users, sessions, tax_deadlines, appointments, payments, document_versions, e_signatures, email_logs, document_request_templates
 
 **Session Management**
-- Connect-pg-simple for PostgreSQL-backed session storage
+- Session storage supported via MySQL sessions table
 - Session data persisted to database for scalability across server instances
 
 ### External Dependencies
@@ -105,11 +105,11 @@ Preferred communication style: Simple, everyday language.
 - CMDK for command palette interfaces
 
 **Database & ORM**
-- Neon (@neondatabase/serverless) - Serverless PostgreSQL platform
-- Drizzle ORM (drizzle-orm) - Type-safe SQL query builder
+- MySQL2 (mysql2) - MySQL/MariaDB driver with promise support
+- Drizzle ORM (drizzle-orm/mysql2) - Type-safe SQL query builder for MySQL
 - Drizzle Kit (drizzle-kit) - Schema migration and management tool
 - Drizzle-Zod integration for validation schema generation
-- WS package for WebSocket support required by Neon
+- cPanel MySQL database on GoDaddy hosting (MariaDB 10.6.23)
 
 **Form & Validation**
 - React Hook Form for performant form state management
