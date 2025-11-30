@@ -195,6 +195,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Document Versions
+  // Note: /all route must come before /:clientId to avoid matching "all" as a clientId
+  app.get("/api/documents/all", async (req, res) => {
+    try {
+      const documents = await storage.getAllDocuments();
+      res.json(documents);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.get("/api/documents/:clientId", async (req, res) => {
     const { documentType } = req.query;
     
@@ -229,16 +239,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(404).json({ error: "Document not found" });
     }
     res.status(204).send();
-  });
-
-  // Get all documents across all clients (for admin view)
-  app.get("/api/documents/all", async (req, res) => {
-    try {
-      const documents = await storage.getAllDocuments();
-      res.json(documents);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
   });
 
   // E-Signatures
@@ -609,7 +609,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get all customer-related files from Perfex
       const files = await queryPerfex(`
         SELECT id, rel_id, rel_type, file_name, filetype, dateadded, 
-               staffid, contact_id, visible_to_customer, subject
+               staffid, contact_id, visible_to_customer
         FROM tblfiles 
         WHERE rel_type = 'customer'
         ORDER BY dateadded DESC
@@ -646,7 +646,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             file.file_name,
             documentType,
             fileUrl,
-            file.subject || 'Imported from Perfex CRM',
+            'Imported from Perfex CRM',
             file.dateadded || new Date()
           ]);
 
