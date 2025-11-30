@@ -19,6 +19,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup Authentication
   await setupAuth(app);
 
+  // Redirect Perfex document URLs to the actual Perfex server
+  app.get("/perfex-uploads/*", (req, res) => {
+    const perfexBaseUrl = "https://ststaxrepair.org";
+    const fullUrl = `${perfexBaseUrl}${req.path}`;
+    res.redirect(fullUrl);
+  });
+
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {

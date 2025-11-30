@@ -130,7 +130,25 @@ Preferred communication style: Simple, everyday language.
 **Email Services** (Planned)
 - SendGrid for transactional emails (verification, password reset, notifications)
 
-**File Storage** (Planned)
+**File Storage**
 - Document upload system for tax forms (W-2, 1099, ID scans)
 - File type validation and size limits (max 5MB for images)
-- Storage backend to be determined (cloud storage service integration needed)
+- New uploads: Replit Object Storage (bucket: replit-objstore-793ab189-6e24-48a6-80da-c5b02a536f27)
+- Legacy documents: Served from Perfex CRM at https://ststaxrepair.org via redirect
+
+### Perfex CRM Integration
+
+**Data Migration**
+- 868 real clients migrated from Perfex CRM `tblclients` table
+- 2,930 documents imported from Perfex CRM `tblfiles` table
+- Client IDs prefixed with "perfex-" (e.g., perfex-100) for imported records
+
+**Document Access**
+- Perfex documents stored at paths like `/perfex-uploads/uploads/customers/{id}/filename`
+- Express route redirects `/perfex-uploads/*` to `https://ststaxrepair.org/perfex-uploads/...`
+- Document metadata stored in MySQL `document_versions` table
+
+**Database Connections**
+- Primary CRM: MySQL database `tax_7648995` on cPanel server
+- Perfex read-only: MySQL database `perfexcrm` on same server (for future sync if needed)
+- Connection module: `server/perfex-db.ts`
