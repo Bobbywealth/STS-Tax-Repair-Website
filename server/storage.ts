@@ -15,13 +15,18 @@ import {
   type EmailLog,
   type InsertEmailLog,
   type DocumentRequestTemplate,
-  type InsertDocumentRequestTemplate
+  type InsertDocumentRequestTemplate,
+  users as usersTable,
+  eSignatures as eSignaturesTable
 } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   // Users (Replit Auth required)
   getUser(id: string): Promise<User | undefined>;
+  getUsers(): Promise<User[]>;
   upsertUser(user: UpsertUser): Promise<User>;
 
   // Tax Deadlines
@@ -58,6 +63,7 @@ export interface IStorage {
   getESignature(id: string): Promise<ESignature | undefined>;
   createESignature(signature: InsertESignature): Promise<ESignature>;
   updateESignature(id: string, signature: Partial<InsertESignature>): Promise<ESignature | undefined>;
+  deleteESignature(id: string): Promise<boolean>;
 
   // Email Logs
   getEmailLogs(): Promise<EmailLog[]>;
@@ -170,25 +176,41 @@ export class MemStorage implements IStorage {
 
   // Users (Replit Auth required methods)
   async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, id));
+    return user;
+  }
+
+  async getUsers(): Promise<User[]> {
+    return await db.select().from(usersTable);
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
     const id = userData.id || randomUUID();
-    const existing = this.users.get(id);
+    const existing = await this.getUser(id);
     
-    const user: User = {
+    const userValues = {
       id,
       email: userData.email ?? null,
       firstName: userData.firstName ?? null,
       lastName: userData.lastName ?? null,
       profileImageUrl: userData.profileImageUrl ?? null,
-      createdAt: existing?.createdAt ?? new Date(),
       updatedAt: new Date(),
     };
-    
-    this.users.set(id, user);
-    return user;
+
+    if (existing) {
+      const [updated] = await db
+        .update(usersTable)
+        .set(userValues)
+        .where(eq(usersTable.id, id))
+        .returning();
+      return updated;
+    } else {
+      const [inserted] = await db
+        .insert(usersTable)
+        .values({ ...userValues, createdAt: new Date() })
+        .returning();
+      return inserted;
+    }
   }
 
   // Tax Deadlines
@@ -355,26 +377,27 @@ export class MemStorage implements IStorage {
 
   // E-Signatures
   async getESignatures(): Promise<ESignature[]> {
-    return Array.from(this.eSignatures.values()).sort(
-      (a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0)
-    );
+    const results = await db.select().from(eSignaturesTable);
+    return results.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
   }
 
   async getESignaturesByClient(clientId: string): Promise<ESignature[]> {
-    return Array.from(this.eSignatures.values())
-      .filter(s => s.clientId === clientId)
-      .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+    const results = await db.select().from(eSignaturesTable).where(eq(eSignaturesTable.clientId, clientId));
+    return results.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
   }
 
   async getESignature(id: string): Promise<ESignature | undefined> {
-    return this.eSignatures.get(id);
+    const [signature] = await db.select().from(eSignaturesTable).where(eq(eSignaturesTable.id, id));
+    return signature;
   }
 
   async createESignature(signature: InsertESignature): Promise<ESignature> {
     const id = randomUUID();
-    const newSignature: ESignature = {
-      ...signature,
+    const signatureData = {
       id,
+      clientId: signature.clientId,
+      clientName: signature.clientName,
+      documentName: signature.documentName,
       documentType: signature.documentType ?? null,
       signatureData: signature.signatureData ?? null,
       ipAddress: signature.ipAddress ?? null,
@@ -384,16 +407,24 @@ export class MemStorage implements IStorage {
       documentUrl: signature.documentUrl ?? null,
       createdAt: new Date()
     };
-    this.eSignatures.set(id, newSignature);
-    return newSignature;
+    const [inserted] = await db.insert(eSignaturesTable).values(signatureData).returning();
+    return inserted;
   }
 
   async updateESignature(id: string, signature: Partial<InsertESignature>): Promise<ESignature | undefined> {
-    const existing = this.eSignatures.get(id);
+    const existing = await this.getESignature(id);
     if (!existing) return undefined;
-    const updated = { ...existing, ...signature };
-    this.eSignatures.set(id, updated);
+    const [updated] = await db
+      .update(eSignaturesTable)
+      .set(signature)
+      .where(eq(eSignaturesTable.id, id))
+      .returning();
     return updated;
+  }
+
+  async deleteESignature(id: string): Promise<boolean> {
+    const result = await db.delete(eSignaturesTable).where(eq(eSignaturesTable.id, id)).returning();
+    return result.length > 0;
   }
 
   // Email Logs

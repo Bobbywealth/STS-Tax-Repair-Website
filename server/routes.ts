@@ -28,6 +28,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Users (for staff to select clients)
+  app.get("/api/users", async (req, res) => {
+    const users = await storage.getUsers();
+    res.json(users);
+  });
+
   // Tax Deadlines
   app.get("/api/deadlines", async (req, res) => {
     const deadlines = await storage.getTaxDeadlines();
@@ -262,6 +268,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
+  });
+
+  app.delete("/api/signatures/:id", async (req, res) => {
+    const success = await storage.deleteESignature(req.params.id);
+    if (!success) {
+      return res.status(404).json({ error: "Signature not found" });
+    }
+    res.status(204).send();
   });
 
   // Email Logs

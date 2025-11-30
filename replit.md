@@ -63,9 +63,11 @@ Preferred communication style: Simple, everyday language.
 
 **Data Access Layer**
 - Storage abstraction interface (IStorage) enabling flexible backend implementations
-- Initial in-memory storage (MemStorage) for development with Map-based data structures
-- Storage methods for CRUD operations (getUser, createUser, getUserByUsername, etc.)
-- Designed for easy migration to database-backed storage
+- Hybrid storage approach: MemStorage class with PostgreSQL backing for critical entities
+- User operations (getUser, getUsers, upsertUser) fully backed by PostgreSQL via Drizzle ORM
+- E-signature operations (CRUD) fully backed by PostgreSQL via Drizzle ORM
+- Other entities (appointments, payments, etc.) still use in-memory Maps for development
+- Storage methods for CRUD operations with proper async/await patterns
 
 **Authentication Strategy**
 - JWT or session-based authentication (implementation pending)

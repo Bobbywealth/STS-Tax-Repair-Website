@@ -1,15 +1,83 @@
-import { useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileText, Upload, MessageSquare, DollarSign, Calendar } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { 
+  FileText, 
+  Upload, 
+  MessageSquare, 
+  DollarSign, 
+  Calendar, 
+  PenTool,
+  FileSignature,
+  CheckCircle,
+  Eye
+} from "lucide-react";
 import { RefundStatusTracker } from "@/components/RefundStatusTracker";
+import { SignaturePad, type SignaturePadRef } from "@/components/SignaturePad";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import type { ESignature } from "@shared/schema";
 
 export default function ClientPortal() {
   const { toast } = useToast();
   const { user, isAuthenticated, isLoading } = useAuth();
+  const [selectedSignature, setSelectedSignature] = useState<ESignature | null>(null);
+  const [showSignDialog, setShowSignDialog] = useState(false);
+  const signaturePadRef = useRef<SignaturePadRef>(null);
+
+  // Fetch pending signatures for this client
+  const { data: signatures } = useQuery<ESignature[]>({
+    queryKey: ['/api/signatures', { clientId: user?.id }],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const res = await fetch(`/api/signatures?clientId=${user.id}`, {
+        credentials: 'include',
+      });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!user?.id,
+  });
+
+  // Sign document mutation
+  const signMutation = useMutation({
+    mutationFn: async ({ id, signatureData }: { id: string; signatureData: string }) => {
+      const userAgent = navigator.userAgent;
+      await apiRequest(`/api/signatures/${id}`, "PATCH", {
+        signatureData,
+        userAgent,
+        signedAt: new Date().toISOString(),
+        status: "signed",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/signatures'] });
+      toast({
+        title: "Document Signed",
+        description: "Your signature has been recorded successfully.",
+      });
+      setShowSignDialog(false);
+      setSelectedSignature(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Signature Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -25,6 +93,30 @@ export default function ClientPortal() {
       return;
     }
   }, [isAuthenticated, isLoading, toast]);
+
+  const handleSign = (signature: ESignature) => {
+    setSelectedSignature(signature);
+    setShowSignDialog(true);
+  };
+
+  const handleSubmitSignature = () => {
+    if (!selectedSignature || !signaturePadRef.current) return;
+
+    if (signaturePadRef.current.isEmpty()) {
+      toast({
+        title: "No Signature",
+        description: "Please draw your signature before submitting.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const signatureData = signaturePadRef.current.toDataURL();
+    signMutation.mutate({
+      id: selectedSignature.id,
+      signatureData,
+    });
+  };
 
   // Show loading while checking auth
   if (isLoading) {
@@ -66,6 +158,9 @@ export default function ClientPortal() {
     { from: "Staff", message: "We received your documents", date: "Jan 16, 2025", isRead: true },
   ];
 
+  const pendingSignatures = signatures?.filter(s => s.status === "pending") || [];
+  const signedSignatures = signatures?.filter(s => s.status === "signed") || [];
+
   return (
     <div className="min-h-screen bg-animated-mesh">
       {/* Header */}
@@ -97,6 +192,61 @@ export default function ClientPortal() {
           <h2 className="text-3xl font-bold mb-2">Welcome back, {clientData.name.split(' ')[0]}!</h2>
           <p className="text-muted-foreground">Track your tax refund status and manage your documents</p>
         </div>
+
+        {/* Pending Signatures Alert */}
+        {pendingSignatures.length > 0 && (
+          <Card className="border-yellow-500/50 bg-yellow-500/5">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <FileSignature className="h-5 w-5 text-yellow-600" />
+                <CardTitle className="text-yellow-600">
+                  Action Required: {pendingSignatures.length} Document{pendingSignatures.length > 1 ? 's' : ''} Awaiting Your Signature
+                </CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {pendingSignatures.map((sig) => (
+                  <div 
+                    key={sig.id}
+                    className="flex items-center justify-between p-4 rounded-lg border bg-background"
+                    data-testid={`pending-signature-${sig.id}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <PenTool className="h-5 w-5 text-muted-foreground" />
+                      <div>
+                        <p className="font-medium">{sig.documentName}</p>
+                        <p className="text-sm text-muted-foreground">{sig.documentType}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {sig.documentUrl && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => window.open(sig.documentUrl!, '_blank')}
+                          data-testid={`view-doc-${sig.id}`}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          View
+                        </Button>
+                      )}
+                      <Button 
+                        size="sm"
+                        className="gradient-primary border-0"
+                        onClick={() => handleSign(sig)}
+                        data-testid={`sign-doc-${sig.id}`}
+                      >
+                        <PenTool className="h-4 w-4 mr-2" />
+                        Sign Now
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Refund Status */}
         <Card className="relative overflow-visible">
@@ -139,6 +289,43 @@ export default function ClientPortal() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Signed Documents */}
+        {signedSignatures.length > 0 && (
+          <Card className="relative overflow-visible">
+            <div className="absolute inset-0 bg-flow-gradient opacity-30 rounded-lg" />
+            <CardHeader className="relative z-10">
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+                Signed Documents
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="relative z-10">
+              <div className="space-y-3">
+                {signedSignatures.map((sig) => (
+                  <div 
+                    key={sig.id}
+                    className="flex items-center justify-between p-4 rounded-lg border"
+                    data-testid={`signed-doc-${sig.id}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="h-5 w-5 text-green-600" />
+                      <div>
+                        <p className="font-medium">{sig.documentName}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Signed on {sig.signedAt ? new Date(sig.signedAt).toLocaleDateString() : 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30">
+                      Completed
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Documents Section */}
         <Card className="relative overflow-visible">
@@ -229,6 +416,57 @@ export default function ClientPortal() {
           </CardContent>
         </Card>
       </main>
+
+      {/* Sign Document Dialog */}
+      <Dialog open={showSignDialog} onOpenChange={setShowSignDialog}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Sign Document</DialogTitle>
+            <DialogDescription>
+              Please review and sign {selectedSignature?.documentName}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="p-4 rounded-lg bg-muted/50">
+              <p className="font-medium mb-1">{selectedSignature?.documentName}</p>
+              <p className="text-sm text-muted-foreground">{selectedSignature?.documentType}</p>
+              {selectedSignature?.documentUrl && (
+                <Button
+                  variant="ghost"
+                  className="h-auto p-0 mt-2"
+                  onClick={() => window.open(selectedSignature.documentUrl!, '_blank')}
+                >
+                  View Document Before Signing
+                </Button>
+              )}
+            </div>
+            
+            <SignaturePad ref={signaturePadRef} />
+            
+            <p className="text-xs text-muted-foreground">
+              By signing this document, you certify that you have reviewed and agree to its contents.
+              Your signature, IP address, and timestamp will be recorded for IRS compliance.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowSignDialog(false)}
+              data-testid="button-cancel-sign"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmitSignature}
+              disabled={signMutation.isPending}
+              className="gradient-primary border-0"
+              data-testid="button-submit-signature"
+            >
+              {signMutation.isPending ? "Saving..." : "Submit Signature"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
