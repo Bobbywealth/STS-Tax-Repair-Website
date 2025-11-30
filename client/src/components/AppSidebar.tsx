@@ -46,12 +46,12 @@ export function AppSidebar({ user }: AppSidebarProps) {
 
   return (
     <Sidebar>
-      <SidebarHeader className="py-6 px-4 border-b border-sidebar-border">
-        <div className="flex items-center justify-center">
+      <SidebarHeader className="py-6 px-4 border-b border-sidebar-border flex-shrink-0">
+        <div className="flex items-center justify-center flex-shrink-0">
           <img 
             src={logoUrl} 
             alt="STS TaxRepair Logo" 
-            className="h-32 w-full max-w-[180px] object-contain"
+            className="h-20 w-auto object-contain flex-shrink-0"
           />
         </div>
       </SidebarHeader>
