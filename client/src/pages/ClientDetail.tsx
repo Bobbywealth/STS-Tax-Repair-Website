@@ -157,7 +157,7 @@ export default function ClientDetail() {
         </TabsList>
 
         <TabsContent value="documents">
-          <DocumentUpload onUpload={(files) => console.log('Files uploaded:', files.map(f => f.name))} />
+          <DocumentUpload clientId={client.id} onUpload={(files) => console.log('Files uploaded:', files.map(f => f.name))} />
         </TabsContent>
 
         <TabsContent value="messages">

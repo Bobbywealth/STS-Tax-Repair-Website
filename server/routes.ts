@@ -11,6 +11,7 @@ import {
   insertEmailLogSchema,
   insertDocumentRequestTemplateSchema
 } from "@shared/mysql-schema";
+import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup Authentication
@@ -354,6 +355,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(404).json({ error: "Template not found" });
     }
     res.status(204).send();
+  });
+
+  // Object Storage - File Upload
+  app.post("/api/objects/upload", async (req, res) => {
+    try {
+      const { clientId, fileName, fileType, fileSize } = req.body;
+      
+      if (!clientId || !fileName) {
+        return res.status(400).json({ error: "clientId and fileName are required" });
+      }
+      
+      const objectStorageService = new ObjectStorageService();
+      const { uploadURL, objectPath } = await objectStorageService.getObjectEntityUploadURL(clientId, fileName);
+      
+      res.json({ uploadURL, objectPath });
+    } catch (error: any) {
+      console.error("Error getting upload URL:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Save document metadata after upload
+  app.post("/api/objects/confirm", async (req, res) => {
+    try {
+      const { clientId, objectPath, fileName, fileType, fileSize, category } = req.body;
+      
+      if (!clientId || !objectPath || !fileName) {
+        return res.status(400).json({ error: "clientId, objectPath, and fileName are required" });
+      }
+      
+      // Determine document type from category or file extension
+      let documentType = category || "Other";
+      if (!category) {
+        const lowerName = fileName.toLowerCase();
+        if (lowerName.includes('w2') || lowerName.includes('w-2')) {
+          documentType = "W-2";
+        } else if (lowerName.includes('1099')) {
+          documentType = "1099";
+        } else if (lowerName.includes('id') || lowerName.includes('license') || lowerName.includes('passport')) {
+          documentType = "ID";
+        }
+      }
+      
+      // Get latest version number for this client/document type
+      const existingDocs = await storage.getDocumentVersionsByType(clientId, documentType);
+      const newVersion = existingDocs.length + 1;
+      
+      // Save document metadata to database
+      const document = await storage.createDocumentVersion({
+        clientId,
+        documentName: fileName,
+        documentType,
+        fileUrl: objectPath,
+        version: newVersion,
+        uploadedBy: "staff",
+        fileSize: fileSize ? parseInt(String(fileSize)) : null,
+        mimeType: fileType || null,
+        notes: null,
+      });
+      
+      res.status(201).json(document);
+    } catch (error: any) {
+      console.error("Error confirming upload:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Serve uploaded files
+  app.get("/objects/*", async (req, res) => {
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const objectFile = await objectStorageService.getObjectEntityFile(req.path);
+      objectStorageService.downloadObject(objectFile, res);
+    } catch (error) {
+      console.error("Error serving object:", error);
+      if (error instanceof ObjectNotFoundError) {
+        return res.status(404).json({ error: "File not found" });
+      }
+      return res.status(500).json({ error: "Internal server error" });
+    }
   });
 
   const httpServer = createServer(app);

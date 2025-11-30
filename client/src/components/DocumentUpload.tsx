@@ -1,55 +1,149 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Upload, File, X, FileText, Image as ImageIcon } from "lucide-react";
-
-interface UploadedFile {
-  id: string;
-  name: string;
-  type: string;
-  size: string;
-  category: "W-2" | "1099" | "ID" | "Other";
-}
+import { Upload, File, X, FileText, Image as ImageIcon, Loader2, Download, Eye } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import type { DocumentVersion } from "@shared/mysql-schema";
 
 interface DocumentUploadProps {
+  clientId: string;
   onUpload?: (files: File[]) => void;
 }
 
-export function DocumentUpload({ onUpload }: DocumentUploadProps) {
-  const [files, setFiles] = useState<UploadedFile[]>([
-    {
-      id: "1",
-      name: "W2-2024.pdf",
-      type: "application/pdf",
-      size: "2.4 MB",
-      category: "W-2",
-    },
-    {
-      id: "2",
-      name: "ID-scan.jpg",
-      type: "image/jpeg",
-      size: "1.8 MB",
-      category: "ID",
-    },
-  ]);
+const categoryColors: Record<string, string> = {
+  "W-2": "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+  "1099": "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+  "ID": "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+  "Other": "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
+};
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+export function DocumentUpload({ clientId, onUpload }: DocumentUploadProps) {
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+
+  const { data: documents, isLoading } = useQuery<DocumentVersion[]>({
+    queryKey: ["/api/documents", clientId],
+    enabled: !!clientId,
+  });
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = e.target.files;
-    if (selectedFiles) {
-      console.log('Files selected:', Array.from(selectedFiles).map(f => f.name));
+    if (!selectedFiles || selectedFiles.length === 0) return;
+
+    setUploading(true);
+
+    try {
+      for (const file of Array.from(selectedFiles)) {
+        // Step 1: Get presigned upload URL
+        const uploadResponse = await fetch('/api/objects/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            clientId,
+            fileName: file.name,
+            fileType: file.type,
+            fileSize: file.size,
+          }),
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error('Failed to get upload URL');
+        }
+
+        const { uploadURL, objectPath } = await uploadResponse.json();
+
+        // Step 2: Upload file directly to storage
+        const uploadResult = await fetch(uploadURL, {
+          method: 'PUT',
+          body: file,
+          headers: {
+            'Content-Type': file.type || 'application/octet-stream',
+          },
+        });
+
+        if (!uploadResult.ok) {
+          throw new Error('Failed to upload file');
+        }
+
+        // Step 3: Confirm upload and save metadata
+        const confirmResponse = await fetch('/api/objects/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            clientId,
+            objectPath,
+            fileName: file.name,
+            fileType: file.type,
+            fileSize: file.size,
+          }),
+        });
+
+        if (!confirmResponse.ok) {
+          throw new Error('Failed to save document metadata');
+        }
+      }
+
+      // Refresh document list
+      queryClient.invalidateQueries({ queryKey: ["/api/documents", clientId] });
+
+      toast({
+        title: "Upload Complete",
+        description: `${selectedFiles.length} file(s) uploaded successfully`,
+      });
+
       onUpload?.(Array.from(selectedFiles));
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast({
+        title: "Upload Failed",
+        description: error.message || "Failed to upload files",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
-  const removeFile = (id: string) => {
-    setFiles(files.filter(f => f.id !== id));
-    console.log('File removed:', id);
+  const deleteDocument = useMutation({
+    mutationFn: async (documentId: string) => {
+      await apiRequest('DELETE', `/api/documents/${documentId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/documents", clientId] });
+      toast({
+        title: "Document Deleted",
+        description: "Document has been removed",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Delete Failed",
+        description: "Failed to delete document",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const getFileIcon = (mimeType: string | null) => {
+    if (mimeType?.startsWith('image/')) return ImageIcon;
+    return FileText;
   };
 
-  const getFileIcon = (type: string) => {
-    if (type.startsWith('image/')) return ImageIcon;
-    return FileText;
+  const formatFileSize = (bytes: string | null) => {
+    if (!bytes) return 'Unknown size';
+    const size = parseInt(bytes);
+    if (size < 1024) return `${size} B`;
+    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+    return `${(size / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   return (
@@ -58,57 +152,101 @@ export function DocumentUpload({ onUpload }: DocumentUploadProps) {
         <CardTitle className="text-xl">Document Upload</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover-elevate cursor-pointer">
-          <label htmlFor="file-upload" className="cursor-pointer">
-            <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-sm font-medium mb-1">Click to upload or drag and drop</p>
-            <p className="text-xs text-muted-foreground">PDF, JPG, PNG (max 10MB)</p>
-            <input
-              id="file-upload"
-              type="file"
-              className="hidden"
-              multiple
-              accept=".pdf,.jpg,.jpeg,.png"
-              onChange={handleFileSelect}
-              data-testid="input-file-upload"
-            />
-          </label>
+        <div 
+          className="border-2 border-dashed border-border rounded-lg p-8 text-center hover-elevate cursor-pointer"
+          onClick={() => fileInputRef.current?.click()}
+        >
+          {uploading ? (
+            <div className="flex flex-col items-center gap-2">
+              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+              <p className="text-sm font-medium">Uploading...</p>
+            </div>
+          ) : (
+            <>
+              <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <p className="text-sm font-medium mb-1">Click to upload or drag and drop</p>
+              <p className="text-xs text-muted-foreground">PDF, JPG, PNG (max 10MB)</p>
+            </>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            multiple
+            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+            onChange={handleFileSelect}
+            disabled={uploading}
+            data-testid="input-file-upload"
+          />
         </div>
 
-        {files.length > 0 && (
+        {isLoading ? (
+          <div className="flex justify-center py-4">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : documents && documents.length > 0 ? (
           <div className="space-y-2">
-            <h4 className="text-sm font-medium">Uploaded Documents</h4>
-            {files.map((file) => {
-              const FileIcon = getFileIcon(file.type);
+            <h4 className="text-sm font-medium">Uploaded Documents ({documents.length})</h4>
+            {documents.map((doc) => {
+              const FileIcon = getFileIcon(doc.mimeType);
               return (
-                <Card key={file.id} data-testid={`file-${file.id}`}>
+                <Card key={doc.id} data-testid={`file-${doc.id}`}>
                   <CardContent className="p-3">
                     <div className="flex items-center gap-3">
                       <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center flex-shrink-0">
                         <FileIcon className="h-5 w-5 text-muted-foreground" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{file.name}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="secondary" className="text-xs">
-                            {file.category}
+                        <p className="text-sm font-medium truncate">{doc.documentName}</p>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <Badge 
+                            variant="secondary" 
+                            className={`text-xs ${categoryColors[doc.documentType] || categoryColors.Other}`}
+                          >
+                            {doc.documentType}
                           </Badge>
-                          <span className="text-xs text-muted-foreground">{file.size}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {formatFileSize(doc.fileSize ? String(doc.fileSize) : null)}
+                          </span>
+                          {(doc.version ?? 1) > 1 && (
+                            <Badge variant="outline" className="text-xs">
+                              v{doc.version}
+                            </Badge>
+                          )}
                         </div>
                       </div>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => removeFile(file.id)}
-                        data-testid={`button-remove-${file.id}`}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        {doc.fileUrl && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            asChild
+                            data-testid={`button-view-${doc.id}`}
+                          >
+                            <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer">
+                              <Eye className="h-4 w-4" />
+                            </a>
+                          </Button>
+                        )}
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => deleteDocument.mutate(doc.id)}
+                          disabled={deleteDocument.isPending}
+                          data-testid={`button-remove-${doc.id}`}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
               );
             })}
+          </div>
+        ) : (
+          <div className="text-center py-4 text-muted-foreground">
+            <p className="text-sm">No documents uploaded yet</p>
           </div>
         )}
       </CardContent>
