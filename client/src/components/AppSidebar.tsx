@@ -46,12 +46,12 @@ export function AppSidebar({ user }: AppSidebarProps) {
 
   return (
     <Sidebar>
-      <SidebarHeader className="p-6 border-b border-sidebar-border">
+      <SidebarHeader className="p-8 border-b border-sidebar-border">
         <div className="flex items-center justify-center">
           <img 
             src={logoUrl} 
             alt="STS TaxRepair Logo" 
-            className="h-16 w-auto object-contain"
+            className="h-24 w-auto object-contain"
           />
         </div>
       </SidebarHeader>
