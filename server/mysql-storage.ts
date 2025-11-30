@@ -227,6 +227,11 @@ export class MySQLStorage implements IStorage {
       .orderBy(asc(documentVersionsTable.version));
   }
 
+  async getAllDocuments(): Promise<DocumentVersion[]> {
+    return await mysqlDb.select().from(documentVersionsTable)
+      .orderBy(desc(documentVersionsTable.uploadedAt));
+  }
+
   async createDocumentVersion(document: InsertDocumentVersion): Promise<DocumentVersion> {
     const id = randomUUID();
     const documentData = {

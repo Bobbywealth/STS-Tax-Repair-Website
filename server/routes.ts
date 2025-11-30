@@ -229,6 +229,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(204).send();
   });
 
+  // Get all documents across all clients (for admin view)
+  app.get("/api/documents/all", async (req, res) => {
+    try {
+      const documents = await storage.getAllDocuments();
+      res.json(documents);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // E-Signatures
   app.get("/api/signatures", async (req, res) => {
     const { clientId } = req.query;

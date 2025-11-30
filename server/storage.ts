@@ -48,6 +48,7 @@ export interface IStorage {
   // Document Versions
   getDocumentVersions(clientId: string): Promise<DocumentVersion[]>;
   getDocumentVersionsByType(clientId: string, documentType: string): Promise<DocumentVersion[]>;
+  getAllDocuments(): Promise<DocumentVersion[]>;
   createDocumentVersion(document: InsertDocumentVersion): Promise<DocumentVersion>;
   deleteDocumentVersion(id: string): Promise<boolean>;
 
