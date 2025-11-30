@@ -10,7 +10,7 @@ import {
   insertESignatureSchema,
   insertEmailLogSchema,
   insertDocumentRequestTemplateSchema
-} from "@shared/schema";
+} from "@shared/mysql-schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup Authentication
