@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -10,27 +11,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Upload, FileText, Download, Trash2, User, Calendar, File } from "lucide-react";
+import { FileText, Download, Trash2, User, Calendar, Search, Loader2, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { DocumentVersion } from "@shared/schema";
+import type { DocumentVersion, User as UserType } from "@shared/mysql-schema";
+import { Link } from "wouter";
 
 export default function Documents() {
   const { toast } = useToast();
   const [selectedClient, setSelectedClient] = useState<string>("all");
   const [documentType, setDocumentType] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
-  // Mock client list - in real app, fetch from /api/clients
-  const mockClients = [
-    { id: "1", name: "John Smith" },
-    { id: "2", name: "Mary Johnson" },
-    { id: "3", name: "Robert Williams" }
-  ];
+  const { data: clients, isLoading: clientsLoading } = useQuery<UserType[]>({
+    queryKey: ["/api/users"],
+  });
 
-  const { data: documents, isLoading } = useQuery<DocumentVersion[]>({
-    queryKey: selectedClient === "all" ? ['/api/documents/all'] : ['/api/documents', selectedClient],
-    enabled: false, // Disabled for demo since we need client ID
+  const { data: documents, isLoading: documentsLoading } = useQuery<DocumentVersion[]>({
+    queryKey: ["/api/documents/all"],
   });
 
   const deleteMutation = useMutation({
@@ -38,7 +37,7 @@ export default function Documents() {
       return await apiRequest('DELETE', `/api/documents/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/documents/all'] });
       toast({
         title: "Success",
         description: "Document deleted successfully",
@@ -46,222 +45,169 @@ export default function Documents() {
     },
   });
 
-  const uploadMutation = useMutation({
-    mutationFn: async (data: {
-      clientId: string;
-      documentName: string;
-      documentType: string;
-      fileUrl: string;
-      uploadedBy: string;
-    }) => {
-      return await apiRequest('POST', '/api/documents', data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
-      toast({
-        title: "Success",
-        description: "Document uploaded successfully",
-      });
-    },
-  });
-
-  const handleUpload = () => {
-    // Simulate file upload
-    if (selectedClient === "all") {
-      toast({
-        title: "Select a Client",
-        description: "Please select a client before uploading documents",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const client = mockClients.find(c => c.id === selectedClient);
-    uploadMutation.mutate({
-      clientId: selectedClient,
-      documentName: "Sample W-2 Form",
-      documentType: "w2",
-      fileUrl: "/uploads/sample-w2.pdf",
-      uploadedBy: "Staff Admin",
-    });
-  };
-
   const getDocumentTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
-      w2: "W-2",
+      "Tax Return": "Tax Return",
+      "W-2": "W-2",
       "1099": "1099",
-      id: "ID Document",
-      other: "Other"
+      "ID Verification": "ID Document",
+      "Other": "Other"
     };
-    return labels[type] || type.toUpperCase();
+    return labels[type] || type;
   };
 
-  const mockDocuments: DocumentVersion[] = [
-    {
-      id: "1",
-      clientId: "1",
-      documentName: "W-2_2024.pdf",
-      documentType: "w2",
-      fileUrl: "/uploads/w2.pdf",
-      version: 1,
-      uploadedBy: "Client",
-      fileSize: 245678,
-      mimeType: "application/pdf",
-      notes: null,
-      uploadedAt: new Date("2024-01-15"),
-    },
-    {
-      id: "2",
-      clientId: "1",
-      documentName: "W-2_2024_Updated.pdf",
-      documentType: "w2",
-      fileUrl: "/uploads/w2-v2.pdf",
-      version: 2,
-      uploadedBy: "Staff Admin",
-      fileSize: 247890,
-      mimeType: "application/pdf",
-      notes: "Client provided corrected form",
-      uploadedAt: new Date("2024-01-20"),
-    },
-    {
-      id: "3",
-      clientId: "2",
-      documentName: "1099-MISC.pdf",
-      documentType: "1099",
-      fileUrl: "/uploads/1099.pdf",
-      version: 1,
-      uploadedBy: "Client",
-      fileSize: 189234,
-      mimeType: "application/pdf",
-      notes: null,
-      uploadedAt: new Date("2024-02-01"),
-    },
-  ];
+  const getDocumentTypeBadgeColor = (type: string) => {
+    const colors: Record<string, string> = {
+      "Tax Return": "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+      "W-2": "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+      "1099": "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+      "ID Verification": "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
+      "Other": "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+    };
+    return colors[type] || colors["Other"];
+  };
 
-  const filteredDocs = mockDocuments.filter(doc => {
+  const getClientName = (clientId: string) => {
+    const client = clients?.find(c => c.id === clientId);
+    if (client) {
+      return `${client.firstName || ''} ${client.lastName || ''}`.trim() || client.email || clientId;
+    }
+    return clientId.replace('perfex-', 'Client #');
+  };
+
+  const filteredDocs = documents?.filter(doc => {
     const clientMatch = selectedClient === "all" || doc.clientId === selectedClient;
     const typeMatch = documentType === "all" || doc.documentType === documentType;
-    return clientMatch && typeMatch;
-  });
+    const searchMatch = !searchQuery || 
+      doc.documentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      getClientName(doc.clientId).toLowerCase().includes(searchQuery.toLowerCase());
+    return clientMatch && typeMatch && searchMatch;
+  }) || [];
+
+  const documentTypes = Array.from(new Set(documents?.map(d => d.documentType) || []));
+
+  const isLoading = clientsLoading || documentsLoading;
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-lg bg-flow-gradient">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Documents</h1>
-          <p className="text-muted-foreground mt-1">Upload and manage client documents with version history</p>
+          <p className="text-muted-foreground mt-1">
+            {documents?.length?.toLocaleString() || 0} documents imported from Perfex CRM
+          </p>
         </div>
-        <Button 
-          className="gradient-primary border-0" 
-          data-testid="button-upload-document"
-          onClick={handleUpload}
-          disabled={uploadMutation.isPending}
-        >
-          <Upload className="h-4 w-4 mr-2" />
-          {uploadMutation.isPending ? "Uploading..." : "Upload Document"}
-        </Button>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search documents..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+            data-testid="input-search-documents"
+          />
+        </div>
         <Select value={selectedClient} onValueChange={setSelectedClient}>
           <SelectTrigger className="w-full sm:w-64" data-testid="select-client">
             <SelectValue placeholder="Select client" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Clients</SelectItem>
-            {mockClients.map(client => (
-              <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
+            {clients?.slice(0, 50).map(client => (
+              <SelectItem key={client.id} value={client.id}>
+                {client.firstName} {client.lastName}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
-
         <Select value={documentType} onValueChange={setDocumentType}>
-          <SelectTrigger className="w-full sm:w-48" data-testid="select-document-type">
+          <SelectTrigger className="w-full sm:w-48" data-testid="select-type">
             <SelectValue placeholder="Document type" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="w2">W-2</SelectItem>
-            <SelectItem value="1099">1099</SelectItem>
-            <SelectItem value="id">ID Document</SelectItem>
-            <SelectItem value="other">Other</SelectItem>
+            {documentTypes.map(type => (
+              <SelectItem key={type} value={type}>{getDocumentTypeLabel(type)}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
 
-      {filteredDocs.length === 0 ? (
-        <Card className="relative overflow-visible">
-          <div className="absolute inset-0 bg-flow-gradient opacity-30 rounded-lg" />
-          <CardContent className="py-12 text-center relative z-10">
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2 text-muted-foreground">Loading documents...</span>
+        </div>
+      ) : filteredDocs.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center">
             <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-lg font-medium mb-2">No Documents Found</p>
-            <p className="text-muted-foreground">Upload W-2s, 1099s, and other tax documents</p>
+            <h3 className="text-lg font-medium">No documents found</h3>
+            <p className="text-muted-foreground mt-1">
+              {searchQuery || selectedClient !== "all" || documentType !== "all" 
+                ? "Try adjusting your filters" 
+                : "No documents have been uploaded yet"}
+            </p>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4">
-          {filteredDocs.map((doc, index) => (
-            <Card 
-              key={doc.id} 
-              className="hover-lift overflow-visible relative animate-fade-in"
-              style={{ animationDelay: `${index * 75}ms` }}
-              data-testid={`document-card-${doc.id}`}
-            >
-              <div className="absolute inset-0 bg-flow-gradient opacity-30 rounded-lg" />
-              <CardHeader className="relative z-10">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge variant="outline">
-                        {getDocumentTypeLabel(doc.documentType)}
-                      </Badge>
-                      <Badge variant="secondary">v{doc.version}</Badge>
-                      <Badge variant={doc.uploadedBy === "Client" ? "default" : "outline"}>
-                        {doc.uploadedBy}
-                      </Badge>
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Showing {filteredDocs.length.toLocaleString()} of {documents?.length?.toLocaleString() || 0} documents
+          </p>
+          <div className="grid gap-3">
+            {filteredDocs.slice(0, 100).map((doc) => (
+              <Card key={doc.id} className="hover-elevate" data-testid={`card-document-${doc.id}`}>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-4">
+                    <div className="h-10 w-10 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <FileText className="h-5 w-5 text-primary" />
                     </div>
-                    <CardTitle className="text-xl flex items-center gap-2">
-                      <File className="h-5 w-5" />
-                      {doc.documentName}
-                    </CardTitle>
-                    {doc.notes && (
-                      <p className="text-sm text-muted-foreground mt-2">{doc.notes}</p>
-                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{doc.documentName}</p>
+                      <div className="flex items-center gap-3 mt-1 flex-wrap">
+                        <Link href={`/clients/${doc.clientId}`}>
+                          <span className="text-xs text-primary hover:underline flex items-center gap-1">
+                            <User className="h-3 w-3" />
+                            {getClientName(doc.clientId)}
+                          </span>
+                        </Link>
+                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {doc.uploadedAt ? format(new Date(doc.uploadedAt), "MMM d, yyyy") : "Unknown"}
+                        </span>
+                      </div>
+                    </div>
+                    <Badge className={getDocumentTypeBadgeColor(doc.documentType)}>
+                      {getDocumentTypeLabel(doc.documentType)}
+                    </Badge>
+                    <div className="flex items-center gap-1">
+                      {doc.fileUrl && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          asChild
+                          data-testid={`button-view-${doc.id}`}
+                        >
+                          <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="h-4 w-4" />
+                          </a>
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="icon" data-testid={`button-download-${doc.id}`}>
-                      <Download className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      onClick={() => deleteMutation.mutate(doc.id)}
-                      disabled={deleteMutation.isPending}
-                      data-testid={`button-delete-${doc.id}`}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="relative z-10">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span>{format(new Date(doc.uploadedAt || new Date()), "MMM d, yyyy")}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                    <span>{((doc.fileSize || 0) / 1024).toFixed(1)} KB</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    <span>Uploaded by {doc.uploadedBy}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            ))}
+            {filteredDocs.length > 100 && (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Showing first 100 documents. Use filters to narrow down results.
+              </p>
+            )}
+          </div>
         </div>
       )}
     </div>
