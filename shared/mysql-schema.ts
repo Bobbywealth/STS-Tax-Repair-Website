@@ -16,13 +16,23 @@ export const sessions = mysqlTable(
   }),
 );
 
-// User storage table for Replit Auth
+// User storage table for Replit Auth + Client Data
 export const users = mysqlTable("users", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
   email: varchar("email", { length: 255 }).unique(),
   firstName: varchar("first_name", { length: 255 }),
   lastName: varchar("last_name", { length: 255 }),
   profileImageUrl: varchar("profile_image_url", { length: 500 }),
+  phone: varchar("phone", { length: 20 }),
+  address: text("address"),
+  city: varchar("city", { length: 100 }),
+  state: varchar("state", { length: 100 }),
+  zipCode: varchar("zip_code", { length: 20 }),
+  country: varchar("country", { length: 100 }),
+  clientType: varchar("client_type", { length: 50 }),
+  notes: text("notes"),
+  originalSubmissionId: int("original_submission_id"),
+  referralSource: text("referral_source"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
