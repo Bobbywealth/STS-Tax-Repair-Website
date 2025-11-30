@@ -34,6 +34,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(users);
   });
 
+  // Get single user by ID
+  app.get("/api/users/:id", async (req, res) => {
+    try {
+      const user = await storage.getUser(req.params.id);
+      if (!user) {
+        return res.status(404).json({ error: "Client not found" });
+      }
+      res.json(user);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Tax Deadlines
   app.get("/api/deadlines", async (req, res) => {
     const deadlines = await storage.getTaxDeadlines();

@@ -1,4 +1,5 @@
 import { useRoute } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -6,56 +7,62 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RefundStatusTracker } from "@/components/RefundStatusTracker";
 import { DocumentUpload } from "@/components/DocumentUpload";
-import { ArrowLeft, Mail, Phone, Calendar, User, Edit } from "lucide-react";
+import { ArrowLeft, Mail, Phone, Calendar, User, Edit, MapPin, Building, Loader2 } from "lucide-react";
 import { Link } from "wouter";
+import type { User as UserType } from "@shared/mysql-schema";
 
 export default function ClientDetail() {
   const [, params] = useRoute("/clients/:id");
-  const clientId = params?.id || "1";
+  const clientId = params?.id;
 
-  // Mock client data - in real app, would fetch based on clientId
-  const client = {
-    id: clientId,
-    name: "Robert Williams",
-    email: "robert.w@email.com",
-    phone: "(555) 123-4567",
-    status: "Filed" as const,
-    taxYear: "2024",
-    assignedTo: "Sarah Johnson",
-    joinedDate: "Jan 15, 2024",
-  };
+  const { data: client, isLoading, error } = useQuery<UserType>({
+    queryKey: ["/api/users", clientId],
+    enabled: !!clientId,
+  });
 
   const notes = [
     {
       id: "1",
-      author: "Sarah Johnson",
-      content: "Client uploaded all required documents. Ready for review.",
-      timestamp: "Oct 22, 2024 at 2:30 PM",
-    },
-    {
-      id: "2",
-      author: "Michael Chen",
-      content: "Documents verified. Proceeding to file.",
-      timestamp: "Oct 20, 2024 at 11:15 AM",
+      author: "Staff Member",
+      content: "Client profile imported from website form submission.",
+      timestamp: client?.createdAt ? new Date(client.createdAt).toLocaleDateString() : "Unknown",
     },
   ];
 
-  const messages = [
-    {
-      id: "1",
-      sender: "Robert Williams",
-      message: "Hi, I just uploaded my W-2. When should I expect an update?",
-      timestamp: "Oct 22, 2024 at 1:45 PM",
-      isClient: true,
-    },
-    {
-      id: "2",
-      sender: "Sarah Johnson",
-      message: "Thanks for uploading! I'll review your documents within 24 hours and update your status.",
-      timestamp: "Oct 22, 2024 at 2:30 PM",
-      isClient: false,
-    },
-  ];
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (error || !client) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Link href="/clients">
+            <Button variant="ghost" size="icon" data-testid="button-back">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Client Not Found</h1>
+            <p className="text-muted-foreground mt-1">This client could not be found in the database.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const clientName = [client.firstName, client.lastName].filter(Boolean).join(" ") || client.email || "Unknown Client";
+  const initials = clientName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  const location = [client.city, client.state].filter(Boolean).join(", ");
+  const joinedDate = client.createdAt ? new Date(client.createdAt).toLocaleDateString('en-US', { 
+    month: 'short', 
+    day: 'numeric', 
+    year: 'numeric' 
+  }) : "Unknown";
 
   return (
     <div className="space-y-6">
@@ -80,45 +87,67 @@ export default function ClientDetail() {
           <div className="flex flex-col md:flex-row gap-6">
             <Avatar className="h-24 w-24">
               <AvatarFallback className="bg-primary/10 text-primary text-2xl">
-                {client.name.split(' ').map(n => n[0]).join('')}
+                {initials}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1">
               <div className="flex items-start justify-between gap-4 mb-4">
                 <div>
-                  <h2 className="text-2xl font-bold">{client.name}</h2>
-                  <div className="flex items-center gap-2 mt-2">
-                    <Badge variant="secondary" className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
-                      {client.status}
+                  <h2 className="text-2xl font-bold">{clientName}</h2>
+                  <div className="flex items-center gap-2 mt-2 flex-wrap">
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                      New
                     </Badge>
-                    <Badge variant="outline">Tax Year: {client.taxYear}</Badge>
+                    <Badge variant="outline">Tax Year: 2024</Badge>
+                    {client.clientType && (
+                      <Badge variant="outline">{client.clientType}</Badge>
+                    )}
                   </div>
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                 <div className="flex items-center gap-2">
                   <Mail className="h-4 w-4 text-muted-foreground" />
-                  <span>{client.email}</span>
+                  <span>{client.email || "No email"}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span>{client.phone}</span>
+                  <span>{client.phone || "No phone"}</span>
+                </div>
+                {location && (
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <span>{location}</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <span>Joined: {joinedDate}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4 text-muted-foreground" />
-                  <span>Assigned to: <strong>{client.assignedTo}</strong></span>
+                  <span>Assigned to: <strong>Unassigned</strong></span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span>Joined: {client.joinedDate}</span>
-                </div>
+                {client.address && (
+                  <div className="flex items-center gap-2">
+                    <Building className="h-4 w-4 text-muted-foreground" />
+                    <span>{client.address}</span>
+                  </div>
+                )}
               </div>
+              {client.notes && (
+                <div className="mt-4 p-3 bg-muted rounded-md">
+                  <p className="text-sm text-muted-foreground">
+                    <strong>Notes:</strong> {client.notes}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <RefundStatusTracker currentStatus={client.status} />
+      <RefundStatusTracker currentStatus="New" />
 
       <Tabs defaultValue="documents" className="space-y-4">
         <TabsList>
@@ -137,23 +166,9 @@ export default function ClientDetail() {
               <CardTitle className="text-xl">Client Communication</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex ${msg.isClient ? 'justify-start' : 'justify-end'}`}
-                  data-testid={`message-${msg.id}`}
-                >
-                  <Card className={`max-w-[80%] ${msg.isClient ? 'bg-muted' : 'bg-primary text-primary-foreground'}`}>
-                    <CardContent className="p-3">
-                      <p className="text-xs font-medium mb-1">{msg.sender}</p>
-                      <p className="text-sm">{msg.message}</p>
-                      <p className={`text-xs mt-2 ${msg.isClient ? 'text-muted-foreground' : 'text-primary-foreground/70'}`}>
-                        {msg.timestamp}
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
-              ))}
+              <div className="text-center py-8 text-muted-foreground">
+                No messages yet. Start a conversation with {client.firstName || "this client"}.
+              </div>
               <div className="flex gap-2 pt-4 border-t">
                 <input
                   type="text"
@@ -170,7 +185,7 @@ export default function ClientDetail() {
         <TabsContent value="notes">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <CardTitle className="text-xl">Staff Notes (Internal Only)</CardTitle>
                 <Button size="sm" data-testid="button-add-note">Add Note</Button>
               </div>
@@ -186,7 +201,7 @@ export default function ClientDetail() {
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
-                        <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
                           <span className="text-sm font-medium">{note.author}</span>
                           <span className="text-xs text-muted-foreground">{note.timestamp}</span>
                         </div>
