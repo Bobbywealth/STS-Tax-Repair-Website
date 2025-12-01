@@ -428,7 +428,7 @@ export default function ClientLogin() {
                       placeholder="your@email.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-gray-500 input-glow transition-all duration-300"
+                      className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/60 input-glow transition-all duration-300"
                       required
                       data-testid="input-email"
                     />
@@ -444,7 +444,7 @@ export default function ClientLogin() {
                       placeholder="Enter your password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-gray-500 input-glow transition-all duration-300"
+                      className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/60 input-glow transition-all duration-300"
                       required
                       data-testid="input-password"
                     />
