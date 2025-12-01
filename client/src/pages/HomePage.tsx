@@ -1016,6 +1016,75 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* About Us - Agents Section */}
+      <section className="py-20 bg-white" data-testid="section-about-agents">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Left - Images */}
+            <motion.div
+              initial={{ opacity: 0, x: -40 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+              className="flex flex-col gap-6"
+            >
+              <div className="rounded-2xl overflow-hidden shadow-xl">
+                <img 
+                  src="https://www.ststaxrepair.net/wp-content/uploads/2024/12/c13f606f-7eac-4a87-8ddb-98f54020d6d1-6750cccc01f1b.webp"
+                  alt="STS Tax Repair Agents"
+                  className="w-full h-auto object-cover"
+                />
+              </div>
+              <div className="flex items-center gap-4 text-sts-primary font-bold text-lg">
+                <span>Minimizing Liabilities, Maximizing Deductions.</span>
+                <motion.div
+                  animate={{ x: [0, 5, 0] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </motion.div>
+              </div>
+              <Button 
+                variant="ghost"
+                className="w-fit text-sts-primary font-bold hover:text-sts-primary hover:bg-sts-primary/5"
+                onClick={() => document.getElementById("services")?.scrollIntoView({ behavior: "smooth" })}
+                data-testid="button-our-agents"
+              >
+                Our Agents →
+              </Button>
+            </motion.div>
+
+            {/* Right - Content */}
+            <motion.div
+              initial={{ opacity: 0, x: 40 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              <Badge className="bg-sts-primary/10 text-sts-primary border-0 mb-4 text-sm font-semibold">
+                ABOUT US
+              </Badge>
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900 mb-6 leading-tight">
+                Your Maximum Refund,
+                <br />
+                <span className="text-sts-primary">Our Expert Promise</span>
+              </h2>
+              <p className="text-lg text-gray-700 leading-relaxed mb-8">
+                At STS Tax Repair, we're driven by a simple yet powerful goal: to empower you with every dollar you deserve. Through meticulous attention to detail and an in-depth mastery of the tax code, our mission is crystal clear. We're committed to maximizing your financial returns by asking the right questions, uncovering often overlooked credits and deductions, and ensuring that your hard work translates into the maximum refund possible.
+              </p>
+              <Button 
+                size="lg"
+                className="bg-sts-gold hover:bg-sts-gold/90 text-sts-dark font-bold"
+                onClick={() => document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" })}
+                data-testid="button-about-contact"
+              >
+                Contact Us
+              </Button>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
       {/* Stats Section */}
       <section className="py-20 bg-gradient-to-b from-white to-gray-50" data-testid="section-stats">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
