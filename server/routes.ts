@@ -12,7 +12,7 @@ import {
   insertDocumentRequestTemplateSchema
 } from "@shared/mysql-schema";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
-import { testPerfexConnection, getPerfexTables, queryPerfex } from "./perfex-db";
+import { testPerfexConnection, getPerfexTables, queryPerfex, describePerfexTable } from "./perfex-db";
 import { mysqlPool } from "./mysql-db";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -209,22 +209,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(204).send();
   });
 
-  // Tasks
+  // Tasks - Pull from Perfex CRM tbltasks table
   app.get("/api/tasks", async (req, res) => {
-    const { assignedTo, status } = req.query;
-    
-    if (assignedTo) {
-      const tasks = await storage.getTasksByAssignee(assignedTo as string);
-      return res.json(tasks);
+    try {
+      const tasks = await queryPerfex(`
+        SELECT 
+          t.id,
+          t.name as title,
+          t.description,
+          t.rel_id as clientId,
+          c.company as clientName,
+          ta.staffid as assignedToId,
+          CONCAT(s.firstname, ' ', s.lastname) as assignedTo,
+          t.duedate as dueDate,
+          CASE 
+            WHEN t.priority = 1 THEN 'low'
+            WHEN t.priority = 2 THEN 'medium'
+            WHEN t.priority = 3 THEN 'high'
+            ELSE 'medium'
+          END as priority,
+          CASE 
+            WHEN t.status = 1 THEN 'todo'
+            WHEN t.status = 2 THEN 'in-progress'
+            WHEN t.status = 3 THEN 'in-progress'
+            WHEN t.status = 4 THEN 'in-progress'
+            WHEN t.status = 5 THEN 'done'
+            ELSE 'todo'
+          END as status,
+          t.dateadded as createdAt
+        FROM tbltasks t
+        LEFT JOIN tbltask_assigned ta ON t.id = ta.taskid
+        LEFT JOIN tblstaff s ON ta.staffid = s.staffid
+        LEFT JOIN tblclients c ON t.rel_id = c.userid AND t.rel_type = 'customer'
+        ORDER BY t.dateadded DESC
+        LIMIT 100
+      `);
+      res.json(tasks);
+    } catch (error: any) {
+      console.error('Error fetching Perfex tasks:', error);
+      res.json([]);
     }
-    
-    if (status) {
-      const tasks = await storage.getTasksByStatus(status as string);
-      return res.json(tasks);
-    }
-    
-    const tasks = await storage.getTasks();
-    res.json(tasks);
   });
 
   app.post("/api/tasks", async (req, res) => {
@@ -256,18 +280,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(204).send();
   });
 
-  // Staff Members
+  // Staff Members - Pull from Perfex CRM tblstaff table
   app.get("/api/staff", async (req, res) => {
-    const staff = await storage.getStaffMembers();
-    res.json(staff);
+    try {
+      const staff = await queryPerfex(`
+        SELECT 
+          s.staffid as id,
+          CONCAT(s.firstname, ' ', s.lastname) as name,
+          s.email,
+          COALESCE(r.name, 'Staff') as role,
+          s.active as isActive,
+          s.datecreated as createdAt
+        FROM tblstaff s
+        LEFT JOIN tblroles r ON s.role = r.roleid
+        WHERE s.active = 1
+        ORDER BY s.firstname, s.lastname
+      `);
+      res.json(staff);
+    } catch (error: any) {
+      console.error('Error fetching Perfex staff:', error);
+      res.json([]);
+    }
   });
 
   app.get("/api/staff/:id", async (req, res) => {
-    const member = await storage.getStaffMember(req.params.id);
-    if (!member) {
-      return res.status(404).json({ error: "Staff member not found" });
+    try {
+      const [member] = await queryPerfex(`
+        SELECT 
+          s.staffid as id,
+          CONCAT(s.firstname, ' ', s.lastname) as name,
+          s.email,
+          COALESCE(r.name, 'Staff') as role,
+          s.active as isActive,
+          s.datecreated as createdAt
+        FROM tblstaff s
+        LEFT JOIN tblroles r ON s.role = r.roleid
+        WHERE s.staffid = ?
+      `, [req.params.id]);
+      
+      if (!member) {
+        return res.status(404).json({ error: "Staff member not found" });
+      }
+      res.json(member);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
     }
-    res.json(member);
   });
 
   app.post("/api/staff", async (req, res) => {
@@ -568,6 +625,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error: any) {
       res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Describe a Perfex CRM table schema
+  app.get("/api/admin/perfex/describe/:table", async (req, res) => {
+    try {
+      const schema = await describePerfexTable(req.params.table);
+      res.json(schema);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
     }
   });
 

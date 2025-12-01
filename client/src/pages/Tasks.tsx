@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -20,11 +21,33 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, CheckCircle2, Clock, ListTodo } from "lucide-react";
 import { format } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { Task, StaffMember } from "@shared/mysql-schema";
+
+interface PerfexTask {
+  id: number;
+  title: string;
+  description: string | null;
+  clientId: number | null;
+  clientName: string | null;
+  assignedToId: number | null;
+  assignedTo: string | null;
+  dueDate: string | null;
+  priority: string | null;
+  status: string;
+  createdAt: string;
+}
+
+interface PerfexStaff {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  isActive: number;
+  createdAt: string;
+}
 
 export default function Tasks() {
   const { toast } = useToast();
@@ -35,11 +58,11 @@ export default function Tasks() {
   const [priority, setPriority] = useState("medium");
   const [dueDate, setDueDate] = useState("");
 
-  const { data: tasks, isLoading } = useQuery<Task[]>({
+  const { data: tasks, isLoading } = useQuery<PerfexTask[]>({
     queryKey: ['/api/tasks'],
   });
 
-  const { data: staff } = useQuery<StaffMember[]>({
+  const { data: staff } = useQuery<PerfexStaff[]>({
     queryKey: ['/api/staff'],
   });
 
@@ -115,15 +138,27 @@ export default function Tasks() {
     updateMutation.mutate({ id: taskId, status: newStatus });
   };
 
+  const mapPriority = (priority: string | null): "High" | "Medium" | "Low" => {
+    if (!priority) return "Medium";
+    const p = priority.toLowerCase();
+    if (p === "high" || p === "urgent" || p === "1") return "High";
+    if (p === "low" || p === "3") return "Low";
+    return "Medium";
+  };
+
   const formattedTasks = tasks?.map(task => ({
-    id: task.id,
-    title: task.title,
+    id: String(task.id),
+    title: task.title || "Untitled Task",
     description: task.description || "",
-    assignedTo: task.assignedTo,
+    assignedTo: task.assignedTo || "Unassigned",
     dueDate: task.dueDate ? format(new Date(task.dueDate), "MMM d") : "No date",
-    priority: (task.priority || "medium") as "High" | "Medium" | "Low",
+    priority: mapPriority(task.priority),
     status: (task.status || "todo") as "todo" | "in-progress" | "done",
   })) || [];
+
+  const todoCount = formattedTasks.filter(t => t.status === "todo").length;
+  const inProgressCount = formattedTasks.filter(t => t.status === "in-progress").length;
+  const doneCount = formattedTasks.filter(t => t.status === "done").length;
 
   if (isLoading) {
     return (
@@ -150,7 +185,68 @@ export default function Tasks() {
         </Button>
       </div>
 
-      <TaskBoard tasks={formattedTasks} onTaskMove={handleTaskMove} />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900">
+                <ListTodo className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">To Do</p>
+                <p className="text-2xl font-bold" data-testid="stat-todo">{todoCount}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-yellow-100 dark:bg-yellow-900">
+                <Clock className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">In Progress</p>
+                <p className="text-2xl font-bold" data-testid="stat-in-progress">{inProgressCount}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900">
+                <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Completed</p>
+                <p className="text-2xl font-bold" data-testid="stat-done">{doneCount}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {formattedTasks.length === 0 ? (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <ListTodo className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium mb-2">No Tasks Found</h3>
+            <p className="text-muted-foreground mb-4">
+              There are no tasks in the Perfex CRM database yet, or the tasks table is empty.
+            </p>
+            <Button 
+              onClick={() => setShowCreateDialog(true)}
+              className="gradient-primary border-0"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Your First Task
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <TaskBoard tasks={formattedTasks} onTaskMove={handleTaskMove} />
+      )}
 
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
         <DialogContent className="sm:max-w-[500px]">
