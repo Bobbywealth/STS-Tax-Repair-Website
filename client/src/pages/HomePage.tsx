@@ -617,18 +617,6 @@ export default function HomePage() {
             <div className="grid lg:grid-cols-5 gap-8 lg:gap-16 items-center w-full">
               {/* Hero Content */}
               <div className="lg:col-span-3 space-y-6 lg:space-y-8">
-              <motion.div 
-                className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 backdrop-blur-md rounded-full border border-white/10"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-              >
-                <Sparkles className="w-4 h-4 text-sts-gold" />
-                <span className="text-white/80 text-sm font-medium">
-                  Trusted by 50,000+ Clients Across All 50 States
-                </span>
-              </motion.div>
-              
               <motion.h1 
                 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black text-white leading-[1.1] tracking-tight"
                 initial={{ opacity: 0, y: 30 }}
