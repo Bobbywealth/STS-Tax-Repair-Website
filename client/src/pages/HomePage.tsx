@@ -1075,34 +1075,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-20 bg-gradient-to-b from-white to-gray-50" data-testid="section-stats">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
-            className="grid grid-cols-2 lg:grid-cols-4 gap-6"
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-            variants={staggerContainer}
-          >
-            {stats.map((stat, index) => (
-              <motion.div 
-                key={stat.label}
-                variants={fadeInUp}
-                className="relative group"
-              >
-                <div className="bg-white rounded-2xl p-6 text-center shadow-lg hover:shadow-xl transition-shadow border border-gray-100">
-                  <div className="text-4xl sm:text-5xl font-black text-sts-primary mb-2">
-                    <AnimatedCounter value={stat.value} prefix={stat.prefix} suffix={stat.suffix} />
-                  </div>
-                  <div className="text-gray-600 font-medium text-sm">{stat.label}</div>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
       {/* Services Section */}
       <section id="services" className="py-24 bg-gray-50" data-testid="section-services">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
