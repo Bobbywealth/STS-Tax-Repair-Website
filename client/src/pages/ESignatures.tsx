@@ -20,6 +20,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { 
   FileSignature, 
   User, 
@@ -30,8 +43,12 @@ import {
   CheckCircle, 
   Clock,
   XCircle,
-  Trash2
+  Trash2,
+  ChevronsUpDown,
+  Check,
+  Search
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import type { ESignature, User as UserType } from "@shared/schema";
 import { SignaturePad, type SignaturePadRef } from "@/components/SignaturePad";
@@ -51,6 +68,8 @@ export default function ESignatures() {
   const [selectedSignature, setSelectedSignature] = useState<ESignature | null>(null);
   const [showSignDialog, setShowSignDialog] = useState(false);
   const [showRequestDialog, setShowRequestDialog] = useState(false);
+  const [clientSearchOpen, setClientSearchOpen] = useState(false);
+  const [clientSearchQuery, setClientSearchQuery] = useState("");
   const signaturePadRef = useRef<SignaturePadRef>(null);
 
   // Form state for requesting signature
@@ -157,7 +176,17 @@ export default function ESignatures() {
     setDocumentName("");
     setDocumentType("");
     setDocumentUrl("");
+    setClientSearchQuery("");
   };
+
+  // Filter users based on search query
+  const filteredUsers = users?.filter((user) => {
+    if (!clientSearchQuery) return true;
+    const searchLower = clientSearchQuery.toLowerCase();
+    const fullName = `${user.firstName || ''} ${user.lastName || ''}`.toLowerCase();
+    const email = (user.email || '').toLowerCase();
+    return fullName.includes(searchLower) || email.includes(searchLower);
+  }).slice(0, 50); // Limit to 50 results for performance
 
   const handleClientSelect = (userId: string) => {
     setSelectedClientId(userId);
@@ -463,21 +492,69 @@ export default function ESignatures() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="client">Select Client</Label>
-              <Select value={selectedClientId} onValueChange={handleClientSelect}>
-                <SelectTrigger data-testid="select-client">
-                  <SelectValue placeholder="Choose a client..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {users?.map((user) => {
-                    const displayName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Client';
-                    return (
-                      <SelectItem key={user.id} value={user.id}>
-                        {displayName} ({user.email || 'No email'})
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
+              <Popover open={clientSearchOpen} onOpenChange={setClientSearchOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={clientSearchOpen}
+                    className="w-full justify-between font-normal"
+                    data-testid="select-client"
+                  >
+                    {selectedClientId ? clientName : "Search for a client..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[400px] p-0" align="start">
+                  <Command shouldFilter={false}>
+                    <CommandInput 
+                      placeholder="Type name or email to search..." 
+                      value={clientSearchQuery}
+                      onValueChange={setClientSearchQuery}
+                      data-testid="input-client-search"
+                    />
+                    <CommandList>
+                      <CommandEmpty>
+                        {clientSearchQuery.length < 2 
+                          ? "Type at least 2 characters to search..."
+                          : "No clients found."}
+                      </CommandEmpty>
+                      <CommandGroup heading={`${filteredUsers?.length || 0} clients found`}>
+                        {filteredUsers?.map((user) => {
+                          const displayName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Client';
+                          return (
+                            <CommandItem
+                              key={user.id}
+                              value={user.id}
+                              onSelect={() => {
+                                handleClientSelect(user.id);
+                                setClientSearchOpen(false);
+                              }}
+                              className="cursor-pointer"
+                              data-testid={`client-option-${user.id}`}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  selectedClientId === user.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              <div className="flex flex-col">
+                                <span className="font-medium">{displayName}</span>
+                                <span className="text-xs text-muted-foreground">{user.email || 'No email'}</span>
+                              </div>
+                            </CommandItem>
+                          );
+                        })}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              <p className="text-xs text-muted-foreground">
+                <Search className="inline h-3 w-3 mr-1" />
+                Start typing to search {users?.length || 0} clients
+              </p>
             </div>
 
             <div className="space-y-2">
