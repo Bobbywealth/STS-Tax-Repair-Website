@@ -1283,12 +1283,13 @@ export default function HomePage() {
       {/* About Section */}
       <section id="about" className="py-24 bg-white" data-testid="section-about">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
+          <div className="max-w-4xl mx-auto">
             <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              whileInView={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.3 }}
+              className="text-center mb-12"
             >
               <Badge className="bg-sts-primary/10 text-sts-primary border-0 mb-4">
                 About Us
@@ -1296,81 +1297,53 @@ export default function HomePage() {
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900 mb-6">
                 Minimizing Liabilities, <span className="text-sts-primary">Maximizing Deductions</span>
               </h2>
-              <p className="text-gray-600 text-lg mb-8 leading-relaxed">
+              <p className="text-gray-600 text-lg leading-relaxed">
                 For over 15 years, STS TaxRepair has been helping individuals and businesses navigate the complex world of taxation. Our commitment to excellence has earned us the trust of over 50,000 clients across all 50 states.
               </p>
-              
-              <div className="space-y-4">
-                {[
-                  { icon: Target, title: "Maximum Refund Guarantee", desc: "We find every deduction and credit you're entitled to" },
-                  { icon: Shield, title: "Free Audit Protection", desc: "We stand behind our work with full IRS representation" },
-                  { icon: Clock, title: "Fast Turnaround", desc: "Most returns completed within 24-48 hours" },
-                  { icon: HeadphonesIcon, title: "Year-Round Support", desc: "Questions? We're here for you 365 days a year" }
-                ].map((item, index) => (
-                  <motion.div 
-                    key={item.title} 
-                    className="flex gap-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
-                    initial={{ opacity: 0, x: -20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: index * 0.1 }}
-                  >
-                    <div className="w-12 h-12 rounded-xl bg-sts-gold/20 flex items-center justify-center flex-shrink-0">
-                      <item.icon className="w-6 h-6 text-sts-gold" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-gray-900">{item.title}</h4>
-                      <p className="text-gray-600 text-sm">{item.desc}</p>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
             </motion.div>
+              
+            <div className="grid sm:grid-cols-2 gap-4">
+              {[
+                { icon: Target, title: "Maximum Refund Guarantee", desc: "We find every deduction and credit you're entitled to" },
+                { icon: Shield, title: "Free Audit Protection", desc: "We stand behind our work with full IRS representation" },
+                { icon: Clock, title: "Fast Turnaround", desc: "Most returns completed within 24-48 hours" },
+                { icon: HeadphonesIcon, title: "Year-Round Support", desc: "Questions? We're here for you 365 days a year" }
+              ].map((item, index) => (
+                <motion.div 
+                  key={item.title} 
+                  className="flex gap-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <div className="w-12 h-12 rounded-xl bg-sts-gold/20 flex items-center justify-center flex-shrink-0">
+                    <item.icon className="w-6 h-6 text-sts-gold" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-gray-900">{item.title}</h4>
+                    <p className="text-gray-600 text-sm">{item.desc}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
 
-            <motion.div
-              className="relative"
-              initial={{ opacity: 0, x: 50 }}
-              whileInView={{ opacity: 1, x: 0 }}
+            <motion.div 
+              className="mt-10 text-center"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.3 }}
+              transition={{ delay: 0.3 }}
             >
-              <div className="relative grid gap-4">
-                {/* Owner Photo */}
-                <div className="relative">
-                  <div className="absolute -inset-2 bg-gradient-to-br from-sts-primary/30 to-sts-gold/30 rounded-2xl blur-xl" />
-                  <img 
-                    src="https://www.ststaxrepair.net/wp-content/uploads/2023/12/owner.png"
-                    alt="STS Tax Repair Owner"
-                    className="relative w-full max-w-sm mx-auto rounded-2xl shadow-2xl"
-                  />
-                </div>
-                
-                {/* Team Photo */}
-                <div className="relative mt-4">
-                  <div className="absolute -inset-2 bg-gradient-to-br from-sts-gold/30 to-sts-primary/30 rounded-2xl blur-xl" />
-                  <img 
-                    src="https://www.ststaxrepair.net/wp-content/uploads/2023/12/transparent-1-658492783c2db.webp"
-                    alt="STS Tax Repair Team"
-                    className="relative w-full rounded-2xl shadow-2xl"
-                  />
-                </div>
-
-                {/* CTA Card Overlay */}
-                <div className="absolute bottom-4 left-4 right-4 bg-gradient-to-br from-sts-dark/95 to-sts-primary/95 backdrop-blur-lg rounded-xl p-6 text-white shadow-2xl">
-                  <h3 className="text-xl font-bold mb-2">Ready to Get Started?</h3>
-                  <p className="text-white/70 text-sm mb-4">
-                    Join thousands of satisfied clients who trust us with their taxes.
-                  </p>
-                  <Button 
-                    className="w-full bg-gradient-to-r from-sts-gold to-yellow-400 hover:from-sts-gold hover:to-yellow-500 text-sts-dark font-bold h-10 shadow-lg"
-                    onClick={() => navigate("/client-login")}
-                    data-testid="button-get-started"
-                  >
-                    Get Started Today
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                </div>
-              </div>
+              <Button 
+                size="lg"
+                className="bg-gradient-to-r from-sts-gold to-yellow-400 hover:from-sts-gold hover:to-yellow-500 text-sts-dark font-bold shadow-lg"
+                onClick={() => navigate("/client-login")}
+                data-testid="button-get-started"
+              >
+                Get Started Today
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
             </motion.div>
           </div>
         </div>
