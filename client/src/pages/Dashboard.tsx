@@ -100,6 +100,11 @@ interface Task {
 }
 
 export default function Dashboard() {
+  // Get current user for personalized greeting
+  const { data: currentUser } = useQuery<User>({
+    queryKey: ["/api/auth/user"],
+  });
+
   const { data: clients, isLoading: clientsLoading } = useQuery<User[]>({
     queryKey: ["/api/users"],
   });
@@ -142,9 +147,9 @@ export default function Dashboard() {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 17) return "Good afternoon";
-    return "Good evening";
+    const firstName = currentUser?.firstName || "";
+    const timeGreeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+    return firstName ? `${timeGreeting}, ${firstName}` : timeGreeting;
   };
 
   return (
