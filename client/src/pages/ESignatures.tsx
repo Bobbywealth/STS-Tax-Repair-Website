@@ -682,8 +682,8 @@ export default function ESignatures() {
                 <DialogDescription className="flex items-center gap-2">
                   Fill in the required fields and sign to authorize e-filing
                   <Button
-                    variant="link"
-                    className="h-auto p-0 text-primary"
+                    variant="ghost"
+                    className="h-auto p-0 text-primary hover:underline"
                     onClick={() => window.open("https://www.irs.gov/pub/irs-pdf/f8879.pdf", '_blank')}
                   >
                     View Official IRS Form
@@ -786,7 +786,7 @@ export default function ESignatures() {
                   </div>
                   <div>
                     <span className="text-muted-foreground">Status:</span>
-                    <p className="font-medium">{getStatusBadge(selectedSignature.status)}</p>
+                    <div className="font-medium mt-1">{getStatusBadge(selectedSignature.status)}</div>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Signed At:</span>
