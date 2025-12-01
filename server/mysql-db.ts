@@ -201,6 +201,50 @@ export async function runMySQLMigrations(): Promise<void> {
       await seedDefaultRolePermissions(connection);
     }
     
+    // Create tax_filings table for per-year tax filing tracking
+    const [taxFilingsTable] = await connection.query(
+      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'tax_filings'`,
+      [dbName]
+    );
+    
+    if (Array.isArray(taxFilingsTable) && taxFilingsTable.length === 0) {
+      console.log('Creating tax_filings table...');
+      await connection.query(`
+        CREATE TABLE tax_filings (
+          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+          client_id VARCHAR(36) NOT NULL,
+          tax_year INT NOT NULL,
+          status ENUM('new', 'documents_pending', 'review', 'filed', 'accepted', 'approved', 'paid') DEFAULT 'new',
+          documents_received_at TIMESTAMP NULL,
+          submitted_at TIMESTAMP NULL,
+          accepted_at TIMESTAMP NULL,
+          approved_at TIMESTAMP NULL,
+          funded_at TIMESTAMP NULL,
+          estimated_refund DECIMAL(12,2) NULL,
+          actual_refund DECIMAL(12,2) NULL,
+          service_fee DECIMAL(12,2) NULL,
+          fee_paid BOOLEAN DEFAULT FALSE,
+          preparer_id VARCHAR(36) NULL,
+          preparer_name VARCHAR(255) NULL,
+          office_location VARCHAR(255) NULL,
+          filing_type ENUM('individual', 'joint', 'business') DEFAULT 'individual',
+          federal_status VARCHAR(50) NULL,
+          state_status VARCHAR(50) NULL,
+          states_filed TEXT NULL,
+          notes TEXT NULL,
+          status_history JSON NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_tax_filings_client (client_id),
+          INDEX idx_tax_filings_year (tax_year),
+          INDEX idx_tax_filings_status (status),
+          UNIQUE KEY unique_client_year (client_id, tax_year)
+        )
+      `);
+      console.log('tax_filings table created successfully!');
+    }
+    
     connection.release();
   } catch (error) {
     console.error('MySQL migration error:', error);
