@@ -1242,9 +1242,9 @@ export default function HomePage() {
             >
               <div className="absolute -inset-4 bg-gradient-to-br from-sts-gold/20 to-sts-primary/20 rounded-3xl blur-2xl opacity-50" />
               <img 
-                src="https://www.ststaxrepair.net/wp-content/uploads/2023/12/transparent-1-658492783c2db.webp"
+                src="https://www.ststaxrepair.net/wp-content/uploads/2024/12/a-1-6750cc8c5d05a.webp"
                 alt="STS Tax Team"
-                className="relative w-full max-w-lg mx-auto object-contain drop-shadow-2xl"
+                className="relative w-full h-auto object-cover rounded-3xl drop-shadow-2xl"
               />
             </motion.div>
           </div>
