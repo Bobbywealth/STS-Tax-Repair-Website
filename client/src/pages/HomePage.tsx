@@ -440,13 +440,13 @@ export default function HomePage() {
         data-testid="header-main"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-20">
             {/* Real Logo */}
             <Link href="/" className="flex items-center gap-3 group" data-testid="link-home-logo">
               <img 
                 src={STS_LOGO_URL} 
                 alt="STS TaxRepair" 
-                className="h-10 w-auto object-contain"
+                className="h-14 w-auto object-contain"
               />
             </Link>
 
@@ -471,9 +471,9 @@ export default function HomePage() {
             {/* CTA Buttons */}
             <div className="hidden lg:flex items-center gap-3">
               <Button 
-                variant="ghost"
+                variant="outline"
                 onClick={() => navigate("/client-login")}
-                className="font-semibold text-gray-700 hover:text-sts-primary hover:bg-sts-primary/5"
+                className="font-bold border-2 border-sts-primary text-sts-primary hover:bg-sts-primary hover:text-white"
                 data-testid="button-login"
               >
                 Login
