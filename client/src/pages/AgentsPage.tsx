@@ -88,6 +88,14 @@ const agents = [
     phone: "407-485-7998",
     email: "lexi.financial97@gmail.com",
     location: "Florida"
+  },
+  {
+    name: "I'Esha Johnson",
+    title: "Service Support",
+    image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/IEsha-Johnson.webp",
+    phone: "754-444-1482",
+    email: "Ij20taxpro@gmail.com",
+    location: "Houston, TX"
   }
 ];
 

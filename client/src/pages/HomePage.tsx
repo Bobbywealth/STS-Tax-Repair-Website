@@ -341,6 +341,14 @@ export default function HomePage() {
       email: "lexi.financial97@gmail.com",
       address: "Florida, USA",
       image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop&crop=face"
+    },
+    {
+      name: "I'Esha Johnson",
+      role: "Service Support",
+      phone: "754-444-1482",
+      email: "Ij20taxpro@gmail.com",
+      address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
+      image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/IEsha-Johnson.webp"
     }
   ];
 
