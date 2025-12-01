@@ -880,7 +880,7 @@ export default function HomePage() {
           </div>
 
           <motion.div 
-            className="py-8 lg:py-16 lg:pt-32"
+            className="py-8 lg:py-16 lg:pt-40"
             style={{ opacity: heroOpacity, y: heroY }}
           >
             <div className="w-full flex justify-center">
