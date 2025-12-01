@@ -11,19 +11,11 @@ const STS_LOGO_URL = "https://www.ststaxrepair.net/wp-content/uploads/2024/12/ST
 const agents = [
   {
     name: "Stephedena Cherfils",
-    title: "CEO & Founder",
-    image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/stephedena-cherfils.webp",
-    phone: "(954) 995-9702",
-    email: "info@ststaxrepair.org",
-    location: "Fort Lauderdale, FL"
-  },
-  {
-    name: "Tax Professional",
-    title: "Senior Tax Preparer",
-    image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/c13f606f-7eac-4a87-8ddb-98f54020d6d1-6750cccc01f1b.webp",
-    phone: "(954) 995-9702",
-    email: "info@ststaxrepair.org",
-    location: "Fort Lauderdale, FL"
+    title: "Service Support",
+    image: "https://www.ststaxrepair.net/wp-content/uploads/2025/11/WhatsApp-Image-2025-11-20-at-17.02.38-scaled.jpeg",
+    phone: "954-534-5227",
+    email: "Info.ststax@gmail.com",
+    location: "Houston, TX"
   }
 ];
 
