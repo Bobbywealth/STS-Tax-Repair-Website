@@ -25,22 +25,39 @@ export const users = mysqlTable("users", {
   email: varchar("email", { length: 255 }).unique(),
   firstName: varchar("first_name", { length: 255 }),
   lastName: varchar("last_name", { length: 255 }),
+  fullName: varchar("full_name", { length: 255 }),
   profileImageUrl: varchar("profile_image_url", { length: 500 }),
   phone: varchar("phone", { length: 20 }),
+  phoneSecondary: varchar("phone_secondary", { length: 20 }),
   address: text("address"),
   city: varchar("city", { length: 100 }),
   state: varchar("state", { length: 100 }),
   zipCode: varchar("zip_code", { length: 20 }),
-  country: varchar("country", { length: 100 }),
+  country: varchar("country", { length: 100 }).default("United States"),
   clientType: varchar("client_type", { length: 50 }),
   notes: text("notes"),
   originalSubmissionId: int("original_submission_id"),
   referralSource: text("referral_source"),
+  referredById: varchar("referred_by_id", { length: 36 }),
   role: varchar("role", { length: 20 }).default("client").$type<UserRole>(),
   isActive: boolean("is_active").default(true),
   lastLoginAt: timestamp("last_login_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+  // Authentication
+  passwordHash: varchar("password_hash", { length: 255 }),
+  // Additional client info
+  birthday: timestamp("birthday"),
+  occupation: varchar("occupation", { length: 100 }),
+  // Sensitive data - stored encrypted (AES-256) - only last 4 of SSN stored separately for display
+  ssnLast4: varchar("ssn_last4", { length: 4 }),
+  ssnEncrypted: text("ssn_encrypted"),
+  irsUsernameEncrypted: text("irs_username_encrypted"),
+  irsPasswordEncrypted: text("irs_password_encrypted"),
+  // Bank info - stored encrypted
+  directDepositBank: varchar("direct_deposit_bank", { length: 255 }),
+  bankRoutingEncrypted: text("bank_routing_encrypted"),
+  bankAccountEncrypted: text("bank_account_encrypted"),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({
