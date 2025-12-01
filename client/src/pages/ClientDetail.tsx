@@ -97,13 +97,24 @@ export default function ClientDetail() {
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ filingId, status }: { filingId: string; status: FilingStatus }) => {
-      return apiRequest("PATCH", `/api/tax-filings/${filingId}/status`, { status });
+      console.log("Updating filing status:", filingId, status);
+      const response = await apiRequest("PATCH", `/api/tax-filings/${filingId}/status`, { status });
+      console.log("Status update response:", response.status);
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/tax-filings/client", clientId] });
       toast({
         title: "Status Updated",
         description: "Filing status has been updated.",
+      });
+    },
+    onError: (error: any) => {
+      console.error("Status update error:", error);
+      toast({
+        title: "Error Updating Status",
+        description: error.message || "Failed to update filing status",
+        variant: "destructive",
       });
     },
   });
