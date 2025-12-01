@@ -568,45 +568,231 @@ export default function HomePage() {
           }}
         />
         
-        {/* Mobile/Tablet Background with Effects */}
-        <div className="absolute inset-0 bg-gradient-to-b from-sts-dark via-[#0d2818] to-sts-dark lg:hidden">
-          {/* Animated Glow Orbs for Mobile */}
-          <div className="absolute top-20 -left-20 w-64 h-64 bg-sts-primary/20 rounded-full blur-[80px]" />
-          <div className="absolute top-1/3 -right-20 w-72 h-72 bg-sts-gold/15 rounded-full blur-[100px]" />
-          <div className="absolute bottom-40 left-10 w-48 h-48 bg-sts-primary/15 rounded-full blur-[60px]" />
+        {/* Mobile/Tablet Futuristic Background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0a1f14] via-sts-dark to-[#0a1f14] lg:hidden overflow-hidden">
+          {/* Animated Mesh Gradients */}
+          <motion.div 
+            className="absolute top-0 left-0 w-full h-full opacity-40"
+            animate={{ 
+              background: [
+                'radial-gradient(ellipse at 20% 20%, rgba(76, 175, 80, 0.3) 0%, transparent 50%)',
+                'radial-gradient(ellipse at 80% 80%, rgba(76, 175, 80, 0.3) 0%, transparent 50%)',
+                'radial-gradient(ellipse at 20% 20%, rgba(76, 175, 80, 0.3) 0%, transparent 50%)'
+              ]
+            }}
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+          />
+          <motion.div 
+            className="absolute top-0 left-0 w-full h-full opacity-30"
+            animate={{ 
+              background: [
+                'radial-gradient(ellipse at 80% 30%, rgba(253, 185, 19, 0.25) 0%, transparent 40%)',
+                'radial-gradient(ellipse at 20% 70%, rgba(253, 185, 19, 0.25) 0%, transparent 40%)',
+                'radial-gradient(ellipse at 80% 30%, rgba(253, 185, 19, 0.25) 0%, transparent 40%)'
+              ]
+            }}
+            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+          />
+          
+          {/* Floating Particles */}
+          {[...Array(12)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute rounded-full"
+              style={{
+                width: Math.random() * 6 + 2,
+                height: Math.random() * 6 + 2,
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                background: i % 2 === 0 ? 'rgba(253, 185, 19, 0.6)' : 'rgba(76, 175, 80, 0.5)',
+              }}
+              animate={{
+                y: [0, -30, 0],
+                x: [0, Math.random() * 20 - 10, 0],
+                opacity: [0.3, 0.8, 0.3],
+                scale: [1, 1.2, 1],
+              }}
+              transition={{
+                duration: 3 + Math.random() * 2,
+                repeat: Infinity,
+                delay: Math.random() * 2,
+                ease: "easeInOut"
+              }}
+            />
+          ))}
+          
+          {/* Scanning Light Beam */}
+          <motion.div
+            className="absolute top-0 w-1 h-full bg-gradient-to-b from-transparent via-sts-gold/30 to-transparent"
+            animate={{ x: ['-10%', '110%'] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "linear", repeatDelay: 2 }}
+          />
+          
+          {/* Grid Lines */}
+          <div className="absolute inset-0 opacity-[0.03]" style={{
+            backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
+            backgroundSize: '50px 50px'
+          }} />
         </div>
         
         {/* Dark Overlay for Desktop */}
         <div className="absolute inset-0 bg-gradient-to-r from-[#0d2818]/90 via-sts-dark/70 to-sts-dark/40 hidden lg:block" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Mobile Team Photo - shown only on mobile/tablet */}
-          <div className="lg:hidden pt-24 pb-8">
+          {/* Mobile Futuristic Hero - shown only on mobile/tablet */}
+          <div className="lg:hidden pt-24 pb-6">
+            {/* Holo Team Photo Capsule */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5 }}
-              className="relative mx-auto max-w-sm"
+              initial={{ opacity: 0, y: 50, rotateX: 15 }}
+              animate={{ opacity: 1, y: 0, rotateX: 0 }}
+              transition={{ duration: 0.6, type: "spring", bounce: 0.3 }}
+              className="relative mx-auto max-w-xs perspective-1000"
             >
-              {/* Outer Glow Ring */}
-              <div className="absolute -inset-3 bg-gradient-to-r from-sts-gold via-sts-primary to-sts-gold rounded-3xl blur-lg opacity-60 animate-pulse" />
-              {/* Inner Border */}
-              <div className="absolute -inset-1 bg-gradient-to-br from-sts-gold/50 to-sts-primary/50 rounded-2xl" />
-              {/* Image Container */}
-              <div className="relative rounded-2xl overflow-hidden ring-2 ring-white/20">
-                <img 
-                  src="https://www.ststaxrepair.net/wp-content/uploads/2025/01/Untitled-design-3.png"
-                  alt="STS Tax Team"
-                  className="w-full shadow-2xl"
+              {/* Outer Rotating Conic Border */}
+              <div className="absolute -inset-2 rounded-2xl overflow-hidden">
+                <motion.div
+                  className="absolute inset-0"
+                  style={{
+                    background: 'conic-gradient(from 0deg, #FDB913, #4CAF50, #1a4d2e, #FDB913)',
+                  }}
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
                 />
-                {/* Shimmer Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent" />
               </div>
-              {/* Decorative Corner Accents */}
-              <div className="absolute -top-2 -left-2 w-6 h-6 border-t-2 border-l-2 border-sts-gold rounded-tl-lg" />
-              <div className="absolute -top-2 -right-2 w-6 h-6 border-t-2 border-r-2 border-sts-gold rounded-tr-lg" />
-              <div className="absolute -bottom-2 -left-2 w-6 h-6 border-b-2 border-l-2 border-sts-gold rounded-bl-lg" />
-              <div className="absolute -bottom-2 -right-2 w-6 h-6 border-b-2 border-r-2 border-sts-gold rounded-br-lg" />
+              
+              {/* Inner Glow Frame */}
+              <div className="absolute -inset-1 bg-gradient-to-br from-sts-gold/40 via-sts-primary/30 to-sts-gold/40 rounded-xl blur-sm" />
+              
+              {/* Image Container with Holo Effect */}
+              <div className="relative rounded-xl overflow-hidden bg-black/50 p-1">
+                <motion.div
+                  className="relative rounded-lg overflow-hidden"
+                  whileHover={{ scale: 1.02 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  <img 
+                    src="https://www.ststaxrepair.net/wp-content/uploads/2025/01/Untitled-design-3.png"
+                    alt="STS Tax Team"
+                    className="w-full"
+                  />
+                  {/* Holographic Scanline */}
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-b from-transparent via-sts-gold/10 to-transparent"
+                    animate={{ y: ['-100%', '100%'] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                  />
+                  {/* Corner Tech Brackets */}
+                  <div className="absolute top-2 left-2 w-8 h-8 border-l-2 border-t-2 border-sts-gold/70" />
+                  <div className="absolute top-2 right-2 w-8 h-8 border-r-2 border-t-2 border-sts-gold/70" />
+                  <div className="absolute bottom-2 left-2 w-8 h-8 border-l-2 border-b-2 border-sts-gold/70" />
+                  <div className="absolute bottom-2 right-2 w-8 h-8 border-r-2 border-b-2 border-sts-gold/70" />
+                </motion.div>
+              </div>
+              
+              {/* Floating Badge */}
+              <motion.div
+                className="absolute -bottom-3 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-gradient-to-r from-sts-gold to-yellow-400 rounded-full shadow-lg shadow-sts-gold/30"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+              >
+                <span className="text-sts-dark text-xs font-bold tracking-wider">EXPERT TEAM</span>
+              </motion.div>
+            </motion.div>
+            
+            {/* Glass Command Center Card */}
+            <motion.div
+              className="mt-8 mx-auto max-w-sm"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.5 }}
+            >
+              <div className="relative p-6 rounded-2xl bg-white/[0.05] backdrop-blur-xl border border-white/10 shadow-2xl">
+                {/* Card Glow */}
+                <div className="absolute -inset-px rounded-2xl bg-gradient-to-b from-sts-gold/20 via-transparent to-sts-primary/20 opacity-50" />
+                
+                <div className="relative space-y-4 text-center">
+                  <motion.h1 
+                    className="text-3xl font-black text-white leading-tight"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.4 }}
+                  >
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-sts-gold via-yellow-300 to-sts-gold">
+                      Reliable
+                    </span>
+                    <br />
+                    Tax Advisors
+                  </motion.h1>
+                  
+                  <motion.p 
+                    className="text-white/70 text-sm leading-relaxed"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.5 }}
+                  >
+                    Your trusted partner for maximum tax refunds. Expert guidance, precision filing, guaranteed results.
+                  </motion.p>
+                  
+                  {/* CTA Buttons */}
+                  <motion.div 
+                    className="flex flex-col gap-3 pt-2"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.6 }}
+                  >
+                    <Button 
+                      size="lg"
+                      className="w-full bg-gradient-to-r from-sts-gold to-yellow-400 hover:from-yellow-400 hover:to-sts-gold text-sts-dark font-bold h-12 text-base shadow-lg shadow-sts-gold/30 relative overflow-hidden group"
+                      onClick={() => document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" })}
+                    >
+                      <span className="relative z-10 flex items-center justify-center gap-2">
+                        CONTACT US
+                        <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                      </span>
+                      <motion.div
+                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12"
+                        animate={{ x: ['-200%', '200%'] }}
+                        transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
+                      />
+                    </Button>
+                    <Button 
+                      size="lg"
+                      variant="outline"
+                      className="w-full border-2 border-white/20 bg-white/5 text-white hover:bg-white/10 hover:border-sts-gold/50 font-semibold h-12 text-base"
+                      onClick={() => navigate("/client-login")}
+                    >
+                      REGISTER
+                      <ChevronRight className="w-5 h-5 ml-1" />
+                    </Button>
+                  </motion.div>
+                </div>
+              </div>
+            </motion.div>
+            
+            {/* Nano Trust Badges */}
+            <motion.div 
+              className="mt-6 flex flex-wrap justify-center gap-3"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.7 }}
+            >
+              {[
+                { icon: Shield, text: "IRS Authorized" },
+                { icon: Award, text: "CTEC Certified" },
+                { icon: Lock, text: "100% Accuracy" }
+              ].map((item, index) => (
+                <motion.div 
+                  key={item.text}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 backdrop-blur-sm rounded-full border border-white/10"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.8 + index * 0.1, type: "spring" }}
+                >
+                  <item.icon className="w-3.5 h-3.5 text-sts-gold" />
+                  <span className="text-white/70 text-xs font-medium">{item.text}</span>
+                </motion.div>
+              ))}
             </motion.div>
           </div>
 
