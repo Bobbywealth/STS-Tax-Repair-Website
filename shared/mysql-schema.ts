@@ -452,6 +452,11 @@ export const DefaultPermissions: Array<{
   { slug: 'support.respond', label: 'Respond to Tickets', description: 'Reply to support tickets', featureGroup: 'support', defaultRoles: ['agent', 'tax_office', 'admin'] },
   { slug: 'support.close', label: 'Close Tickets', description: 'Close support tickets', featureGroup: 'support', defaultRoles: ['agent', 'tax_office', 'admin'] },
   
+  // Knowledge Base
+  { slug: 'knowledge.view', label: 'View Knowledge Base', description: 'Access knowledge base articles', featureGroup: 'knowledge', defaultRoles: ['client', 'agent', 'tax_office', 'admin'] },
+  { slug: 'knowledge.create', label: 'Create Articles', description: 'Create knowledge base articles', featureGroup: 'knowledge', defaultRoles: ['agent', 'tax_office', 'admin'] },
+  { slug: 'knowledge.edit', label: 'Edit Articles', description: 'Edit knowledge base articles', featureGroup: 'knowledge', defaultRoles: ['agent', 'tax_office', 'admin'] },
+  
   // Reports
   { slug: 'reports.view', label: 'View Reports', description: 'Access reports and analytics', featureGroup: 'reports', defaultRoles: ['tax_office', 'admin'] },
   { slug: 'reports.export', label: 'Export Reports', description: 'Export report data', featureGroup: 'reports', defaultRoles: ['tax_office', 'admin'] },

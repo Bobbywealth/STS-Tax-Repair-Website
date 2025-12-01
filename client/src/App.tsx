@@ -30,6 +30,8 @@ import ClientPortal from "@/pages/ClientPortal";
 import RedeemInvite from "@/pages/RedeemInvite";
 import NotFound from "@/pages/not-found";
 
+import { usePermissions, PERMISSIONS } from "@/hooks/usePermissions";
+
 type UserRole = 'client' | 'agent' | 'tax_office' | 'admin';
 
 interface User {
@@ -49,70 +51,96 @@ function useCurrentUser() {
   });
 }
 
-interface ProtectedRouteProps {
+interface PermissionRouteProps {
   component: React.ComponentType;
-  allowedRoles: UserRole[];
-  userRole: UserRole;
+  permission?: string;
+  adminOnly?: boolean;
 }
 
-function ProtectedRoute({ component: Component, allowedRoles, userRole }: ProtectedRouteProps) {
-  if (!allowedRoles.includes(userRole)) {
+function PermissionRoute({ component: Component, permission, adminOnly }: PermissionRouteProps) {
+  const { hasPermission, role, isLoading, error } = usePermissions();
+  
+  // Wait for permissions to load before checking
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+  
+  // If there's an error loading permissions or they haven't loaded yet, show error
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64 text-muted-foreground">
+        <p>Unable to load permissions. Please refresh the page.</p>
+      </div>
+    );
+  }
+  
+  // Now check permissions after loading completes
+  if (adminOnly && role !== 'admin') {
     return <Redirect to="/" />;
   }
+  
+  if (permission && !hasPermission(permission)) {
+    return <Redirect to="/" />;
+  }
+  
   return <Component />;
 }
 
-function AdminRouter({ userRole }: { userRole: UserRole }) {
+function AdminRouter() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/clients">
-        <ProtectedRoute component={Clients} allowedRoles={['agent', 'tax_office', 'admin']} userRole={userRole} />
+        <PermissionRoute component={Clients} permission={PERMISSIONS.CLIENTS_VIEW} />
       </Route>
       <Route path="/clients/:id">
-        <ProtectedRoute component={ClientDetail} allowedRoles={['agent', 'tax_office', 'admin']} userRole={userRole} />
+        <PermissionRoute component={ClientDetail} permission={PERMISSIONS.CLIENTS_VIEW} />
       </Route>
       <Route path="/leads">
-        <ProtectedRoute component={Leads} allowedRoles={['agent', 'tax_office', 'admin']} userRole={userRole} />
+        <PermissionRoute component={Leads} permission={PERMISSIONS.LEADS_VIEW} />
       </Route>
       <Route path="/deadlines">
-        <ProtectedRoute component={TaxDeadlines} allowedRoles={['agent', 'tax_office', 'admin']} userRole={userRole} />
+        <PermissionRoute component={TaxDeadlines} permission={PERMISSIONS.DEADLINES_VIEW} />
       </Route>
       <Route path="/appointments">
-        <ProtectedRoute component={Appointments} allowedRoles={['agent', 'tax_office', 'admin']} userRole={userRole} />
+        <PermissionRoute component={Appointments} permission={PERMISSIONS.APPOINTMENTS_VIEW} />
       </Route>
       <Route path="/payments">
-        <ProtectedRoute component={Payments} allowedRoles={['tax_office', 'admin']} userRole={userRole} />
+        <PermissionRoute component={Payments} permission={PERMISSIONS.PAYMENTS_VIEW} />
       </Route>
       <Route path="/documents">
-        <ProtectedRoute component={Documents} allowedRoles={['agent', 'tax_office', 'admin']} userRole={userRole} />
+        <PermissionRoute component={Documents} permission={PERMISSIONS.DOCUMENTS_VIEW} />
       </Route>
       <Route path="/signatures">
-        <ProtectedRoute component={ESignatures} allowedRoles={['agent', 'tax_office', 'admin']} userRole={userRole} />
+        <PermissionRoute component={ESignatures} permission={PERMISSIONS.SIGNATURES_VIEW} />
       </Route>
       <Route path="/tasks">
-        <ProtectedRoute component={Tasks} allowedRoles={['agent', 'tax_office', 'admin']} userRole={userRole} />
+        <PermissionRoute component={Tasks} permission={PERMISSIONS.TASKS_VIEW} />
       </Route>
       <Route path="/manager">
-        <ProtectedRoute component={Manager} allowedRoles={['tax_office', 'admin']} userRole={userRole} />
+        <PermissionRoute component={Manager} permission={PERMISSIONS.SETTINGS_VIEW} />
       </Route>
       <Route path="/tickets">
-        <ProtectedRoute component={Tickets} allowedRoles={['agent', 'tax_office', 'admin']} userRole={userRole} />
+        <PermissionRoute component={Tickets} permission={PERMISSIONS.SUPPORT_VIEW} />
       </Route>
       <Route path="/knowledge">
-        <ProtectedRoute component={Knowledge} allowedRoles={['agent', 'tax_office', 'admin']} userRole={userRole} />
+        <PermissionRoute component={Knowledge} permission={PERMISSIONS.KNOWLEDGE_VIEW} />
       </Route>
       <Route path="/reports">
-        <ProtectedRoute component={Reports} allowedRoles={['tax_office', 'admin']} userRole={userRole} />
+        <PermissionRoute component={Reports} permission={PERMISSIONS.REPORTS_VIEW} />
       </Route>
       <Route path="/settings">
-        <ProtectedRoute component={Settings} allowedRoles={['tax_office', 'admin']} userRole={userRole} />
+        <PermissionRoute component={Settings} permission={PERMISSIONS.SETTINGS_VIEW} />
       </Route>
       <Route path="/users">
-        <ProtectedRoute component={UserManagement} allowedRoles={['admin']} userRole={userRole} />
+        <PermissionRoute component={UserManagement} adminOnly />
       </Route>
       <Route path="/permissions">
-        <ProtectedRoute component={Permissions} allowedRoles={['admin']} userRole={userRole} />
+        <PermissionRoute component={Permissions} adminOnly />
       </Route>
       <Route component={NotFound} />
     </Switch>
@@ -164,8 +192,6 @@ function AdminLayout() {
     avatar: user.profileImageUrl || undefined,
   };
 
-  const userRole = (user.role || 'client') as UserRole;
-
   return (
     <SidebarProvider style={sidebarStyle as React.CSSProperties}>
       <div className="flex h-screen w-full">
@@ -177,7 +203,7 @@ function AdminLayout() {
           </header>
           <main className="flex-1 overflow-y-auto p-4 bg-animated-mesh">
             <div className="max-w-7xl mx-auto">
-              <AdminRouter userRole={userRole} />
+              <AdminRouter />
             </div>
           </main>
         </div>

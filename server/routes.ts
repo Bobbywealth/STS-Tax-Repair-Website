@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { requireRole, requireMinRole, requireAdmin, requireStaff } from "./authorization";
+import { requireRole, requireMinRole, requireAdmin, requireStaff, requirePermission } from "./authorization";
 import {
   insertTaxDeadlineSchema,
   insertAppointmentSchema,
@@ -52,14 +52,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Users (for staff to select clients) - staff only
-  app.get("/api/users", isAuthenticated, requireStaff(), async (req, res) => {
+  // Users (for staff to select clients) - requires clients.view permission
+  app.get("/api/users", isAuthenticated, requirePermission('clients.view'), async (req, res) => {
     const users = await storage.getUsers();
     res.json(users);
   });
 
-  // Get single user by ID - staff only
-  app.get("/api/users/:id", isAuthenticated, requireStaff(), async (req, res) => {
+  // Get single user by ID - requires clients.view permission
+  app.get("/api/users/:id", isAuthenticated, requirePermission('clients.view'), async (req, res) => {
     try {
       const user = await storage.getUser(req.params.id);
       if (!user) {
@@ -364,19 +364,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Tax Deadlines - staff only
-  app.get("/api/deadlines", isAuthenticated, requireStaff(), async (req, res) => {
+  // Tax Deadlines - requires deadlines permission
+  app.get("/api/deadlines", isAuthenticated, requirePermission('deadlines.view'), async (req, res) => {
     const deadlines = await storage.getTaxDeadlines();
     res.json(deadlines);
   });
 
-  app.get("/api/deadlines/year/:year", isAuthenticated, requireStaff(), async (req, res) => {
+  app.get("/api/deadlines/year/:year", isAuthenticated, requirePermission('deadlines.view'), async (req, res) => {
     const year = parseInt(req.params.year);
     const deadlines = await storage.getTaxDeadlinesByYear(year);
     res.json(deadlines);
   });
 
-  app.post("/api/deadlines", isAuthenticated, requireMinRole('tax_office'), async (req, res) => {
+  app.post("/api/deadlines", isAuthenticated, requirePermission('deadlines.create'), async (req, res) => {
     try {
       const result = insertTaxDeadlineSchema.safeParse(req.body);
       if (!result.success) {
@@ -389,7 +389,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/deadlines/:id", isAuthenticated, requireMinRole('tax_office'), async (req, res) => {
+  app.patch("/api/deadlines/:id", isAuthenticated, requirePermission('deadlines.edit'), async (req, res) => {
     try {
       const deadline = await storage.updateTaxDeadline(req.params.id, req.body);
       if (!deadline) {
@@ -401,7 +401,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/deadlines/:id", isAuthenticated, requireMinRole('tax_office'), async (req, res) => {
+  app.delete("/api/deadlines/:id", isAuthenticated, requirePermission('deadlines.edit'), async (req, res) => {
     const success = await storage.deleteTaxDeadline(req.params.id);
     if (!success) {
       return res.status(404).json({ error: "Deadline not found" });
@@ -409,8 +409,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(204).send();
   });
 
-  // Appointments - staff only
-  app.get("/api/appointments", isAuthenticated, requireStaff(), async (req, res) => {
+  // Appointments - requires appointments.view/modify permission
+  app.get("/api/appointments", isAuthenticated, requirePermission('appointments.view'), async (req, res) => {
     const { clientId, start, end } = req.query;
     
     if (clientId) {
@@ -429,7 +429,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(appointments);
   });
 
-  app.post("/api/appointments", isAuthenticated, requireStaff(), async (req, res) => {
+  app.post("/api/appointments", isAuthenticated, requirePermission('appointments.create'), async (req, res) => {
     try {
       const result = insertAppointmentSchema.safeParse(req.body);
       if (!result.success) {
@@ -442,7 +442,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/appointments/:id", isAuthenticated, requireStaff(), async (req, res) => {
+  app.patch("/api/appointments/:id", isAuthenticated, requirePermission('appointments.edit'), async (req, res) => {
     try {
       const appointment = await storage.updateAppointment(req.params.id, req.body);
       if (!appointment) {
@@ -454,7 +454,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/appointments/:id", isAuthenticated, requireMinRole('tax_office'), async (req, res) => {
+  app.delete("/api/appointments/:id", isAuthenticated, requirePermission('appointments.delete'), async (req, res) => {
     const success = await storage.deleteAppointment(req.params.id);
     if (!success) {
       return res.status(404).json({ error: "Appointment not found" });
@@ -462,8 +462,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(204).send();
   });
 
-  // Payments - tax_office+ only (financial data)
-  app.get("/api/payments", isAuthenticated, requireMinRole('tax_office'), async (req, res) => {
+  // Payments - requires payments.view permission (financial data)
+  app.get("/api/payments", isAuthenticated, requirePermission('payments.view'), async (req, res) => {
     const { clientId } = req.query;
     
     if (clientId) {
@@ -475,7 +475,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(payments);
   });
 
-  app.post("/api/payments", isAuthenticated, requireMinRole('tax_office'), async (req, res) => {
+  app.post("/api/payments", isAuthenticated, requirePermission('payments.create'), async (req, res) => {
     try {
       const result = insertPaymentSchema.safeParse(req.body);
       if (!result.success) {
@@ -488,7 +488,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/payments/:id", isAuthenticated, requireMinRole('tax_office'), async (req, res) => {
+  app.patch("/api/payments/:id", isAuthenticated, requirePermission('payments.edit'), async (req, res) => {
     try {
       const payment = await storage.updatePayment(req.params.id, req.body);
       if (!payment) {
@@ -500,7 +500,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/payments/:id", isAuthenticated, requireAdmin(), async (req, res) => {
+  app.delete("/api/payments/:id", isAuthenticated, requirePermission('payments.delete'), async (req, res) => {
     const success = await storage.deletePayment(req.params.id);
     if (!success) {
       return res.status(404).json({ error: "Payment not found" });
@@ -508,8 +508,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(204).send();
   });
 
-  // Tasks - Pull from Perfex CRM tbltasks table - staff only
-  app.get("/api/tasks", isAuthenticated, requireStaff(), async (req, res) => {
+  // Tasks - Pull from Perfex CRM tbltasks table - requires tasks.view permission
+  app.get("/api/tasks", isAuthenticated, requirePermission('tasks.view'), async (req, res) => {
     try {
       const tasks = await queryPerfex(`
         SELECT 
@@ -569,8 +569,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Leads - Pull from Perfex CRM tblleads table - staff only
-  app.get("/api/leads", isAuthenticated, requireStaff(), async (req, res) => {
+  // Leads - Pull from Perfex CRM tblleads table - requires leads.view permission
+  app.get("/api/leads", isAuthenticated, requirePermission('leads.view'), async (req, res) => {
     try {
       const leads = await queryPerfex(`
         SELECT 
@@ -603,8 +603,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Staff Members - Pull from Perfex CRM tblstaff table - staff only
-  app.get("/api/staff", isAuthenticated, requireStaff(), async (req, res) => {
+  // Staff Members - Pull from Perfex CRM tblstaff table - requires settings permission
+  app.get("/api/staff", isAuthenticated, requirePermission('settings.view'), async (req, res) => {
     try {
       const staff = await queryPerfex(`
         SELECT 
@@ -626,7 +626,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/staff/:id", isAuthenticated, requireStaff(), async (req, res) => {
+  app.get("/api/staff/:id", isAuthenticated, requirePermission('settings.view'), async (req, res) => {
     try {
       const [member] = await queryPerfex(`
         SELECT 
@@ -650,7 +650,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/staff", isAuthenticated, requireAdmin(), async (req, res) => {
+  app.post("/api/staff", isAuthenticated, requirePermission('settings.edit'), async (req, res) => {
     try {
       const member = await storage.createStaffMember(req.body);
       res.status(201).json(member);
@@ -659,7 +659,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/staff/:id", isAuthenticated, requireAdmin(), async (req, res) => {
+  app.patch("/api/staff/:id", isAuthenticated, requirePermission('settings.edit'), async (req, res) => {
     try {
       const member = await storage.updateStaffMember(req.params.id, req.body);
       if (!member) {
@@ -671,7 +671,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/staff/:id", isAuthenticated, requireAdmin(), async (req, res) => {
+  app.delete("/api/staff/:id", isAuthenticated, requirePermission('settings.edit'), async (req, res) => {
     const success = await storage.deleteStaffMember(req.params.id);
     if (!success) {
       return res.status(404).json({ error: "Staff member not found" });
@@ -679,9 +679,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(204).send();
   });
 
-  // Document Versions - staff only
+  // Document Versions - requires documents permission
   // Note: /all route must come before /:clientId to avoid matching "all" as a clientId
-  app.get("/api/documents/all", isAuthenticated, requireStaff(), async (req, res) => {
+  app.get("/api/documents/all", isAuthenticated, requirePermission('documents.view'), async (req, res) => {
     try {
       const documents = await storage.getAllDocuments();
       res.json(documents);
@@ -690,7 +690,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/documents/:clientId", isAuthenticated, requireStaff(), async (req, res) => {
+  app.get("/api/documents/:clientId", isAuthenticated, requirePermission('documents.view'), async (req, res) => {
     const { documentType } = req.query;
     
     if (documentType) {
@@ -705,7 +705,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(documents);
   });
 
-  app.post("/api/documents", isAuthenticated, requireStaff(), async (req, res) => {
+  app.post("/api/documents", isAuthenticated, requirePermission('documents.upload'), async (req, res) => {
     try {
       const result = insertDocumentVersionSchema.safeParse(req.body);
       if (!result.success) {
@@ -718,7 +718,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/documents/:id", isAuthenticated, requireMinRole('tax_office'), async (req, res) => {
+  app.delete("/api/documents/:id", isAuthenticated, requirePermission('documents.delete'), async (req, res) => {
     const success = await storage.deleteDocumentVersion(req.params.id);
     if (!success) {
       return res.status(404).json({ error: "Document not found" });
@@ -726,8 +726,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(204).send();
   });
 
-  // E-Signatures - staff only for viewing, clients can update their own
-  app.get("/api/signatures", isAuthenticated, requireStaff(), async (req, res) => {
+  // E-Signatures - requires signatures permission
+  app.get("/api/signatures", isAuthenticated, requirePermission('signatures.view'), async (req, res) => {
     const { clientId } = req.query;
     
     if (clientId) {
@@ -747,7 +747,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(signature);
   });
 
-  app.post("/api/signatures", isAuthenticated, requireStaff(), async (req, res) => {
+  app.post("/api/signatures", isAuthenticated, requirePermission('signatures.create'), async (req, res) => {
     try {
       const result = insertESignatureSchema.safeParse(req.body);
       if (!result.success) {
@@ -781,7 +781,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/signatures/:id", isAuthenticated, requireMinRole('tax_office'), async (req, res) => {
+  app.delete("/api/signatures/:id", isAuthenticated, requirePermission('signatures.create'), async (req, res) => {
     const success = await storage.deleteESignature(req.params.id);
     if (!success) {
       return res.status(404).json({ error: "Signature not found" });
@@ -789,8 +789,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(204).send();
   });
 
-  // Generate filled IRS Form 8879 PDF - staff only
-  app.get("/api/signatures/:id/pdf", isAuthenticated, requireStaff(), async (req, res) => {
+  // Generate filled IRS Form 8879 PDF - requires signatures.download_pdf permission
+  app.get("/api/signatures/:id/pdf", isAuthenticated, requirePermission('signatures.download_pdf'), async (req, res) => {
     try {
       const signature = await storage.getESignature(req.params.id);
       if (!signature) {

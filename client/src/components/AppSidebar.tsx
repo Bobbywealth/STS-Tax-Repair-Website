@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { usePermissions, PERMISSIONS } from "@/hooks/usePermissions";
 
 type UserRole = 'client' | 'agent' | 'tax_office' | 'admin';
 
@@ -22,26 +23,28 @@ interface MenuItem {
   title: string;
   url: string;
   icon: React.ComponentType<{ className?: string }>;
-  roles: UserRole[];
+  permission?: string;
+  adminOnly?: boolean;
+  alwaysShow?: boolean;
 }
 
 const menuItems: MenuItem[] = [
-  { title: "Dashboard", url: "/", icon: Home, roles: ['client', 'agent', 'tax_office', 'admin'] },
-  { title: "Clients", url: "/clients", icon: Users, roles: ['agent', 'tax_office', 'admin'] },
-  { title: "Leads", url: "/leads", icon: UserPlus, roles: ['agent', 'tax_office', 'admin'] },
-  { title: "Tax Deadlines", url: "/deadlines", icon: Calendar, roles: ['agent', 'tax_office', 'admin'] },
-  { title: "Appointments", url: "/appointments", icon: CalendarClock, roles: ['agent', 'tax_office', 'admin'] },
-  { title: "Payments", url: "/payments", icon: DollarSign, roles: ['tax_office', 'admin'] },
-  { title: "Documents", url: "/documents", icon: FileText, roles: ['agent', 'tax_office', 'admin'] },
-  { title: "E-Signatures", url: "/signatures", icon: FileSignature, roles: ['agent', 'tax_office', 'admin'] },
-  { title: "Tasks", url: "/tasks", icon: CheckSquare, roles: ['agent', 'tax_office', 'admin'] },
-  { title: "Manager", url: "/manager", icon: Crown, roles: ['tax_office', 'admin'] },
-  { title: "Support Tickets", url: "/tickets", icon: Ticket, roles: ['agent', 'tax_office', 'admin'] },
-  { title: "Knowledge Base", url: "/knowledge", icon: BookOpen, roles: ['agent', 'tax_office', 'admin'] },
-  { title: "Reports", url: "/reports", icon: BarChart3, roles: ['tax_office', 'admin'] },
-  { title: "User Management", url: "/users", icon: Shield, roles: ['admin'] },
-  { title: "Permissions", url: "/permissions", icon: Lock, roles: ['admin'] },
-  { title: "Settings", url: "/settings", icon: Settings, roles: ['tax_office', 'admin'] },
+  { title: "Dashboard", url: "/", icon: Home, alwaysShow: true },
+  { title: "Clients", url: "/clients", icon: Users, permission: PERMISSIONS.CLIENTS_VIEW },
+  { title: "Leads", url: "/leads", icon: UserPlus, permission: PERMISSIONS.LEADS_VIEW },
+  { title: "Tax Deadlines", url: "/deadlines", icon: Calendar, permission: PERMISSIONS.DEADLINES_VIEW },
+  { title: "Appointments", url: "/appointments", icon: CalendarClock, permission: PERMISSIONS.APPOINTMENTS_VIEW },
+  { title: "Payments", url: "/payments", icon: DollarSign, permission: PERMISSIONS.PAYMENTS_VIEW },
+  { title: "Documents", url: "/documents", icon: FileText, permission: PERMISSIONS.DOCUMENTS_VIEW },
+  { title: "E-Signatures", url: "/signatures", icon: FileSignature, permission: PERMISSIONS.SIGNATURES_VIEW },
+  { title: "Tasks", url: "/tasks", icon: CheckSquare, permission: PERMISSIONS.TASKS_VIEW },
+  { title: "Manager", url: "/manager", icon: Crown, permission: PERMISSIONS.SETTINGS_VIEW },
+  { title: "Support Tickets", url: "/tickets", icon: Ticket, permission: PERMISSIONS.SUPPORT_VIEW },
+  { title: "Knowledge Base", url: "/knowledge", icon: BookOpen, permission: PERMISSIONS.KNOWLEDGE_VIEW },
+  { title: "Reports", url: "/reports", icon: BarChart3, permission: PERMISSIONS.REPORTS_VIEW },
+  { title: "User Management", url: "/users", icon: Shield, adminOnly: true },
+  { title: "Permissions", url: "/permissions", icon: Lock, adminOnly: true },
+  { title: "Settings", url: "/settings", icon: Settings, permission: PERMISSIONS.SETTINGS_VIEW },
 ];
 
 interface AppSidebarProps {
@@ -54,11 +57,29 @@ interface AppSidebarProps {
 
 export function AppSidebar({ user }: AppSidebarProps) {
   const [location] = useLocation();
+  const { hasPermission, role: permissionRole, isLoading } = usePermissions();
   const userRole = (user?.role?.toLowerCase() || 'client') as UserRole;
+  const isAdmin = userRole === 'admin';
   
-  const filteredMenuItems = menuItems.filter(item => 
-    item.roles.includes(userRole)
-  );
+  // While permissions are loading, show all items based on user role from props
+  // This prevents empty sidebar during initial load
+  const filteredMenuItems = menuItems.filter(item => {
+    if (item.alwaysShow) return true;
+    if (item.adminOnly) return isAdmin;
+    
+    // If still loading, use fallback role-based check
+    if (isLoading) {
+      // Show items for staff roles while loading
+      if (userRole === 'admin') return true;
+      if (userRole === 'tax_office') return !item.adminOnly;
+      if (userRole === 'agent') return !item.adminOnly && item.permission !== PERMISSIONS.PAYMENTS_VIEW && item.permission !== PERMISSIONS.REPORTS_VIEW && item.permission !== PERMISSIONS.SETTINGS_VIEW;
+      return false;
+    }
+    
+    // After loading, use dynamic permissions
+    if (item.permission) return hasPermission(item.permission);
+    return true;
+  });
 
   const getRoleBadgeVariant = (role: string) => {
     switch (role?.toLowerCase()) {
