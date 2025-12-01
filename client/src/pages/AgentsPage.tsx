@@ -32,6 +32,46 @@ const agents = [
     phone: "772-877-1588",
     email: "Taxesbykeys@gmail.com",
     location: "Port St. Lucie, FL"
+  },
+  {
+    name: "Christy S Dor",
+    title: "Service Support",
+    image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Christy-S-Dor.webp",
+    phone: "561-932-6114",
+    email: "christyststaxrepair@gmail.com",
+    location: "Florida Office, USA"
+  },
+  {
+    name: "Alexandra Isaac",
+    title: "Service Support",
+    image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Alexandra-Isaac.webp",
+    phone: "786/352-2038",
+    email: "isaacalexandra.ststaxrepair@gmail.com",
+    location: "Hollywood, FL"
+  },
+  {
+    name: "Jennifer Constantino",
+    title: "Service Support",
+    image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Jennifer-Constantino.webp",
+    phone: "(954) 629-6424",
+    email: "jennconstantino93@gmail.com",
+    location: "Hollywood, FL"
+  },
+  {
+    name: "Alix Alexandre",
+    title: "Service Support",
+    image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Alix-Alexandre.webp",
+    phone: "407-461-3644",
+    email: "Alixalexandre36@gmail.com",
+    location: "Houston, TX"
+  },
+  {
+    name: "Leonela Reyes",
+    title: "Service Support",
+    image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Leonela-Reyes.webp",
+    phone: "(956)-739-4200",
+    email: "lmrtaxrepair@gmail.com",
+    location: "Houston, TX"
   }
 ];
 

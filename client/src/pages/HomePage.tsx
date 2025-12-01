@@ -292,7 +292,7 @@ export default function HomePage() {
       phone: "561-932-6114",
       email: "christyststaxrepair@gmail.com",
       address: "Florida Office, USA",
-      image: "https://images.unsplash.com/photo-1598550874175-4d0ef436c909?w=200&h=200&fit=crop&crop=face"
+      image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Christy-S-Dor.webp"
     },
     {
       name: "Alexandra Isaac",
@@ -300,7 +300,7 @@ export default function HomePage() {
       phone: "786/352-2038",
       email: "isaacalexandra.ststaxrepair@gmail.com",
       address: "4000 Hollywood Blvd, Suite 555-S, Hollywood FL, 33021",
-      image: "https://images.unsplash.com/photo-1551836022-deb4988cc6c0?w=200&h=200&fit=crop&crop=face"
+      image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Alexandra-Isaac.webp"
     },
     {
       name: "Jennifer Constantino",
@@ -308,7 +308,7 @@ export default function HomePage() {
       phone: "(954) 629-6424",
       email: "jennconstantino93@gmail.com",
       address: "4000 Hollywood Blvd, Suite 555-S, Hollywood FL, 33021",
-      image: "https://images.unsplash.com/photo-1587614382346-4ec70e388b28?w=200&h=200&fit=crop&crop=face"
+      image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Jennifer-Constantino.webp"
     },
     {
       name: "Alix Alexandre",
@@ -316,7 +316,7 @@ export default function HomePage() {
       phone: "4074613644",
       email: "Alixalexandre36@gmail.com",
       address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
-      image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=200&h=200&fit=crop&crop=face"
+      image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Alix-Alexandre.webp"
     },
     {
       name: "Leonela Reyes",
@@ -324,7 +324,7 @@ export default function HomePage() {
       phone: "(956)-739-4200",
       email: "lmrtaxrepair@gmail.com",
       address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
-      image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&h=200&fit=crop&crop=face"
+      image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Leonela-Reyes.webp"
     }
   ];
 
