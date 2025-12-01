@@ -552,8 +552,8 @@ export default function HomePage() {
         data-testid="section-hero"
       >
         {/* DESKTOP HERO - Full width team image */}
-        <div className="hidden lg:block relative">
-          {/* Full Team Image - NO CROPPING - Aligned to TOP */}
+        <div className="hidden lg:block relative pt-20">
+          {/* Full Team Image - NO CROPPING - Starts below navbar */}
           <div className="w-full bg-[#e8e4df]">
             <img 
               src="https://www.ststaxrepair.net/wp-content/uploads/2025/01/Untitled-design-3.png"
