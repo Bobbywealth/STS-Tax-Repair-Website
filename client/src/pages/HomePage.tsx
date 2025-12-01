@@ -231,12 +231,14 @@ export default function HomePage() {
   const services = [
     {
       icon: RefreshCw,
+      iconImage: "https://www.ststaxrepair.net/wp-content/uploads/2023/12/svgviewer-output-3.svg",
       title: "Professional Tax Filing",
       description: "Our expert tax filing service ensures accuracy and maximum returns. We meticulously navigate the complexities of tax codes, asking the right questions to secure your highest refund. Trust our professionals to handle your taxes with precision and expertise, delivering peace of mind and financial benefit.",
       hasButton: true
     },
     {
       icon: CreditCard,
+      iconImage: "https://www.ststaxrepair.net/wp-content/uploads/2023/12/svgviewer-output-2.svg",
       title: "Credit Restoration",
       description: "Rebuild your credit with our comprehensive restoration service. We analyze credit reports, identifying discrepancies and errors. Through strategic interventions, we dispute inaccuracies and guide you towards improved credit health. Let us help restore your financial standing and open doors to better opportunities.",
       agent: "Jessica Zephir",
@@ -245,12 +247,14 @@ export default function HomePage() {
     },
     {
       icon: Landmark,
+      iconImage: null,
       title: "Business Registration",
       description: "Seamlessly establish your business with our registration service. We navigate the bureaucratic landscape, ensuring your incorporation process is efficient and compliant. From paperwork to legal formalities, we handle every step, allowing you to focus on your business vision. Trust us to register your business accurately and expediently.",
       hasButton: true
     },
     {
       icon: Search,
+      iconImage: "https://www.ststaxrepair.net/wp-content/uploads/2023/12/svgviewer-output.svg",
       title: "Business Loans",
       description: "Access financial support for your business growth with our comprehensive loan service. We assess your needs, guiding you to suitable loan options. From application to approval, we streamline the process, securing favorable terms. Count on us to help your business thrive with tailored loan solutions designed for your success.",
       hasButton: true
@@ -556,8 +560,16 @@ export default function HomePage() {
         style={{ position: 'relative' }}
         data-testid="section-hero"
       >
-        {/* Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0d2818] via-sts-dark to-[#1a4d2e]" />
+        {/* Background Image */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{ 
+            backgroundImage: `url('https://www.ststaxrepair.net/wp-content/uploads/2025/01/Untitled-design-3.png')` 
+          }}
+        />
+        
+        {/* Dark Overlay for Text Readability */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0d2818]/90 via-sts-dark/85 to-[#1a4d2e]/90" />
         
         {/* Mesh Gradient Overlay */}
         <div className="absolute inset-0 opacity-30">
@@ -851,8 +863,16 @@ export default function HomePage() {
                   className="p-8 bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 h-full group"
                   data-testid={`card-service-${index}`}
                 >
-                  <div className="w-16 h-16 rounded-2xl bg-sts-primary/10 flex items-center justify-center mb-6 group-hover:bg-sts-primary group-hover:scale-110 transition-all">
-                    <service.icon className="w-8 h-8 text-sts-primary group-hover:text-white transition-colors" />
+                  <div className="w-16 h-16 rounded-2xl bg-sts-primary/10 flex items-center justify-center mb-6 group-hover:bg-sts-primary group-hover:scale-110 transition-all overflow-hidden">
+                    {service.iconImage ? (
+                      <img 
+                        src={service.iconImage} 
+                        alt={service.title}
+                        className="w-10 h-10 object-contain"
+                      />
+                    ) : (
+                      <service.icon className="w-8 h-8 text-sts-primary group-hover:text-white transition-colors" />
+                    )}
                   </div>
                   
                   <h3 className="text-2xl font-bold text-sts-primary mb-4">{service.title}</h3>
@@ -968,40 +988,41 @@ export default function HomePage() {
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
             >
-              <div className="relative">
-                <div className="absolute -inset-4 bg-gradient-to-br from-sts-primary/20 to-sts-gold/20 rounded-3xl blur-2xl" />
-                <div className="relative bg-gradient-to-br from-sts-dark via-[#1a4d2e] to-sts-primary rounded-2xl p-8 text-white overflow-hidden">
-                  <div className="absolute inset-0 opacity-10">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full -translate-y-1/2 translate-x-1/2" />
-                    <div className="absolute bottom-0 left-0 w-48 h-48 bg-white rounded-full translate-y-1/2 -translate-x-1/2" />
-                  </div>
-                  
-                  <div className="relative">
-                    <h3 className="text-2xl font-bold mb-2">Ready to Get Started?</h3>
-                    <p className="text-white/70 mb-6">
-                      Join thousands of satisfied clients who trust us with their taxes.
-                    </p>
-                    
-                    <div className="space-y-3 mb-8">
-                      {["Free initial consultation", "Transparent pricing upfront", "No hidden fees or surprises", "100% satisfaction guarantee"].map((item) => (
-                        <div key={item} className="flex items-center gap-3">
-                          <div className="w-6 h-6 rounded-full bg-sts-gold/20 flex items-center justify-center">
-                            <CheckCircle2 className="w-4 h-4 text-sts-gold" />
-                          </div>
-                          <span className="text-white/90">{item}</span>
-                        </div>
-                      ))}
-                    </div>
-                    
-                    <Button 
-                      className="w-full bg-gradient-to-r from-sts-gold to-yellow-400 hover:from-sts-gold hover:to-yellow-500 text-sts-dark font-bold h-12 shadow-lg"
-                      onClick={() => navigate("/client-login")}
-                      data-testid="button-get-started"
-                    >
-                      Get Started Today
-                      <ArrowRight className="w-5 h-5 ml-2" />
-                    </Button>
-                  </div>
+              <div className="relative grid gap-4">
+                {/* Owner Photo */}
+                <div className="relative">
+                  <div className="absolute -inset-2 bg-gradient-to-br from-sts-primary/30 to-sts-gold/30 rounded-2xl blur-xl" />
+                  <img 
+                    src="https://www.ststaxrepair.net/wp-content/uploads/2023/12/owner.png"
+                    alt="STS Tax Repair Owner"
+                    className="relative w-full max-w-sm mx-auto rounded-2xl shadow-2xl"
+                  />
+                </div>
+                
+                {/* Team Photo */}
+                <div className="relative mt-4">
+                  <div className="absolute -inset-2 bg-gradient-to-br from-sts-gold/30 to-sts-primary/30 rounded-2xl blur-xl" />
+                  <img 
+                    src="https://www.ststaxrepair.net/wp-content/uploads/2023/12/transparent-1-658492783c2db.webp"
+                    alt="STS Tax Repair Team"
+                    className="relative w-full rounded-2xl shadow-2xl"
+                  />
+                </div>
+
+                {/* CTA Card Overlay */}
+                <div className="absolute bottom-4 left-4 right-4 bg-gradient-to-br from-sts-dark/95 to-sts-primary/95 backdrop-blur-lg rounded-xl p-6 text-white shadow-2xl">
+                  <h3 className="text-xl font-bold mb-2">Ready to Get Started?</h3>
+                  <p className="text-white/70 text-sm mb-4">
+                    Join thousands of satisfied clients who trust us with their taxes.
+                  </p>
+                  <Button 
+                    className="w-full bg-gradient-to-r from-sts-gold to-yellow-400 hover:from-sts-gold hover:to-yellow-500 text-sts-dark font-bold h-10 shadow-lg"
+                    onClick={() => navigate("/client-login")}
+                    data-testid="button-get-started"
+                  >
+                    Get Started Today
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
                 </div>
               </div>
             </motion.div>
