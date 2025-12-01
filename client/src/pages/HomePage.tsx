@@ -568,27 +568,45 @@ export default function HomePage() {
           }}
         />
         
-        {/* Mobile/Tablet Solid Background */}
-        <div className="absolute inset-0 bg-gradient-to-b from-sts-dark to-[#0d2818] lg:hidden" />
+        {/* Mobile/Tablet Background with Effects */}
+        <div className="absolute inset-0 bg-gradient-to-b from-sts-dark via-[#0d2818] to-sts-dark lg:hidden">
+          {/* Animated Glow Orbs for Mobile */}
+          <div className="absolute top-20 -left-20 w-64 h-64 bg-sts-primary/20 rounded-full blur-[80px]" />
+          <div className="absolute top-1/3 -right-20 w-72 h-72 bg-sts-gold/15 rounded-full blur-[100px]" />
+          <div className="absolute bottom-40 left-10 w-48 h-48 bg-sts-primary/15 rounded-full blur-[60px]" />
+        </div>
         
         {/* Dark Overlay for Desktop */}
         <div className="absolute inset-0 bg-gradient-to-r from-[#0d2818]/90 via-sts-dark/70 to-sts-dark/40 hidden lg:block" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Mobile Team Photo - shown only on mobile/tablet */}
-          <div className="lg:hidden pt-24 pb-6">
+          <div className="lg:hidden pt-24 pb-8">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-              className="relative mx-auto max-w-md"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5 }}
+              className="relative mx-auto max-w-sm"
             >
-              <div className="absolute -inset-2 bg-gradient-to-r from-sts-gold/30 to-sts-primary/30 rounded-2xl blur-xl" />
-              <img 
-                src="https://www.ststaxrepair.net/wp-content/uploads/2025/01/Untitled-design-3.png"
-                alt="STS Tax Team"
-                className="relative w-full rounded-2xl shadow-2xl"
-              />
+              {/* Outer Glow Ring */}
+              <div className="absolute -inset-3 bg-gradient-to-r from-sts-gold via-sts-primary to-sts-gold rounded-3xl blur-lg opacity-60 animate-pulse" />
+              {/* Inner Border */}
+              <div className="absolute -inset-1 bg-gradient-to-br from-sts-gold/50 to-sts-primary/50 rounded-2xl" />
+              {/* Image Container */}
+              <div className="relative rounded-2xl overflow-hidden ring-2 ring-white/20">
+                <img 
+                  src="https://www.ststaxrepair.net/wp-content/uploads/2025/01/Untitled-design-3.png"
+                  alt="STS Tax Team"
+                  className="w-full shadow-2xl"
+                />
+                {/* Shimmer Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent" />
+              </div>
+              {/* Decorative Corner Accents */}
+              <div className="absolute -top-2 -left-2 w-6 h-6 border-t-2 border-l-2 border-sts-gold rounded-tl-lg" />
+              <div className="absolute -top-2 -right-2 w-6 h-6 border-t-2 border-r-2 border-sts-gold rounded-tr-lg" />
+              <div className="absolute -bottom-2 -left-2 w-6 h-6 border-b-2 border-l-2 border-sts-gold rounded-bl-lg" />
+              <div className="absolute -bottom-2 -right-2 w-6 h-6 border-b-2 border-r-2 border-sts-gold rounded-br-lg" />
             </motion.div>
           </div>
 
