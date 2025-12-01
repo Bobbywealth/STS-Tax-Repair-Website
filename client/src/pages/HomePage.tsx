@@ -562,7 +562,7 @@ export default function HomePage() {
           <motion.div
             className="absolute inset-0 bg-center"
             style={{ 
-              backgroundImage: `url('https://www.ststaxrepair.net/wp-content/uploads/2024/12/a-1-6750cc8c5d05a.webp')`,
+              backgroundImage: `url('https://www.ststaxrepair.net/wp-content/uploads/2025/01/Untitled-design-3.png')`,
               backgroundSize: 'cover',
               backgroundRepeat: 'no-repeat'
             }}
