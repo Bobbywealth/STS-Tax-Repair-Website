@@ -206,6 +206,7 @@ function AdminLayout() {
     name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'User',
     role: user.role || 'client',
     avatar: user.profileImageUrl || undefined,
+    id: user.id,
   };
 
   const getProfileImageUrl = () => {

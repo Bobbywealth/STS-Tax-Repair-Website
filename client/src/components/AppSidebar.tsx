@@ -52,6 +52,7 @@ interface AppSidebarProps {
     name: string;
     role: string;
     avatar?: string;
+    id?: string;
   };
 }
 
@@ -59,6 +60,17 @@ export function AppSidebar({ user }: AppSidebarProps) {
   const [location] = useLocation();
   const { hasPermission, role: permissionRole, isLoading } = usePermissions();
   const userRole = (user?.role?.toLowerCase() || 'client') as UserRole;
+
+  const getProfileImageUrl = () => {
+    if (!user?.avatar) return undefined;
+    if (user.avatar.startsWith("http")) {
+      return user.avatar;
+    }
+    if (user.id) {
+      return `/api/profile/photo/${user.id}`;
+    }
+    return undefined;
+  };
   const isAdmin = userRole === 'admin';
   
   // While permissions are loading, show all items based on user role from props
@@ -137,8 +149,8 @@ export function AppSidebar({ user }: AppSidebarProps) {
 
       <SidebarFooter className="p-4 border-t border-sidebar-border">
         <div className="flex items-center gap-3 mb-2">
-          <Avatar className="h-9 w-9">
-            <AvatarImage src={user?.avatar} />
+          <Avatar className="h-9 w-9 border-2 border-primary/20">
+            <AvatarImage src={getProfileImageUrl()} alt={user?.name} />
             <AvatarFallback className="bg-primary text-primary-foreground text-xs">
               {user?.name?.split(' ').map(n => n[0]).join('') || 'U'}
             </AvatarFallback>
