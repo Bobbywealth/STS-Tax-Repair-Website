@@ -896,10 +896,21 @@ export default function HomePage() {
       </section>
 
       {/* Beyond Traditional CTA Section */}
-      <section className="py-24 bg-sts-dark relative overflow-hidden" data-testid="section-beyond">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-sts-gold rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-sts-primary rounded-full blur-3xl" />
+      <section className="py-28 relative overflow-hidden" data-testid="section-beyond">
+        {/* Background Image with Overlay */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center"
+          style={{
+            backgroundImage: `url('https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=1920&q=80')`,
+          }}
+        />
+        {/* Teal/Dark Green Overlay */}
+        <div className="absolute inset-0 bg-[#1a4d4d]/90" />
+        
+        {/* Subtle Gradient Effects */}
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-sts-gold rounded-full blur-[120px]" />
+          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-sts-primary rounded-full blur-[100px]" />
         </div>
         
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -907,21 +918,45 @@ export default function HomePage() {
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
+            transition={{ duration: 0.4 }}
           >
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white mb-6">
-              Beyond Traditional Tax Services: <span className="text-sts-gold">Your Financial Advocates.</span>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white mb-8 leading-tight">
+              Beyond{" "}
+              <span className="relative inline-block">
+                <span className="text-sts-gold">Traditional</span>
+                <svg 
+                  className="absolute -bottom-2 left-0 w-full" 
+                  viewBox="0 0 200 12" 
+                  fill="none"
+                  preserveAspectRatio="none"
+                >
+                  <path 
+                    d="M2 8 Q50 2, 100 6 T198 4" 
+                    stroke="#FDB913" 
+                    strokeWidth="3" 
+                    strokeLinecap="round"
+                    fill="none"
+                  />
+                </svg>
+              </span>
+              {" "}Tax Services: Your<br />Financial Advocates.
             </h2>
-            <p className="text-white/70 text-lg mb-8 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-white/80 text-lg md:text-xl mb-10 max-w-3xl mx-auto leading-relaxed">
               Discover the difference with The Tax Team, your partners in comprehensive tax solutions. Our experts don't stop at routine tax preparation; we immerse ourselves in understanding your finances. Through meticulous questioning, we unearth potential credits and deductions, ensuring you receive every possible benefit.
             </p>
-            <Button 
-              size="lg"
-              className="bg-gradient-to-r from-sts-gold to-yellow-400 hover:from-sts-gold hover:to-yellow-500 text-sts-dark font-bold px-10 h-14 shadow-xl"
-              data-testid="button-call-now"
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
-              <Phone className="w-5 h-5 mr-2" />
-              Call Us Now
-            </Button>
+              <Button 
+                size="lg"
+                className="bg-gradient-to-r from-orange-500 to-sts-gold hover:from-orange-600 hover:to-yellow-500 text-white font-bold px-12 h-16 text-lg shadow-2xl shadow-orange-500/30 rounded-full"
+                data-testid="button-call-now"
+              >
+                <Phone className="w-6 h-6 mr-3" />
+                Call Us Now
+              </Button>
+            </motion.div>
           </motion.div>
         </div>
       </section>
