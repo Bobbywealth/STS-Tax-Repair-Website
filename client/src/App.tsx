@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -26,11 +26,9 @@ import ClientLogin from "@/pages/ClientLogin";
 import ClientPortal from "@/pages/ClientPortal";
 import NotFound from "@/pages/not-found";
 
-function Router() {
+function AdminRouter() {
   return (
     <Switch>
-      <Route path="/client-login" component={ClientLogin} />
-      <Route path="/client-portal" component={ClientPortal} />
       <Route path="/" component={Dashboard} />
       <Route path="/clients" component={Clients} />
       <Route path="/clients/:id" component={ClientDetail} />
@@ -51,7 +49,7 @@ function Router() {
   );
 }
 
-function App() {
+function AdminLayout() {
   const mockUser = {
     name: "Sarah Johnson",
     role: "Admin",
@@ -64,24 +62,41 @@ function App() {
   };
 
   return (
+    <SidebarProvider style={sidebarStyle as React.CSSProperties}>
+      <div className="flex h-screen w-full">
+        <AppSidebar user={mockUser} />
+        <div className="flex flex-col flex-1 overflow-hidden">
+          <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-10">
+            <SidebarTrigger data-testid="button-sidebar-toggle" />
+            <ThemeToggle />
+          </header>
+          <main className="flex-1 overflow-y-auto p-4 bg-animated-mesh">
+            <div className="max-w-7xl mx-auto">
+              <AdminRouter />
+            </div>
+          </main>
+        </div>
+      </div>
+    </SidebarProvider>
+  );
+}
+
+function App() {
+  const [location] = useLocation();
+  
+  const isClientRoute = location.startsWith('/client-login') || location.startsWith('/client-portal');
+
+  return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <SidebarProvider style={sidebarStyle as React.CSSProperties}>
-          <div className="flex h-screen w-full">
-            <AppSidebar user={mockUser} />
-            <div className="flex flex-col flex-1 overflow-hidden">
-              <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-10">
-                <SidebarTrigger data-testid="button-sidebar-toggle" />
-                <ThemeToggle />
-              </header>
-              <main className="flex-1 overflow-y-auto p-4 bg-animated-mesh">
-                <div className="max-w-7xl mx-auto">
-                  <Router />
-                </div>
-              </main>
-            </div>
-          </div>
-        </SidebarProvider>
+        {isClientRoute ? (
+          <Switch>
+            <Route path="/client-login" component={ClientLogin} />
+            <Route path="/client-portal" component={ClientPortal} />
+          </Switch>
+        ) : (
+          <AdminLayout />
+        )}
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>
