@@ -319,14 +319,6 @@ export default function HomePage() {
       image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Alix-Alexandre.webp"
     },
     {
-      name: "Leonela Reyes",
-      role: "Service Support",
-      phone: "(956)-739-4200",
-      email: "lmrtaxrepair@gmail.com",
-      address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
-      image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Leonela-Reyes.webp"
-    },
-    {
       name: "Jean Julme",
       role: "Service Support",
       phone: "321-280-0658",
@@ -341,14 +333,6 @@ export default function HomePage() {
       email: "lexi.financial97@gmail.com",
       address: "Florida, USA",
       image: "https://iili.io/fxk5A42.jpg"
-    },
-    {
-      name: "I'Esha Johnson",
-      role: "Service Support",
-      phone: "754-444-1482",
-      email: "Ij20taxpro@gmail.com",
-      address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
-      image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/IEsha-Johnson.webp"
     },
     {
       name: "Witnyder Nordelus",
@@ -373,14 +357,6 @@ export default function HomePage() {
       email: "Zephirfinancialgroup@outlook.com",
       address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
       image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/whatsapp-image-2025-01-02-at-064332-2898178b-6779657b30e6d.webp"
-    },
-    {
-      name: "Rhema Ita-Toyo",
-      role: "Service Support",
-      phone: "832-988-3167",
-      email: "rhematoyo@gmail.com",
-      address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
-      image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Rhema-Ita-Toyo.webp"
     },
     {
       name: "John Jay",

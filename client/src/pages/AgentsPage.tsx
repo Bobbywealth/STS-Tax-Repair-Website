@@ -66,14 +66,6 @@ const agents = [
     location: "Houston, TX"
   },
   {
-    name: "Leonela Reyes",
-    title: "Service Support",
-    image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Leonela-Reyes.webp",
-    phone: "(956)-739-4200",
-    email: "lmrtaxrepair@gmail.com",
-    location: "Houston, TX"
-  },
-  {
     name: "Jean Julme",
     title: "Service Support",
     image: "https://iili.io/fxk552S.jpg",
@@ -88,14 +80,6 @@ const agents = [
     phone: "407-485-7998",
     email: "lexi.financial97@gmail.com",
     location: "Florida"
-  },
-  {
-    name: "I'Esha Johnson",
-    title: "Service Support",
-    image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/IEsha-Johnson.webp",
-    phone: "754-444-1482",
-    email: "Ij20taxpro@gmail.com",
-    location: "Houston, TX"
   },
   {
     name: "Witnyder Nordelus",
@@ -119,14 +103,6 @@ const agents = [
     image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/whatsapp-image-2025-01-02-at-064332-2898178b-6779657b30e6d.webp",
     phone: "786-805-1104",
     email: "Zephirfinancialgroup@outlook.com",
-    location: "Houston, TX"
-  },
-  {
-    name: "Rhema Ita-Toyo",
-    title: "Service Support",
-    image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Rhema-Ita-Toyo.webp",
-    phone: "832-988-3167",
-    email: "rhematoyo@gmail.com",
     location: "Houston, TX"
   },
   {
