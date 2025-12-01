@@ -562,10 +562,11 @@ export default function HomePage() {
       >
         {/* Background Image */}
         <div 
-          className="absolute inset-0 bg-cover bg-no-repeat"
+          className="absolute inset-0 bg-no-repeat"
           style={{ 
             backgroundImage: `url('https://www.ststaxrepair.net/wp-content/uploads/2025/01/Untitled-design-3.png')`,
-            backgroundPosition: 'center right'
+            backgroundPosition: 'top center',
+            backgroundSize: '100% auto'
           }}
         />
         
