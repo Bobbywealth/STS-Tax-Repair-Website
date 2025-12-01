@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { 
-  Users, FileText, DollarSign, Clock, Loader2, 
+  Users, FileText, UserPlus, ClipboardList, Loader2, 
   TrendingUp, CheckCircle2, AlertCircle, Calendar,
-  ArrowRight, Sparkles
+  ArrowRight, Sparkles, Clock
 } from "lucide-react";
 import { Link } from "wouter";
 import { cn } from "@/lib/utils";
@@ -55,26 +55,49 @@ function StatCard({
   );
 }
 
+interface Lead {
+  id: number;
+  name: string;
+  stage: string;
+}
+
+interface Task {
+  id: number;
+  title: string;
+  status: string;
+}
+
 export default function Dashboard() {
   const { data: clients, isLoading: clientsLoading } = useQuery<User[]>({
     queryKey: ["/api/users"],
-  });
-
-  const { data: payments, isLoading: paymentsLoading } = useQuery<Payment[]>({
-    queryKey: ["/api/payments"],
   });
 
   const { data: documents, isLoading: documentsLoading } = useQuery<DocumentVersion[]>({
     queryKey: ["/api/documents/all"],
   });
 
+  const { data: leads, isLoading: leadsLoading } = useQuery<Lead[]>({
+    queryKey: ["/api/leads"],
+  });
+
+  const { data: tasks, isLoading: tasksLoading } = useQuery<Task[]>({
+    queryKey: ["/api/tasks"],
+  });
+
   const totalClients = clients?.length || 0;
   const totalDocuments = documents?.length || 0;
   
-  const totalPayments = payments?.reduce((sum, p) => sum + (Number(p.serviceFee) || 0), 0) || 0;
-  const pendingPayments = payments?.filter(p => p.paymentStatus === 'pending').length || 0;
+  // Count active leads (not converted or lost)
+  const activeLeads = leads?.filter(l => 
+    l.stage !== 'Converted' && l.stage !== 'Lost'
+  ).length || 0;
+  
+  // Count open tasks (not completed)
+  const openTasks = tasks?.filter(t => 
+    t.status !== 'completed' && t.status !== 'Complete'
+  ).length || 0;
 
-  const isLoading = clientsLoading || paymentsLoading || documentsLoading;
+  const isLoading = clientsLoading || documentsLoading || leadsLoading || tasksLoading;
 
   const recentClients = clients?.slice(0, 5) || [];
 
@@ -174,18 +197,18 @@ export default function Dashboard() {
               delay={100}
             />
             <StatCard
-              title="Pending Payments"
-              value={pendingPayments}
-              subtitle="Awaiting processing"
-              icon={Clock}
+              title="Active Leads"
+              value={activeLeads}
+              subtitle="In your sales pipeline"
+              icon={UserPlus}
               gradient="bg-gradient-to-br from-amber-500 to-orange-500"
               delay={200}
             />
             <StatCard
-              title="Total Revenue"
-              value={`$${totalPayments.toLocaleString()}`}
-              subtitle="All time earnings"
-              icon={DollarSign}
+              title="Open Tasks"
+              value={openTasks}
+              subtitle="Tasks needing attention"
+              icon={ClipboardList}
               gradient="bg-gradient-to-br from-violet-500 to-purple-600"
               delay={300}
             />
