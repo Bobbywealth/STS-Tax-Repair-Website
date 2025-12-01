@@ -634,7 +634,7 @@ export default function HomePage() {
         {/* DESKTOP HERO - Full width team image */}
         <div className="hidden lg:block relative pt-20">
           {/* Full Team Image - NO CROPPING - Starts below navbar */}
-          <div className="w-full bg-[#e8e4df]">
+          <div className="w-full animate-marble">
             <img 
               src="https://www.ststaxrepair.net/wp-content/uploads/2025/01/Untitled-design-3.png"
               alt="STS Tax Repair Team - All 6 Members"
