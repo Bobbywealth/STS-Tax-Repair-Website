@@ -14,17 +14,12 @@ import {
 import { 
   FileText, 
   Upload, 
-  MessageSquare, 
   DollarSign, 
   Calendar, 
   PenTool,
   FileSignature,
   CheckCircle,
   Eye,
-  Phone,
-  HelpCircle,
-  X,
-  Send,
   Sparkles,
   RotateCcw
 } from "lucide-react";
@@ -44,8 +39,6 @@ export default function ClientPortal() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const [selectedSignature, setSelectedSignature] = useState<ESignature | null>(null);
   const [showSignDialog, setShowSignDialog] = useState(false);
-  const [showChatWidget, setShowChatWidget] = useState(false);
-  const [chatMessage, setChatMessage] = useState("");
   const [showCelebration, setShowCelebration] = useState(false);
   const [tourStarted, setTourStarted] = useState(false);
   const signaturePadRef = useRef<SignaturePadRef>(null);
@@ -76,7 +69,7 @@ export default function ClientPortal() {
         },
         {
           element: "#quick-actions",
-          intro: "Use these quick action buttons to upload documents, schedule appointments, send messages, or sign documents.",
+          intro: "Use these quick action buttons to upload documents, schedule appointments, or sign documents.",
           position: "bottom",
         },
         {
@@ -87,11 +80,6 @@ export default function ClientPortal() {
         {
           element: "#your-documents",
           intro: "This section shows all your uploaded documents and their verification status.",
-          position: "bottom",
-        },
-        {
-          element: "#messages-section",
-          intro: "Use messages to communicate directly with our staff. We'll update you on your refund here.",
           position: "bottom",
         },
         {
@@ -251,12 +239,6 @@ export default function ClientPortal() {
     { name: "ID Document", uploadedDate: "Jan 10, 2025", status: "Verified" },
   ];
 
-  const messages = [
-    { from: "Staff", message: "Your refund has been filed!", date: "Feb 20, 2025", isRead: true },
-    { from: "You", message: "When can I expect my refund?", date: "Feb 18, 2025", isRead: true },
-    { from: "Staff", message: "We received your documents", date: "Jan 16, 2025", isRead: true },
-  ];
-
   const pendingSignatures = signatures?.filter(s => s.status === "pending") || [];
   const signedSignatures = signatures?.filter(s => s.status === "signed") || [];
 
@@ -348,16 +330,6 @@ export default function ClientPortal() {
               <Calendar className="h-5 w-5 text-blue-500" />
             </div>
             <span className="font-medium">Schedule Appointment</span>
-          </Button>
-          <Button 
-            variant="outline" 
-            className="h-auto py-4 flex flex-col items-center gap-2 hover-elevate"
-            data-testid="quick-action-message"
-          >
-            <div className="h-10 w-10 rounded-full bg-purple-500/10 flex items-center justify-center">
-              <MessageSquare className="h-5 w-5 text-purple-500" />
-            </div>
-            <span className="font-medium">Send Message</span>
           </Button>
           <Button 
             variant="outline" 
@@ -549,37 +521,6 @@ export default function ClientPortal() {
           </CardContent>
         </Card>
 
-        {/* Messages Section */}
-        <Card id="messages-section" className="relative overflow-visible">
-          <div className="absolute inset-0 bg-flow-gradient opacity-30 rounded-lg" />
-          <CardHeader className="relative z-10">
-            <div className="flex items-center justify-between">
-              <CardTitle>Messages</CardTitle>
-              <Button variant="outline" data-testid="button-new-message">
-                <MessageSquare className="h-4 w-4 mr-2" />
-                New Message
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="relative z-10">
-            <div className="space-y-3">
-              {messages.map((msg, index) => (
-                <div 
-                  key={index}
-                  className={`p-4 rounded-lg border ${msg.from === "You" ? "bg-primary/5" : "bg-muted/30"}`}
-                  data-testid={`message-${index}`}
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <p className="font-medium">{msg.from}</p>
-                    <p className="text-xs text-muted-foreground">{msg.date}</p>
-                  </div>
-                  <p className="text-sm">{msg.message}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Next Appointment */}
         <Card className="relative overflow-visible">
           <div className="absolute inset-0 bg-flow-gradient opacity-30 rounded-lg" />
@@ -720,70 +661,6 @@ export default function ClientPortal() {
         </div>
       )}
 
-      {/* Floating Support Chat Button */}
-      <div className="fixed bottom-6 right-6 z-40">
-        {showChatWidget ? (
-          <Card className="w-80 shadow-2xl animate-slide-up">
-            <CardHeader className="bg-primary text-primary-foreground rounded-t-lg py-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <HelpCircle className="h-5 w-5" />
-                  <CardTitle className="text-base">Support Chat</CardTitle>
-                </div>
-                <Button 
-                  size="icon" 
-                  variant="ghost" 
-                  className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/20"
-                  onClick={() => setShowChatWidget(false)}
-                  data-testid="button-close-chat"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="p-4">
-              <div className="h-48 mb-4 overflow-y-auto space-y-3">
-                <div className="bg-muted p-3 rounded-lg rounded-tl-none max-w-[85%]">
-                  <p className="text-sm">Hi! How can we help you today?</p>
-                  <p className="text-xs text-muted-foreground mt-1">Support Team</p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Type your message..."
-                  value={chatMessage}
-                  onChange={(e) => setChatMessage(e.target.value)}
-                  className="flex-1 px-3 py-2 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-                  data-testid="input-chat-message"
-                />
-                <Button size="icon" className="gradient-primary border-0" data-testid="button-send-chat">
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="mt-3 flex gap-2">
-                <Button variant="outline" size="sm" className="flex-1 text-xs">
-                  <Phone className="h-3 w-3 mr-1" />
-                  Call Us
-                </Button>
-                <Button variant="outline" size="sm" className="flex-1 text-xs">
-                  <MessageSquare className="h-3 w-3 mr-1" />
-                  Email
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <Button
-            size="lg"
-            className="h-14 w-14 rounded-full gradient-primary border-0 shadow-lg hover:shadow-xl transition-shadow animate-pulse-gentle"
-            onClick={() => setShowChatWidget(true)}
-            data-testid="button-open-chat"
-          >
-            <MessageSquare className="h-6 w-6" />
-          </Button>
-        )}
-      </div>
     </div>
   );
 }
