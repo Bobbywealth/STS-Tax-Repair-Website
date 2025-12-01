@@ -564,17 +564,19 @@ export default function HomePage() {
         <motion.div 
           className="absolute inset-0 hidden lg:block overflow-hidden"
           initial={{ scale: 1 }}
-          animate={{ scale: 1.1 }}
+          animate={{ scale: 1.05 }}
           transition={{ duration: 20, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
         >
           <motion.div
-            className="absolute inset-0 bg-cover bg-center"
+            className="absolute inset-0 bg-center"
             style={{ 
               backgroundImage: `url('https://www.ststaxrepair.net/wp-content/uploads/2025/01/Untitled-design-3.png')`,
+              backgroundSize: 'contain',
+              backgroundRepeat: 'no-repeat'
             }}
             animate={{ 
-              x: [0, -30, 0],
-              y: [0, -15, 0]
+              x: [0, -15, 0],
+              y: [0, -8, 0]
             }}
             transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
           />
