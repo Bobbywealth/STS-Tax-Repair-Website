@@ -1085,7 +1085,7 @@ export default function HomePage() {
       </section>
 
       {/* We Service All 50 States Banner */}
-      <section className="py-6 bg-sts-primary" data-testid="section-states-banner">
+      <section className="py-6 bg-gradient-to-r from-sts-dark via-[#0a1f14] to-sts-dark border-t border-b border-sts-gold/20" data-testid="section-states-banner">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div 
             className="flex items-center justify-center gap-4"
@@ -1093,11 +1093,11 @@ export default function HomePage() {
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
           >
-            <Globe className="w-8 h-8 text-white" />
-            <h2 className="text-2xl sm:text-3xl font-bold text-white text-center">
+            <Globe className="w-8 h-8 text-sts-gold" />
+            <h2 className="text-2xl sm:text-3xl font-bold text-sts-gold text-center">
               We Service All 50 States
             </h2>
-            <Globe className="w-8 h-8 text-white" />
+            <Globe className="w-8 h-8 text-sts-gold" />
           </motion.div>
         </div>
       </section>
