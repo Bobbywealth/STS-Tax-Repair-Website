@@ -72,22 +72,6 @@ export default function Clients() {
     },
   });
 
-  const { data: metrics } = useQuery<{
-    total: number;
-    byStatus: Record<FilingStatus, number>;
-    totalEstimatedRefund: number;
-    totalActualRefund: number;
-  }>({
-    queryKey: ["/api/tax-filings/metrics", selectedYear],
-    queryFn: async () => {
-      const res = await fetch(`/api/tax-filings/metrics/${selectedYear}`, {
-        credentials: "include",
-      });
-      if (!res.ok) return { total: 0, byStatus: {}, totalEstimatedRefund: 0, totalActualRefund: 0 };
-      return res.json();
-    },
-  });
-
   const isLoading = usersLoading || filingsLoading;
 
   const filingsByClientId = useMemo(() => {
@@ -128,9 +112,6 @@ export default function Clients() {
 
   const getStatusCount = (status: StatusFilter) => {
     if (status === "all") return allClients.length;
-    if (metrics?.byStatus) {
-      return metrics.byStatus[status] || 0;
-    }
     return allClients.filter(client => client.filingStatus === status).length;
   };
 
@@ -186,33 +167,6 @@ export default function Clients() {
           </Button>
         </div>
       </div>
-
-      {metrics && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-card border rounded-lg p-4">
-            <p className="text-sm text-muted-foreground">Total Filings</p>
-            <p className="text-2xl font-bold">{metrics.total}</p>
-          </div>
-          <div className="bg-card border rounded-lg p-4">
-            <p className="text-sm text-muted-foreground">Est. Refunds</p>
-            <p className="text-2xl font-bold text-emerald-600">
-              ${metrics.totalEstimatedRefund.toLocaleString()}
-            </p>
-          </div>
-          <div className="bg-card border rounded-lg p-4">
-            <p className="text-sm text-muted-foreground">Actual Refunds</p>
-            <p className="text-2xl font-bold text-green-600">
-              ${metrics.totalActualRefund.toLocaleString()}
-            </p>
-          </div>
-          <div className="bg-card border rounded-lg p-4">
-            <p className="text-sm text-muted-foreground">Completed</p>
-            <p className="text-2xl font-bold">
-              {(metrics.byStatus?.paid || 0) + (metrics.byStatus?.approved || 0)}
-            </p>
-          </div>
-        </div>
-      )}
 
       <div className="flex flex-wrap gap-2" data-testid="client-status-filters">
         {statusFilters.map((filter) => (
