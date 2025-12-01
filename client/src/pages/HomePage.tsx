@@ -566,29 +566,27 @@ export default function HomePage() {
             />
           </div>
           
-          {/* Text Overlay - Positioned over image */}
-          <div className="absolute inset-0 flex items-center">
-            <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
-            <div className="relative max-w-7xl mx-auto px-8 w-full">
+          {/* Text Overlay - Positioned at bottom to avoid covering faces */}
+          <div className="absolute inset-0 flex flex-col justify-end">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+            <div className="relative max-w-7xl mx-auto px-8 w-full pb-8">
               <motion.div 
-                className="max-w-xl"
-                initial={{ opacity: 0, x: -30 }}
-                animate={{ opacity: 1, x: 0 }}
+                className="text-center"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
               >
-                <h1 className="text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.1] mb-6">
+                <h1 className="text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.1] mb-4">
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-sts-gold via-yellow-300 to-sts-gold italic">
                     Reliable
                   </span>
-                  <br />
-                  <span className="text-white">Tax</span>
-                  <br />
-                  <span className="text-white">Advisors</span>
+                  {" "}
+                  <span className="text-white">Tax Advisors</span>
                 </h1>
-                <p className="text-white/90 text-lg lg:text-xl leading-relaxed mb-8 max-w-md">
+                <p className="text-white/90 text-lg lg:text-xl leading-relaxed mb-6 max-w-2xl mx-auto">
                   Let Us Be Your Trusted Partner. Work alongside a dependable ally invested in your best interests. For the maximum refund you deserve, your search ends here.
                 </p>
-                <div className="flex flex-wrap gap-4">
+                <div className="flex flex-wrap justify-center gap-4 mb-8">
                   <Button 
                     size="lg"
                     className="bg-gradient-to-r from-sts-gold to-yellow-400 hover:from-yellow-400 hover:to-sts-gold text-sts-dark font-bold px-8 h-14 text-lg shadow-xl"
@@ -606,8 +604,8 @@ export default function HomePage() {
                   </Button>
                 </div>
                 
-                {/* Trust Badges */}
-                <div className="flex flex-wrap gap-6 mt-10">
+                {/* Trust Badges - Centered */}
+                <div className="flex flex-wrap justify-center gap-8">
                   <div className="flex items-center gap-2 text-white/90">
                     <div className="w-8 h-8 rounded-full bg-sts-gold/20 flex items-center justify-center">
                       <Shield className="w-4 h-4 text-sts-gold" />
