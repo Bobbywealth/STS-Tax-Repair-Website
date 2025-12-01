@@ -25,8 +25,11 @@ import {
   HelpCircle,
   X,
   Send,
-  Sparkles
+  Sparkles,
+  RotateCcw
 } from "lucide-react";
+import introJs from "intro.js";
+import "intro.js/introjs.css";
 import { RefundStatusTracker } from "@/components/RefundStatusTracker";
 import { SignaturePad, type SignaturePadRef } from "@/components/SignaturePad";
 import { Form8879 } from "@/components/Form8879";
@@ -44,7 +47,74 @@ export default function ClientPortal() {
   const [showChatWidget, setShowChatWidget] = useState(false);
   const [chatMessage, setChatMessage] = useState("");
   const [showCelebration, setShowCelebration] = useState(false);
+  const [tourStarted, setTourStarted] = useState(false);
   const signaturePadRef = useRef<SignaturePadRef>(null);
+
+  // Initialize tour on first visit
+  useEffect(() => {
+    const hasSeenTour = localStorage.getItem("clientPortalTourSeen");
+    if (!hasSeenTour && isAuthenticated && !tourStarted) {
+      // Delay tour start to ensure DOM is ready
+      setTimeout(() => startTour(), 500);
+    }
+  }, [isAuthenticated, tourStarted]);
+
+  const startTour = () => {
+    setTourStarted(true);
+    localStorage.setItem("clientPortalTourSeen", "true");
+    
+    const tour = introJs();
+    tour.setOptions({
+      steps: [
+        {
+          intro: "Welcome to your STS TaxRepair Client Portal! Let me show you around.",
+        },
+        {
+          element: "#welcome-section",
+          intro: "This is your welcome area with quick overview of your refund status.",
+          position: "bottom",
+        },
+        {
+          element: "#quick-actions",
+          intro: "Use these quick action buttons to upload documents, schedule appointments, send messages, or sign documents.",
+          position: "bottom",
+        },
+        {
+          element: "#refund-status",
+          intro: "Track your refund status here - see exactly where your tax return is in the process.",
+          position: "bottom",
+        },
+        {
+          element: "#your-documents",
+          intro: "This section shows all your uploaded documents and their verification status.",
+          position: "bottom",
+        },
+        {
+          element: "#messages-section",
+          intro: "Use messages to communicate directly with our staff. We'll update you on your refund here.",
+          position: "bottom",
+        },
+        {
+          intro: "That's the basics! Check the Knowledge Base for more detailed guides. Happy to help!",
+        },
+      ],
+      tooltipPosition: "auto",
+      positionPrecedence: ["bottom", "top", "right", "left"],
+      showProgress: true,
+      showBullets: true,
+      highlightClass: "intro-highlight",
+      exitOnOverlayClick: false,
+      autoPosition: true,
+      disableInteraction: false,
+    });
+    
+    tour.start();
+  };
+
+  const resetTour = () => {
+    localStorage.removeItem("clientPortalTourSeen");
+    startTour();
+  };
 
   // Auto-dismiss celebration after 5 seconds
   useEffect(() => {
@@ -224,28 +294,41 @@ export default function ClientPortal() {
 
       <main className="max-w-6xl mx-auto px-6 py-8 space-y-6 animate-fade-in">
         {/* Welcome Section */}
-        <div className="p-6 rounded-lg bg-flow-gradient">
+        <div id="welcome-section" className="p-6 rounded-lg bg-flow-gradient">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-3xl font-bold mb-2">Welcome back, {clientData.name.split(' ')[0]}!</h2>
               <p className="text-muted-foreground">Track your tax refund status and manage your documents</p>
             </div>
             {/* Demo button - shows celebration animation */}
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2"
-              onClick={() => setShowCelebration(true)}
-              data-testid="button-demo-celebration"
-            >
-              <Sparkles className="h-4 w-4" />
-              Demo Celebration
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => setShowCelebration(true)}
+                data-testid="button-demo-celebration"
+              >
+                <Sparkles className="h-4 w-4" />
+                Demo
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-2"
+                onClick={resetTour}
+                data-testid="button-restart-tour"
+                title="Restart the guided tour"
+              >
+                <RotateCcw className="h-4 w-4" />
+                Tour
+              </Button>
+            </div>
           </div>
         </div>
 
         {/* Quick Action Buttons */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div id="quick-actions" className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Button 
             variant="outline" 
             className="h-auto py-4 flex flex-col items-center gap-2 hover-elevate"
@@ -352,7 +435,7 @@ export default function ClientPortal() {
         )}
 
         {/* Refund Status */}
-        <Card className="relative overflow-visible">
+        <Card id="refund-status" className="relative overflow-visible">
           <div className="absolute inset-0 bg-flow-gradient opacity-30 rounded-lg" />
           <CardHeader className="relative z-10">
             <CardTitle>Your Refund Status</CardTitle>
@@ -431,7 +514,7 @@ export default function ClientPortal() {
         )}
 
         {/* Documents Section */}
-        <Card className="relative overflow-visible">
+        <Card id="your-documents" className="relative overflow-visible">
           <div className="absolute inset-0 bg-flow-gradient opacity-30 rounded-lg" />
           <CardHeader className="relative z-10">
             <div className="flex items-center justify-between">
@@ -467,7 +550,7 @@ export default function ClientPortal() {
         </Card>
 
         {/* Messages Section */}
-        <Card className="relative overflow-visible">
+        <Card id="messages-section" className="relative overflow-visible">
           <div className="absolute inset-0 bg-flow-gradient opacity-30 rounded-lg" />
           <CardHeader className="relative z-10">
             <div className="flex items-center justify-between">
