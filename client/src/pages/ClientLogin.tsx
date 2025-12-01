@@ -59,16 +59,16 @@ export default function ClientLogin() {
             alt="STS TaxRepair Logo" 
             className="h-20 w-auto object-contain mx-auto"
           />
-          <h1 className="text-4xl font-bold">Client Portal</h1>
-          <p className="text-xl text-muted-foreground">Track your tax refund status anytime, anywhere</p>
+          <h1 className="text-4xl font-bold">Welcome</h1>
+          <p className="text-xl text-muted-foreground">Your trusted partner in tax refund solutions</p>
         </div>
 
-        {/* Main Login Card */}
+        {/* Client Login Card */}
         <Card className="relative overflow-visible mx-auto max-w-md">
           <div className="absolute inset-0 bg-flow-gradient opacity-40 rounded-lg" />
           <CardHeader className="relative z-10 text-center">
-            <CardTitle className="text-2xl">Welcome Back</CardTitle>
-            <CardDescription>Login to view your refund status and documents</CardDescription>
+            <CardTitle className="text-2xl">Client Login</CardTitle>
+            <CardDescription>Sign in to track your refund status and documents</CardDescription>
           </CardHeader>
           <CardContent className="relative z-10 space-y-4">
             <form onSubmit={handleClientLogin} className="space-y-4">
