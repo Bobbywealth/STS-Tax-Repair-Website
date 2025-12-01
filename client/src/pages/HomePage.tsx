@@ -568,6 +568,82 @@ export default function HomePage() {
           }}
         />
         
+        {/* Desktop Futuristic Effects Layer */}
+        <div className="absolute inset-0 hidden lg:block overflow-hidden pointer-events-none">
+          {/* Animated Mesh Gradients */}
+          <motion.div 
+            className="absolute top-0 left-0 w-full h-full opacity-30"
+            animate={{ 
+              background: [
+                'radial-gradient(ellipse at 10% 20%, rgba(76, 175, 80, 0.4) 0%, transparent 40%)',
+                'radial-gradient(ellipse at 30% 80%, rgba(76, 175, 80, 0.4) 0%, transparent 40%)',
+                'radial-gradient(ellipse at 10% 20%, rgba(76, 175, 80, 0.4) 0%, transparent 40%)'
+              ]
+            }}
+            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+          />
+          <motion.div 
+            className="absolute top-0 left-0 w-full h-full opacity-20"
+            animate={{ 
+              background: [
+                'radial-gradient(ellipse at 60% 30%, rgba(253, 185, 19, 0.3) 0%, transparent 35%)',
+                'radial-gradient(ellipse at 40% 60%, rgba(253, 185, 19, 0.3) 0%, transparent 35%)',
+                'radial-gradient(ellipse at 60% 30%, rgba(253, 185, 19, 0.3) 0%, transparent 35%)'
+              ]
+            }}
+            transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+          />
+          
+          {/* Floating Particles - Desktop */}
+          {[...Array(15)].map((_, i) => (
+            <motion.div
+              key={`desktop-particle-${i}`}
+              className="absolute rounded-full"
+              style={{
+                width: Math.random() * 8 + 3,
+                height: Math.random() * 8 + 3,
+                left: `${Math.random() * 60}%`,
+                top: `${Math.random() * 100}%`,
+                background: i % 2 === 0 ? 'rgba(253, 185, 19, 0.7)' : 'rgba(76, 175, 80, 0.6)',
+              }}
+              animate={{
+                y: [0, -40, 0],
+                x: [0, Math.random() * 30 - 15, 0],
+                opacity: [0.2, 0.7, 0.2],
+                scale: [1, 1.3, 1],
+              }}
+              transition={{
+                duration: 4 + Math.random() * 3,
+                repeat: Infinity,
+                delay: Math.random() * 3,
+                ease: "easeInOut"
+              }}
+            />
+          ))}
+          
+          {/* Scanning Light Beams - Desktop */}
+          <motion.div
+            className="absolute top-0 w-[2px] h-full bg-gradient-to-b from-transparent via-sts-gold/40 to-transparent"
+            animate={{ x: ['-5%', '70%'] }}
+            transition={{ duration: 5, repeat: Infinity, ease: "linear", repeatDelay: 3 }}
+          />
+          <motion.div
+            className="absolute top-0 w-[1px] h-full bg-gradient-to-b from-transparent via-sts-primary/30 to-transparent"
+            animate={{ x: ['70%', '-5%'] }}
+            transition={{ duration: 6, repeat: Infinity, ease: "linear", repeatDelay: 4, delay: 2 }}
+          />
+          
+          {/* Tech Grid Lines */}
+          <div className="absolute inset-0 opacity-[0.02]" style={{
+            backgroundImage: 'linear-gradient(rgba(255,255,255,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px)',
+            backgroundSize: '60px 60px'
+          }} />
+          
+          {/* Corner Tech Decorations */}
+          <div className="absolute top-32 left-8 w-20 h-20 border-l-2 border-t-2 border-sts-gold/30 rounded-tl-lg" />
+          <div className="absolute bottom-32 left-8 w-20 h-20 border-l-2 border-b-2 border-sts-gold/30 rounded-bl-lg" />
+        </div>
+        
         {/* Mobile/Tablet Futuristic Background */}
         <div className="absolute inset-0 bg-gradient-to-b from-[#0a1f14] via-sts-dark to-[#0a1f14] lg:hidden overflow-hidden">
           {/* Animated Mesh Gradients */}
@@ -835,22 +911,31 @@ export default function HomePage() {
               >
                 <Button 
                   size="lg"
-                  className="bg-gradient-to-r from-sts-gold to-yellow-400 hover:from-sts-gold hover:to-yellow-500 text-sts-dark font-bold px-8 h-14 text-base shadow-xl shadow-sts-gold/30 hover:shadow-sts-gold/50 transition-all group"
+                  className="bg-gradient-to-r from-sts-gold to-yellow-400 hover:from-yellow-400 hover:to-sts-gold text-sts-dark font-bold px-8 h-14 text-base shadow-xl shadow-sts-gold/30 hover:shadow-sts-gold/50 transition-all group relative overflow-hidden"
                   onClick={() => document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" })}
                   data-testid="button-hero-contact"
                 >
-                  CONTACT US
-                  <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                  <span className="relative z-10 flex items-center gap-2">
+                    CONTACT US
+                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </span>
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -skew-x-12"
+                    animate={{ x: ['-200%', '200%'] }}
+                    transition={{ duration: 2, repeat: Infinity, repeatDelay: 1.5 }}
+                  />
                 </Button>
                 <Button 
                   size="lg"
                   variant="outline"
-                  className="border-2 border-white/20 bg-white/5 backdrop-blur-sm text-white hover:bg-white/10 hover:border-white/30 font-semibold px-8 h-14 text-base"
+                  className="border-2 border-white/20 bg-white/5 backdrop-blur-sm text-white hover:bg-white/10 hover:border-sts-gold/50 font-semibold px-8 h-14 text-base relative overflow-hidden group"
                   onClick={() => navigate("/client-login")}
                   data-testid="button-hero-register"
                 >
-                  REGISTER
-                  <ChevronRight className="w-5 h-5 ml-1" />
+                  <span className="relative z-10 flex items-center gap-1">
+                    REGISTER
+                    <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </span>
                 </Button>
               </motion.div>
 
@@ -876,7 +961,7 @@ export default function HomePage() {
               </motion.div>
             </div>
 
-            {/* Glass Contact Card */}
+            {/* Glass Contact Card with Animated Border */}
             <motion.div 
               className="lg:col-span-2"
               initial={{ opacity: 0, x: 50, rotateY: -10 }}
@@ -884,9 +969,28 @@ export default function HomePage() {
               transition={{ delay: 0.2, duration: 0.4 }}
             >
               <div className="relative">
+                {/* Outer Glow */}
                 <div className="absolute -inset-4 bg-gradient-to-r from-sts-primary/20 to-sts-gold/20 rounded-3xl blur-2xl opacity-60" />
                 
-                <Card className="relative bg-white/[0.03] backdrop-blur-xl border border-white/10 p-8 rounded-2xl shadow-2xl" data-testid="form-contact-sidebar">
+                {/* Rotating Border Effect */}
+                <div className="absolute -inset-[2px] rounded-2xl overflow-hidden">
+                  <motion.div
+                    className="absolute inset-0"
+                    style={{
+                      background: 'conic-gradient(from 0deg, transparent, #FDB913, #4CAF50, transparent)',
+                    }}
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                  />
+                </div>
+                
+                {/* Corner Tech Brackets */}
+                <div className="absolute -top-1 -left-1 w-6 h-6 border-l-2 border-t-2 border-sts-gold/60 rounded-tl-lg z-10" />
+                <div className="absolute -top-1 -right-1 w-6 h-6 border-r-2 border-t-2 border-sts-gold/60 rounded-tr-lg z-10" />
+                <div className="absolute -bottom-1 -left-1 w-6 h-6 border-l-2 border-b-2 border-sts-gold/60 rounded-bl-lg z-10" />
+                <div className="absolute -bottom-1 -right-1 w-6 h-6 border-r-2 border-b-2 border-sts-gold/60 rounded-br-lg z-10" />
+                
+                <Card className="relative bg-sts-dark/80 backdrop-blur-xl border-0 p-8 rounded-2xl shadow-2xl" data-testid="form-contact-sidebar">
                   <div className="flex items-center gap-3 mb-6">
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-sts-gold to-yellow-400 flex items-center justify-center">
                       <Phone className="w-6 h-6 text-sts-dark" />
