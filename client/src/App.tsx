@@ -24,6 +24,7 @@ import Knowledge from "@/pages/Knowledge";
 import Reports from "@/pages/Reports";
 import Settings from "@/pages/Settings";
 import UserManagement from "@/pages/UserManagement";
+import Permissions from "@/pages/Permissions";
 import ClientLogin from "@/pages/ClientLogin";
 import ClientPortal from "@/pages/ClientPortal";
 import RedeemInvite from "@/pages/RedeemInvite";
@@ -109,6 +110,9 @@ function AdminRouter({ userRole }: { userRole: UserRole }) {
       </Route>
       <Route path="/users">
         <ProtectedRoute component={UserManagement} allowedRoles={['admin']} userRole={userRole} />
+      </Route>
+      <Route path="/permissions">
+        <ProtectedRoute component={Permissions} allowedRoles={['admin']} userRole={userRole} />
       </Route>
       <Route component={NotFound} />
     </Switch>

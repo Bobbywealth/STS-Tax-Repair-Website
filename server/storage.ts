@@ -24,6 +24,7 @@ import {
   type InsertRoleAuditLog,
   type StaffInvite,
   type InsertStaffInvite,
+  type Permission,
 } from "@shared/mysql-schema";
 
 export interface IStorage {
@@ -110,6 +111,16 @@ export interface IStorage {
   createStaffInvite(invite: InsertStaffInvite): Promise<StaffInvite>;
   useStaffInvite(inviteCode: string, userId: string): Promise<StaffInvite | undefined>;
   deleteStaffInvite(id: string): Promise<boolean>;
+
+  // Permissions
+  getPermissions(): Promise<Permission[]>;
+  getPermissionsByGroup(): Promise<Record<string, Permission[]>>;
+  getRolePermissions(role: UserRole): Promise<string[]>;
+  getAllRolePermissions(): Promise<Record<UserRole, string[]>>;
+  hasPermission(role: UserRole, permissionSlug: string): Promise<boolean>;
+  setRolePermission(role: UserRole, permissionSlug: string, granted: boolean): Promise<void>;
+  updateRolePermissions(role: UserRole, permissions: Record<string, boolean>): Promise<void>;
+  getRolePermissionMatrix(): Promise<{ permissions: Permission[]; matrix: Record<UserRole, Record<string, boolean>>; }>;
 }
 
 // MySQL storage connected to cPanel database
