@@ -29,10 +29,11 @@ import {
 } from "lucide-react";
 import { RefundStatusTracker } from "@/components/RefundStatusTracker";
 import { SignaturePad, type SignaturePadRef } from "@/components/SignaturePad";
+import { Form8879 } from "@/components/Form8879";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { ESignature } from "@shared/schema";
+import type { ESignature, Form8879Data } from "@shared/mysql-schema";
 import logoUrl from "@assets/sts-logo.png";
 
 export default function ClientPortal() {
@@ -69,13 +70,14 @@ export default function ClientPortal() {
 
   // Sign document mutation
   const signMutation = useMutation({
-    mutationFn: async ({ id, signatureData }: { id: string; signatureData: string }) => {
+    mutationFn: async ({ id, signatureData, formData }: { id: string; signatureData: string; formData?: Form8879Data }) => {
       const userAgent = navigator.userAgent;
       await apiRequest("PATCH", `/api/signatures/${id}`, {
         signatureData,
         userAgent,
         signedAt: new Date().toISOString(),
         status: "signed",
+        formData: formData || null,
       });
     },
     onSuccess: () => {
@@ -132,6 +134,16 @@ export default function ClientPortal() {
     signMutation.mutate({
       id: selectedSignature.id,
       signatureData,
+    });
+  };
+
+  const handleForm8879Submit = (formData: Form8879Data, signatureData: string) => {
+    if (!selectedSignature) return;
+    
+    signMutation.mutate({
+      id: selectedSignature.id,
+      signatureData,
+      formData,
     });
   };
 
@@ -510,52 +522,82 @@ export default function ClientPortal() {
 
       {/* Sign Document Dialog */}
       <Dialog open={showSignDialog} onOpenChange={setShowSignDialog}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Sign Document</DialogTitle>
-            <DialogDescription>
-              Please review and sign {selectedSignature?.documentName}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="p-4 rounded-lg bg-muted/50">
-              <p className="font-medium mb-1">{selectedSignature?.documentName}</p>
-              <p className="text-sm text-muted-foreground">{selectedSignature?.documentType}</p>
-              {selectedSignature?.documentUrl && (
-                <Button
-                  variant="ghost"
-                  className="h-auto p-0 mt-2"
-                  onClick={() => window.open(selectedSignature.documentUrl!, '_blank')}
+        <DialogContent className={selectedSignature?.documentType === "form_8879" ? "sm:max-w-[900px] max-h-[90vh] overflow-y-auto" : "sm:max-w-[600px]"}>
+          {selectedSignature?.documentType === "form_8879" ? (
+            <>
+              <DialogHeader>
+                <DialogTitle>Complete & Sign Form 8879</DialogTitle>
+                <DialogDescription className="flex flex-col sm:flex-row sm:items-center gap-2">
+                  Fill in the required fields and sign to authorize e-filing
+                  <Button
+                    variant="ghost"
+                    className="h-auto p-0 text-primary hover:underline w-fit"
+                    onClick={() => window.open("https://www.irs.gov/pub/irs-pdf/f8879.pdf", '_blank')}
+                  >
+                    View Official IRS Form
+                  </Button>
+                </DialogDescription>
+              </DialogHeader>
+              <Form8879
+                clientName={clientData.name}
+                clientAddress=""
+                clientCity=""
+                clientState=""
+                clientZip=""
+                initialData={selectedSignature?.formData as Form8879Data}
+                onSubmit={handleForm8879Submit}
+                isSubmitting={signMutation.isPending}
+              />
+            </>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle>Sign Document</DialogTitle>
+                <DialogDescription>
+                  Please review and sign {selectedSignature?.documentName}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="p-4 rounded-lg bg-muted/50">
+                  <p className="font-medium mb-1">{selectedSignature?.documentName}</p>
+                  <p className="text-sm text-muted-foreground">{selectedSignature?.documentType}</p>
+                  {selectedSignature?.documentUrl && (
+                    <Button
+                      variant="ghost"
+                      className="h-auto p-0 mt-2"
+                      onClick={() => window.open(selectedSignature.documentUrl!, '_blank')}
+                    >
+                      View Document Before Signing
+                    </Button>
+                  )}
+                </div>
+                
+                <SignaturePad ref={signaturePadRef} />
+                
+                <p className="text-xs text-muted-foreground">
+                  By signing this document, you certify that you have reviewed and agree to its contents.
+                  Your signature, IP address, and timestamp will be recorded for IRS compliance.
+                </p>
+              </div>
+              <DialogFooter>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowSignDialog(false)}
+                  data-testid="button-cancel-sign"
                 >
-                  View Document Before Signing
+                  Cancel
                 </Button>
-              )}
-            </div>
-            
-            <SignaturePad ref={signaturePadRef} />
-            
-            <p className="text-xs text-muted-foreground">
-              By signing this document, you certify that you have reviewed and agree to its contents.
-              Your signature, IP address, and timestamp will be recorded for IRS compliance.
-            </p>
-          </div>
-          <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setShowSignDialog(false)}
-              data-testid="button-cancel-sign"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSubmitSignature}
-              disabled={signMutation.isPending}
-              className="gradient-primary border-0"
-              data-testid="button-submit-signature"
-            >
-              {signMutation.isPending ? "Saving..." : "Submit Signature"}
-            </Button>
-          </DialogFooter>
+                <Button
+                  onClick={handleSubmitSignature}
+                  disabled={signMutation.isPending}
+                  className="gradient-primary border-0"
+                  data-testid="button-submit-signature"
+                >
+                  {signMutation.isPending ? "Saving..." : "Submit Signature"}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 
