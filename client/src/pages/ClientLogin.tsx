@@ -41,15 +41,6 @@ export default function ClientLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePos({ x: e.clientX, y: e.clientY });
-    };
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
 
   const handleClientLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,10 +80,21 @@ export default function ClientLogin() {
   return (
     <>
       <style>{`
+        /* Brand Colors:
+           Primary Green: #10b981 (emerald)
+           Dark Green: #059669
+           Light Green: #34d399
+           Mint: #6ee7b7
+           Gold Accent: #f59e0b (for pop)
+           Dark BG: #0a0f0d
+           Charcoal: #1a1f1c
+           Grey: #374151
+        */
+
         .futuristic-bg {
           position: fixed;
           inset: 0;
-          background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 25%, #0f0f2f 50%, #1a0a2e 75%, #0a0a1a 100%);
+          background: linear-gradient(135deg, #0a0f0d 0%, #0d1a14 25%, #0a1510 50%, #0f1a12 75%, #0a0f0d 100%);
           background-size: 400% 400%;
           animation: gradientShift 15s ease infinite;
           overflow: hidden;
@@ -107,8 +109,8 @@ export default function ClientLogin() {
           position: absolute;
           inset: 0;
           background-image: 
-            linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+            linear-gradient(rgba(16, 185, 129, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(16, 185, 129, 0.03) 1px, transparent 1px);
           background-size: 50px 50px;
           animation: gridMove 20s linear infinite;
         }
@@ -129,23 +131,30 @@ export default function ClientLogin() {
           position: absolute;
           width: 3px;
           height: 3px;
-          background: rgba(0, 212, 255, 0.8);
+          background: rgba(16, 185, 129, 0.8);
           border-radius: 50%;
           bottom: -10px;
           animation: rise linear infinite;
-          box-shadow: 0 0 10px rgba(0, 212, 255, 0.5), 0 0 20px rgba(0, 212, 255, 0.3);
+          box-shadow: 0 0 10px rgba(16, 185, 129, 0.5), 0 0 20px rgba(16, 185, 129, 0.3);
         }
 
         .particle:nth-child(odd) {
-          background: rgba(139, 92, 246, 0.8);
-          box-shadow: 0 0 10px rgba(139, 92, 246, 0.5), 0 0 20px rgba(139, 92, 246, 0.3);
+          background: rgba(52, 211, 153, 0.8);
+          box-shadow: 0 0 10px rgba(52, 211, 153, 0.5), 0 0 20px rgba(52, 211, 153, 0.3);
         }
 
         .particle:nth-child(3n) {
-          background: rgba(236, 72, 153, 0.8);
-          box-shadow: 0 0 10px rgba(236, 72, 153, 0.5), 0 0 20px rgba(236, 72, 153, 0.3);
+          background: rgba(245, 158, 11, 0.8);
+          box-shadow: 0 0 10px rgba(245, 158, 11, 0.5), 0 0 20px rgba(245, 158, 11, 0.3);
           width: 4px;
           height: 4px;
+        }
+
+        .particle:nth-child(5n) {
+          background: rgba(255, 255, 255, 0.6);
+          box-shadow: 0 0 10px rgba(255, 255, 255, 0.4), 0 0 20px rgba(255, 255, 255, 0.2);
+          width: 2px;
+          height: 2px;
         }
 
         @keyframes rise {
@@ -183,7 +192,7 @@ export default function ClientLogin() {
         .orb-1 {
           width: 400px;
           height: 400px;
-          background: radial-gradient(circle, rgba(0, 212, 255, 0.6) 0%, transparent 70%);
+          background: radial-gradient(circle, rgba(16, 185, 129, 0.6) 0%, transparent 70%);
           top: -100px;
           left: -100px;
           animation-delay: 0s;
@@ -192,7 +201,7 @@ export default function ClientLogin() {
         .orb-2 {
           width: 500px;
           height: 500px;
-          background: radial-gradient(circle, rgba(139, 92, 246, 0.5) 0%, transparent 70%);
+          background: radial-gradient(circle, rgba(5, 150, 105, 0.5) 0%, transparent 70%);
           bottom: -150px;
           right: -150px;
           animation-delay: 2s;
@@ -201,7 +210,7 @@ export default function ClientLogin() {
         .orb-3 {
           width: 300px;
           height: 300px;
-          background: radial-gradient(circle, rgba(236, 72, 153, 0.4) 0%, transparent 70%);
+          background: radial-gradient(circle, rgba(245, 158, 11, 0.3) 0%, transparent 70%);
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
@@ -234,10 +243,10 @@ export default function ClientLogin() {
           position: absolute;
           inset: -2px;
           background: linear-gradient(45deg, 
-            rgba(0, 212, 255, 0.3), 
-            rgba(139, 92, 246, 0.3), 
-            rgba(236, 72, 153, 0.3),
-            rgba(0, 212, 255, 0.3));
+            rgba(16, 185, 129, 0.4), 
+            rgba(52, 211, 153, 0.3), 
+            rgba(245, 158, 11, 0.3),
+            rgba(16, 185, 129, 0.4));
           background-size: 300% 300%;
           border-radius: inherit;
           z-index: -1;
@@ -251,13 +260,13 @@ export default function ClientLogin() {
         }
 
         .neon-text {
-          background: linear-gradient(90deg, #00d4ff, #8b5cf6, #ec4899, #00d4ff);
+          background: linear-gradient(90deg, #10b981, #34d399, #f59e0b, #10b981);
           background-size: 300% 100%;
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
           animation: shimmer 3s ease infinite;
-          text-shadow: 0 0 30px rgba(0, 212, 255, 0.3);
+          text-shadow: 0 0 30px rgba(16, 185, 129, 0.3);
         }
 
         @keyframes shimmer {
@@ -267,7 +276,7 @@ export default function ClientLogin() {
 
         .neon-button {
           position: relative;
-          background: linear-gradient(135deg, #00d4ff 0%, #8b5cf6 50%, #ec4899 100%);
+          background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
           background-size: 200% 200%;
           animation: gradientMove 3s ease infinite;
           border: none;
@@ -278,7 +287,7 @@ export default function ClientLogin() {
           content: '';
           position: absolute;
           inset: 0;
-          background: linear-gradient(135deg, transparent, rgba(255,255,255,0.2), transparent);
+          background: linear-gradient(135deg, transparent, rgba(255,255,255,0.3), transparent);
           transform: translateX(-100%);
           animation: shine 2s infinite;
         }
@@ -295,18 +304,18 @@ export default function ClientLogin() {
 
         .neon-button:hover {
           box-shadow: 
-            0 0 20px rgba(0, 212, 255, 0.5),
-            0 0 40px rgba(139, 92, 246, 0.3),
-            0 0 60px rgba(236, 72, 153, 0.2);
+            0 0 20px rgba(16, 185, 129, 0.5),
+            0 0 40px rgba(16, 185, 129, 0.3),
+            0 0 60px rgba(16, 185, 129, 0.2);
           transform: translateY(-2px);
         }
 
         .input-glow:focus {
-          border-color: rgba(0, 212, 255, 0.5);
+          border-color: rgba(16, 185, 129, 0.5);
           box-shadow: 
-            0 0 10px rgba(0, 212, 255, 0.2),
-            0 0 20px rgba(0, 212, 255, 0.1),
-            inset 0 0 10px rgba(0, 212, 255, 0.05);
+            0 0 10px rgba(16, 185, 129, 0.2),
+            0 0 20px rgba(16, 185, 129, 0.1),
+            inset 0 0 10px rgba(16, 185, 129, 0.05);
         }
 
         .feature-card {
@@ -316,8 +325,8 @@ export default function ClientLogin() {
         .feature-card:hover {
           transform: translateY(-5px);
           box-shadow: 
-            0 10px 40px rgba(0, 212, 255, 0.2),
-            0 0 20px rgba(139, 92, 246, 0.1);
+            0 10px 40px rgba(16, 185, 129, 0.2),
+            0 0 20px rgba(16, 185, 129, 0.1);
         }
 
         .feature-icon {
@@ -331,16 +340,16 @@ export default function ClientLogin() {
 
         .staff-card {
           transition: all 0.3s ease;
-          border: 1px dashed rgba(139, 92, 246, 0.3);
+          border: 1px dashed rgba(245, 158, 11, 0.3);
         }
 
         .staff-card:hover {
-          border-color: rgba(139, 92, 246, 0.6);
-          box-shadow: 0 0 30px rgba(139, 92, 246, 0.2);
+          border-color: rgba(245, 158, 11, 0.6);
+          box-shadow: 0 0 30px rgba(245, 158, 11, 0.2);
         }
 
         .logo-glow {
-          filter: drop-shadow(0 0 20px rgba(0, 212, 255, 0.3));
+          filter: drop-shadow(0 0 20px rgba(16, 185, 129, 0.4));
           animation: logoFloat 3s ease-in-out infinite;
         }
 
@@ -349,22 +358,11 @@ export default function ClientLogin() {
           50% { transform: translateY(-10px); }
         }
 
-        .typing-cursor::after {
-          content: '|';
-          animation: blink 1s step-end infinite;
-          color: #00d4ff;
-        }
-
-        @keyframes blink {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0; }
-        }
-
         .scanline {
           position: absolute;
           width: 100%;
           height: 2px;
-          background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.3), transparent);
+          background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.4), transparent);
           animation: scan 4s linear infinite;
           pointer-events: none;
         }
@@ -374,6 +372,14 @@ export default function ClientLogin() {
           10% { opacity: 1; }
           90% { opacity: 1; }
           100% { top: 100%; opacity: 0; }
+        }
+
+        .gold-accent {
+          color: #f59e0b;
+        }
+
+        .green-glow {
+          text-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
         }
       `}</style>
 
@@ -405,7 +411,7 @@ export default function ClientLogin() {
           <Card className="glass-card glass-card-glow mx-auto max-w-md rounded-2xl border-0">
             <CardHeader className="text-center pb-2">
               <CardTitle className="text-2xl text-white flex items-center justify-center gap-2">
-                <Sparkles className="h-5 w-5 text-cyan-400" />
+                <Sparkles className="h-5 w-5 text-emerald-400" />
                 Client Login
               </CardTitle>
               <CardDescription className="text-gray-400">Sign in to track your refund status and documents</CardDescription>
@@ -415,7 +421,7 @@ export default function ClientLogin() {
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-gray-300">Email</Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-cyan-400" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-400" />
                     <Input
                       id="email"
                       type="email"
@@ -431,7 +437,7 @@ export default function ClientLogin() {
                 <div className="space-y-2">
                   <Label htmlFor="password" className="text-gray-300">Password</Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-purple-400" />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-400" />
                     <Input
                       id="password"
                       type="password"
@@ -467,7 +473,7 @@ export default function ClientLogin() {
               <div className="text-center space-y-3 pt-2">
                 <p className="text-sm text-gray-400">
                   New client?{" "}
-                  <Link href="/register" className="text-cyan-400 hover:text-cyan-300 font-medium transition-colors">
+                  <Link href="/register" className="text-emerald-400 hover:text-emerald-300 font-medium transition-colors">
                     Register here
                   </Link>
                 </p>
@@ -480,8 +486,8 @@ export default function ClientLogin() {
             <CardContent className="pt-6 pb-6">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-full bg-purple-500/20 flex items-center justify-center border border-purple-500/30">
-                    <UserCog className="h-6 w-6 text-purple-400" />
+                  <div className="h-12 w-12 rounded-full bg-amber-500/20 flex items-center justify-center border border-amber-500/30">
+                    <UserCog className="h-6 w-6 text-amber-400" />
                   </div>
                   <div>
                     <p className="font-medium text-white">Staff / Admin</p>
@@ -491,7 +497,7 @@ export default function ClientLogin() {
                 <Button 
                   variant="outline"
                   onClick={() => window.location.href = '/api/login'}
-                  className="bg-transparent border-purple-500/50 text-purple-400 hover:bg-purple-500/20 hover:border-purple-400 hover:text-purple-300 transition-all duration-300"
+                  className="bg-transparent border-amber-500/50 text-amber-400 hover:bg-amber-500/20 hover:border-amber-400 hover:text-amber-300 transition-all duration-300"
                   data-testid="button-admin-login"
                 >
                   <Shield className="h-4 w-4 mr-2" />
@@ -505,8 +511,8 @@ export default function ClientLogin() {
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
             <Card className="glass-card feature-card rounded-xl border-0">
               <CardContent className="pt-6 text-center">
-                <div className="h-14 w-14 rounded-full bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center mx-auto mb-4 border border-cyan-500/30">
-                  <CheckCircle className="h-7 w-7 text-cyan-400 feature-icon" />
+                <div className="h-14 w-14 rounded-full bg-gradient-to-br from-emerald-500/20 to-green-500/20 flex items-center justify-center mx-auto mb-4 border border-emerald-500/30">
+                  <CheckCircle className="h-7 w-7 text-emerald-400 feature-icon" />
                 </div>
                 <h3 className="font-semibold mb-2 text-white">Track Status</h3>
                 <p className="text-sm text-gray-400">Monitor your refund progress in real-time</p>
@@ -515,8 +521,8 @@ export default function ClientLogin() {
 
             <Card className="glass-card feature-card rounded-xl border-0">
               <CardContent className="pt-6 text-center">
-                <div className="h-14 w-14 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center mx-auto mb-4 border border-purple-500/30">
-                  <FileText className="h-7 w-7 text-purple-400 feature-icon" style={{ animationDelay: '0.2s' }} />
+                <div className="h-14 w-14 rounded-full bg-gradient-to-br from-green-500/20 to-teal-500/20 flex items-center justify-center mx-auto mb-4 border border-green-500/30">
+                  <FileText className="h-7 w-7 text-green-400 feature-icon" style={{ animationDelay: '0.2s' }} />
                 </div>
                 <h3 className="font-semibold mb-2 text-white">Upload Documents</h3>
                 <p className="text-sm text-gray-400">Submit W-2s and 1099s securely online</p>
@@ -525,8 +531,8 @@ export default function ClientLogin() {
 
             <Card className="glass-card feature-card rounded-xl border-0">
               <CardContent className="pt-6 text-center">
-                <div className="h-14 w-14 rounded-full bg-gradient-to-br from-pink-500/20 to-orange-500/20 flex items-center justify-center mx-auto mb-4 border border-pink-500/30">
-                  <Clock className="h-7 w-7 text-pink-400 feature-icon" style={{ animationDelay: '0.4s' }} />
+                <div className="h-14 w-14 rounded-full bg-gradient-to-br from-amber-500/20 to-yellow-500/20 flex items-center justify-center mx-auto mb-4 border border-amber-500/30">
+                  <Clock className="h-7 w-7 text-amber-400 feature-icon" style={{ animationDelay: '0.4s' }} />
                 </div>
                 <h3 className="font-semibold mb-2 text-white">24/7 Access</h3>
                 <p className="text-sm text-gray-400">Check your status anytime, from anywhere</p>
@@ -535,8 +541,8 @@ export default function ClientLogin() {
 
             <Card className="glass-card feature-card rounded-xl border-0">
               <CardContent className="pt-6 text-center">
-                <div className="h-14 w-14 rounded-full bg-gradient-to-br from-green-500/20 to-teal-500/20 flex items-center justify-center mx-auto mb-4 border border-green-500/30">
-                  <Shield className="h-7 w-7 text-green-400 feature-icon" style={{ animationDelay: '0.6s' }} />
+                <div className="h-14 w-14 rounded-full bg-gradient-to-br from-teal-500/20 to-emerald-500/20 flex items-center justify-center mx-auto mb-4 border border-teal-500/30">
+                  <Shield className="h-7 w-7 text-teal-400 feature-icon" style={{ animationDelay: '0.6s' }} />
                 </div>
                 <h3 className="font-semibold mb-2 text-white">Secure & Private</h3>
                 <p className="text-sm text-gray-400">Your data is encrypted and protected</p>
@@ -548,7 +554,7 @@ export default function ClientLogin() {
           <div className="text-center space-y-2">
             <p className="text-sm text-gray-400">
               Need help? Contact us at{" "}
-              <a href="mailto:support@ststaxrepair.com" className="text-cyan-400 hover:text-cyan-300 transition-colors">
+              <a href="mailto:support@ststaxrepair.com" className="text-emerald-400 hover:text-emerald-300 transition-colors">
                 support@ststaxrepair.com
               </a>
             </p>
