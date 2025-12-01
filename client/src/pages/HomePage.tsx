@@ -553,7 +553,7 @@ export default function HomePage() {
       >
         {/* DESKTOP HERO - Full width team image */}
         <div className="hidden lg:block relative">
-          {/* Full Team Image - NO CROPPING */}
+          {/* Full Team Image - NO CROPPING - Aligned to TOP */}
           <div className="w-full bg-[#e8e4df]">
             <img 
               src="https://www.ststaxrepair.net/wp-content/uploads/2025/01/Untitled-design-3.png"
@@ -561,9 +561,6 @@ export default function HomePage() {
               className="w-full h-auto"
               style={{ 
                 display: 'block',
-                maxHeight: '85vh',
-                objectFit: 'contain',
-                objectPosition: 'center center',
                 margin: '0 auto'
               }}
             />
