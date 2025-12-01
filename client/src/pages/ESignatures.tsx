@@ -98,7 +98,7 @@ export default function ESignatures() {
       documentType: string;
       documentUrl: string;
     }) => {
-      await apiRequest('/api/signatures', 'POST', {
+      await apiRequest('POST', '/api/signatures', {
         ...data,
         status: 'pending',
       });
@@ -125,7 +125,7 @@ export default function ESignatures() {
   const signMutation = useMutation({
     mutationFn: async ({ id, signatureData, formData }: { id: string; signatureData: string; formData?: Form8879Data }) => {
       const userAgent = navigator.userAgent;
-      await apiRequest(`/api/signatures/${id}`, "PATCH", {
+      await apiRequest("PATCH", `/api/signatures/${id}`, {
         signatureData,
         userAgent,
         signedAt: new Date().toISOString(),
@@ -154,7 +154,7 @@ export default function ESignatures() {
   // Delete signature request mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      await apiRequest(`/api/signatures/${id}`, "DELETE");
+      await apiRequest("DELETE", `/api/signatures/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/signatures'] });
