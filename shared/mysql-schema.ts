@@ -324,3 +324,146 @@ export const insertStaffInviteSchema = createInsertSchema(staffInvites).omit({
 
 export type InsertStaffInvite = z.infer<typeof insertStaffInviteSchema>;
 export type StaffInvite = typeof staffInvites.$inferSelect;
+
+// Permissions - defines all available system permissions
+export const permissions = mysqlTable("permissions", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+  slug: varchar("slug", { length: 100 }).notNull().unique(),
+  label: varchar("label", { length: 255 }).notNull(),
+  description: text("description"),
+  featureGroup: varchar("feature_group", { length: 100 }).notNull(),
+  sortOrder: int("sort_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertPermissionSchema = createInsertSchema(permissions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertPermission = z.infer<typeof insertPermissionSchema>;
+export type Permission = typeof permissions.$inferSelect;
+
+// Role Permissions - maps which permissions each role has
+export const rolePermissions = mysqlTable(
+  "role_permissions",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+    role: varchar("role", { length: 20 }).notNull().$type<UserRole>(),
+    permissionId: varchar("permission_id", { length: 36 }).notNull(),
+    granted: boolean("granted").default(true),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => ({
+    roleIdx: index("role_permission_role_idx").on(table.role),
+    permissionIdx: index("role_permission_permission_idx").on(table.permissionId),
+  }),
+);
+
+export const insertRolePermissionSchema = createInsertSchema(rolePermissions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertRolePermission = z.infer<typeof insertRolePermissionSchema>;
+export type RolePermission = typeof rolePermissions.$inferSelect;
+
+// Permission Groups for UI organization
+export const PermissionGroups = {
+  DASHBOARD: 'dashboard',
+  CLIENTS: 'clients',
+  LEADS: 'leads',
+  DOCUMENTS: 'documents',
+  PAYMENTS: 'payments',
+  APPOINTMENTS: 'appointments',
+  DEADLINES: 'deadlines',
+  TASKS: 'tasks',
+  SUPPORT: 'support',
+  REPORTS: 'reports',
+  SETTINGS: 'settings',
+  ADMIN: 'admin',
+} as const;
+
+// Default permission definitions with role assignments
+export const DefaultPermissions: Array<{
+  slug: string;
+  label: string;
+  description: string;
+  featureGroup: string;
+  defaultRoles: UserRole[];
+}> = [
+  // Dashboard
+  { slug: 'dashboard.view', label: 'View Dashboard', description: 'Access the main dashboard', featureGroup: 'dashboard', defaultRoles: ['client', 'agent', 'tax_office', 'admin'] },
+  { slug: 'dashboard.stats', label: 'View Statistics', description: 'View dashboard statistics and charts', featureGroup: 'dashboard', defaultRoles: ['agent', 'tax_office', 'admin'] },
+  
+  // Clients
+  { slug: 'clients.view', label: 'View Clients', description: 'View client list and details', featureGroup: 'clients', defaultRoles: ['agent', 'tax_office', 'admin'] },
+  { slug: 'clients.create', label: 'Create Clients', description: 'Add new clients', featureGroup: 'clients', defaultRoles: ['agent', 'tax_office', 'admin'] },
+  { slug: 'clients.edit', label: 'Edit Clients', description: 'Modify client information', featureGroup: 'clients', defaultRoles: ['agent', 'tax_office', 'admin'] },
+  { slug: 'clients.delete', label: 'Delete Clients', description: 'Remove clients from system', featureGroup: 'clients', defaultRoles: ['tax_office', 'admin'] },
+  
+  // Leads
+  { slug: 'leads.view', label: 'View Leads', description: 'View lead list and details', featureGroup: 'leads', defaultRoles: ['agent', 'tax_office', 'admin'] },
+  { slug: 'leads.create', label: 'Create Leads', description: 'Add new leads', featureGroup: 'leads', defaultRoles: ['agent', 'tax_office', 'admin'] },
+  { slug: 'leads.edit', label: 'Edit Leads', description: 'Modify lead information', featureGroup: 'leads', defaultRoles: ['agent', 'tax_office', 'admin'] },
+  { slug: 'leads.convert', label: 'Convert Leads', description: 'Convert leads to clients', featureGroup: 'leads', defaultRoles: ['agent', 'tax_office', 'admin'] },
+  
+  // Documents
+  { slug: 'documents.view', label: 'View Documents', description: 'View uploaded documents', featureGroup: 'documents', defaultRoles: ['client', 'agent', 'tax_office', 'admin'] },
+  { slug: 'documents.upload', label: 'Upload Documents', description: 'Upload new documents', featureGroup: 'documents', defaultRoles: ['client', 'agent', 'tax_office', 'admin'] },
+  { slug: 'documents.download', label: 'Download Documents', description: 'Download documents', featureGroup: 'documents', defaultRoles: ['client', 'agent', 'tax_office', 'admin'] },
+  { slug: 'documents.delete', label: 'Delete Documents', description: 'Remove documents', featureGroup: 'documents', defaultRoles: ['tax_office', 'admin'] },
+  { slug: 'documents.request', label: 'Request Documents', description: 'Request documents from clients', featureGroup: 'documents', defaultRoles: ['agent', 'tax_office', 'admin'] },
+  
+  // E-Signatures
+  { slug: 'signatures.view', label: 'View E-Signatures', description: 'View e-signature requests', featureGroup: 'documents', defaultRoles: ['client', 'agent', 'tax_office', 'admin'] },
+  { slug: 'signatures.create', label: 'Create E-Signature Requests', description: 'Send Form 8879 for signature', featureGroup: 'documents', defaultRoles: ['agent', 'tax_office', 'admin'] },
+  { slug: 'signatures.sign', label: 'Sign Documents', description: 'Sign e-signature requests', featureGroup: 'documents', defaultRoles: ['client', 'agent', 'tax_office', 'admin'] },
+  { slug: 'signatures.download_pdf', label: 'Download Signed PDFs', description: 'Download completed Form 8879 PDFs', featureGroup: 'documents', defaultRoles: ['agent', 'tax_office', 'admin'] },
+  
+  // Payments
+  { slug: 'payments.view', label: 'View Payments', description: 'View payment records', featureGroup: 'payments', defaultRoles: ['tax_office', 'admin'] },
+  { slug: 'payments.create', label: 'Create Payments', description: 'Add payment records', featureGroup: 'payments', defaultRoles: ['tax_office', 'admin'] },
+  { slug: 'payments.edit', label: 'Edit Payments', description: 'Modify payment information', featureGroup: 'payments', defaultRoles: ['tax_office', 'admin'] },
+  { slug: 'payments.delete', label: 'Delete Payments', description: 'Remove payment records', featureGroup: 'payments', defaultRoles: ['admin'] },
+  
+  // Appointments
+  { slug: 'appointments.view', label: 'View Appointments', description: 'View scheduled appointments', featureGroup: 'appointments', defaultRoles: ['client', 'agent', 'tax_office', 'admin'] },
+  { slug: 'appointments.create', label: 'Create Appointments', description: 'Schedule new appointments', featureGroup: 'appointments', defaultRoles: ['agent', 'tax_office', 'admin'] },
+  { slug: 'appointments.edit', label: 'Edit Appointments', description: 'Modify appointment details', featureGroup: 'appointments', defaultRoles: ['agent', 'tax_office', 'admin'] },
+  { slug: 'appointments.delete', label: 'Delete Appointments', description: 'Cancel appointments', featureGroup: 'appointments', defaultRoles: ['tax_office', 'admin'] },
+  
+  // Tax Deadlines
+  { slug: 'deadlines.view', label: 'View Tax Deadlines', description: 'View tax deadline calendar', featureGroup: 'deadlines', defaultRoles: ['agent', 'tax_office', 'admin'] },
+  { slug: 'deadlines.create', label: 'Create Deadlines', description: 'Add new tax deadlines', featureGroup: 'deadlines', defaultRoles: ['tax_office', 'admin'] },
+  { slug: 'deadlines.edit', label: 'Edit Deadlines', description: 'Modify deadline information', featureGroup: 'deadlines', defaultRoles: ['tax_office', 'admin'] },
+  
+  // Tasks
+  { slug: 'tasks.view', label: 'View Tasks', description: 'View task board', featureGroup: 'tasks', defaultRoles: ['agent', 'tax_office', 'admin'] },
+  { slug: 'tasks.create', label: 'Create Tasks', description: 'Add new tasks', featureGroup: 'tasks', defaultRoles: ['agent', 'tax_office', 'admin'] },
+  { slug: 'tasks.edit', label: 'Edit Tasks', description: 'Modify task details', featureGroup: 'tasks', defaultRoles: ['agent', 'tax_office', 'admin'] },
+  { slug: 'tasks.assign', label: 'Assign Tasks', description: 'Assign tasks to team members', featureGroup: 'tasks', defaultRoles: ['tax_office', 'admin'] },
+  
+  // Support
+  { slug: 'support.view', label: 'View Support Tickets', description: 'View support tickets', featureGroup: 'support', defaultRoles: ['client', 'agent', 'tax_office', 'admin'] },
+  { slug: 'support.create', label: 'Create Support Tickets', description: 'Submit support requests', featureGroup: 'support', defaultRoles: ['client', 'agent', 'tax_office', 'admin'] },
+  { slug: 'support.respond', label: 'Respond to Tickets', description: 'Reply to support tickets', featureGroup: 'support', defaultRoles: ['agent', 'tax_office', 'admin'] },
+  { slug: 'support.close', label: 'Close Tickets', description: 'Close support tickets', featureGroup: 'support', defaultRoles: ['agent', 'tax_office', 'admin'] },
+  
+  // Reports
+  { slug: 'reports.view', label: 'View Reports', description: 'Access reports and analytics', featureGroup: 'reports', defaultRoles: ['tax_office', 'admin'] },
+  { slug: 'reports.export', label: 'Export Reports', description: 'Export report data', featureGroup: 'reports', defaultRoles: ['tax_office', 'admin'] },
+  
+  // Settings
+  { slug: 'settings.view', label: 'View Settings', description: 'View system settings', featureGroup: 'settings', defaultRoles: ['tax_office', 'admin'] },
+  { slug: 'settings.edit', label: 'Edit Settings', description: 'Modify system settings', featureGroup: 'settings', defaultRoles: ['admin'] },
+  
+  // Admin
+  { slug: 'admin.users', label: 'Manage Users', description: 'Manage user accounts and roles', featureGroup: 'admin', defaultRoles: ['admin'] },
+  { slug: 'admin.permissions', label: 'Manage Permissions', description: 'Configure role permissions', featureGroup: 'admin', defaultRoles: ['admin'] },
+  { slug: 'admin.audit', label: 'View Audit Logs', description: 'View system audit logs', featureGroup: 'admin', defaultRoles: ['admin'] },
+  { slug: 'admin.invites', label: 'Manage Invites', description: 'Create and manage staff invites', featureGroup: 'admin', defaultRoles: ['admin'] },
+  { slug: 'admin.system', label: 'System Administration', description: 'Full system administration access', featureGroup: 'admin', defaultRoles: ['admin'] },
+];

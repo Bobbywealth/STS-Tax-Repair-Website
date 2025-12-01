@@ -145,8 +145,105 @@ export async function runMySQLMigrations(): Promise<void> {
       console.log('staff_invites table created successfully!');
     }
     
+    // Create permissions table
+    const [permissionsTable] = await connection.query(
+      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'permissions'`,
+      [dbName]
+    );
+    
+    if (Array.isArray(permissionsTable) && permissionsTable.length === 0) {
+      console.log('Creating permissions table...');
+      await connection.query(`
+        CREATE TABLE permissions (
+          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+          slug VARCHAR(100) NOT NULL UNIQUE,
+          label VARCHAR(255) NOT NULL,
+          description TEXT,
+          feature_group VARCHAR(100) NOT NULL,
+          sort_order INT DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_permissions_group (feature_group),
+          INDEX idx_permissions_slug (slug)
+        )
+      `);
+      console.log('permissions table created successfully!');
+      
+      // Seed default permissions
+      await seedDefaultPermissions(connection);
+    }
+    
+    // Create role_permissions table
+    const [rolePermissionsTable] = await connection.query(
+      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'role_permissions'`,
+      [dbName]
+    );
+    
+    if (Array.isArray(rolePermissionsTable) && rolePermissionsTable.length === 0) {
+      console.log('Creating role_permissions table...');
+      await connection.query(`
+        CREATE TABLE role_permissions (
+          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+          role VARCHAR(20) NOT NULL,
+          permission_id VARCHAR(36) NOT NULL,
+          granted BOOLEAN DEFAULT TRUE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_role_permissions_role (role),
+          INDEX idx_role_permissions_permission (permission_id),
+          UNIQUE KEY unique_role_permission (role, permission_id)
+        )
+      `);
+      console.log('role_permissions table created successfully!');
+      
+      // Seed default role permissions
+      await seedDefaultRolePermissions(connection);
+    }
+    
     connection.release();
   } catch (error) {
     console.error('MySQL migration error:', error);
   }
+}
+
+// Seed default permissions based on DefaultPermissions constant
+async function seedDefaultPermissions(connection: mysql.PoolConnection): Promise<void> {
+  const { DefaultPermissions } = await import('@shared/mysql-schema');
+  
+  console.log('Seeding default permissions...');
+  for (let i = 0; i < DefaultPermissions.length; i++) {
+    const perm = DefaultPermissions[i];
+    await connection.query(
+      `INSERT INTO permissions (slug, label, description, feature_group, sort_order) VALUES (?, ?, ?, ?, ?)`,
+      [perm.slug, perm.label, perm.description, perm.featureGroup, i]
+    );
+  }
+  console.log(`Seeded ${DefaultPermissions.length} permissions successfully!`);
+}
+
+// Seed default role permissions
+async function seedDefaultRolePermissions(connection: mysql.PoolConnection): Promise<void> {
+  const { DefaultPermissions } = await import('@shared/mysql-schema');
+  
+  console.log('Seeding default role permissions...');
+  
+  // Get all permission IDs
+  const [permissions] = await connection.query(`SELECT id, slug FROM permissions`);
+  const permissionMap = new Map((permissions as any[]).map(p => [p.slug, p.id]));
+  
+  let count = 0;
+  for (const perm of DefaultPermissions) {
+    const permissionId = permissionMap.get(perm.slug);
+    if (!permissionId) continue;
+    
+    for (const role of perm.defaultRoles) {
+      await connection.query(
+        `INSERT INTO role_permissions (role, permission_id, granted) VALUES (?, ?, TRUE)`,
+        [role, permissionId]
+      );
+      count++;
+    }
+  }
+  console.log(`Seeded ${count} role permissions successfully!`);
 }
