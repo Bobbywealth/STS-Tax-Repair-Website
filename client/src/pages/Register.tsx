@@ -7,7 +7,6 @@ import { Link, useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -23,9 +22,28 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { 
+  Eye, 
+  EyeOff, 
+  Loader2, 
+  User, 
+  MapPin, 
+  Shield, 
+  CreditCard,
+  CheckCircle,
+  ArrowRight,
+  ArrowLeft,
+  FileText,
+  Building2,
+  Phone,
+  Mail,
+  Calendar,
+  Briefcase,
+  Users
+} from "lucide-react";
+import logoUrl from "@assets/sts-logo.png";
 
 const US_STATES = [
   "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut",
@@ -68,11 +86,19 @@ const registerSchema = z.object({
 
 type RegisterForm = z.infer<typeof registerSchema>;
 
+const steps = [
+  { id: 1, title: "Personal Info", icon: User, description: "Name & contact details" },
+  { id: 2, title: "Address", icon: MapPin, description: "Your location" },
+  { id: 3, title: "Tax Info", icon: FileText, description: "IRS credentials" },
+  { id: 4, title: "Banking", icon: CreditCard, description: "Direct deposit" },
+];
+
 export default function Register() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
 
   const { data: referrers = [] } = useQuery<Array<{ id: string; firstName: string; lastName: string }>>({
     queryKey: ["/api/users/referrers"],
@@ -113,8 +139,8 @@ export default function Register() {
     },
     onSuccess: () => {
       toast({
-        title: "Registration Successful",
-        description: "Your account has been created. Please log in.",
+        title: "Registration Successful!",
+        description: "Your account has been created. Please log in to continue.",
       });
       navigate("/client-login");
     },
@@ -131,33 +157,112 @@ export default function Register() {
     registerMutation.mutate(data);
   };
 
+  const nextStep = () => {
+    if (currentStep < 4) setCurrentStep(currentStep + 1);
+  };
+
+  const prevStep = () => {
+    if (currentStep > 1) setCurrentStep(currentStep - 1);
+  };
+
+  const canProceed = () => {
+    const values = form.getValues();
+    if (currentStep === 1) {
+      return values.firstName && values.lastName && values.email && values.password && values.confirmPassword;
+    }
+    return true;
+  };
+
   return (
-    <div className="min-h-screen bg-background py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-foreground" data-testid="text-register-title">Register</h1>
+    <div className="min-h-screen bg-animated-mesh py-8 px-4">
+      <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
+        {/* Header with Logo */}
+        <div className="text-center space-y-4">
+          <img 
+            src={logoUrl} 
+            alt="STS TaxRepair Logo" 
+            className="h-16 w-auto object-contain mx-auto"
+          />
+          <div>
+            <h1 className="text-3xl font-bold" data-testid="text-register-title">Create Your Account</h1>
+            <p className="text-muted-foreground mt-2">Join thousands of clients who trust us with their tax refunds</p>
+          </div>
         </div>
 
-        <Card>
-          <CardContent className="pt-6">
+        {/* Progress Steps */}
+        <div className="flex justify-center">
+          <div className="flex items-center gap-2 md:gap-4">
+            {steps.map((step, index) => (
+              <div key={step.id} className="flex items-center">
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(step.id)}
+                  className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-all ${
+                    currentStep === step.id 
+                      ? "bg-primary/10 text-primary" 
+                      : currentStep > step.id 
+                        ? "text-primary/70" 
+                        : "text-muted-foreground"
+                  }`}
+                >
+                  <div className={`h-10 w-10 rounded-full flex items-center justify-center transition-all ${
+                    currentStep === step.id 
+                      ? "bg-primary text-primary-foreground" 
+                      : currentStep > step.id 
+                        ? "bg-primary/20 text-primary" 
+                        : "bg-muted text-muted-foreground"
+                  }`}>
+                    {currentStep > step.id ? (
+                      <CheckCircle className="h-5 w-5" />
+                    ) : (
+                      <step.icon className="h-5 w-5" />
+                    )}
+                  </div>
+                  <span className="text-xs font-medium hidden md:block">{step.title}</span>
+                </button>
+                {index < steps.length - 1 && (
+                  <div className={`w-8 md:w-16 h-0.5 mx-1 ${
+                    currentStep > step.id ? "bg-primary" : "bg-muted"
+                  }`} />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Main Form Card */}
+        <Card className="relative overflow-visible">
+          <div className="absolute inset-0 bg-flow-gradient opacity-30 rounded-lg" />
+          <CardHeader className="relative z-10 text-center pb-2">
+            <CardTitle className="text-xl flex items-center justify-center gap-2">
+              {currentStep === 1 && <User className="h-5 w-5 text-primary" />}
+              {currentStep === 2 && <MapPin className="h-5 w-5 text-primary" />}
+              {currentStep === 3 && <FileText className="h-5 w-5 text-primary" />}
+              {currentStep === 4 && <CreditCard className="h-5 w-5 text-primary" />}
+              {steps[currentStep - 1].title}
+            </CardTitle>
+            <CardDescription>{steps[currentStep - 1].description}</CardDescription>
+          </CardHeader>
+          <CardContent className="relative z-10">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-4">
-                    <h2 className="text-lg font-semibold text-foreground border-b pb-2">
-                      Primary Client Information
-                    </h2>
-
+                
+                {/* Step 1: Personal Info */}
+                {currentStep === 1 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in">
                     <FormField
                       control={form.control}
                       name="firstName"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-foreground">
+                          <FormLabel>
                             <span className="text-destructive">*</span> First Name
                           </FormLabel>
                           <FormControl>
-                            <Input {...field} data-testid="input-first-name" />
+                            <div className="relative">
+                              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                              <Input {...field} className="pl-10" placeholder="John" data-testid="input-first-name" />
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -169,11 +274,49 @@ export default function Register() {
                       name="lastName"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-foreground">
+                          <FormLabel>
                             <span className="text-destructive">*</span> Last Name
                           </FormLabel>
                           <FormControl>
-                            <Input {...field} data-testid="input-last-name" />
+                            <div className="relative">
+                              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                              <Input {...field} className="pl-10" placeholder="Doe" data-testid="input-last-name" />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="fullName"
+                      render={({ field }) => (
+                        <FormItem className="md:col-span-2">
+                          <FormLabel>
+                            <span className="text-destructive">*</span> Full Legal Name (as it appears on tax documents)
+                          </FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="John Michael Doe" data-testid="input-full-name" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            <span className="text-destructive">*</span> Email Address
+                          </FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                              <Input {...field} type="email" className="pl-10" placeholder="john@example.com" data-testid="input-email" />
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -185,9 +328,12 @@ export default function Register() {
                       name="phone"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-foreground">Phone</FormLabel>
+                          <FormLabel>Phone Number</FormLabel>
                           <FormControl>
-                            <Input {...field} type="tel" data-testid="input-phone" />
+                            <div className="relative">
+                              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                              <Input {...field} type="tel" className="pl-10" placeholder="(555) 123-4567" data-testid="input-phone" />
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -199,21 +345,24 @@ export default function Register() {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-foreground">
+                          <FormLabel>
                             <span className="text-destructive">*</span> Password
                           </FormLabel>
                           <FormControl>
                             <div className="relative">
+                              <Shield className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                               <Input
                                 {...field}
                                 type={showPassword ? "text" : "password"}
+                                className="pl-10 pr-10"
+                                placeholder="Min. 8 characters"
                                 data-testid="input-password"
                               />
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="absolute right-0 top-0 h-full"
+                                className="absolute right-0 top-0 h-full hover:bg-transparent"
                                 onClick={() => setShowPassword(!showPassword)}
                                 data-testid="button-toggle-password"
                               >
@@ -231,21 +380,24 @@ export default function Register() {
                       name="confirmPassword"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-foreground">
-                            <span className="text-destructive">*</span> Repeat Password
+                          <FormLabel>
+                            <span className="text-destructive">*</span> Confirm Password
                           </FormLabel>
                           <FormControl>
                             <div className="relative">
+                              <Shield className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                               <Input
                                 {...field}
                                 type={showConfirmPassword ? "text" : "password"}
+                                className="pl-10 pr-10"
+                                placeholder="Repeat password"
                                 data-testid="input-confirm-password"
                               />
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="absolute right-0 top-0 h-full"
+                                className="absolute right-0 top-0 h-full hover:bg-transparent"
                                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                                 data-testid="button-toggle-confirm-password"
                               >
@@ -260,12 +412,54 @@ export default function Register() {
 
                     <FormField
                       control={form.control}
-                      name="address"
+                      name="birthday"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-foreground">Address</FormLabel>
+                          <FormLabel>Date of Birth</FormLabel>
                           <FormControl>
-                            <Input {...field} data-testid="input-address" />
+                            <div className="relative">
+                              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                              <Input {...field} type="date" className="pl-10" data-testid="input-birthday" />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="occupation"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Occupation</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                              <Input {...field} className="pl-10" placeholder="Your profession" data-testid="input-occupation" />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
+
+                {/* Step 2: Address */}
+                {currentStep === 2 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in">
+                    <FormField
+                      control={form.control}
+                      name="address"
+                      render={({ field }) => (
+                        <FormItem className="md:col-span-2">
+                          <FormLabel>Street Address</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                              <Input {...field} className="pl-10" placeholder="123 Main Street" data-testid="input-address" />
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -277,23 +471,9 @@ export default function Register() {
                       name="city"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-foreground">City</FormLabel>
+                          <FormLabel>City</FormLabel>
                           <FormControl>
-                            <Input {...field} data-testid="input-city" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="zipCode"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-foreground">Zip Code</FormLabel>
-                          <FormControl>
-                            <Input {...field} data-testid="input-zip-code" />
+                            <Input {...field} placeholder="New York" data-testid="input-city" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -305,7 +485,7 @@ export default function Register() {
                       name="state"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-foreground">State</FormLabel>
+                          <FormLabel>State</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger data-testid="select-state">
@@ -327,10 +507,24 @@ export default function Register() {
 
                     <FormField
                       control={form.control}
+                      name="zipCode"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Zip Code</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="10001" data-testid="input-zip-code" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
                       name="country"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-foreground">Country</FormLabel>
+                          <FormLabel>Country</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger data-testid="select-country">
@@ -347,231 +541,257 @@ export default function Register() {
                         </FormItem>
                       )}
                     />
-                  </div>
-
-                  <div className="space-y-4">
-                    <h2 className="text-lg font-semibold text-foreground border-b pb-2">
-                      Client Information
-                    </h2>
-
-                    <FormField
-                      control={form.control}
-                      name="fullName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-foreground">
-                            <span className="text-destructive">*</span> Full Name
-                          </FormLabel>
-                          <FormControl>
-                            <Input {...field} data-testid="input-full-name" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
 
                     <FormField
                       control={form.control}
                       name="phoneSecondary"
                       render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-foreground">Phone Number</FormLabel>
+                        <FormItem className="md:col-span-2">
+                          <FormLabel>Secondary Phone (optional)</FormLabel>
                           <FormControl>
-                            <Input {...field} type="tel" data-testid="input-phone-secondary" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-foreground">
-                            <span className="text-destructive">*</span> Email Address
-                          </FormLabel>
-                          <FormControl>
-                            <Input {...field} type="email" data-testid="input-email" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="birthday"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-foreground">Birthday</FormLabel>
-                          <FormControl>
-                            <Input {...field} type="date" data-testid="input-birthday" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="occupation"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-foreground">Occupation</FormLabel>
-                          <FormControl>
-                            <Input {...field} data-testid="input-occupation" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="irsUsername"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-foreground">IRS Username</FormLabel>
-                          <FormControl>
-                            <Input {...field} data-testid="input-irs-username" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="irsPassword"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-foreground">IRS Password</FormLabel>
-                          <FormControl>
-                            <Input {...field} type="password" data-testid="input-irs-password" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="ssn"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-foreground">Social Security Number</FormLabel>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              placeholder="XXX-XX-XXXX"
-                              data-testid="input-ssn"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="referredById"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-foreground">Who Referred you?</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger data-testid="select-referrer">
-                                <SelectValue placeholder="Nothing selected" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="none">Nothing selected</SelectItem>
-                              {referrers.map((referrer) => (
-                                <SelectItem key={referrer.id} value={referrer.id}>
-                                  {referrer.firstName} {referrer.lastName}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="directDepositBank"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-foreground">Direct Deposit Bank</FormLabel>
-                          <FormControl>
-                            <Input {...field} data-testid="input-bank-name" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="bankRoutingNumber"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-foreground">Bank Routing Number</FormLabel>
-                          <FormControl>
-                            <Input {...field} data-testid="input-routing-number" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="bankAccountNumber"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-foreground">Bank Account Number</FormLabel>
-                          <FormControl>
-                            <Input {...field} data-testid="input-account-number" />
+                            <div className="relative">
+                              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                              <Input {...field} type="tel" className="pl-10" placeholder="(555) 987-6543" data-testid="input-phone-secondary" />
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
                   </div>
-                </div>
+                )}
 
-                <div className="flex justify-end pt-4 border-t">
-                  <Button
-                    type="submit"
-                    disabled={registerMutation.isPending}
-                    className="min-w-32"
-                    data-testid="button-register-submit"
-                  >
-                    {registerMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Registering...
-                      </>
-                    ) : (
-                      "Register"
+                {/* Step 3: Tax Info */}
+                {currentStep === 3 && (
+                  <div className="space-y-6 animate-fade-in">
+                    <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+                      <div className="flex items-start gap-3">
+                        <Shield className="h-5 w-5 text-primary mt-0.5" />
+                        <div>
+                          <p className="font-medium text-sm">Your information is secure</p>
+                          <p className="text-xs text-muted-foreground">All sensitive data is encrypted using bank-level security.</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="ssn"
+                        render={({ field }) => (
+                          <FormItem className="md:col-span-2">
+                            <FormLabel>Social Security Number</FormLabel>
+                            <FormControl>
+                              <div className="relative">
+                                <Shield className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                  {...field}
+                                  className="pl-10"
+                                  placeholder="XXX-XX-XXXX"
+                                  data-testid="input-ssn"
+                                />
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="irsUsername"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>IRS Username (if you have one)</FormLabel>
+                            <FormControl>
+                              <div className="relative">
+                                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input {...field} className="pl-10" placeholder="IRS.gov username" data-testid="input-irs-username" />
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="irsPassword"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>IRS Password</FormLabel>
+                            <FormControl>
+                              <div className="relative">
+                                <Shield className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input {...field} type="password" className="pl-10" placeholder="IRS.gov password" data-testid="input-irs-password" />
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="referredById"
+                        render={({ field }) => (
+                          <FormItem className="md:col-span-2">
+                            <FormLabel>Who Referred You? (optional)</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger data-testid="select-referrer">
+                                  <Users className="h-4 w-4 mr-2 text-muted-foreground" />
+                                  <SelectValue placeholder="Select a referrer" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="none">No referral</SelectItem>
+                                {referrers.map((referrer) => (
+                                  <SelectItem key={referrer.id} value={referrer.id}>
+                                    {referrer.firstName} {referrer.lastName}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 4: Banking */}
+                {currentStep === 4 && (
+                  <div className="space-y-6 animate-fade-in">
+                    <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-4">
+                      <div className="flex items-start gap-3">
+                        <CreditCard className="h-5 w-5 text-green-600 mt-0.5" />
+                        <div>
+                          <p className="font-medium text-sm">Direct Deposit Setup</p>
+                          <p className="text-xs text-muted-foreground">Get your refund faster with direct deposit to your bank account.</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="directDepositBank"
+                        render={({ field }) => (
+                          <FormItem className="md:col-span-2">
+                            <FormLabel>Bank Name</FormLabel>
+                            <FormControl>
+                              <div className="relative">
+                                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input {...field} className="pl-10" placeholder="e.g., Chase, Bank of America" data-testid="input-bank-name" />
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="bankRoutingNumber"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Routing Number</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="9 digits" data-testid="input-routing-number" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="bankAccountNumber"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Account Number</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="Your account number" data-testid="input-account-number" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Navigation Buttons */}
+                <div className="flex items-center justify-between pt-6 border-t">
+                  <div>
+                    {currentStep > 1 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={prevStep}
+                        data-testid="button-prev-step"
+                      >
+                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        Back
+                      </Button>
                     )}
-                  </Button>
-                </div>
+                  </div>
 
-                <div className="text-center text-sm text-muted-foreground">
-                  Already have an account?{" "}
-                  <Link href="/client-login" className="text-primary hover:underline" data-testid="link-login">
-                    Sign in
-                  </Link>
+                  <div className="flex items-center gap-3">
+                    {currentStep < 4 ? (
+                      <Button
+                        type="button"
+                        onClick={nextStep}
+                        className="gradient-primary border-0"
+                        data-testid="button-next-step"
+                      >
+                        Next
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </Button>
+                    ) : (
+                      <Button
+                        type="submit"
+                        disabled={registerMutation.isPending}
+                        className="gradient-primary border-0 min-w-40"
+                        data-testid="button-register-submit"
+                      >
+                        {registerMutation.isPending ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Creating Account...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            Complete Registration
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </form>
             </Form>
           </CardContent>
         </Card>
+
+        {/* Already have account */}
+        <div className="text-center space-y-2">
+          <p className="text-sm text-muted-foreground">
+            Already have an account?{" "}
+            <Link href="/client-login" className="text-primary hover:underline font-medium">
+              Sign in here
+            </Link>
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Need help? Contact us at{" "}
+            <a href="mailto:support@ststaxrepair.com" className="text-primary hover:underline">
+              support@ststaxrepair.com
+            </a>
+          </p>
+        </div>
       </div>
     </div>
   );
