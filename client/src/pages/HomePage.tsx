@@ -1373,11 +1373,11 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Agents Section */}
-      <section id="agents" className="py-24 bg-gray-50" data-testid="section-agents">
+      {/* Agents Section - Carousel */}
+      <section id="agents" className="py-24 bg-gray-50 overflow-hidden" data-testid="section-agents">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div 
-            className="text-center mb-16"
+            className="text-center mb-12"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -1390,21 +1390,26 @@ export default function HomePage() {
             </h2>
           </motion.div>
 
-          <motion.div 
-            className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6"
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-            variants={staggerContainer}
-          >
-            {agents.map((agent, index) => (
-              <motion.div key={agent.name} variants={fadeInUp}>
+          {/* Two Row Sliding Carousel */}
+          <div className="relative">
+            {/* Row 1 - Slides Left */}
+            <motion.div 
+              className="flex gap-6 mb-6"
+              animate={{ x: [0, -1500] }}
+              transition={{ 
+                duration: 30, 
+                repeat: Infinity, 
+                repeatType: "loop",
+                ease: "linear"
+              }}
+            >
+              {[...agents, ...agents].map((agent, index) => (
                 <Card 
-                  className="p-6 bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 group"
-                  data-testid={`card-agent-${index}`}
+                  key={`row1-${agent.name}-${index}`}
+                  className="flex-shrink-0 w-72 p-5 bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 group"
+                  data-testid={`card-agent-row1-${index}`}
                 >
-                  {/* Agent Avatar */}
-                  <div className="w-40 h-40 mx-auto mb-4 rounded-lg overflow-hidden shadow-lg group-hover:scale-105 transition-transform ring-4 ring-sts-primary/20">
+                  <div className="w-48 h-48 mx-auto mb-4 rounded-lg overflow-hidden shadow-lg group-hover:scale-105 transition-transform ring-4 ring-sts-primary/20">
                     <img 
                       src={agent.image} 
                       alt={agent.name}
@@ -1412,7 +1417,7 @@ export default function HomePage() {
                     />
                   </div>
                   
-                  <div className="text-center mb-4">
+                  <div className="text-center mb-3">
                     <h3 className="text-lg font-bold text-gray-900">{agent.name}</h3>
                     <p className="text-sm text-gray-500">{agent.role}</p>
                     <div className="flex justify-center mt-2">
@@ -1422,7 +1427,7 @@ export default function HomePage() {
                     </div>
                   </div>
                   
-                  <div className="space-y-2 text-sm">
+                  <div className="space-y-1.5 text-sm mb-3">
                     <div className="flex items-center gap-2 text-gray-600">
                       <Phone className="w-4 h-4 text-sts-primary flex-shrink-0" />
                       <span className="truncate">{agent.phone}</span>
@@ -1438,15 +1443,79 @@ export default function HomePage() {
                   </div>
                   
                   <Button 
-                    className="w-full mt-4 bg-sts-primary hover:bg-sts-primary/90 text-white"
+                    className="w-full bg-sts-primary hover:bg-sts-primary/90 text-white"
                     size="sm"
                   >
                     Contact Agent
                   </Button>
                 </Card>
-              </motion.div>
-            ))}
-          </motion.div>
+              ))}
+            </motion.div>
+
+            {/* Row 2 - Slides Right (opposite direction) */}
+            <motion.div 
+              className="flex gap-6"
+              animate={{ x: [-1500, 0] }}
+              transition={{ 
+                duration: 35, 
+                repeat: Infinity, 
+                repeatType: "loop",
+                ease: "linear"
+              }}
+            >
+              {[...agents.slice().reverse(), ...agents.slice().reverse()].map((agent, index) => (
+                <Card 
+                  key={`row2-${agent.name}-${index}`}
+                  className="flex-shrink-0 w-72 p-5 bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 group"
+                  data-testid={`card-agent-row2-${index}`}
+                >
+                  <div className="w-48 h-48 mx-auto mb-4 rounded-lg overflow-hidden shadow-lg group-hover:scale-105 transition-transform ring-4 ring-sts-primary/20">
+                    <img 
+                      src={agent.image} 
+                      alt={agent.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  
+                  <div className="text-center mb-3">
+                    <h3 className="text-lg font-bold text-gray-900">{agent.name}</h3>
+                    <p className="text-sm text-gray-500">{agent.role}</p>
+                    <div className="flex justify-center mt-2">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} className="w-4 h-4 text-sts-gold fill-sts-gold" />
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-1.5 text-sm mb-3">
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <Phone className="w-4 h-4 text-sts-primary flex-shrink-0" />
+                      <span className="truncate">{agent.phone}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <Mail className="w-4 h-4 text-sts-primary flex-shrink-0" />
+                      <span className="truncate text-xs">{agent.email}</span>
+                    </div>
+                    <div className="flex items-start gap-2 text-gray-600">
+                      <MapPin className="w-4 h-4 text-sts-primary flex-shrink-0 mt-0.5" />
+                      <span className="text-xs line-clamp-2">{agent.address}</span>
+                    </div>
+                  </div>
+                  
+                  <Button 
+                    className="w-full bg-sts-primary hover:bg-sts-primary/90 text-white"
+                    size="sm"
+                  >
+                    Contact Agent
+                  </Button>
+                </Card>
+              ))}
+            </motion.div>
+
+            {/* Gradient overlays for smooth edges */}
+            <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-gray-50 to-transparent z-10 pointer-events-none" />
+            <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-gray-50 to-transparent z-10 pointer-events-none" />
+          </div>
         </div>
       </section>
 
