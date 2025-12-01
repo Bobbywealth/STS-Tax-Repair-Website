@@ -397,6 +397,14 @@ export default function HomePage() {
       email: "Kerlens@casseussolutions.info",
       address: "Florida, USA",
       image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/WhatsApp-Image-2025-11-20-at-19.17.28.jpeg"
+    },
+    {
+      name: "Roneshia Brandon",
+      role: "Service Support",
+      phone: "305-804-6227",
+      email: "Oneshiabrandon22@gmail.com",
+      address: "4000 Hollywood Blvd Suite 555-S, Hollywood, FL 33021",
+      image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Roneshia-Brandon.webp"
     }
   ];
 

@@ -144,6 +144,14 @@ const agents = [
     phone: "786-961-5014",
     email: "Kerlens@casseussolutions.info",
     location: "Florida"
+  },
+  {
+    name: "Roneshia Brandon",
+    title: "Service Support",
+    image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Roneshia-Brandon.webp",
+    phone: "305-804-6227",
+    email: "Oneshiabrandon22@gmail.com",
+    location: "Hollywood, FL"
   }
 ];
 
