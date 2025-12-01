@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { MobileNav } from "@/components/MobileNav";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2 } from "lucide-react";
 
@@ -245,12 +246,13 @@ function AdminLayout() {
               <ThemeToggle />
             </div>
           </header>
-          <main className="flex-1 overflow-y-auto p-4 bg-animated-mesh">
+          <main className="flex-1 overflow-y-auto p-4 pb-20 md:pb-4 bg-animated-mesh">
             <div className="max-w-7xl mx-auto">
               <AdminRouter />
             </div>
           </main>
         </div>
+        <MobileNav />
       </div>
     </SidebarProvider>
   );

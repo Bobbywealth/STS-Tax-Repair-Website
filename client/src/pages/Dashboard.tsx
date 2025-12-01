@@ -481,8 +481,8 @@ export default function Dashboard() {
           </div>
         ) : (
           <>
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Stats Grid - horizontal scroll on mobile, grid on desktop */}
+            <div className="flex overflow-x-auto snap-x snap-mandatory md:grid md:grid-cols-2 lg:grid-cols-4 gap-4 pb-2 md:pb-0 -mx-3 px-3 md:mx-0 md:px-0 md:overflow-visible scrollbar-hide">
               <StatCard
                 title="Total Clients"
                 value={totalClients.toLocaleString()}
