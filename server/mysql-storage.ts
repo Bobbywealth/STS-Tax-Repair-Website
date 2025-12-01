@@ -303,7 +303,14 @@ export class MySQLStorage implements IStorage {
   async updateESignature(id: string, signature: Partial<InsertESignature>): Promise<ESignature | undefined> {
     const existing = await this.getESignature(id);
     if (!existing) return undefined;
-    await mysqlDb.update(eSignaturesTable).set(signature).where(eq(eSignaturesTable.id, id));
+    
+    // Convert signedAt string to Date if necessary
+    const updateData: Record<string, any> = { ...signature };
+    if (updateData.signedAt && typeof updateData.signedAt === 'string') {
+      updateData.signedAt = new Date(updateData.signedAt);
+    }
+    
+    await mysqlDb.update(eSignaturesTable).set(updateData).where(eq(eSignaturesTable.id, id));
     const [updated] = await mysqlDb.select().from(eSignaturesTable).where(eq(eSignaturesTable.id, id));
     return updated;
   }
