@@ -2,19 +2,96 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Animated marble background */
-@keyframes marbleFlow {
-  0% { background-position: 0% 0%; }
-  25% { background-position: 100% 100%; }
-  50% { background-position: 100% 0%; }
-  75% { background-position: 0% 100%; }
-  100% { background-position: 0% 0%; }
+/* Animated marble background with floating shapes */
+@keyframes float1 {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(50px, -30px) rotate(45deg); }
+  50% { transform: translate(100px, 0) rotate(90deg); }
+  75% { transform: translate(50px, 30px) rotate(135deg); }
+}
+
+@keyframes float2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-60px, 40px) scale(1.2); }
+  66% { transform: translate(40px, -50px) scale(0.9); }
+}
+
+@keyframes float3 {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  50% { transform: translate(-80px, 60px) rotate(180deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
 }
 
 .animate-marble {
-  background: linear-gradient(135deg, #f5f3f0 0%, #e8e4df 25%, #ece9e3 50%, #e8e4df 75%, #f5f3f0 100%);
-  background-size: 400% 400%;
-  animation: marbleFlow 15s ease infinite;
+  background: linear-gradient(135deg, #f8f6f3 0%, #e8e4df 50%, #f0ebe5 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.animate-marble::before,
+.animate-marble::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.animate-marble::before {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(76, 175, 80, 0.2) 0%, transparent 70%);
+  top: -100px;
+  left: 10%;
+  animation: float1 20s ease-in-out infinite, pulse 4s ease-in-out infinite;
+}
+
+.animate-marble::after {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(253, 185, 19, 0.25) 0%, transparent 70%);
+  bottom: -150px;
+  right: 10%;
+  animation: float2 25s ease-in-out infinite, pulse 5s ease-in-out infinite 1s;
+}
+
+.hero-floating-shape {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.3;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hero-floating-shape-1 {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(76, 175, 80, 0.3) 0%, transparent 60%);
+  top: 20%;
+  left: 5%;
+  animation: float1 18s ease-in-out infinite;
+}
+
+.hero-floating-shape-2 {
+  width: 350px;
+  height: 350px;
+  background: radial-gradient(circle, rgba(253, 185, 19, 0.3) 0%, transparent 60%);
+  top: 10%;
+  right: 15%;
+  animation: float2 22s ease-in-out infinite;
+}
+
+.hero-floating-shape-3 {
+  width: 250px;
+  height: 250px;
+  background: radial-gradient(circle, rgba(76, 175, 80, 0.25) 0%, transparent 60%);
+  bottom: 30%;
+  left: 30%;
+  animation: float3 15s ease-in-out infinite;
 }
 
 /* LIGHT MODE */
