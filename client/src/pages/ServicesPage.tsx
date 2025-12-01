@@ -3,46 +3,31 @@ import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Calculator, 
-  FileText, 
-  Shield, 
-  Users, 
-  Phone, 
-  Mail,
-  ArrowRight,
-  CheckCircle,
-  Menu,
-  X
-} from "lucide-react";
+import { ArrowRight, Menu, X } from "lucide-react";
 import { useState } from "react";
 
 const STS_LOGO_URL = "https://www.ststaxrepair.net/wp-content/uploads/2024/12/STS-Tax-Logo-2.png";
 
 const services = [
   {
-    title: "Tax Preparation",
-    description: "Comprehensive tax preparation services for individuals and businesses. We ensure accuracy and maximize your refund.",
-    icon: Calculator,
-    features: ["Individual Returns", "Business Returns", "Self-Employment", "Investment Income"]
+    title: "Professional Tax Filing",
+    description: "Our expert tax filing service ensures accuracy and maximum returns. We meticulously navigate the complexities of tax codes, asking the right questions to secure your highest refund. Trust our professionals to handle your taxes with precision and expertise, delivering peace of mind and financial benefit.",
+    iconImage: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/svgviewer-output-3.svg"
   },
   {
-    title: "Tax Resolution",
-    description: "Expert assistance with IRS issues, audits, and tax debt resolution. We negotiate on your behalf.",
-    icon: Shield,
-    features: ["IRS Audits", "Tax Liens", "Wage Garnishment", "Offer in Compromise"]
+    title: "Credit Restoration",
+    description: "Rebuild your credit with our comprehensive restoration service. We analyze credit reports, identifying discrepancies and errors. Through strategic interventions, we dispute inaccuracies and guide you towards improved credit health. Let us help restore your financial standing and open doors to better opportunities.",
+    iconImage: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/svgviewer-output-2.svg"
   },
   {
-    title: "Bookkeeping",
-    description: "Professional bookkeeping services to keep your finances organized year-round.",
-    icon: FileText,
-    features: ["Monthly Reconciliation", "Financial Statements", "Payroll Processing", "Accounts Management"]
+    title: "Business Registration",
+    description: "Seamlessly establish your business with our registration service. We navigate the bureaucratic landscape, ensuring your incorporation process is efficient and compliant. From paperwork to legal formalities, we handle every step, allowing you to focus on your business vision. Trust us to register your business accurately and expediently.",
+    iconImage: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/svgviewer-output.svg"
   },
   {
-    title: "Business Consulting",
-    description: "Strategic business advice to help you grow and succeed. Tax planning and entity structuring.",
-    icon: Users,
-    features: ["Entity Selection", "Tax Planning", "Business Strategy", "Compliance Review"]
+    title: "Business Loans",
+    description: "Access financial support for your business growth with our comprehensive loan service. We assess your needs, guiding you to suitable loan options. From application to approval, we streamline the process, securing favorable terms. Count on us to help your business thrive with tailored loan solutions designed for your success.",
+    iconImage: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/svgviewer-output-4.svg"
   }
 ];
 
@@ -125,23 +110,20 @@ export default function ServicesPage() {
         )}
       </header>
 
-      {/* Hero Section */}
-      <section className="pt-32 pb-20 bg-gradient-to-br from-sts-dark via-[#0a1f14] to-sts-dark">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      {/* Hero Section - Dark teal/green with building image */}
+      <section className="pt-32 pb-20 bg-gradient-to-br from-sts-dark via-[#0a1f14] to-sts-dark relative overflow-hidden">
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1920')] bg-cover bg-center" />
+        </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <Badge className="bg-sts-gold/20 text-sts-gold border-0 mb-4">
-              Our Services
-            </Badge>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-6">
-              Expert Tax <span className="text-sts-gold">Services</span>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white">
+              Services
             </h1>
-            <p className="text-xl text-white/80 max-w-2xl mx-auto">
-              Comprehensive tax solutions tailored to your unique needs. From preparation to resolution, we've got you covered.
-            </p>
           </motion.div>
         </div>
       </section>
@@ -149,6 +131,22 @@ export default function ServicesPage() {
       {/* Services Grid */}
       <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Section Header */}
+          <motion.div 
+            className="text-center mb-16"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <Badge className="bg-sts-gold/20 text-sts-dark border-0 mb-4 px-4 py-1">
+              Our Services
+            </Badge>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900">
+              Expert Tax Consulting <span className="text-sts-primary">Services</span>
+            </h2>
+          </motion.div>
+
+          {/* 2x2 Grid of Service Cards */}
           <div className="grid md:grid-cols-2 gap-8">
             {services.map((service, index) => (
               <motion.div
@@ -158,20 +156,31 @@ export default function ServicesPage() {
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
               >
-                <Card className="p-8 h-full hover:shadow-xl transition-shadow">
-                  <div className="w-16 h-16 rounded-2xl bg-sts-primary/10 flex items-center justify-center mb-6">
-                    <service.icon className="w-8 h-8 text-sts-primary" />
+                <Card className="p-8 h-full hover:shadow-xl transition-shadow bg-white border-0 shadow-lg group">
+                  {/* Icon */}
+                  <div className="w-16 h-16 rounded-2xl bg-sts-primary/10 flex items-center justify-center mb-6 group-hover:bg-sts-primary group-hover:scale-110 transition-all overflow-hidden">
+                    <img 
+                      src={service.iconImage} 
+                      alt={service.title}
+                      className="w-10 h-10 object-contain"
+                    />
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4">{service.title}</h3>
-                  <p className="text-gray-600 mb-6">{service.description}</p>
-                  <ul className="space-y-2">
-                    {service.features.map((feature) => (
-                      <li key={feature} className="flex items-center gap-2 text-gray-700">
-                        <CheckCircle className="w-5 h-5 text-sts-primary" />
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
+                  
+                  {/* Title */}
+                  <h3 className="text-2xl font-bold text-sts-primary mb-4">{service.title}</h3>
+                  
+                  {/* Description */}
+                  <p className="text-gray-600 leading-relaxed mb-6">{service.description}</p>
+                  
+                  {/* Learn More Link */}
+                  <Button 
+                    variant="link" 
+                    className="text-sts-primary p-0 h-auto font-semibold group/btn"
+                    onClick={() => navigate("/contact")}
+                  >
+                    Learn More 
+                    <ArrowRight className="ml-2 w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                  </Button>
                 </Card>
               </motion.div>
             ))}

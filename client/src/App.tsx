@@ -32,6 +32,12 @@ import ClientPortal from "@/pages/ClientPortal";
 import RedeemInvite from "@/pages/RedeemInvite";
 import Register from "@/pages/Register";
 import HomePage from "@/pages/HomePage";
+import ServicesPage from "@/pages/ServicesPage";
+import AgentsPage from "@/pages/AgentsPage";
+import PricingPage from "@/pages/PricingPage";
+import AboutPage from "@/pages/AboutPage";
+import ContactPage from "@/pages/ContactPage";
+import FAQPage from "@/pages/FAQPage";
 import NotFound from "@/pages/not-found";
 
 import { usePermissions, PERMISSIONS } from "@/hooks/usePermissions";
@@ -263,6 +269,7 @@ function App() {
   const [location] = useLocation();
   
   const isHomePage = location === '/';
+  const isPublicPage = location === '/services' || location === '/agents' || location === '/pricing' || location === '/about' || location === '/contact' || location === '/faq';
   const isClientRoute = location.startsWith('/client-login') || location.startsWith('/client-portal');
   const isRedeemRoute = location.startsWith('/redeem-invite');
   const isRegisterRoute = location.startsWith('/register');
@@ -273,6 +280,15 @@ function App() {
       <TooltipProvider>
         {isHomePage ? (
           <HomePage />
+        ) : isPublicPage ? (
+          <Switch>
+            <Route path="/services" component={ServicesPage} />
+            <Route path="/agents" component={AgentsPage} />
+            <Route path="/pricing" component={PricingPage} />
+            <Route path="/about" component={AboutPage} />
+            <Route path="/contact" component={ContactPage} />
+            <Route path="/faq" component={FAQPage} />
+          </Switch>
         ) : isClientRoute ? (
           <Switch>
             <Route path="/client-login" component={ClientLogin} />
