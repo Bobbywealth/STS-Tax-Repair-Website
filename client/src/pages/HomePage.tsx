@@ -570,33 +570,23 @@ export default function HomePage() {
         />
         
         {/* Dark Overlay for Text Readability - lighter on right to show team */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0d2818]/95 via-sts-dark/80 to-[#1a4d2e]/60" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0d2818]/85 via-sts-dark/50 to-transparent" />
         
-        {/* Mesh Gradient Overlay */}
-        <div className="absolute inset-0 opacity-30">
-          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-sts-primary/40 via-transparent to-transparent" />
-          <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(ellipse_at_bottom_right,_var(--tw-gradient-stops))] from-sts-gold/20 via-transparent to-transparent" />
+        {/* Mesh Gradient Overlay - subtle */}
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute top-0 left-0 w-1/2 h-full bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-sts-primary/30 via-transparent to-transparent" />
         </div>
 
-        {/* Animated Orbs */}
+        {/* Animated Orbs - only on left side */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <motion.div 
-            className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-sts-primary/20 rounded-full blur-[120px]"
+            className="absolute top-1/4 left-0 w-[400px] h-[400px] bg-sts-primary/15 rounded-full blur-[100px]"
             animate={{ 
-              x: [0, 50, 0],
-              y: [0, 30, 0],
+              x: [0, 30, 0],
+              y: [0, 20, 0],
               scale: [1, 1.1, 1]
             }}
             transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-          />
-          <motion.div 
-            className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-sts-gold/15 rounded-full blur-[100px]"
-            animate={{ 
-              x: [0, -40, 0],
-              y: [0, -20, 0],
-              scale: [1, 1.15, 1]
-            }}
-            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
           />
         </div>
 
