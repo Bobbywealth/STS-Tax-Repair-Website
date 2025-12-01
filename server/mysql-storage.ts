@@ -24,6 +24,8 @@ import {
   type InsertRoleAuditLog,
   type StaffInvite,
   type InsertStaffInvite,
+  type Permission,
+  type RolePermission,
   users as usersTable,
   taxDeadlines as taxDeadlinesTable,
   appointments as appointmentsTable,
@@ -35,7 +37,9 @@ import {
   tasks as tasksTable,
   staffMembers as staffTable,
   roleAuditLog as roleAuditLogTable,
-  staffInvites as staffInvitesTable
+  staffInvites as staffInvitesTable,
+  permissions as permissionsTable,
+  rolePermissions as rolePermissionsTable
 } from "@shared/mysql-schema";
 import { randomUUID } from "crypto";
 import { mysqlDb } from "./mysql-db";
@@ -639,6 +643,155 @@ export class MySQLStorage implements IStorage {
   async deleteStaffInvite(id: string): Promise<boolean> {
     const result = await mysqlDb.delete(staffInvitesTable).where(eq(staffInvitesTable.id, id));
     return (result as any).affectedRows > 0;
+  }
+
+  // Permissions
+  async getPermissions(): Promise<Permission[]> {
+    return await mysqlDb.select().from(permissionsTable)
+      .orderBy(asc(permissionsTable.sortOrder));
+  }
+
+  async getPermissionsByGroup(): Promise<Record<string, Permission[]>> {
+    const permissions = await this.getPermissions();
+    const grouped: Record<string, Permission[]> = {};
+    
+    for (const perm of permissions) {
+      if (!grouped[perm.featureGroup]) {
+        grouped[perm.featureGroup] = [];
+      }
+      grouped[perm.featureGroup].push(perm);
+    }
+    
+    return grouped;
+  }
+
+  // Role Permissions
+  async getRolePermissions(role: UserRole): Promise<string[]> {
+    const results = await mysqlDb
+      .select({
+        slug: permissionsTable.slug,
+        granted: rolePermissionsTable.granted
+      })
+      .from(rolePermissionsTable)
+      .innerJoin(permissionsTable, eq(rolePermissionsTable.permissionId, permissionsTable.id))
+      .where(and(
+        eq(rolePermissionsTable.role, role),
+        eq(rolePermissionsTable.granted, true)
+      ));
+    
+    return results.map(r => r.slug);
+  }
+
+  async getAllRolePermissions(): Promise<Record<UserRole, string[]>> {
+    const roles: UserRole[] = ['client', 'agent', 'tax_office', 'admin'];
+    const result: Record<UserRole, string[]> = {
+      client: [],
+      agent: [],
+      tax_office: [],
+      admin: []
+    };
+    
+    for (const role of roles) {
+      result[role] = await this.getRolePermissions(role);
+    }
+    
+    return result;
+  }
+
+  async hasPermission(role: UserRole, permissionSlug: string): Promise<boolean> {
+    const [result] = await mysqlDb
+      .select({ granted: rolePermissionsTable.granted })
+      .from(rolePermissionsTable)
+      .innerJoin(permissionsTable, eq(rolePermissionsTable.permissionId, permissionsTable.id))
+      .where(and(
+        eq(rolePermissionsTable.role, role),
+        eq(permissionsTable.slug, permissionSlug),
+        eq(rolePermissionsTable.granted, true)
+      ));
+    
+    return !!result;
+  }
+
+  async setRolePermission(role: UserRole, permissionSlug: string, granted: boolean): Promise<void> {
+    // Get the permission ID
+    const [permission] = await mysqlDb
+      .select({ id: permissionsTable.id })
+      .from(permissionsTable)
+      .where(eq(permissionsTable.slug, permissionSlug));
+    
+    if (!permission) {
+      throw new Error(`Permission not found: ${permissionSlug}`);
+    }
+
+    // Check if role permission already exists
+    const [existing] = await mysqlDb
+      .select()
+      .from(rolePermissionsTable)
+      .where(and(
+        eq(rolePermissionsTable.role, role),
+        eq(rolePermissionsTable.permissionId, permission.id)
+      ));
+
+    if (existing) {
+      // Update existing
+      await mysqlDb
+        .update(rolePermissionsTable)
+        .set({ granted, updatedAt: new Date() })
+        .where(eq(rolePermissionsTable.id, existing.id));
+    } else {
+      // Insert new
+      await mysqlDb
+        .insert(rolePermissionsTable)
+        .values({
+          id: randomUUID(),
+          role,
+          permissionId: permission.id,
+          granted,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+    }
+  }
+
+  async updateRolePermissions(role: UserRole, permissions: Record<string, boolean>): Promise<void> {
+    for (const [slug, granted] of Object.entries(permissions)) {
+      await this.setRolePermission(role, slug, granted);
+    }
+  }
+
+  async getRolePermissionMatrix(): Promise<{
+    permissions: Permission[];
+    matrix: Record<UserRole, Record<string, boolean>>;
+  }> {
+    const permissions = await this.getPermissions();
+    const roles: UserRole[] = ['client', 'agent', 'tax_office', 'admin'];
+    
+    const matrix: Record<UserRole, Record<string, boolean>> = {
+      client: {},
+      agent: {},
+      tax_office: {},
+      admin: {}
+    };
+
+    // Get all role permissions in one query
+    const allRolePerms = await mysqlDb
+      .select({
+        role: rolePermissionsTable.role,
+        slug: permissionsTable.slug,
+        granted: rolePermissionsTable.granted
+      })
+      .from(rolePermissionsTable)
+      .innerJoin(permissionsTable, eq(rolePermissionsTable.permissionId, permissionsTable.id));
+
+    // Build the matrix
+    for (const perm of permissions) {
+      for (const role of roles) {
+        const match = allRolePerms.find(rp => rp.role === role && rp.slug === perm.slug);
+        matrix[role][perm.slug] = match?.granted ?? false;
+      }
+    }
+
+    return { permissions, matrix };
   }
 }
 
