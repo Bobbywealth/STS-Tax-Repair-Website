@@ -726,120 +726,100 @@ export default function HomePage() {
         {/* Dark Overlay for Desktop */}
         <div className="absolute inset-0 bg-gradient-to-r from-[#0d2818]/90 via-sts-dark/70 to-sts-dark/40 hidden lg:block" />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="relative max-w-7xl mx-auto px-5 lg:px-8">
           {/* Mobile Futuristic Hero - shown only on mobile/tablet */}
-          <div className="lg:hidden pt-24 pb-6">
-            {/* Holo Team Photo Capsule */}
+          <div className="lg:hidden pt-28 pb-10">
+            {/* Team Photo with Clean Modern Styling */}
             <motion.div
-              initial={{ opacity: 0, y: 50, rotateX: 15 }}
-              animate={{ opacity: 1, y: 0, rotateX: 0 }}
-              transition={{ duration: 0.6, type: "spring", bounce: 0.3 }}
-              className="relative mx-auto max-w-xs perspective-1000"
+              initial={{ opacity: 0, y: 40, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.5, type: "spring", bounce: 0.2 }}
+              className="relative mx-auto max-w-sm"
             >
-              {/* Outer Rotating Conic Border */}
-              <div className="absolute -inset-2 rounded-2xl overflow-hidden">
-                <motion.div
-                  className="absolute inset-0"
-                  style={{
-                    background: 'conic-gradient(from 0deg, #FDB913, #4CAF50, #1a4d2e, #FDB913)',
-                  }}
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+              {/* Soft Gradient Glow Behind Image */}
+              <div className="absolute -inset-3 bg-gradient-to-br from-sts-primary/30 via-transparent to-sts-gold/20 rounded-3xl blur-2xl" />
+              
+              {/* Clean Image Container */}
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-black/40">
+                {/* Slight dark overlay for depth */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent z-10" />
+                
+                <motion.img 
+                  src="https://www.ststaxrepair.net/wp-content/uploads/2025/01/Untitled-design-3.png"
+                  alt="STS Tax Team"
+                  className="w-full h-52 object-cover object-top"
+                  whileHover={{ scale: 1.03 }}
+                  transition={{ type: "spring", stiffness: 200 }}
                 />
-              </div>
-              
-              {/* Inner Glow Frame */}
-              <div className="absolute -inset-1 bg-gradient-to-br from-sts-gold/40 via-sts-primary/30 to-sts-gold/40 rounded-xl blur-sm" />
-              
-              {/* Image Container with Holo Effect */}
-              <div className="relative rounded-xl overflow-hidden bg-black/50 p-1">
+                
+                {/* Subtle Scanline Effect */}
                 <motion.div
-                  className="relative rounded-lg overflow-hidden"
-                  whileHover={{ scale: 1.02 }}
-                  transition={{ type: "spring", stiffness: 300 }}
-                >
-                  <img 
-                    src="https://www.ststaxrepair.net/wp-content/uploads/2025/01/Untitled-design-3.png"
-                    alt="STS Tax Team"
-                    className="w-full"
-                  />
-                  {/* Holographic Scanline */}
-                  <motion.div
-                    className="absolute inset-0 bg-gradient-to-b from-transparent via-sts-gold/10 to-transparent"
-                    animate={{ y: ['-100%', '100%'] }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                  />
-                  {/* Corner Tech Brackets */}
-                  <div className="absolute top-2 left-2 w-8 h-8 border-l-2 border-t-2 border-sts-gold/70" />
-                  <div className="absolute top-2 right-2 w-8 h-8 border-r-2 border-t-2 border-sts-gold/70" />
-                  <div className="absolute bottom-2 left-2 w-8 h-8 border-l-2 border-b-2 border-sts-gold/70" />
-                  <div className="absolute bottom-2 right-2 w-8 h-8 border-r-2 border-b-2 border-sts-gold/70" />
-                </motion.div>
+                  className="absolute inset-0 bg-gradient-to-b from-transparent via-white/5 to-transparent pointer-events-none"
+                  animate={{ y: ['-100%', '100%'] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                />
+                
+                {/* Minimal Corner Accents */}
+                <div className="absolute top-3 left-3 w-6 h-6 border-l-2 border-t-2 border-white/40 rounded-tl-md z-20" />
+                <div className="absolute top-3 right-3 w-6 h-6 border-r-2 border-t-2 border-white/40 rounded-tr-md z-20" />
+                <div className="absolute bottom-3 left-3 w-6 h-6 border-l-2 border-b-2 border-white/40 rounded-bl-md z-20" />
+                <div className="absolute bottom-3 right-3 w-6 h-6 border-r-2 border-b-2 border-white/40 rounded-br-md z-20" />
               </div>
-              
-              {/* Floating Badge */}
-              <motion.div
-                className="absolute -bottom-3 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-gradient-to-r from-sts-gold to-yellow-400 rounded-full shadow-lg shadow-sts-gold/30"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-              >
-                <span className="text-sts-dark text-xs font-bold tracking-wider">EXPERT TEAM</span>
-              </motion.div>
             </motion.div>
             
-            {/* Glass Command Center Card */}
+            {/* Content Section with Dark Overlay */}
             <motion.div
               className="mt-8 mx-auto max-w-sm"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.5 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
             >
-              <div className="relative p-6 rounded-2xl bg-white/[0.05] backdrop-blur-xl border border-white/10 shadow-2xl">
-                {/* Card Glow */}
-                <div className="absolute -inset-px rounded-2xl bg-gradient-to-b from-sts-gold/20 via-transparent to-sts-primary/20 opacity-50" />
-                
-                <div className="relative space-y-4 text-center">
-                  <motion.h1 
-                    className="text-3xl font-black text-white leading-tight"
+              {/* Soft Dark Overlay Card */}
+              <div className="relative p-6 rounded-2xl bg-black/20 backdrop-blur-md">
+                <div className="space-y-5 text-center">
+                  {/* Title with Better Hierarchy */}
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    <h1 className="text-4xl font-black leading-[1.15] tracking-tight">
+                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-sts-gold via-yellow-300 to-sts-gold drop-shadow-lg">
+                        Reliable
+                      </span>
+                      <br />
+                      <span className="text-white">Tax Advisors</span>
+                    </h1>
+                  </motion.div>
+                  
+                  {/* Supporting Text with Better Spacing */}
+                  <motion.p 
+                    className="text-white/80 text-base leading-relaxed px-2"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.4 }}
                   >
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-sts-gold via-yellow-300 to-sts-gold">
-                      Reliable
-                    </span>
-                    <br />
-                    Tax Advisors
-                  </motion.h1>
+                    Let us be your trusted partner. Work alongside a dependable ally invested in your best interests.
+                  </motion.p>
                   
-                  <motion.p 
-                    className="text-white/70 text-sm leading-relaxed"
+                  {/* CTA Buttons - Full Width with Better Styling */}
+                  <motion.div 
+                    className="flex flex-col gap-4 pt-3"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.5 }}
                   >
-                    Your trusted partner for maximum tax refunds. Expert guidance, precision filing, guaranteed results.
-                  </motion.p>
-                  
-                  {/* CTA Buttons */}
-                  <motion.div 
-                    className="flex flex-col gap-3 pt-2"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.6 }}
-                  >
                     <Button 
                       size="lg"
-                      className="w-full bg-gradient-to-r from-sts-gold to-yellow-400 hover:from-yellow-400 hover:to-sts-gold text-sts-dark font-bold h-12 text-base shadow-lg shadow-sts-gold/30 relative overflow-hidden group"
+                      className="w-full bg-gradient-to-r from-[#fbd247] to-[#d4a016] hover:from-[#d4a016] hover:to-[#fbd247] text-sts-dark font-bold h-14 text-base shadow-xl shadow-sts-gold/40 relative overflow-hidden group rounded-xl"
                       onClick={() => document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" })}
                     >
-                      <span className="relative z-10 flex items-center justify-center gap-2">
+                      <span className="relative z-10 flex items-center justify-center gap-3">
                         CONTACT US
-                        <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                        <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                       </span>
                       <motion.div
-                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12"
+                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -skew-x-12"
                         animate={{ x: ['-200%', '200%'] }}
                         transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
                       />
@@ -847,40 +827,40 @@ export default function HomePage() {
                     <Button 
                       size="lg"
                       variant="outline"
-                      className="w-full border-2 border-white/20 bg-white/5 text-white hover:bg-white/10 hover:border-sts-gold/50 font-semibold h-12 text-base"
+                      className="w-full border-2 border-white/30 bg-transparent text-white hover:bg-white/10 hover:border-white/50 font-semibold h-14 text-base rounded-xl"
                       onClick={() => navigate("/client-login")}
                     >
                       REGISTER
-                      <ChevronRight className="w-5 h-5 ml-1" />
+                      <ChevronRight className="w-6 h-6 ml-2" />
                     </Button>
+                  </motion.div>
+                  
+                  {/* Trust Badges - Directly Under Buttons */}
+                  <motion.div 
+                    className="flex flex-wrap justify-center gap-4 pt-4"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.6 }}
+                  >
+                    {[
+                      { icon: Shield, text: "IRS Authorized" },
+                      { icon: Award, text: "CTEC Certified" },
+                      { icon: Lock, text: "100% Accuracy" }
+                    ].map((item, index) => (
+                      <motion.div 
+                        key={item.text}
+                        className="flex items-center gap-2"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.7 + index * 0.1, type: "spring" }}
+                      >
+                        <item.icon className="w-5 h-5 text-sts-gold" />
+                        <span className="text-white/90 text-sm font-medium">{item.text}</span>
+                      </motion.div>
+                    ))}
                   </motion.div>
                 </div>
               </div>
-            </motion.div>
-            
-            {/* Nano Trust Badges */}
-            <motion.div 
-              className="mt-6 flex flex-wrap justify-center gap-3"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.7 }}
-            >
-              {[
-                { icon: Shield, text: "IRS Authorized" },
-                { icon: Award, text: "CTEC Certified" },
-                { icon: Lock, text: "100% Accuracy" }
-              ].map((item, index) => (
-                <motion.div 
-                  key={item.text}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 backdrop-blur-sm rounded-full border border-white/10"
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.8 + index * 0.1, type: "spring" }}
-                >
-                  <item.icon className="w-3.5 h-3.5 text-sts-gold" />
-                  <span className="text-white/70 text-xs font-medium">{item.text}</span>
-                </motion.div>
-              ))}
             </motion.div>
           </div>
 
