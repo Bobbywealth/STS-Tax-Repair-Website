@@ -20,7 +20,12 @@ import {
   PenTool,
   FileSignature,
   CheckCircle,
-  Eye
+  Eye,
+  Phone,
+  HelpCircle,
+  X,
+  Send,
+  Sparkles
 } from "lucide-react";
 import { RefundStatusTracker } from "@/components/RefundStatusTracker";
 import { SignaturePad, type SignaturePadRef } from "@/components/SignaturePad";
@@ -35,7 +40,18 @@ export default function ClientPortal() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const [selectedSignature, setSelectedSignature] = useState<ESignature | null>(null);
   const [showSignDialog, setShowSignDialog] = useState(false);
+  const [showChatWidget, setShowChatWidget] = useState(false);
+  const [chatMessage, setChatMessage] = useState("");
+  const [showCelebration, setShowCelebration] = useState(false);
   const signaturePadRef = useRef<SignaturePadRef>(null);
+
+  // Auto-dismiss celebration after 5 seconds
+  useEffect(() => {
+    if (showCelebration) {
+      const timer = setTimeout(() => setShowCelebration(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [showCelebration]);
 
   // Fetch pending signatures for this client
   const { data: signatures } = useQuery<ESignature[]>({
@@ -197,8 +213,75 @@ export default function ClientPortal() {
       <main className="max-w-6xl mx-auto px-6 py-8 space-y-6 animate-fade-in">
         {/* Welcome Section */}
         <div className="p-6 rounded-lg bg-flow-gradient">
-          <h2 className="text-3xl font-bold mb-2">Welcome back, {clientData.name.split(' ')[0]}!</h2>
-          <p className="text-muted-foreground">Track your tax refund status and manage your documents</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-3xl font-bold mb-2">Welcome back, {clientData.name.split(' ')[0]}!</h2>
+              <p className="text-muted-foreground">Track your tax refund status and manage your documents</p>
+            </div>
+            {/* Demo button - shows celebration animation */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={() => setShowCelebration(true)}
+              data-testid="button-demo-celebration"
+            >
+              <Sparkles className="h-4 w-4" />
+              Demo Celebration
+            </Button>
+          </div>
+        </div>
+
+        {/* Quick Action Buttons */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Button 
+            variant="outline" 
+            className="h-auto py-4 flex flex-col items-center gap-2 hover-elevate"
+            data-testid="quick-action-upload"
+          >
+            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <Upload className="h-5 w-5 text-primary" />
+            </div>
+            <span className="font-medium">Upload Document</span>
+          </Button>
+          <Button 
+            variant="outline" 
+            className="h-auto py-4 flex flex-col items-center gap-2 hover-elevate"
+            data-testid="quick-action-schedule"
+          >
+            <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center">
+              <Calendar className="h-5 w-5 text-blue-500" />
+            </div>
+            <span className="font-medium">Schedule Appointment</span>
+          </Button>
+          <Button 
+            variant="outline" 
+            className="h-auto py-4 flex flex-col items-center gap-2 hover-elevate"
+            data-testid="quick-action-message"
+          >
+            <div className="h-10 w-10 rounded-full bg-purple-500/10 flex items-center justify-center">
+              <MessageSquare className="h-5 w-5 text-purple-500" />
+            </div>
+            <span className="font-medium">Send Message</span>
+          </Button>
+          <Button 
+            variant="outline" 
+            className={`h-auto py-4 flex flex-col items-center gap-2 hover-elevate ${pendingSignatures.length > 0 ? 'border-yellow-500/50 bg-yellow-500/5' : ''}`}
+            data-testid="quick-action-sign"
+            onClick={() => pendingSignatures.length > 0 && handleSign(pendingSignatures[0])}
+          >
+            <div className={`relative h-10 w-10 rounded-full flex items-center justify-center ${pendingSignatures.length > 0 ? 'bg-yellow-500/20' : 'bg-orange-500/10'}`}>
+              <PenTool className={`h-5 w-5 ${pendingSignatures.length > 0 ? 'text-yellow-600' : 'text-orange-500'}`} />
+              {pendingSignatures.length > 0 && (
+                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-yellow-500 text-white text-xs flex items-center justify-center">
+                  {pendingSignatures.length}
+                </span>
+              )}
+            </div>
+            <span className="font-medium">
+              {pendingSignatures.length > 0 ? `Sign Documents (${pendingSignatures.length})` : 'Sign Documents'}
+            </span>
+          </Button>
         </div>
 
         {/* Pending Signatures Alert */}
@@ -475,6 +558,107 @@ export default function ClientPortal() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Celebration Animation (Confetti) */}
+      {showCelebration && (
+        <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+          {/* Confetti pieces */}
+          {[...Array(50)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute animate-confetti"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: '-20px',
+                animationDelay: `${Math.random() * 2}s`,
+                animationDuration: `${3 + Math.random() * 2}s`,
+              }}
+            >
+              <div
+                className="w-3 h-3 rounded-sm"
+                style={{
+                  backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'][Math.floor(Math.random() * 6)],
+                  transform: `rotate(${Math.random() * 360}deg)`,
+                }}
+              />
+            </div>
+          ))}
+          {/* Celebration message */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="bg-background/95 backdrop-blur-sm p-8 rounded-2xl shadow-2xl text-center animate-bounce-in">
+              <Sparkles className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
+              <h2 className="text-3xl font-bold text-primary mb-2">Congratulations!</h2>
+              <p className="text-xl text-muted-foreground">Your refund has been approved!</p>
+              <p className="text-2xl font-bold text-primary mt-2">{clientData.refundAmount}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Support Chat Button */}
+      <div className="fixed bottom-6 right-6 z-40">
+        {showChatWidget ? (
+          <Card className="w-80 shadow-2xl animate-slide-up">
+            <CardHeader className="bg-primary text-primary-foreground rounded-t-lg py-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <HelpCircle className="h-5 w-5" />
+                  <CardTitle className="text-base">Support Chat</CardTitle>
+                </div>
+                <Button 
+                  size="icon" 
+                  variant="ghost" 
+                  className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/20"
+                  onClick={() => setShowChatWidget(false)}
+                  data-testid="button-close-chat"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-4">
+              <div className="h-48 mb-4 overflow-y-auto space-y-3">
+                <div className="bg-muted p-3 rounded-lg rounded-tl-none max-w-[85%]">
+                  <p className="text-sm">Hi! How can we help you today?</p>
+                  <p className="text-xs text-muted-foreground mt-1">Support Team</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Type your message..."
+                  value={chatMessage}
+                  onChange={(e) => setChatMessage(e.target.value)}
+                  className="flex-1 px-3 py-2 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                  data-testid="input-chat-message"
+                />
+                <Button size="icon" className="gradient-primary border-0" data-testid="button-send-chat">
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="mt-3 flex gap-2">
+                <Button variant="outline" size="sm" className="flex-1 text-xs">
+                  <Phone className="h-3 w-3 mr-1" />
+                  Call Us
+                </Button>
+                <Button variant="outline" size="sm" className="flex-1 text-xs">
+                  <MessageSquare className="h-3 w-3 mr-1" />
+                  Email
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Button
+            size="lg"
+            className="h-14 w-14 rounded-full gradient-primary border-0 shadow-lg hover:shadow-xl transition-shadow animate-pulse-gentle"
+            onClick={() => setShowChatWidget(true)}
+            data-testid="button-open-chat"
+          >
+            <MessageSquare className="h-6 w-6" />
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

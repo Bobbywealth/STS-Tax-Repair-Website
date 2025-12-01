@@ -669,6 +669,60 @@
     animation: particleShimmer 4s ease-in-out infinite;
   }
 
+  /* Confetti Animation */
+  @keyframes confetti {
+    0% {
+      transform: translateY(0) rotate(0deg);
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(100vh) rotate(720deg);
+      opacity: 0;
+    }
+  }
+
+  .animate-confetti {
+    animation: confetti 4s ease-in-out forwards;
+  }
+
+  /* Bounce In Animation */
+  @keyframes bounceIn {
+    0% {
+      opacity: 0;
+      transform: scale(0.3);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.05);
+    }
+    70% {
+      transform: scale(0.9);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  .animate-bounce-in {
+    animation: bounceIn 0.6s ease-out forwards;
+  }
+
+  /* Gentle Pulse Animation */
+  @keyframes pulseGentle {
+    0%, 100% {
+      transform: scale(1);
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+    }
+    50% {
+      transform: scale(1.05);
+      box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+    }
+  }
+
+  .animate-pulse-gentle {
+    animation: pulseGentle 2s ease-in-out infinite;
+  }
+
   /* Respect reduced motion preferences */
   @media (prefers-reduced-motion: reduce) {
     .bg-animated-mesh,
@@ -682,7 +736,10 @@
     .animate-hero-gradient,
     .animate-glow,
     .animate-spin-slow,
-    .animate-wiggle {
+    .animate-wiggle,
+    .animate-confetti,
+    .animate-bounce-in,
+    .animate-pulse-gentle {
       animation: none !important;
     }
   }
