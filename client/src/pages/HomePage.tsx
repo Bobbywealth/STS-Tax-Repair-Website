@@ -776,14 +776,14 @@ export default function HomePage() {
             >
               {/* Soft Dark Overlay Card */}
               <div className="relative p-6 rounded-2xl bg-black/20 backdrop-blur-md">
-                <div className="space-y-5 text-center">
+                <div className="space-y-5 text-center flex flex-col items-center">
                   {/* Title with Better Hierarchy */}
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.3 }}
                   >
-                    <h1 className="text-4xl font-black leading-[1.15] tracking-tight">
+                    <h1 className="text-4xl font-black leading-[1.15] tracking-tight text-center">
                       <span className="text-transparent bg-clip-text bg-gradient-to-r from-sts-gold via-yellow-300 to-sts-gold drop-shadow-lg">
                         Reliable
                       </span>
@@ -794,7 +794,7 @@ export default function HomePage() {
                   
                   {/* Supporting Text with Better Spacing */}
                   <motion.p 
-                    className="text-white/80 text-base leading-relaxed px-2"
+                    className="text-white/80 text-base leading-relaxed px-2 text-center"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.4 }}
@@ -804,7 +804,7 @@ export default function HomePage() {
                   
                   {/* CTA Buttons - Full Width with Better Styling */}
                   <motion.div 
-                    className="flex flex-col gap-4 pt-3"
+                    className="flex flex-col gap-4 pt-3 w-full"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.5 }}
