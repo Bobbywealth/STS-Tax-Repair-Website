@@ -16,10 +16,18 @@ export function ThemeToggle() {
 
   const toggleTheme = () => {
     const newTheme = theme === "light" ? "dark" : "light";
+    
+    // Add transition class for smooth theme change
+    document.documentElement.classList.add("theme-transition");
+    
     setTheme(newTheme);
     localStorage.setItem("theme", newTheme);
     document.documentElement.classList.toggle("dark", newTheme === "dark");
-    console.log('Theme changed to:', newTheme);
+    
+    // Remove transition class after animation completes
+    setTimeout(() => {
+      document.documentElement.classList.remove("theme-transition");
+    }, 150);
   };
 
   return (
