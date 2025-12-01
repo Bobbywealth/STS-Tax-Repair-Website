@@ -150,6 +150,7 @@ function AdminRouter() {
 
 function AdminLayout() {
   const { data: user, isLoading, error } = useCurrentUser();
+  const [, navigate] = useLocation();
 
   const sidebarStyle = {
     "--sidebar-width": "16rem",
@@ -182,6 +183,19 @@ function AdminLayout() {
           >
             Sign In with Replit
           </a>
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect clients to their portal - they shouldn't see the admin dashboard
+  if (user.role === 'client') {
+    navigate('/client-portal');
+    return (
+      <div className="flex items-center justify-center h-screen bg-animated-mesh">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Redirecting to your portal...</p>
         </div>
       </div>
     );
