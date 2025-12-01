@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Eye, Edit, MoreVertical } from "lucide-react";
+import { Search, Edit, MoreVertical } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 
 interface Client {
   id: string;
@@ -46,6 +47,7 @@ export function ClientsTable({ clients, onViewClient, onEditClient, onStatusChan
   const [clientStatuses, setClientStatuses] = useState<Record<string, Client["status"]>>(
     clients.reduce((acc, client) => ({ ...acc, [client.id]: client.status }), {})
   );
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
 
   const handleStatusChange = (clientId: string, newStatus: Client["status"]) => {
@@ -109,7 +111,13 @@ export function ClientsTable({ clients, onViewClient, onEditClient, onStatusChan
                           {client.name.split(' ').map(n => n[0]).join('')}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="font-medium">{client.name}</span>
+                      <button
+                        onClick={() => setLocation(`/clients/${client.id}`)}
+                        className="font-medium text-primary hover:underline cursor-pointer text-left"
+                        data-testid={`link-client-${client.id}`}
+                      >
+                        {client.name}
+                      </button>
                     </div>
                   </td>
                   <td className="p-3">
@@ -168,26 +176,10 @@ export function ClientsTable({ clients, onViewClient, onEditClient, onStatusChan
                   <td className="p-3 text-sm">{client.taxYear}</td>
                   <td className="p-3 text-sm">{client.assignedTo}</td>
                   <td className="p-3">
-                    <div className="flex items-center justify-end gap-2">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => onViewClient?.(client.id)}
-                        data-testid={`button-view-${client.id}`}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => onEditClient?.(client.id)}
-                        data-testid={`button-edit-${client.id}`}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
+                    <div className="flex items-center justify-end gap-1">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button size="icon" variant="ghost">
+                          <Button size="icon" variant="ghost" data-testid={`button-menu-${client.id}`}>
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
