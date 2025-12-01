@@ -42,12 +42,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.redirect(fullUrl);
   });
 
-  // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  // Auth routes - supports both Replit Auth and client session login
+  app.get('/api/auth/user', async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
+      // Check for client session login first
+      if (req.session?.userId && req.session?.isClientLogin) {
+        const user = await storage.getUser(req.session.userId);
+        if (user) {
+          return res.json(user);
+        }
+      }
+      
+      // Fall back to Replit Auth
+      if (req.user?.claims?.sub) {
+        const user = await storage.getUser(req.user.claims.sub);
+        return res.json(user);
+      }
+      
+      // Not authenticated
+      return res.status(401).json({ message: "Not authenticated" });
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
@@ -141,6 +154,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Registration error:", error);
       res.status(500).json({ message: error.message || "Registration failed" });
+    }
+  });
+
+  // Client Login (email/password) - public endpoint
+  app.post('/api/client-login', async (req: any, res) => {
+    try {
+      const { email, password } = req.body;
+
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+      }
+
+      // Find user by email
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+
+      // Check if user has a password hash (registered clients)
+      if (!user.passwordHash) {
+        return res.status(401).json({ message: "This account uses Replit login. Please use the Staff Login option." });
+      }
+
+      // Verify password
+      const isValidPassword = await bcrypt.compare(password, user.passwordHash);
+      if (!isValidPassword) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+
+      // Check if user is active
+      if (!user.isActive) {
+        return res.status(403).json({ message: "Account is deactivated. Please contact support." });
+      }
+
+      // Create session for the client
+      // Store user info in session (similar to Replit Auth but for password-based login)
+      req.session.userId = user.id;
+      req.session.userRole = user.role;
+      req.session.isClientLogin = true;
+
+      res.json({ 
+        message: "Login successful",
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role,
+        }
+      });
+    } catch (error: any) {
+      console.error("Client login error:", error);
+      res.status(500).json({ message: "Login failed. Please try again." });
     }
   });
 

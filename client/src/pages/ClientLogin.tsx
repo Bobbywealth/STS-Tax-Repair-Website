@@ -1,9 +1,54 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, Shield, Clock, FileText } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { CheckCircle, Shield, Clock, FileText, Mail, Lock, UserCog } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Link } from "wouter";
 import logoUrl from "@assets/sts-logo.png";
 
 export default function ClientLogin() {
+  const { toast } = useToast();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleClientLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("/api/client-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Login failed");
+      }
+
+      toast({
+        title: "Welcome back!",
+        description: "Redirecting to your portal...",
+      });
+
+      window.location.href = "/client-portal";
+    } catch (error: any) {
+      toast({
+        title: "Login Failed",
+        description: error.message || "Invalid email or password",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-animated-mesh flex items-center justify-center p-6">
       <div className="w-full max-w-5xl space-y-8 animate-fade-in">
@@ -26,23 +71,88 @@ export default function ClientLogin() {
             <CardDescription>Login to view your refund status and documents</CardDescription>
           </CardHeader>
           <CardContent className="relative z-10 space-y-4">
-            <Button 
-              className="w-full gradient-primary border-0 h-12 text-base"
-              onClick={() => window.location.href = '/api/login'}
-              data-testid="button-login"
-            >
-              <Shield className="h-5 w-5 mr-2" />
-              Login with Replit
-            </Button>
-            <p className="text-xs text-center text-muted-foreground">
-              Secure authentication powered by Replit. Supports Google, GitHub, and email login.
-            </p>
+            <form onSubmit={handleClientLogin} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="your@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-10"
+                    required
+                    data-testid="input-email"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-10"
+                    required
+                    data-testid="input-password"
+                  />
+                </div>
+              </div>
+              <Button 
+                type="submit"
+                className="w-full gradient-primary border-0 h-12 text-base"
+                disabled={isLoading}
+                data-testid="button-client-login"
+              >
+                {isLoading ? "Logging in..." : "Login to Portal"}
+              </Button>
+            </form>
+
+            <div className="text-center space-y-3 pt-2">
+              <p className="text-sm text-muted-foreground">
+                New client?{" "}
+                <Link href="/register" className="text-primary hover:underline font-medium">
+                  Register here
+                </Link>
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Staff/Admin Login Card */}
+        <Card className="relative overflow-visible mx-auto max-w-md border-dashed">
+          <CardContent className="pt-6 pb-6">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center">
+                  <UserCog className="h-5 w-5 text-secondary-foreground" />
+                </div>
+                <div>
+                  <p className="font-medium">Staff / Admin</p>
+                  <p className="text-sm text-muted-foreground">Login with your Replit account</p>
+                </div>
+              </div>
+              <Button 
+                variant="outline"
+                onClick={() => window.location.href = '/api/login'}
+                data-testid="button-admin-login"
+              >
+                <Shield className="h-4 w-4 mr-2" />
+                Staff Login
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
         {/* Features Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
-          <Card className="relative overflow-visible hover-lift">
+          <Card className="relative overflow-visible hover-elevate">
             <div className="absolute inset-0 bg-flow-gradient opacity-30 rounded-lg" />
             <CardContent className="pt-6 text-center relative z-10">
               <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
@@ -53,7 +163,7 @@ export default function ClientLogin() {
             </CardContent>
           </Card>
 
-          <Card className="relative overflow-visible hover-lift">
+          <Card className="relative overflow-visible hover-elevate">
             <div className="absolute inset-0 bg-flow-gradient opacity-30 rounded-lg" />
             <CardContent className="pt-6 text-center relative z-10">
               <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
@@ -64,7 +174,7 @@ export default function ClientLogin() {
             </CardContent>
           </Card>
 
-          <Card className="relative overflow-visible hover-lift">
+          <Card className="relative overflow-visible hover-elevate">
             <div className="absolute inset-0 bg-flow-gradient opacity-30 rounded-lg" />
             <CardContent className="pt-6 text-center relative z-10">
               <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
@@ -75,7 +185,7 @@ export default function ClientLogin() {
             </CardContent>
           </Card>
 
-          <Card className="relative overflow-visible hover-lift">
+          <Card className="relative overflow-visible hover-elevate">
             <div className="absolute inset-0 bg-flow-gradient opacity-30 rounded-lg" />
             <CardContent className="pt-6 text-center relative z-10">
               <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
@@ -90,10 +200,10 @@ export default function ClientLogin() {
         {/* Info Section */}
         <div className="text-center space-y-2">
           <p className="text-sm text-muted-foreground">
-            Don't have an account? Contact us at <a href="mailto:support@staxrepair.com" className="text-primary hover:underline">support@ststaxrepair.com</a>
+            Need help? Contact us at <a href="mailto:support@ststaxrepair.com" className="text-primary hover:underline">support@ststaxrepair.com</a>
           </p>
           <p className="text-xs text-muted-foreground">
-            Need help? Call us at (555) 123-4567
+            Or call us at (555) 123-4567
           </p>
         </div>
       </div>

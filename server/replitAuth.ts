@@ -111,7 +111,15 @@ export async function setupAuth(app: Express) {
     })(req, res, next);
   });
 
-  app.get("/api/logout", (req, res) => {
+  app.get("/api/logout", (req: any, res) => {
+    // Clear client session login data
+    if (req.session) {
+      req.session.userId = null;
+      req.session.userRole = null;
+      req.session.isClientLogin = null;
+    }
+    
+    // Handle Replit Auth logout
     req.logout(() => {
       res.redirect(
         client.buildEndSessionUrl(config, {
