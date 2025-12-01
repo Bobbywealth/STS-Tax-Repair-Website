@@ -729,41 +729,53 @@ export default function HomePage() {
         <div className="relative max-w-7xl mx-auto px-5 lg:px-8">
           {/* Mobile Futuristic Hero - shown only on mobile/tablet */}
           <div className="lg:hidden pt-28 pb-10">
-            {/* Team Photo with Clean Modern Styling */}
+            {/* Team Photo with Animated Border */}
             <motion.div
               initial={{ opacity: 0, y: 40, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ duration: 0.5, type: "spring", bounce: 0.2 }}
               className="relative mx-auto max-w-sm"
             >
-              {/* Soft Gradient Glow Behind Image */}
-              <div className="absolute -inset-3 bg-gradient-to-br from-sts-primary/30 via-transparent to-sts-gold/20 rounded-3xl blur-2xl" />
+              {/* Outer Rotating Rainbow Border */}
+              <div className="absolute -inset-1.5 rounded-2xl overflow-hidden">
+                <motion.div
+                  className="absolute inset-0"
+                  style={{
+                    background: 'conic-gradient(from 0deg, #FDB913, #4CAF50, #1a4d2e, #FDB913)',
+                  }}
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
+                />
+              </div>
+              
+              {/* Soft Gradient Glow Behind */}
+              <div className="absolute -inset-4 bg-gradient-to-br from-sts-primary/20 via-transparent to-sts-gold/15 rounded-3xl blur-xl" />
               
               {/* Clean Image Container */}
-              <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-black/40">
+              <div className="relative rounded-xl overflow-hidden shadow-2xl shadow-black/40 bg-sts-dark">
                 {/* Slight dark overlay for depth */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent z-10" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent z-10" />
                 
                 <motion.img 
                   src="https://www.ststaxrepair.net/wp-content/uploads/2025/01/Untitled-design-3.png"
                   alt="STS Tax Team"
-                  className="w-full h-52 object-cover object-top"
-                  whileHover={{ scale: 1.03 }}
+                  className="w-full h-auto object-contain"
+                  whileHover={{ scale: 1.02 }}
                   transition={{ type: "spring", stiffness: 200 }}
                 />
                 
                 {/* Subtle Scanline Effect */}
                 <motion.div
-                  className="absolute inset-0 bg-gradient-to-b from-transparent via-white/5 to-transparent pointer-events-none"
+                  className="absolute inset-0 bg-gradient-to-b from-transparent via-sts-gold/5 to-transparent pointer-events-none"
                   animate={{ y: ['-100%', '100%'] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                  transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
                 />
                 
-                {/* Minimal Corner Accents */}
-                <div className="absolute top-3 left-3 w-6 h-6 border-l-2 border-t-2 border-white/40 rounded-tl-md z-20" />
-                <div className="absolute top-3 right-3 w-6 h-6 border-r-2 border-t-2 border-white/40 rounded-tr-md z-20" />
-                <div className="absolute bottom-3 left-3 w-6 h-6 border-l-2 border-b-2 border-white/40 rounded-bl-md z-20" />
-                <div className="absolute bottom-3 right-3 w-6 h-6 border-r-2 border-b-2 border-white/40 rounded-br-md z-20" />
+                {/* Corner Tech Brackets */}
+                <div className="absolute top-2 left-2 w-6 h-6 border-l-2 border-t-2 border-sts-gold/60 z-20" />
+                <div className="absolute top-2 right-2 w-6 h-6 border-r-2 border-t-2 border-sts-gold/60 z-20" />
+                <div className="absolute bottom-2 left-2 w-6 h-6 border-l-2 border-b-2 border-sts-gold/60 z-20" />
+                <div className="absolute bottom-2 right-2 w-6 h-6 border-r-2 border-b-2 border-sts-gold/60 z-20" />
               </div>
             </motion.div>
             
