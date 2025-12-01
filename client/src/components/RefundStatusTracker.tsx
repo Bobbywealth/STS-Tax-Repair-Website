@@ -3,13 +3,15 @@ import { CheckCircle2, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface RefundStatusTrackerProps {
-  currentStatus: "New" | "Review" | "Filed" | "Approved" | "Paid";
+  currentStatus: "New" | "Docs Pending" | "In Review" | "Filed" | "Accepted" | "Approved" | "Paid" | string;
 }
 
 const statuses = [
   { id: "New", label: "New" },
-  { id: "Review", label: "Review" },
+  { id: "Docs Pending", label: "Docs Pending" },
+  { id: "In Review", label: "In Review" },
   { id: "Filed", label: "Filed" },
+  { id: "Accepted", label: "Accepted" },
   { id: "Approved", label: "Approved" },
   { id: "Paid", label: "Paid" },
 ];
