@@ -530,7 +530,7 @@ export default function Dashboard() {
                     Document Overview
                   </CardTitle>
                   <Link href="/documents">
-                    <Button variant="ghost" size="sm" className="text-emerald-500 hover:text-emerald-400">
+                    <Button variant="ghost" size="sm" className="view-all-link text-emerald-500 hover:text-emerald-400">
                       View All <ArrowRight className="h-4 w-4 ml-1" />
                     </Button>
                   </Link>
@@ -599,7 +599,7 @@ export default function Dashboard() {
                     Recent Clients
                   </CardTitle>
                   <Link href="/clients">
-                    <Button variant="ghost" size="sm" className="text-emerald-500 hover:text-emerald-400">
+                    <Button variant="ghost" size="sm" className="view-all-link text-emerald-500 hover:text-emerald-400">
                       View All <ArrowRight className="h-4 w-4 ml-1" />
                     </Button>
                   </Link>
