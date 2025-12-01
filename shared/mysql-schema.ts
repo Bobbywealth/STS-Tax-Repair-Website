@@ -27,7 +27,6 @@ export const users = mysqlTable("users", {
   lastName: varchar("last_name", { length: 255 }),
   profileImageUrl: varchar("profile_image_url", { length: 500 }),
   phone: varchar("phone", { length: 20 }),
-  phoneSecondary: varchar("phone_secondary", { length: 20 }),
   address: text("address"),
   city: varchar("city", { length: 100 }),
   state: varchar("state", { length: 100 }),
