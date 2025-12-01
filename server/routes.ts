@@ -17,6 +17,8 @@ import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { testPerfexConnection, getPerfexTables, queryPerfex, describePerfexTable } from "./perfex-db";
 import { mysqlPool, runMySQLMigrations } from "./mysql-db";
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
+import bcrypt from "bcrypt";
+import { encrypt, decrypt } from "./encryption";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Run MySQL migrations on startup
@@ -49,6 +51,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Client Registration (public endpoint)
+  app.post('/api/auth/register', async (req, res) => {
+    try {
+      const {
+        firstName,
+        lastName,
+        phone,
+        password,
+        address,
+        city,
+        zipCode,
+        state,
+        country,
+        fullName,
+        phoneSecondary,
+        email,
+        birthday,
+        occupation,
+        irsUsername,
+        irsPassword,
+        ssn,
+        referredById,
+        directDepositBank,
+        bankRoutingNumber,
+        bankAccountNumber,
+      } = req.body;
+
+      // Validate required fields
+      if (!firstName || !lastName || !email || !password || !fullName) {
+        return res.status(400).json({ message: "Required fields missing: firstName, lastName, email, password, fullName" });
+      }
+
+      // Check if email already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "Email already registered" });
+      }
+
+      // Hash password
+      const passwordHash = await bcrypt.hash(password, 10);
+
+      // Extract last 4 of SSN and encrypt full SSN
+      const ssnLast4 = ssn ? ssn.replace(/\D/g, '').slice(-4) : null;
+      const ssnEncrypted = ssn ? encrypt(ssn) : null;
+
+      // Encrypt sensitive data
+      const irsUsernameEncrypted = irsUsername ? encrypt(irsUsername) : null;
+      const irsPasswordEncrypted = irsPassword ? encrypt(irsPassword) : null;
+      const bankRoutingEncrypted = bankRoutingNumber ? encrypt(bankRoutingNumber) : null;
+      const bankAccountEncrypted = bankAccountNumber ? encrypt(bankAccountNumber) : null;
+
+      // Create user
+      const user = await storage.upsertUser({
+        id: crypto.randomUUID(),
+        email,
+        firstName,
+        lastName,
+        fullName,
+        phone: phone || null,
+        phoneSecondary: phoneSecondary || null,
+        address: address || null,
+        city: city || null,
+        state: state || null,
+        zipCode: zipCode || null,
+        country: country || 'United States',
+        role: 'client',
+        isActive: true,
+        passwordHash,
+        birthday: birthday ? new Date(birthday) : null,
+        occupation: occupation || null,
+        ssnLast4,
+        ssnEncrypted,
+        irsUsernameEncrypted,
+        irsPasswordEncrypted,
+        referredById: referredById === 'none' ? null : (referredById || null),
+        directDepositBank: directDepositBank || null,
+        bankRoutingEncrypted,
+        bankAccountEncrypted,
+      });
+
+      res.status(201).json({ 
+        message: "Registration successful",
+        userId: user.id 
+      });
+    } catch (error: any) {
+      console.error("Registration error:", error);
+      res.status(500).json({ message: error.message || "Registration failed" });
+    }
+  });
+
+  // Get referrers list for registration (public endpoint)
+  app.get('/api/users/referrers', async (req, res) => {
+    try {
+      // Get all active users who could be referrers (staff members)
+      const users = await storage.getUsers();
+      const referrers = users
+        .filter(u => u.role !== 'client' && u.isActive)
+        .map(u => ({
+          id: u.id,
+          firstName: u.firstName,
+          lastName: u.lastName,
+        }));
+      res.json(referrers);
+    } catch (error: any) {
+      console.error("Error fetching referrers:", error);
+      res.status(500).json({ message: "Failed to fetch referrers" });
     }
   });
 

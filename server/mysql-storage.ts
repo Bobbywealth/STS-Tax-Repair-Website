@@ -54,6 +54,11 @@ export class MySQLStorage implements IStorage {
     return user;
   }
 
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await mysqlDb.select().from(usersTable).where(eq(usersTable.email, email));
+    return user;
+  }
+
   async getUsers(): Promise<User[]> {
     return await mysqlDb.select().from(usersTable);
   }
@@ -62,14 +67,37 @@ export class MySQLStorage implements IStorage {
     const id = userData.id || randomUUID();
     const existing = await this.getUser(id);
     
-    const userValues = {
+    const userValues: Record<string, any> = {
       id,
       email: userData.email ?? null,
       firstName: userData.firstName ?? null,
       lastName: userData.lastName ?? null,
+      fullName: userData.fullName ?? null,
       profileImageUrl: userData.profileImageUrl ?? null,
+      phone: userData.phone ?? null,
+      phoneSecondary: userData.phoneSecondary ?? null,
+      address: userData.address ?? null,
+      city: userData.city ?? null,
+      state: userData.state ?? null,
+      zipCode: userData.zipCode ?? null,
+      country: userData.country ?? 'United States',
+      role: userData.role ?? 'client',
+      isActive: userData.isActive ?? true,
       updatedAt: new Date(),
     };
+
+    // Add optional fields only if they are provided
+    if (userData.passwordHash !== undefined) userValues.passwordHash = userData.passwordHash;
+    if (userData.birthday !== undefined) userValues.birthday = userData.birthday;
+    if (userData.occupation !== undefined) userValues.occupation = userData.occupation;
+    if (userData.ssnLast4 !== undefined) userValues.ssnLast4 = userData.ssnLast4;
+    if (userData.ssnEncrypted !== undefined) userValues.ssnEncrypted = userData.ssnEncrypted;
+    if (userData.irsUsernameEncrypted !== undefined) userValues.irsUsernameEncrypted = userData.irsUsernameEncrypted;
+    if (userData.irsPasswordEncrypted !== undefined) userValues.irsPasswordEncrypted = userData.irsPasswordEncrypted;
+    if (userData.referredById !== undefined) userValues.referredById = userData.referredById;
+    if (userData.directDepositBank !== undefined) userValues.directDepositBank = userData.directDepositBank;
+    if (userData.bankRoutingEncrypted !== undefined) userValues.bankRoutingEncrypted = userData.bankRoutingEncrypted;
+    if (userData.bankAccountEncrypted !== undefined) userValues.bankAccountEncrypted = userData.bankAccountEncrypted;
 
     if (existing) {
       await mysqlDb

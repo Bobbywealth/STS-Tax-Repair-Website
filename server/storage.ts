@@ -30,6 +30,7 @@ import {
 export interface IStorage {
   // Users (Replit Auth required)
   getUser(id: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   getUsers(): Promise<User[]>;
   upsertUser(user: UpsertUser): Promise<User>;
   updateUserRole(userId: string, newRole: UserRole, changedById: string, changedByName: string, reason?: string): Promise<User | undefined>;

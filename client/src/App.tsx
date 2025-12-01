@@ -28,6 +28,7 @@ import Permissions from "@/pages/Permissions";
 import ClientLogin from "@/pages/ClientLogin";
 import ClientPortal from "@/pages/ClientPortal";
 import RedeemInvite from "@/pages/RedeemInvite";
+import Register from "@/pages/Register";
 import NotFound from "@/pages/not-found";
 
 import { usePermissions, PERMISSIONS } from "@/hooks/usePermissions";
@@ -217,6 +218,7 @@ function App() {
   
   const isClientRoute = location.startsWith('/client-login') || location.startsWith('/client-portal');
   const isRedeemRoute = location.startsWith('/redeem-invite');
+  const isRegisterRoute = location.startsWith('/register');
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -229,6 +231,10 @@ function App() {
         ) : isRedeemRoute ? (
           <Switch>
             <Route path="/redeem-invite" component={RedeemInvite} />
+          </Switch>
+        ) : isRegisterRoute ? (
+          <Switch>
+            <Route path="/register" component={Register} />
           </Switch>
         ) : (
           <AdminLayout />
