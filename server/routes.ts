@@ -251,7 +251,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update user role (admin only)
   app.patch("/api/users/:id/role", isAuthenticated, async (req: any, res) => {
     try {
-      const adminUser = await storage.getUser(req.user.claims.sub);
+      const userId = req.userId || req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const adminUser = await storage.getUser(userId);
       if (!adminUser || adminUser.role !== 'admin') {
         return res.status(403).json({ error: "Admin access required" });
       }
@@ -262,7 +266,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const adminName = `${adminUser.firstName || ''} ${adminUser.lastName || ''}`.trim() || adminUser.email || 'Admin';
-      const user = await storage.updateUserRole(req.params.id, role, req.user.claims.sub, adminName, reason);
+      const user = await storage.updateUserRole(req.params.id, role, userId, adminName, reason);
       
       if (!user) {
         return res.status(404).json({ error: "User not found" });
@@ -276,7 +280,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update user status (admin only)
   app.patch("/api/users/:id/status", isAuthenticated, async (req: any, res) => {
     try {
-      const adminUser = await storage.getUser(req.user.claims.sub);
+      const userId = req.userId || req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const adminUser = await storage.getUser(userId);
       if (!adminUser || adminUser.role !== 'admin') {
         return res.status(403).json({ error: "Admin access required" });
       }
@@ -313,7 +321,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Role Audit Log (admin only)
   app.get("/api/role-audit-logs", isAuthenticated, async (req: any, res) => {
     try {
-      const adminUser = await storage.getUser(req.user.claims.sub);
+      const userId = req.userId || req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const adminUser = await storage.getUser(userId);
       if (!adminUser || (adminUser.role !== 'admin' && adminUser.role !== 'tax_office')) {
         return res.status(403).json({ error: "Admin or Tax Office access required" });
       }
@@ -327,14 +339,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update current user's profile
   app.patch("/api/profile", isAuthenticated, async (req: any, res) => {
     try {
-      // Get user ID from session or Replit Auth
-      let userId: string | undefined;
-      if (req.session?.userId && req.session?.isClientLogin) {
-        userId = req.session.userId;
-      } else if (req.user?.claims?.sub) {
-        userId = req.user.claims.sub;
-      }
-
+      // Get user ID from middleware (works for both auth methods)
+      const userId = req.userId || req.session?.userId || req.user?.claims?.sub;
       if (!userId) {
         return res.status(401).json({ error: "Not authenticated" });
       }
@@ -373,14 +379,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Upload profile photo
   app.post("/api/profile/photo", isAuthenticated, async (req: any, res) => {
     try {
-      // Get user ID from session or Replit Auth
-      let userId: string | undefined;
-      if (req.session?.userId && req.session?.isClientLogin) {
-        userId = req.session.userId;
-      } else if (req.user?.claims?.sub) {
-        userId = req.user.claims.sub;
-      }
-
+      // Get user ID from middleware (works for both auth methods)
+      const userId = req.userId || req.session?.userId || req.user?.claims?.sub;
       if (!userId) {
         return res.status(401).json({ error: "Not authenticated" });
       }
@@ -409,14 +409,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Confirm profile photo upload and update user record
   app.post("/api/profile/photo/confirm", isAuthenticated, async (req: any, res) => {
     try {
-      // Get user ID from session or Replit Auth
-      let userId: string | undefined;
-      if (req.session?.userId && req.session?.isClientLogin) {
-        userId = req.session.userId;
-      } else if (req.user?.claims?.sub) {
-        userId = req.user.claims.sub;
-      }
-
+      // Get user ID from middleware (works for both auth methods)
+      const userId = req.userId || req.session?.userId || req.user?.claims?.sub;
       if (!userId) {
         return res.status(401).json({ error: "Not authenticated" });
       }
@@ -492,7 +486,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Staff Invites (admin only)
   app.get("/api/staff-invites", isAuthenticated, async (req: any, res) => {
     try {
-      const adminUser = await storage.getUser(req.user.claims.sub);
+      const userId = req.userId || req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const adminUser = await storage.getUser(userId);
       if (!adminUser || adminUser.role !== 'admin') {
         return res.status(403).json({ error: "Admin access required" });
       }
@@ -506,7 +504,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create staff invite (admin only)
   app.post("/api/staff-invites", isAuthenticated, async (req: any, res) => {
     try {
-      const adminUser = await storage.getUser(req.user.claims.sub);
+      const userId = req.userId || req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const adminUser = await storage.getUser(userId);
       if (!adminUser || adminUser.role !== 'admin') {
         return res.status(403).json({ error: "Admin access required" });
       }
@@ -527,7 +529,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email,
         role,
         inviteCode,
-        invitedById: req.user.claims.sub,
+        invitedById: userId,
         invitedByName: adminName,
         expiresAt,
       });
@@ -540,12 +542,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Redeem staff invite
   app.post("/api/staff-invites/redeem", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.userId || req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
       const { inviteCode } = req.body;
       if (!inviteCode) {
         return res.status(400).json({ error: "Invite code required" });
       }
 
-      const invite = await storage.useStaffInvite(inviteCode, req.user.claims.sub);
+      const invite = await storage.useStaffInvite(inviteCode, userId);
       if (!invite) {
         return res.status(404).json({ error: "Invalid or expired invite code" });
       }
@@ -558,7 +564,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Delete staff invite (admin only)
   app.delete("/api/staff-invites/:id", isAuthenticated, async (req: any, res) => {
     try {
-      const adminUser = await storage.getUser(req.user.claims.sub);
+      const userId = req.userId || req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const adminUser = await storage.getUser(userId);
       if (!adminUser || adminUser.role !== 'admin') {
         return res.status(403).json({ error: "Admin access required" });
       }
@@ -610,7 +620,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get current user's permissions
   app.get("/api/auth/permissions", isAuthenticated, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
+      const userId = req.userId || req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
@@ -669,7 +683,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       clearPermissionCache(role);
       
       // Log the change
-      const adminUser = await storage.getUser(req.user.claims.sub);
+      const userId = req.userId || req.user?.claims?.sub;
+      const adminUser = userId ? await storage.getUser(userId) : null;
       const adminName = `${adminUser?.firstName || ''} ${adminUser?.lastName || ''}`.trim() || adminUser?.email || 'Admin';
       console.log(`Permissions updated for ${role} by ${adminName}:`, permissions);
       

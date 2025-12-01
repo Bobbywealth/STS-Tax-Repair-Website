@@ -7,12 +7,15 @@ import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 
-if (!process.env.REPLIT_DOMAINS) {
-  throw new Error("Environment variable REPLIT_DOMAINS not provided");
-}
+// Check if we're running on Replit (has required env vars)
+export const isReplitEnvironment = !!(process.env.REPL_ID && process.env.REPLIT_DOMAINS);
 
+// Only create OIDC config if we're on Replit
 const getOidcConfig = memoize(
   async () => {
+    if (!isReplitEnvironment) {
+      return null;
+    }
     return await client.discovery(
       new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
       process.env.REPL_ID!
@@ -37,7 +40,7 @@ export function getSession() {
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === 'production',
       maxAge: sessionTtl,
     },
   });
@@ -93,7 +96,44 @@ export async function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
+  // If not on Replit, skip OIDC setup but keep session middleware
+  if (!isReplitEnvironment) {
+    console.log("Not running on Replit - Replit Auth disabled, using email/password auth only");
+    
+    // Setup minimal passport serialization for session-based auth
+    passport.serializeUser((user: Express.User, cb) => cb(null, user));
+    passport.deserializeUser((user: Express.User, cb) => cb(null, user));
+    
+    // Redirect staff login to client login when not on Replit
+    app.get("/api/login", (req, res) => {
+      res.redirect("/client-login?notice=replit-auth-unavailable");
+    });
+    
+    app.get("/api/callback", (req, res) => {
+      res.redirect("/client-login");
+    });
+    
+    app.get("/api/logout", (req: any, res) => {
+      // Clear session data
+      if (req.session) {
+        req.session.userId = null;
+        req.session.userRole = null;
+        req.session.isClientLogin = null;
+      }
+      req.logout(() => {
+        res.redirect("/client-login");
+      });
+    });
+    
+    return;
+  }
+
+  // Full Replit Auth setup
   const config = await getOidcConfig();
+  if (!config) {
+    console.error("Failed to get OIDC config");
+    return;
+  }
 
   const verify: VerifyFunction = async (
     tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
@@ -179,10 +219,31 @@ export async function setupAuth(app: Express) {
   });
 }
 
-export const isAuthenticated: RequestHandler = async (req, res, next) => {
+// Updated isAuthenticated middleware that works for both auth methods
+export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
+  // Check for client session login first (email/password auth)
+  if (req.session?.userId && req.session?.isClientLogin) {
+    try {
+      const user = await storage.getUser(req.session.userId);
+      if (user) {
+        req.userRole = user.role || 'client';
+        req.userId = user.id;
+        return next();
+      }
+    } catch (error) {
+      console.error("Error validating session user:", error);
+    }
+  }
+
+  // If not on Replit, only session auth is available
+  if (!isReplitEnvironment) {
+    return res.status(401).json({ message: "Unauthorized - Please log in" });
+  }
+
+  // Check Replit Auth
   const user = req.user as any;
 
-  if (!req.isAuthenticated() || !user.expires_at) {
+  if (!req.isAuthenticated() || !user?.expires_at) {
     return res.status(401).json({ message: "Unauthorized" });
   }
 
@@ -191,17 +252,18 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
   if (now > user.expires_at) {
     const refreshToken = user.refresh_token;
     if (!refreshToken) {
-      res.status(401).json({ message: "Unauthorized" });
-      return;
+      return res.status(401).json({ message: "Unauthorized" });
     }
 
     try {
       const config = await getOidcConfig();
+      if (!config) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
       updateUserSession(user, tokenResponse);
     } catch (error) {
-      res.status(401).json({ message: "Unauthorized" });
-      return;
+      return res.status(401).json({ message: "Unauthorized" });
     }
   }
 
@@ -210,8 +272,8 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     if (userId) {
       const dbUser = await storage.getUser(userId);
       if (dbUser) {
-        (req as any).userRole = dbUser.role || 'client';
-        (req as any).userId = userId;
+        req.userRole = dbUser.role || 'client';
+        req.userId = userId;
       }
     }
   } catch (error) {
