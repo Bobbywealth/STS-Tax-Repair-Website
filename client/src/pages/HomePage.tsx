@@ -759,7 +759,7 @@ export default function HomePage() {
                 <motion.img 
                   src="https://www.ststaxrepair.net/wp-content/uploads/2025/01/Untitled-design-3.png"
                   alt="STS Tax Team"
-                  className="w-full h-auto object-contain"
+                  className="w-full h-64 object-cover object-center"
                   whileHover={{ scale: 1.02 }}
                   transition={{ type: "spring", stiffness: 200 }}
                 />
