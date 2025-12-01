@@ -258,7 +258,7 @@ export default function AgentsPage() {
       {/* Agents Grid */}
       <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {agents.map((agent, index) => (
               <motion.div
                 key={agent.name}
@@ -268,7 +268,7 @@ export default function AgentsPage() {
                 transition={{ delay: index * 0.1 }}
               >
                 <Card className="overflow-hidden hover:shadow-xl transition-shadow">
-                  <div className="aspect-[3/4] overflow-hidden">
+                  <div className="aspect-square overflow-hidden">
                     <img 
                       src={agent.image} 
                       alt={agent.name}
