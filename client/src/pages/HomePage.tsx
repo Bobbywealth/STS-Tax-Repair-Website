@@ -268,7 +268,7 @@ export default function HomePage() {
       phone: "954-534-5227",
       email: "Info.ststax@gmail.com",
       address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
-      image: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=200&h=200&fit=crop&crop=face"
+      image: "https://iili.io/fxO4Uog.png"
     },
     {
       name: "Withney Simon",
@@ -276,7 +276,7 @@ export default function HomePage() {
       phone: "4074277619",
       email: "Withney.ststax@yahoo.com",
       address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
-      image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=200&h=200&fit=crop&crop=face"
+      image: "https://iili.io/fxO48DF.jpg"
     },
     {
       name: "Keelie Duvignaud",
@@ -284,7 +284,7 @@ export default function HomePage() {
       phone: "772-877-1588",
       email: "Taxesbykeys@gmail.com",
       address: "3181 SW Crenshaw St, Port St. Lucie, FL 34953, USA",
-      image: "https://images.unsplash.com/photo-1594744803329-e58b31de8bf5?w=200&h=200&fit=crop&crop=face"
+      image: "https://iili.io/fxOivNS.png"
     },
     {
       name: "Christy S Dor",
