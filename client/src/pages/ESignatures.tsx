@@ -69,6 +69,7 @@ export default function ESignatures() {
   const [selectedSignature, setSelectedSignature] = useState<ESignature | null>(null);
   const [showSignDialog, setShowSignDialog] = useState(false);
   const [showRequestDialog, setShowRequestDialog] = useState(false);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [clientSearchOpen, setClientSearchOpen] = useState(false);
   const [clientSearchQuery, setClientSearchQuery] = useState("");
   const signaturePadRef = useRef<SignaturePadRef>(null);
@@ -437,6 +438,20 @@ export default function ESignatures() {
                         View Document
                       </Button>
                     )}
+                    {signature.status === "signed" && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedSignature(signature);
+                          setShowDetailsDialog(true);
+                        }}
+                        data-testid={`button-view-details-${signature.id}`}
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        View Details
+                      </Button>
+                    )}
                     {signature.status === "pending" && (
                       <>
                         <Button
@@ -738,6 +753,182 @@ export default function ESignatures() {
               </DialogFooter>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* View Details Dialog */}
+      <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Signed Document Details</DialogTitle>
+            <DialogDescription>
+              Complete details of the signed document including form data and signature
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedSignature && (
+            <div className="space-y-6">
+              {/* Document Info */}
+              <div className="space-y-2">
+                <h4 className="font-semibold text-sm">Document Information</h4>
+                <div className="grid grid-cols-2 gap-3 text-sm bg-muted/50 p-4 rounded-lg">
+                  <div>
+                    <span className="text-muted-foreground">Document:</span>
+                    <p className="font-medium">{selectedSignature.documentName}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Type:</span>
+                    <p className="font-medium">{getDocumentTypeLabel(selectedSignature.documentType)}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Client:</span>
+                    <p className="font-medium">{selectedSignature.clientName}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Status:</span>
+                    <p className="font-medium">{getStatusBadge(selectedSignature.status)}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Signed At:</span>
+                    <p className="font-medium">
+                      {selectedSignature.signedAt 
+                        ? format(new Date(selectedSignature.signedAt), "MMM d, yyyy 'at' h:mm a") 
+                        : "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">IP Address:</span>
+                    <p className="font-medium">{selectedSignature.ipAddress || "N/A"}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Form 8879 Data */}
+              {selectedSignature.formData && (
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-sm">Form 8879 Data</h4>
+                  <div className="bg-muted/50 p-4 rounded-lg space-y-4">
+                    {/* Taxpayer Info */}
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Taxpayer Name:</span>
+                        <p className="font-medium">{(selectedSignature.formData as Form8879Data).taxpayerName || "N/A"}</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">SSN:</span>
+                        <p className="font-medium">{(selectedSignature.formData as Form8879Data).taxpayerSSN || "N/A"}</p>
+                      </div>
+                      {(selectedSignature.formData as Form8879Data).spouseName && (
+                        <>
+                          <div>
+                            <span className="text-muted-foreground">Spouse Name:</span>
+                            <p className="font-medium">{(selectedSignature.formData as Form8879Data).spouseName}</p>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Spouse SSN:</span>
+                            <p className="font-medium">{(selectedSignature.formData as Form8879Data).spouseSSN || "N/A"}</p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                    
+                    {/* Address */}
+                    <div className="text-sm">
+                      <span className="text-muted-foreground">Address:</span>
+                      <p className="font-medium">
+                        {(selectedSignature.formData as Form8879Data).address || ""}{" "}
+                        {(selectedSignature.formData as Form8879Data).city || ""},{" "}
+                        {(selectedSignature.formData as Form8879Data).state || ""}{" "}
+                        {(selectedSignature.formData as Form8879Data).zipCode || ""}
+                      </p>
+                    </div>
+
+                    {/* Tax Info */}
+                    <div className="grid grid-cols-2 gap-3 text-sm border-t pt-3">
+                      <div>
+                        <span className="text-muted-foreground">Tax Year:</span>
+                        <p className="font-medium">{(selectedSignature.formData as Form8879Data).taxYear || "N/A"}</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">AGI:</span>
+                        <p className="font-medium">
+                          {(selectedSignature.formData as Form8879Data).agi 
+                            ? `$${Number((selectedSignature.formData as Form8879Data).agi).toLocaleString()}` 
+                            : "N/A"}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Total Tax:</span>
+                        <p className="font-medium">
+                          {(selectedSignature.formData as Form8879Data).totalTax 
+                            ? `$${Number((selectedSignature.formData as Form8879Data).totalTax).toLocaleString()}` 
+                            : "N/A"}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Federal Refund:</span>
+                        <p className="font-medium">
+                          {(selectedSignature.formData as Form8879Data).federalRefund 
+                            ? `$${Number((selectedSignature.formData as Form8879Data).federalRefund).toLocaleString()}` 
+                            : "N/A"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* PIN Info */}
+                    <div className="grid grid-cols-3 gap-3 text-sm border-t pt-3">
+                      <div>
+                        <span className="text-muted-foreground">ERO PIN:</span>
+                        <p className="font-medium font-mono">{(selectedSignature.formData as Form8879Data).eroPin || "N/A"}</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Taxpayer PIN:</span>
+                        <p className="font-medium font-mono">{(selectedSignature.formData as Form8879Data).taxpayerPin || "N/A"}</p>
+                      </div>
+                      {(selectedSignature.formData as Form8879Data).spousePin && (
+                        <div>
+                          <span className="text-muted-foreground">Spouse PIN:</span>
+                          <p className="font-medium font-mono">{(selectedSignature.formData as Form8879Data).spousePin}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Captured Signature */}
+              {selectedSignature.signatureData && (
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-sm">Captured Signature</h4>
+                  <div className="border rounded-lg bg-white p-4 inline-block">
+                    <img 
+                      src={selectedSignature.signatureData} 
+                      alt="Client Signature" 
+                      className="max-h-24 object-contain"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* View Original Document Button */}
+              {selectedSignature.documentUrl && (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => window.open(selectedSignature.documentUrl!, '_blank')}
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  View Original IRS Form
+                </Button>
+              )}
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDetailsDialog(false)}>
+              Close
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
