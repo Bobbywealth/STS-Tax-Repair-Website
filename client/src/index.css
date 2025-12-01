@@ -2,6 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Animated gradient text */
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-gradient-text {
+  background: linear-gradient(90deg, #FDB913, #FFD700, #4CAF50, #FDB913, #FFD700);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gradientShift 4s ease-in-out infinite;
+}
+
 /* Animated marble background with floating shapes */
 @keyframes float1 {
   0%, 100% { transform: translate(0, 0) rotate(0deg); }

@@ -657,11 +657,11 @@ export default function HomePage() {
                 transition={{ duration: 0.6 }}
               >
                 <h1 className="text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.1] mb-4">
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-sts-gold via-yellow-300 to-sts-gold italic">
+                  <span className="animate-gradient-text italic">
                     Reliable
                   </span>
                   {" "}
-                  <span className="text-white">Tax Advisors</span>
+                  <span className="animate-gradient-text">Tax Advisors</span>
                 </h1>
                 <p className="text-white/90 text-lg lg:text-xl leading-relaxed mb-6 max-w-2xl mx-auto">
                   Let Us Be Your Trusted Partner. Work alongside a dependable ally invested in your best interests. For the maximum refund you deserve, your search ends here.
@@ -722,11 +722,11 @@ export default function HomePage() {
               transition={{ duration: 0.5 }}
             >
               <h1 className="text-4xl font-black leading-[1.15] tracking-tight">
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-sts-gold via-yellow-300 to-sts-gold drop-shadow-lg">
+                <span className="animate-gradient-text drop-shadow-lg">
                   Reliable
                 </span>
                 <br />
-                <span className="text-white">Tax Advisors</span>
+                <span className="animate-gradient-text">Tax Advisors</span>
               </h1>
               <p className="text-sts-gold font-semibold text-sm tracking-wide mt-2">STS TAX REPAIR</p>
             </motion.div>
