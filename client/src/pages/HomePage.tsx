@@ -381,6 +381,22 @@ export default function HomePage() {
       email: "rhematoyo@gmail.com",
       address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
       image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Rhema-Ita-Toyo.webp"
+    },
+    {
+      name: "John Jay",
+      role: "Service Support",
+      phone: "(407) 340-7964",
+      email: "JohnJ.Financial@gmail.com",
+      address: "3042 Herold Dr, Orlando, FL 32805",
+      image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/WhatsApp-Image-2025-11-20-at-17.00.09.jpeg"
+    },
+    {
+      name: "Kerlens Casseus",
+      role: "Funding Specialist",
+      phone: "786-961-5014",
+      email: "Kerlens@casseussolutions.info",
+      address: "Florida, USA",
+      image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/WhatsApp-Image-2025-11-20-at-19.17.28.jpeg"
     }
   ];
 

@@ -128,6 +128,22 @@ const agents = [
     phone: "832-988-3167",
     email: "rhematoyo@gmail.com",
     location: "Houston, TX"
+  },
+  {
+    name: "John Jay",
+    title: "Service Support",
+    image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/WhatsApp-Image-2025-11-20-at-17.00.09.jpeg",
+    phone: "(407) 340-7964",
+    email: "JohnJ.Financial@gmail.com",
+    location: "Orlando, FL"
+  },
+  {
+    name: "Kerlens Casseus",
+    title: "Funding Specialist",
+    image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/WhatsApp-Image-2025-11-20-at-19.17.28.jpeg",
+    phone: "786-961-5014",
+    email: "Kerlens@casseussolutions.info",
+    location: "Florida"
   }
 ];
 
