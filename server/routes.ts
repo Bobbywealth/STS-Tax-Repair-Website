@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import { requireRole, requireMinRole, requireAdmin, requireStaff } from "./authorization";
 import {
   insertTaxDeadlineSchema,
   insertAppointmentSchema,
@@ -51,14 +52,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Users (for staff to select clients)
-  app.get("/api/users", async (req, res) => {
+  // Users (for staff to select clients) - staff only
+  app.get("/api/users", isAuthenticated, requireStaff(), async (req, res) => {
     const users = await storage.getUsers();
     res.json(users);
   });
 
-  // Get single user by ID
-  app.get("/api/users/:id", async (req, res) => {
+  // Get single user by ID - staff only
+  app.get("/api/users/:id", isAuthenticated, requireStaff(), async (req, res) => {
     try {
       const user = await storage.getUser(req.params.id);
       if (!user) {
@@ -118,8 +119,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get users by role
-  app.get("/api/users/role/:role", async (req, res) => {
+  // Get users by role - admin only
+  app.get("/api/users/role/:role", isAuthenticated, requireAdmin(), async (req, res) => {
     try {
       const role = req.params.role as any;
       if (!['client', 'agent', 'tax_office', 'admin'].includes(role)) {
@@ -230,19 +231,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Tax Deadlines
-  app.get("/api/deadlines", async (req, res) => {
+  // Tax Deadlines - staff only
+  app.get("/api/deadlines", isAuthenticated, requireStaff(), async (req, res) => {
     const deadlines = await storage.getTaxDeadlines();
     res.json(deadlines);
   });
 
-  app.get("/api/deadlines/year/:year", async (req, res) => {
+  app.get("/api/deadlines/year/:year", isAuthenticated, requireStaff(), async (req, res) => {
     const year = parseInt(req.params.year);
     const deadlines = await storage.getTaxDeadlinesByYear(year);
     res.json(deadlines);
   });
 
-  app.post("/api/deadlines", async (req, res) => {
+  app.post("/api/deadlines", isAuthenticated, requireMinRole('tax_office'), async (req, res) => {
     try {
       const result = insertTaxDeadlineSchema.safeParse(req.body);
       if (!result.success) {
@@ -255,7 +256,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/deadlines/:id", async (req, res) => {
+  app.patch("/api/deadlines/:id", isAuthenticated, requireMinRole('tax_office'), async (req, res) => {
     try {
       const deadline = await storage.updateTaxDeadline(req.params.id, req.body);
       if (!deadline) {
@@ -267,7 +268,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/deadlines/:id", async (req, res) => {
+  app.delete("/api/deadlines/:id", isAuthenticated, requireMinRole('tax_office'), async (req, res) => {
     const success = await storage.deleteTaxDeadline(req.params.id);
     if (!success) {
       return res.status(404).json({ error: "Deadline not found" });
@@ -275,8 +276,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(204).send();
   });
 
-  // Appointments
-  app.get("/api/appointments", async (req, res) => {
+  // Appointments - staff only
+  app.get("/api/appointments", isAuthenticated, requireStaff(), async (req, res) => {
     const { clientId, start, end } = req.query;
     
     if (clientId) {
@@ -295,7 +296,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(appointments);
   });
 
-  app.post("/api/appointments", async (req, res) => {
+  app.post("/api/appointments", isAuthenticated, requireStaff(), async (req, res) => {
     try {
       const result = insertAppointmentSchema.safeParse(req.body);
       if (!result.success) {
@@ -308,7 +309,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/appointments/:id", async (req, res) => {
+  app.patch("/api/appointments/:id", isAuthenticated, requireStaff(), async (req, res) => {
     try {
       const appointment = await storage.updateAppointment(req.params.id, req.body);
       if (!appointment) {
@@ -320,7 +321,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/appointments/:id", async (req, res) => {
+  app.delete("/api/appointments/:id", isAuthenticated, requireMinRole('tax_office'), async (req, res) => {
     const success = await storage.deleteAppointment(req.params.id);
     if (!success) {
       return res.status(404).json({ error: "Appointment not found" });
@@ -328,8 +329,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(204).send();
   });
 
-  // Payments
-  app.get("/api/payments", async (req, res) => {
+  // Payments - tax_office+ only (financial data)
+  app.get("/api/payments", isAuthenticated, requireMinRole('tax_office'), async (req, res) => {
     const { clientId } = req.query;
     
     if (clientId) {
@@ -341,7 +342,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(payments);
   });
 
-  app.post("/api/payments", async (req, res) => {
+  app.post("/api/payments", isAuthenticated, requireMinRole('tax_office'), async (req, res) => {
     try {
       const result = insertPaymentSchema.safeParse(req.body);
       if (!result.success) {
@@ -354,7 +355,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/payments/:id", async (req, res) => {
+  app.patch("/api/payments/:id", isAuthenticated, requireMinRole('tax_office'), async (req, res) => {
     try {
       const payment = await storage.updatePayment(req.params.id, req.body);
       if (!payment) {
@@ -366,7 +367,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/payments/:id", async (req, res) => {
+  app.delete("/api/payments/:id", isAuthenticated, requireAdmin(), async (req, res) => {
     const success = await storage.deletePayment(req.params.id);
     if (!success) {
       return res.status(404).json({ error: "Payment not found" });
@@ -374,8 +375,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(204).send();
   });
 
-  // Tasks - Pull from Perfex CRM tbltasks table
-  app.get("/api/tasks", async (req, res) => {
+  // Tasks - Pull from Perfex CRM tbltasks table - staff only
+  app.get("/api/tasks", isAuthenticated, requireStaff(), async (req, res) => {
     try {
       const tasks = await queryPerfex(`
         SELECT 
@@ -435,8 +436,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Leads - Pull from Perfex CRM tblleads table
-  app.get("/api/leads", async (req, res) => {
+  // Leads - Pull from Perfex CRM tblleads table - staff only
+  app.get("/api/leads", isAuthenticated, requireStaff(), async (req, res) => {
     try {
       const leads = await queryPerfex(`
         SELECT 
@@ -469,8 +470,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Staff Members - Pull from Perfex CRM tblstaff table
-  app.get("/api/staff", async (req, res) => {
+  // Staff Members - Pull from Perfex CRM tblstaff table - staff only
+  app.get("/api/staff", isAuthenticated, requireStaff(), async (req, res) => {
     try {
       const staff = await queryPerfex(`
         SELECT 
@@ -492,7 +493,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/staff/:id", async (req, res) => {
+  app.get("/api/staff/:id", isAuthenticated, requireStaff(), async (req, res) => {
     try {
       const [member] = await queryPerfex(`
         SELECT 
@@ -516,7 +517,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/staff", async (req, res) => {
+  app.post("/api/staff", isAuthenticated, requireAdmin(), async (req, res) => {
     try {
       const member = await storage.createStaffMember(req.body);
       res.status(201).json(member);
@@ -525,7 +526,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/staff/:id", async (req, res) => {
+  app.patch("/api/staff/:id", isAuthenticated, requireAdmin(), async (req, res) => {
     try {
       const member = await storage.updateStaffMember(req.params.id, req.body);
       if (!member) {
@@ -537,7 +538,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/staff/:id", async (req, res) => {
+  app.delete("/api/staff/:id", isAuthenticated, requireAdmin(), async (req, res) => {
     const success = await storage.deleteStaffMember(req.params.id);
     if (!success) {
       return res.status(404).json({ error: "Staff member not found" });
@@ -545,9 +546,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(204).send();
   });
 
-  // Document Versions
+  // Document Versions - staff only
   // Note: /all route must come before /:clientId to avoid matching "all" as a clientId
-  app.get("/api/documents/all", async (req, res) => {
+  app.get("/api/documents/all", isAuthenticated, requireStaff(), async (req, res) => {
     try {
       const documents = await storage.getAllDocuments();
       res.json(documents);
@@ -556,7 +557,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/documents/:clientId", async (req, res) => {
+  app.get("/api/documents/:clientId", isAuthenticated, requireStaff(), async (req, res) => {
     const { documentType } = req.query;
     
     if (documentType) {
@@ -571,7 +572,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(documents);
   });
 
-  app.post("/api/documents", async (req, res) => {
+  app.post("/api/documents", isAuthenticated, requireStaff(), async (req, res) => {
     try {
       const result = insertDocumentVersionSchema.safeParse(req.body);
       if (!result.success) {
@@ -584,7 +585,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/documents/:id", async (req, res) => {
+  app.delete("/api/documents/:id", isAuthenticated, requireMinRole('tax_office'), async (req, res) => {
     const success = await storage.deleteDocumentVersion(req.params.id);
     if (!success) {
       return res.status(404).json({ error: "Document not found" });
@@ -592,8 +593,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(204).send();
   });
 
-  // E-Signatures
-  app.get("/api/signatures", async (req, res) => {
+  // E-Signatures - staff only for viewing, clients can update their own
+  app.get("/api/signatures", isAuthenticated, requireStaff(), async (req, res) => {
     const { clientId } = req.query;
     
     if (clientId) {
@@ -605,7 +606,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(signatures);
   });
 
-  app.get("/api/signatures/:id", async (req, res) => {
+  app.get("/api/signatures/:id", isAuthenticated, async (req, res) => {
     const signature = await storage.getESignature(req.params.id);
     if (!signature) {
       return res.status(404).json({ error: "Signature not found" });
@@ -613,7 +614,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(signature);
   });
 
-  app.post("/api/signatures", async (req, res) => {
+  app.post("/api/signatures", isAuthenticated, requireStaff(), async (req, res) => {
     try {
       const result = insertESignatureSchema.safeParse(req.body);
       if (!result.success) {
@@ -626,7 +627,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/signatures/:id", async (req, res) => {
+  app.patch("/api/signatures/:id", isAuthenticated, async (req, res) => {
     try {
       // Capture real client IP address from request
       const ipAddress = req.ip || req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || "unknown";
@@ -647,7 +648,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/signatures/:id", async (req, res) => {
+  app.delete("/api/signatures/:id", isAuthenticated, requireMinRole('tax_office'), async (req, res) => {
     const success = await storage.deleteESignature(req.params.id);
     if (!success) {
       return res.status(404).json({ error: "Signature not found" });
@@ -655,8 +656,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(204).send();
   });
 
-  // Generate filled IRS Form 8879 PDF
-  app.get("/api/signatures/:id/pdf", async (req, res) => {
+  // Generate filled IRS Form 8879 PDF - staff only
+  app.get("/api/signatures/:id/pdf", isAuthenticated, requireStaff(), async (req, res) => {
     try {
       const signature = await storage.getESignature(req.params.id);
       if (!signature) {
@@ -992,9 +993,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============ PERFEX CRM MIGRATION ROUTES ============
+  // All admin routes require admin role
 
   // Test Perfex CRM database connection
-  app.get("/api/admin/perfex/test", async (req, res) => {
+  app.get("/api/admin/perfex/test", isAuthenticated, requireAdmin(), async (req, res) => {
     try {
       const connected = await testPerfexConnection();
       if (connected) {
@@ -1009,7 +1011,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Describe a Perfex CRM table schema
-  app.get("/api/admin/perfex/describe/:table", async (req, res) => {
+  app.get("/api/admin/perfex/describe/:table", isAuthenticated, requireAdmin(), async (req, res) => {
     try {
       const schema = await describePerfexTable(req.params.table);
       res.json(schema);
@@ -1019,7 +1021,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get Perfex clients count
-  app.get("/api/admin/perfex/clients/count", async (req, res) => {
+  app.get("/api/admin/perfex/clients/count", isAuthenticated, requireAdmin(), async (req, res) => {
     try {
       const result = await queryPerfex("SELECT COUNT(*) as count FROM tblclients");
       res.json({ count: result[0]?.count || 0 });
@@ -1029,7 +1031,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Preview Perfex clients (first 20)
-  app.get("/api/admin/perfex/clients/preview", async (req, res) => {
+  app.get("/api/admin/perfex/clients/preview", isAuthenticated, requireAdmin(), async (req, res) => {
     try {
       const clients = await queryPerfex(`
         SELECT userid, company, vat, phonenumber, city, state, zip, country, 
@@ -1046,7 +1048,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get Perfex contacts for a client
-  app.get("/api/admin/perfex/contacts", async (req, res) => {
+  app.get("/api/admin/perfex/contacts", isAuthenticated, requireAdmin(), async (req, res) => {
     try {
       const contacts = await queryPerfex(`
         SELECT id, userid, is_primary, firstname, lastname, email, phonenumber,
@@ -1062,7 +1064,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get Perfex files count
-  app.get("/api/admin/perfex/files/count", async (req, res) => {
+  app.get("/api/admin/perfex/files/count", isAuthenticated, requireAdmin(), async (req, res) => {
     try {
       const result = await queryPerfex("SELECT COUNT(*) as count FROM tblfiles WHERE rel_type = 'customer'");
       res.json({ count: result[0]?.count || 0 });
@@ -1072,7 +1074,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete all WordPress signups from users table
-  app.delete("/api/admin/clear-wordpress-clients", async (req, res) => {
+  app.delete("/api/admin/clear-wordpress-clients", isAuthenticated, requireAdmin(), async (req, res) => {
     try {
       const [result] = await mysqlPool.query("DELETE FROM users WHERE original_submission_id IS NOT NULL");
       const affected = (result as any).affectedRows || 0;
@@ -1083,7 +1085,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Migrate Perfex clients to CRM
-  app.post("/api/admin/migrate-perfex-clients", async (req, res) => {
+  app.post("/api/admin/migrate-perfex-clients", isAuthenticated, requireAdmin(), async (req, res) => {
     try {
       // Get all Perfex clients with their primary contact
       const clients = await queryPerfex(`
@@ -1156,7 +1158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Migrate Perfex files/documents
-  app.post("/api/admin/migrate-perfex-documents", async (req, res) => {
+  app.post("/api/admin/migrate-perfex-documents", isAuthenticated, requireAdmin(), async (req, res) => {
     try {
       // Get all customer-related files from Perfex
       const files = await queryPerfex(`
