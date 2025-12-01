@@ -412,15 +412,15 @@ export default function HomePage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   const fadeInUp = {
-    initial: { opacity: 0, y: 30 },
+    initial: { opacity: 0, y: 15 },
     animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.6 }
+    transition: { duration: 0.3 }
   };
 
   const staggerContainer = {
     animate: {
       transition: {
-        staggerChildren: 0.1
+        staggerChildren: 0.05
       }
     }
   };
@@ -436,7 +436,7 @@ export default function HomePage() {
         }`}
         initial={{ y: -100 }}
         animate={{ y: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.3 }}
         data-testid="header-main"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -687,7 +687,7 @@ export default function HomePage() {
               className="lg:col-span-2"
               initial={{ opacity: 0, x: 50, rotateY: -10 }}
               animate={{ opacity: 1, x: 0, rotateY: 0 }}
-              transition={{ delay: 0.4, duration: 0.8 }}
+              transition={{ delay: 0.2, duration: 0.4 }}
             >
               <div className="relative">
                 <div className="absolute -inset-4 bg-gradient-to-r from-sts-primary/20 to-sts-gold/20 rounded-3xl blur-2xl opacity-60" />
@@ -933,7 +933,7 @@ export default function HomePage() {
               initial={{ opacity: 0, x: -50 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
+              transition={{ duration: 0.3 }}
             >
               <Badge className="bg-sts-primary/10 text-sts-primary border-0 mb-4">
                 About Us
@@ -977,7 +977,7 @@ export default function HomePage() {
               initial={{ opacity: 0, x: 50 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
+              transition={{ duration: 0.3 }}
             >
               <div className="relative grid gap-4">
                 {/* Owner Photo */}
@@ -1196,7 +1196,7 @@ export default function HomePage() {
                 initial={{ opacity: 0, x: 100 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -100 }}
-                transition={{ duration: 0.5 }}
+                transition={{ duration: 0.25 }}
                 className="max-w-4xl mx-auto"
               >
                 <div className="relative bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-8 md:p-12">
