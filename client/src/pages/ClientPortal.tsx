@@ -71,7 +71,7 @@ export default function ClientPortal() {
   const signMutation = useMutation({
     mutationFn: async ({ id, signatureData }: { id: string; signatureData: string }) => {
       const userAgent = navigator.userAgent;
-      await apiRequest(`/api/signatures/${id}`, "PATCH", {
+      await apiRequest("PATCH", `/api/signatures/${id}`, {
         signatureData,
         userAgent,
         signedAt: new Date().toISOString(),
