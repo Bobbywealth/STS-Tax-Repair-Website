@@ -69,10 +69,19 @@ Preferred communication style: Simple, everyday language.
 - Ready for deployment to Render with cPanel MySQL backend
 
 **Authentication Strategy**
-- JWT or session-based authentication (implementation pending)
+- Dual authentication system supporting both Replit Auth (for Replit deployment) and email/password (for all deployments)
+- Conditional Replit Auth: Only initializes if REPL_ID and REPLIT_DOMAINS environment variables exist
+- For Render deployment: Uses email/password authentication only (Replit Auth skipped automatically)
 - Role-based access control: Admin, Staff/Manager, Client roles
+- Session-based auth with PostgreSQL session storage via connect-pg-simple
 - Email verification and password reset flows via SendGrid integration (planned)
 - Admin user invitation system for internal staff onboarding
+
+**Render Deployment Notes**
+- App automatically detects non-Replit environment and disables Replit Auth
+- Staff login redirects to client login page with notice when Replit Auth unavailable
+- All routes use `req.userId` fallback pattern to support both auth methods
+- Required environment variables for Render: DATABASE_URL, SESSION_SECRET, MYSQL_* variables
 
 ### Data Storage Solutions
 
