@@ -992,7 +992,7 @@
   );
 }
 
-/* Logo glow effect */
+/* Logo glow effect with subtle pulse animation */
 .sidebar-logo-container {
   position: relative;
 }
@@ -1007,6 +1007,31 @@
   height: 20px;
   background: radial-gradient(ellipse at center, rgba(16, 185, 129, 0.2) 0%, transparent 70%);
   filter: blur(8px);
+  animation: logoGlowPulse 4s ease-in-out infinite;
+}
+
+.sidebar-logo-container img {
+  animation: logoBreath 6s ease-in-out infinite;
+}
+
+@keyframes logoGlowPulse {
+  0%, 100% {
+    opacity: 0.6;
+    transform: translateX(-50%) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.1);
+  }
+}
+
+@keyframes logoBreath {
+  0%, 100% {
+    filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.3));
+  }
+  50% {
+    filter: drop-shadow(0 0 15px rgba(16, 185, 129, 0.5)) drop-shadow(0 0 25px rgba(52, 211, 153, 0.3));
+  }
 }
 
 /* Logout button glow on hover */
