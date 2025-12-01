@@ -967,98 +967,100 @@ export default function HomePage() {
                 ))}
               </motion.div>
             </div>
+            </div>
+          </motion.div>
+        </div>
 
-            {/* Glass Contact Card with Animated Border */}
-            <motion.div 
-              className="mt-12 max-w-md"
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.8, duration: 0.4 }}
-            >
-              <div className="relative">
-                {/* Outer Glow */}
-                <div className="absolute -inset-4 bg-gradient-to-r from-sts-primary/20 to-sts-gold/20 rounded-3xl blur-2xl opacity-60" />
-                
-                {/* Rotating Border Effect */}
-                <div className="absolute -inset-[2px] rounded-2xl overflow-hidden">
-                  <motion.div
-                    className="absolute inset-0"
-                    style={{
-                      background: 'conic-gradient(from 0deg, transparent, #FDB913, #4CAF50, transparent)',
-                    }}
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-                  />
+        {/* Contact Section */}
+        <div className="py-16 max-w-3xl mx-auto px-5 lg:px-8">
+          <motion.div 
+            className="max-w-md"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <div className="relative">
+              {/* Outer Glow */}
+              <div className="absolute -inset-4 bg-gradient-to-r from-sts-primary/20 to-sts-gold/20 rounded-3xl blur-2xl opacity-60" />
+              
+              {/* Rotating Border Effect */}
+              <div className="absolute -inset-[2px] rounded-2xl overflow-hidden">
+                <motion.div
+                  className="absolute inset-0"
+                  style={{
+                    background: 'conic-gradient(from 0deg, transparent, #FDB913, #4CAF50, transparent)',
+                  }}
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                />
+              </div>
+              
+              {/* Corner Tech Brackets */}
+              <div className="absolute -top-1 -left-1 w-6 h-6 border-l-2 border-t-2 border-sts-gold/60 rounded-tl-lg z-10" />
+              <div className="absolute -top-1 -right-1 w-6 h-6 border-r-2 border-t-2 border-sts-gold/60 rounded-tr-lg z-10" />
+              <div className="absolute -bottom-1 -left-1 w-6 h-6 border-l-2 border-b-2 border-sts-gold/60 rounded-bl-lg z-10" />
+              <div className="absolute -bottom-1 -right-1 w-6 h-6 border-r-2 border-b-2 border-sts-gold/60 rounded-br-lg z-10" />
+              
+              <Card className="relative bg-white/95 backdrop-blur-xl border-0 p-8 rounded-2xl shadow-2xl" data-testid="form-contact-sidebar">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-sts-gold to-yellow-400 flex items-center justify-center">
+                    <Phone className="w-6 h-6 text-sts-dark" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-sts-dark">Let's Connect!</h3>
+                    <p className="text-gray-600 text-sm">Free consultation</p>
+                  </div>
                 </div>
                 
-                {/* Corner Tech Brackets */}
-                <div className="absolute -top-1 -left-1 w-6 h-6 border-l-2 border-t-2 border-sts-gold/60 rounded-tl-lg z-10" />
-                <div className="absolute -top-1 -right-1 w-6 h-6 border-r-2 border-t-2 border-sts-gold/60 rounded-tr-lg z-10" />
-                <div className="absolute -bottom-1 -left-1 w-6 h-6 border-l-2 border-b-2 border-sts-gold/60 rounded-bl-lg z-10" />
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 border-r-2 border-b-2 border-sts-gold/60 rounded-br-lg z-10" />
-                
-                <Card className="relative bg-sts-dark/80 backdrop-blur-xl border-0 p-8 rounded-2xl shadow-2xl" data-testid="form-contact-sidebar">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-sts-gold to-yellow-400 flex items-center justify-center">
-                      <Phone className="w-6 h-6 text-sts-dark" />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-white">Let's Connect!</h3>
-                      <p className="text-white/60 text-sm">Free consultation</p>
-                    </div>
-                  </div>
+                <form onSubmit={handleContactSubmit} className="space-y-4">
+                  <Input
+                    placeholder="Name *"
+                    value={contactForm.name}
+                    onChange={(e) => setContactForm(prev => ({ ...prev, name: e.target.value }))}
+                    className="border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-sts-gold h-12 rounded-xl"
+                    data-testid="input-contact-name"
+                  />
+                  <Input
+                    placeholder="Location"
+                    value={contactForm.location}
+                    onChange={(e) => setContactForm(prev => ({ ...prev, location: e.target.value }))}
+                    className="border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-sts-gold h-12 rounded-xl"
+                    data-testid="input-contact-location"
+                  />
+                  <Input
+                    placeholder="Phone Number *"
+                    type="tel"
+                    value={contactForm.phone}
+                    onChange={(e) => setContactForm(prev => ({ ...prev, phone: e.target.value }))}
+                    className="border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-sts-gold h-12 rounded-xl"
+                    data-testid="input-contact-phone"
+                  />
+                  <Input
+                    placeholder="Email *"
+                    type="email"
+                    value={contactForm.email}
+                    onChange={(e) => setContactForm(prev => ({ ...prev, email: e.target.value }))}
+                    className="border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-sts-gold h-12 rounded-xl"
+                    data-testid="input-contact-email"
+                  />
+                  <Textarea
+                    placeholder="Message"
+                    value={contactForm.message}
+                    onChange={(e) => setContactForm(prev => ({ ...prev, message: e.target.value }))}
+                    className="border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-sts-gold min-h-[80px] resize-none rounded-xl"
+                    data-testid="input-contact-message"
+                  />
                   
-                  <form onSubmit={handleContactSubmit} className="space-y-4">
-                    <Input
-                      placeholder="Name *"
-                      value={contactForm.name}
-                      onChange={(e) => setContactForm(prev => ({ ...prev, name: e.target.value }))}
-                      className="bg-white/5 border-white/10 text-white placeholder:text-white/40 focus:border-sts-gold h-12 rounded-xl"
-                      data-testid="input-contact-name"
-                    />
-                    <Input
-                      placeholder="Location"
-                      value={contactForm.location}
-                      onChange={(e) => setContactForm(prev => ({ ...prev, location: e.target.value }))}
-                      className="bg-white/5 border-white/10 text-white placeholder:text-white/40 focus:border-sts-gold h-12 rounded-xl"
-                      data-testid="input-contact-location"
-                    />
-                    <Input
-                      placeholder="Phone Number *"
-                      type="tel"
-                      value={contactForm.phone}
-                      onChange={(e) => setContactForm(prev => ({ ...prev, phone: e.target.value }))}
-                      className="bg-white/5 border-white/10 text-white placeholder:text-white/40 focus:border-sts-gold h-12 rounded-xl"
-                      data-testid="input-contact-phone"
-                    />
-                    <Input
-                      placeholder="Email *"
-                      type="email"
-                      value={contactForm.email}
-                      onChange={(e) => setContactForm(prev => ({ ...prev, email: e.target.value }))}
-                      className="bg-white/5 border-white/10 text-white placeholder:text-white/40 focus:border-sts-gold h-12 rounded-xl"
-                      data-testid="input-contact-email"
-                    />
-                    <Textarea
-                      placeholder="Message"
-                      value={contactForm.message}
-                      onChange={(e) => setContactForm(prev => ({ ...prev, message: e.target.value }))}
-                      className="bg-white/5 border-white/10 text-white placeholder:text-white/40 focus:border-sts-gold min-h-[80px] resize-none rounded-xl"
-                      data-testid="input-contact-message"
-                    />
-                    
-                    <Button 
-                      type="submit"
-                      className="w-full bg-gradient-to-r from-sts-primary to-sts-dark hover:from-sts-primary/90 hover:to-sts-dark/90 text-white font-bold h-12 rounded-xl shadow-lg"
-                      disabled={isSubmitting}
-                      data-testid="button-contact-submit"
-                    >
-                      {isSubmitting ? "Sending..." : "Send Message"}
-                    </Button>
-                  </form>
-                </Card>
-              </div>
-            </motion.div>
+                  <Button 
+                    type="submit"
+                    className="w-full bg-gradient-to-r from-sts-gold to-yellow-400 hover:from-yellow-400 hover:to-sts-gold text-sts-dark font-bold h-12 rounded-xl shadow-lg"
+                    disabled={isSubmitting}
+                    data-testid="button-contact-submit"
+                  >
+                    {isSubmitting ? "Sending..." : "Send Message"}
+                  </Button>
+                </form>
+              </Card>
             </div>
           </motion.div>
         </div>
