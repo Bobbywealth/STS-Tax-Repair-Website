@@ -805,7 +805,73 @@ export default function HomePage() {
       {/* About Us - Agents Section */}
       <section className="py-20 bg-white" data-testid="section-about-agents">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+          {/* Mobile Layout: Header first, then images */}
+          <div className="lg:hidden">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+              className="text-center mb-8"
+            >
+              <Badge className="bg-sts-primary/10 text-sts-primary border-0 mb-4 text-sm font-semibold">
+                ABOUT US
+              </Badge>
+              <h2 className="text-3xl sm:text-4xl font-black text-gray-900 mb-6 leading-tight">
+                Your Maximum Refund,
+                <br />
+                <span className="text-sts-primary">Our Expert Promise</span>
+              </h2>
+            </motion.div>
+            
+            {/* Images side by side on mobile */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="grid grid-cols-2 gap-4 mb-8"
+            >
+              <div className="rounded-2xl overflow-hidden shadow-2xl">
+                <img 
+                  src="https://www.ststaxrepair.net/wp-content/uploads/2024/12/stephedena-cherfils.webp"
+                  alt="STS Tax Repair Team Member"
+                  className="w-full h-full object-cover aspect-[3/4]"
+                />
+              </div>
+              <div className="rounded-2xl overflow-hidden shadow-2xl">
+                <img 
+                  src="https://www.ststaxrepair.net/wp-content/uploads/2024/12/c13f606f-7eac-4a87-8ddb-98f54020d6d1-6750cccc01f1b.webp"
+                  alt="STS Tax Repair Team"
+                  className="w-full h-full object-cover aspect-[3/4]"
+                />
+              </div>
+            </motion.div>
+            
+            {/* Description and button */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="text-center"
+            >
+              <p className="text-lg text-gray-700 leading-relaxed mb-8">
+                At STS Tax Repair, we're driven by a simple yet powerful goal: to empower you with every dollar you deserve. Through meticulous attention to detail and an in-depth mastery of the tax code, our mission is crystal clear. We're committed to maximizing your financial returns by asking the right questions, uncovering often overlooked credits and deductions, and ensuring that your hard work translates into the maximum refund possible.
+              </p>
+              <Button 
+                size="lg"
+                className="bg-sts-gold hover:bg-sts-gold/90 text-sts-dark font-bold"
+                onClick={() => document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" })}
+                data-testid="button-about-contact-mobile"
+              >
+                Contact Us
+              </Button>
+            </motion.div>
+          </div>
+
+          {/* Desktop Layout: Images left, text right */}
+          <div className="hidden lg:grid lg:grid-cols-2 gap-12 items-center">
             {/* LEFT - Team Images Side by Side */}
             <motion.div
               initial={{ opacity: 0, x: -40 }}
