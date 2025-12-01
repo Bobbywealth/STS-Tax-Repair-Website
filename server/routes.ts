@@ -70,6 +70,166 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update user role (admin only)
+  app.patch("/api/users/:id/role", isAuthenticated, async (req: any, res) => {
+    try {
+      const adminUser = await storage.getUser(req.user.claims.sub);
+      if (!adminUser || adminUser.role !== 'admin') {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const { role, reason } = req.body;
+      if (!role || !['client', 'agent', 'tax_office', 'admin'].includes(role)) {
+        return res.status(400).json({ error: "Invalid role" });
+      }
+
+      const adminName = `${adminUser.firstName || ''} ${adminUser.lastName || ''}`.trim() || adminUser.email || 'Admin';
+      const user = await storage.updateUserRole(req.params.id, role, req.user.claims.sub, adminName, reason);
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      res.json(user);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Update user status (admin only)
+  app.patch("/api/users/:id/status", isAuthenticated, async (req: any, res) => {
+    try {
+      const adminUser = await storage.getUser(req.user.claims.sub);
+      if (!adminUser || adminUser.role !== 'admin') {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const { isActive } = req.body;
+      if (typeof isActive !== 'boolean') {
+        return res.status(400).json({ error: "isActive must be a boolean" });
+      }
+
+      const user = await storage.updateUserStatus(req.params.id, isActive);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      res.json(user);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get users by role
+  app.get("/api/users/role/:role", async (req, res) => {
+    try {
+      const role = req.params.role as any;
+      if (!['client', 'agent', 'tax_office', 'admin'].includes(role)) {
+        return res.status(400).json({ error: "Invalid role" });
+      }
+      const users = await storage.getUsersByRole(role);
+      res.json(users);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Role Audit Log (admin only)
+  app.get("/api/role-audit-logs", isAuthenticated, async (req: any, res) => {
+    try {
+      const adminUser = await storage.getUser(req.user.claims.sub);
+      if (!adminUser || (adminUser.role !== 'admin' && adminUser.role !== 'tax_office')) {
+        return res.status(403).json({ error: "Admin or Tax Office access required" });
+      }
+      const logs = await storage.getRoleAuditLogs();
+      res.json(logs);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Staff Invites (admin only)
+  app.get("/api/staff-invites", isAuthenticated, async (req: any, res) => {
+    try {
+      const adminUser = await storage.getUser(req.user.claims.sub);
+      if (!adminUser || adminUser.role !== 'admin') {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+      const invites = await storage.getStaffInvites();
+      res.json(invites);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Create staff invite (admin only)
+  app.post("/api/staff-invites", isAuthenticated, async (req: any, res) => {
+    try {
+      const adminUser = await storage.getUser(req.user.claims.sub);
+      if (!adminUser || adminUser.role !== 'admin') {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const { email, role } = req.body;
+      if (!email || !role || !['agent', 'tax_office', 'admin'].includes(role)) {
+        return res.status(400).json({ error: "Valid email and role required" });
+      }
+
+      const crypto = await import('crypto');
+      const inviteCode = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
+
+      const adminName = `${adminUser.firstName || ''} ${adminUser.lastName || ''}`.trim() || adminUser.email || 'Admin';
+      
+      const invite = await storage.createStaffInvite({
+        email,
+        role,
+        inviteCode,
+        invitedById: req.user.claims.sub,
+        invitedByName: adminName,
+        expiresAt,
+      });
+      res.status(201).json(invite);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Redeem staff invite
+  app.post("/api/staff-invites/redeem", isAuthenticated, async (req: any, res) => {
+    try {
+      const { inviteCode } = req.body;
+      if (!inviteCode) {
+        return res.status(400).json({ error: "Invite code required" });
+      }
+
+      const invite = await storage.useStaffInvite(inviteCode, req.user.claims.sub);
+      if (!invite) {
+        return res.status(404).json({ error: "Invalid or expired invite code" });
+      }
+      res.json({ success: true, role: invite.role });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // Delete staff invite (admin only)
+  app.delete("/api/staff-invites/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const adminUser = await storage.getUser(req.user.claims.sub);
+      if (!adminUser || adminUser.role !== 'admin') {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const success = await storage.deleteStaffInvite(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Invite not found" });
+      }
+      res.status(204).send();
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Tax Deadlines
   app.get("/api/deadlines", async (req, res) => {
     const deadlines = await storage.getTaxDeadlines();

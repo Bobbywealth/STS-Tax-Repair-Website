@@ -1,6 +1,7 @@
 import { 
   type User, 
   type UpsertUser,
+  type UserRole,
   type TaxDeadline,
   type InsertTaxDeadline,
   type Appointment,
@@ -19,6 +20,10 @@ import {
   type InsertTask,
   type StaffMember,
   type InsertStaffMember,
+  type RoleAuditLog,
+  type InsertRoleAuditLog,
+  type StaffInvite,
+  type InsertStaffInvite,
   users as usersTable,
   taxDeadlines as taxDeadlinesTable,
   appointments as appointmentsTable,
@@ -28,7 +33,9 @@ import {
   emailLogs as emailLogsTable,
   documentRequestTemplates as templatesTable,
   tasks as tasksTable,
-  staffMembers as staffTable
+  staffMembers as staffTable,
+  roleAuditLog as roleAuditLogTable,
+  staffInvites as staffInvitesTable
 } from "@shared/mysql-schema";
 import { randomUUID } from "crypto";
 import { mysqlDb } from "./mysql-db";
@@ -481,6 +488,156 @@ export class MySQLStorage implements IStorage {
 
   async deleteStaffMember(id: string): Promise<boolean> {
     const result = await mysqlDb.delete(staffTable).where(eq(staffTable.id, id));
+    return (result as any).affectedRows > 0;
+  }
+
+  // User Role Management
+  async updateUserRole(userId: string, newRole: UserRole, changedById: string, changedByName: string, reason?: string): Promise<User | undefined> {
+    const user = await this.getUser(userId);
+    if (!user) return undefined;
+
+    const previousRole = user.role || 'client';
+    
+    await mysqlDb.update(usersTable)
+      .set({ role: newRole, updatedAt: new Date() })
+      .where(eq(usersTable.id, userId));
+
+    await this.createRoleAuditLog({
+      userId,
+      userName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || userId,
+      previousRole,
+      newRole,
+      changedById,
+      changedByName,
+      reason: reason || null
+    });
+
+    const [updated] = await mysqlDb.select().from(usersTable).where(eq(usersTable.id, userId));
+    return updated;
+  }
+
+  async updateUserStatus(userId: string, isActive: boolean): Promise<User | undefined> {
+    const existing = await this.getUser(userId);
+    if (!existing) return undefined;
+    
+    await mysqlDb.update(usersTable)
+      .set({ isActive, updatedAt: new Date() })
+      .where(eq(usersTable.id, userId));
+    
+    const [updated] = await mysqlDb.select().from(usersTable).where(eq(usersTable.id, userId));
+    return updated;
+  }
+
+  async getUsersByRole(role: UserRole): Promise<User[]> {
+    return await mysqlDb.select().from(usersTable)
+      .where(eq(usersTable.role, role))
+      .orderBy(asc(usersTable.firstName));
+  }
+
+  async getStaffUsers(): Promise<User[]> {
+    return await mysqlDb.select().from(usersTable)
+      .where(
+        and(
+          eq(usersTable.isActive, true)
+        )
+      )
+      .orderBy(asc(usersTable.firstName));
+  }
+
+  // Role Audit Log
+  async getRoleAuditLogs(): Promise<RoleAuditLog[]> {
+    return await mysqlDb.select().from(roleAuditLogTable)
+      .orderBy(desc(roleAuditLogTable.createdAt));
+  }
+
+  async getRoleAuditLogsByUser(userId: string): Promise<RoleAuditLog[]> {
+    return await mysqlDb.select().from(roleAuditLogTable)
+      .where(eq(roleAuditLogTable.userId, userId))
+      .orderBy(desc(roleAuditLogTable.createdAt));
+  }
+
+  async createRoleAuditLog(log: InsertRoleAuditLog): Promise<RoleAuditLog> {
+    const id = randomUUID();
+    const logData = {
+      id,
+      userId: log.userId,
+      userName: log.userName ?? null,
+      previousRole: log.previousRole ?? null,
+      newRole: log.newRole,
+      changedById: log.changedById,
+      changedByName: log.changedByName ?? null,
+      reason: log.reason ?? null,
+      createdAt: new Date()
+    };
+    await mysqlDb.insert(roleAuditLogTable).values(logData);
+    const [inserted] = await mysqlDb.select().from(roleAuditLogTable).where(eq(roleAuditLogTable.id, id));
+    return inserted;
+  }
+
+  // Staff Invites
+  async getStaffInvites(): Promise<StaffInvite[]> {
+    return await mysqlDb.select().from(staffInvitesTable)
+      .orderBy(desc(staffInvitesTable.createdAt));
+  }
+
+  async getStaffInviteByCode(inviteCode: string): Promise<StaffInvite | undefined> {
+    const [invite] = await mysqlDb.select().from(staffInvitesTable)
+      .where(eq(staffInvitesTable.inviteCode, inviteCode));
+    return invite;
+  }
+
+  async createStaffInvite(invite: InsertStaffInvite): Promise<StaffInvite> {
+    const id = randomUUID();
+    const inviteData = {
+      id,
+      email: invite.email,
+      role: invite.role as UserRole,
+      inviteCode: invite.inviteCode,
+      invitedById: invite.invitedById,
+      invitedByName: invite.invitedByName ?? null,
+      expiresAt: invite.expiresAt,
+      createdAt: new Date()
+    };
+    await mysqlDb.insert(staffInvitesTable).values(inviteData as any);
+    const [inserted] = await mysqlDb.select().from(staffInvitesTable).where(eq(staffInvitesTable.id, id));
+    return inserted;
+  }
+
+  async useStaffInvite(inviteCode: string, userId: string): Promise<StaffInvite | undefined> {
+    const invite = await this.getStaffInviteByCode(inviteCode);
+    if (!invite) return undefined;
+    
+    if (invite.usedAt) {
+      throw new Error("Invite has already been used");
+    }
+    
+    if (new Date(invite.expiresAt) < new Date()) {
+      throw new Error("Invite has expired");
+    }
+
+    await mysqlDb.update(staffInvitesTable)
+      .set({ usedAt: new Date(), usedById: userId })
+      .where(eq(staffInvitesTable.inviteCode, inviteCode));
+
+    await mysqlDb.update(usersTable)
+      .set({ role: invite.role, updatedAt: new Date() })
+      .where(eq(usersTable.id, userId));
+
+    await this.createRoleAuditLog({
+      userId,
+      previousRole: 'client',
+      newRole: invite.role,
+      changedById: invite.invitedById,
+      changedByName: invite.invitedByName,
+      reason: `Staff invite redeemed (code: ${inviteCode.substring(0, 8)}...)`
+    });
+
+    const [updated] = await mysqlDb.select().from(staffInvitesTable).where(eq(staffInvitesTable.inviteCode, inviteCode));
+    return updated;
+  }
+
+  async deleteStaffInvite(id: string): Promise<boolean> {
+    const result = await mysqlDb.delete(staffInvitesTable).where(eq(staffInvitesTable.id, id));
     return (result as any).affectedRows > 0;
   }
 }

@@ -1,6 +1,7 @@
 import { 
   type User, 
   type UpsertUser,
+  type UserRole,
   type TaxDeadline,
   type InsertTaxDeadline,
   type Appointment,
@@ -19,6 +20,10 @@ import {
   type InsertTask,
   type StaffMember,
   type InsertStaffMember,
+  type RoleAuditLog,
+  type InsertRoleAuditLog,
+  type StaffInvite,
+  type InsertStaffInvite,
 } from "@shared/mysql-schema";
 
 export interface IStorage {
@@ -26,6 +31,10 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUsers(): Promise<User[]>;
   upsertUser(user: UpsertUser): Promise<User>;
+  updateUserRole(userId: string, newRole: UserRole, changedById: string, changedByName: string, reason?: string): Promise<User | undefined>;
+  updateUserStatus(userId: string, isActive: boolean): Promise<User | undefined>;
+  getUsersByRole(role: UserRole): Promise<User[]>;
+  getStaffUsers(): Promise<User[]>;
 
   // Tax Deadlines
   getTaxDeadlines(): Promise<TaxDeadline[]>;
@@ -89,6 +98,18 @@ export interface IStorage {
   createStaffMember(member: InsertStaffMember): Promise<StaffMember>;
   updateStaffMember(id: string, member: Partial<InsertStaffMember>): Promise<StaffMember | undefined>;
   deleteStaffMember(id: string): Promise<boolean>;
+
+  // Role Audit Log
+  getRoleAuditLogs(): Promise<RoleAuditLog[]>;
+  getRoleAuditLogsByUser(userId: string): Promise<RoleAuditLog[]>;
+  createRoleAuditLog(log: InsertRoleAuditLog): Promise<RoleAuditLog>;
+
+  // Staff Invites
+  getStaffInvites(): Promise<StaffInvite[]>;
+  getStaffInviteByCode(inviteCode: string): Promise<StaffInvite | undefined>;
+  createStaffInvite(invite: InsertStaffInvite): Promise<StaffInvite>;
+  useStaffInvite(inviteCode: string, userId: string): Promise<StaffInvite | undefined>;
+  deleteStaffInvite(id: string): Promise<boolean>;
 }
 
 // MySQL storage connected to cPanel database

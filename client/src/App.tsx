@@ -22,8 +22,10 @@ import Tickets from "@/pages/Tickets";
 import Knowledge from "@/pages/Knowledge";
 import Reports from "@/pages/Reports";
 import Settings from "@/pages/Settings";
+import UserManagement from "@/pages/UserManagement";
 import ClientLogin from "@/pages/ClientLogin";
 import ClientPortal from "@/pages/ClientPortal";
+import RedeemInvite from "@/pages/RedeemInvite";
 import NotFound from "@/pages/not-found";
 
 function AdminRouter() {
@@ -44,6 +46,7 @@ function AdminRouter() {
       <Route path="/knowledge" component={Knowledge} />
       <Route path="/reports" component={Reports} />
       <Route path="/settings" component={Settings} />
+      <Route path="/users" component={UserManagement} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -85,6 +88,7 @@ function App() {
   const [location] = useLocation();
   
   const isClientRoute = location.startsWith('/client-login') || location.startsWith('/client-portal');
+  const isRedeemRoute = location.startsWith('/redeem-invite');
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -93,6 +97,10 @@ function App() {
           <Switch>
             <Route path="/client-login" component={ClientLogin} />
             <Route path="/client-portal" component={ClientPortal} />
+          </Switch>
+        ) : isRedeemRoute ? (
+          <Switch>
+            <Route path="/redeem-invite" component={RedeemInvite} />
           </Switch>
         ) : (
           <AdminLayout />

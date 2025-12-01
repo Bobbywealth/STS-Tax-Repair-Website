@@ -1,4 +1,4 @@
-import { Home, Users, UserPlus, CheckSquare, Crown, Ticket, BookOpen, BarChart3, Settings, LogOut, Calendar, CalendarClock, DollarSign, FileText, FileSignature } from "lucide-react";
+import { Home, Users, UserPlus, CheckSquare, Crown, Ticket, BookOpen, BarChart3, Settings, LogOut, Calendar, CalendarClock, DollarSign, FileText, FileSignature, Shield } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import logoUrl from "@assets/sts-logo.png";
 import {
@@ -30,6 +30,7 @@ const menuItems = [
   { title: "Support Tickets", url: "/tickets", icon: Ticket },
   { title: "Knowledge Base", url: "/knowledge", icon: BookOpen },
   { title: "Reports", url: "/reports", icon: BarChart3 },
+  { title: "User Management", url: "/users", icon: Shield },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 

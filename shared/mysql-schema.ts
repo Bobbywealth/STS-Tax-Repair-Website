@@ -16,6 +16,9 @@ export const sessions = mysqlTable(
   }),
 );
 
+// User Roles - defines access levels in the system
+export type UserRole = 'client' | 'agent' | 'tax_office' | 'admin';
+
 // User storage table for Replit Auth + Client Data
 export const users = mysqlTable("users", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
@@ -33,6 +36,9 @@ export const users = mysqlTable("users", {
   notes: text("notes"),
   originalSubmissionId: int("original_submission_id"),
   referralSource: text("referral_source"),
+  role: varchar("role", { length: 20 }).default("client").$type<UserRole>(),
+  isActive: boolean("is_active").default(true),
+  lastLoginAt: timestamp("last_login_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -273,3 +279,48 @@ export const insertStaffMemberSchema = createInsertSchema(staffMembers).omit({
 
 export type InsertStaffMember = z.infer<typeof insertStaffMemberSchema>;
 export type StaffMember = typeof staffMembers.$inferSelect;
+
+// Role Audit Log - tracks role changes for compliance
+export const roleAuditLog = mysqlTable("role_audit_log", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+  userId: varchar("user_id", { length: 36 }).notNull(),
+  userName: text("user_name"),
+  previousRole: varchar("previous_role", { length: 20 }),
+  newRole: varchar("new_role", { length: 20 }).notNull(),
+  changedById: varchar("changed_by_id", { length: 36 }).notNull(),
+  changedByName: text("changed_by_name"),
+  reason: text("reason"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertRoleAuditLogSchema = createInsertSchema(roleAuditLog).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertRoleAuditLog = z.infer<typeof insertRoleAuditLogSchema>;
+export type RoleAuditLog = typeof roleAuditLog.$inferSelect;
+
+// Staff Invites - for inviting new staff members
+export const staffInvites = mysqlTable("staff_invites", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+  email: varchar("email", { length: 255 }).notNull(),
+  role: varchar("role", { length: 20 }).notNull().$type<UserRole>(),
+  inviteCode: varchar("invite_code", { length: 64 }).notNull().unique(),
+  invitedById: varchar("invited_by_id", { length: 36 }).notNull(),
+  invitedByName: text("invited_by_name"),
+  expiresAt: timestamp("expires_at").notNull(),
+  usedAt: timestamp("used_at"),
+  usedById: varchar("used_by_id", { length: 36 }),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertStaffInviteSchema = createInsertSchema(staffInvites).omit({
+  id: true,
+  createdAt: true,
+  usedAt: true,
+  usedById: true,
+});
+
+export type InsertStaffInvite = z.infer<typeof insertStaffInviteSchema>;
+export type StaffInvite = typeof staffInvites.$inferSelect;
