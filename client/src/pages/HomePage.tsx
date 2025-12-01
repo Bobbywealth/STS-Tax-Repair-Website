@@ -559,7 +559,7 @@ export default function HomePage() {
                 Login
               </Button>
               <Button 
-                onClick={() => navigate("/client-login")}
+                onClick={() => navigate("/book-appointment")}
                 className="bg-gradient-to-r from-sts-gold to-yellow-400 hover:from-sts-gold hover:to-yellow-500 text-sts-dark font-semibold shadow-lg shadow-sts-gold/30 hover:shadow-sts-gold/50 transition-all"
                 data-testid="button-appointment"
               >
@@ -612,7 +612,7 @@ export default function HomePage() {
                       Login
                     </Button>
                     <Button 
-                      onClick={() => { navigate("/client-login"); setIsMobileMenuOpen(false); }}
+                      onClick={() => { navigate("/book-appointment"); setIsMobileMenuOpen(false); }}
                       className="w-full bg-gradient-to-r from-sts-gold to-yellow-400 text-sts-dark font-semibold"
                     >
                       Book Appointment
@@ -670,15 +670,16 @@ export default function HomePage() {
                   <Button 
                     size="lg"
                     className="bg-gradient-to-r from-sts-gold to-yellow-400 hover:from-yellow-400 hover:to-sts-gold text-sts-dark font-bold px-8 h-14 text-lg shadow-xl"
-                    onClick={() => document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" })}
+                    onClick={() => navigate("/book-appointment")}
+                    data-testid="button-book-appointment-hero"
                   >
-                    CONTACT US <ArrowRight className="ml-2 w-5 h-5" />
+                    BOOK APPOINTMENT <ArrowRight className="ml-2 w-5 h-5" />
                   </Button>
                   <Button 
                     size="lg"
-                    variant="outline"
-                    className="border-2 border-white text-white hover:bg-white hover:text-sts-dark font-bold px-8 h-14 text-lg"
+                    className="bg-white hover:bg-gray-100 text-sts-dark font-bold px-8 h-14 text-lg shadow-xl"
                     onClick={() => navigate("/client-login")}
+                    data-testid="button-register-hero"
                   >
                     REGISTER <ArrowRight className="ml-2 w-5 h-5" />
                   </Button>
@@ -779,10 +780,11 @@ export default function HomePage() {
                     <Button 
                       size="lg"
                       className="w-full bg-gradient-to-r from-[#fbd247] to-[#d4a016] hover:from-[#d4a016] hover:to-[#fbd247] text-sts-dark font-bold h-14 text-base shadow-xl shadow-sts-gold/40 relative overflow-hidden group rounded-xl"
-                      onClick={() => document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" })}
+                      onClick={() => navigate("/book-appointment")}
+                      data-testid="button-book-appointment-mobile"
                     >
                       <span className="relative z-10 flex items-center justify-center gap-3">
-                        CONTACT US
+                        BOOK APPOINTMENT
                         <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                       </span>
                       <motion.div
@@ -793,9 +795,9 @@ export default function HomePage() {
                     </Button>
                     <Button 
                       size="lg"
-                      variant="outline"
-                      className="w-full border-2 border-white/30 bg-transparent text-white hover:bg-white/10 hover:border-white/50 font-semibold h-14 text-base rounded-xl"
+                      className="w-full bg-white hover:bg-gray-100 text-sts-dark font-bold h-14 text-base shadow-xl rounded-xl"
                       onClick={() => navigate("/client-login")}
+                      data-testid="button-register-mobile"
                     >
                       REGISTER
                       <ChevronRight className="w-6 h-6 ml-2" />

@@ -768,6 +768,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(204).send();
   });
 
+  // Public appointment booking - no authentication required
+  app.post("/api/appointments/public", async (req, res) => {
+    try {
+      const { clientName, email, phone, title, description, appointmentDate, duration, status } = req.body;
+      
+      if (!clientName || !email || !title || !appointmentDate) {
+        return res.status(400).json({ error: "Missing required fields: clientName, email, title, appointmentDate" });
+      }
+      
+      // Create a temporary client ID for public bookings
+      const tempClientId = `public-${Date.now()}`;
+      
+      const appointment = await storage.createAppointment({
+        clientId: tempClientId,
+        clientName,
+        title,
+        description: description || `Email: ${email}, Phone: ${phone || 'Not provided'}`,
+        appointmentDate: new Date(appointmentDate),
+        duration: duration || 60,
+        status: status || "pending",
+        location: null,
+        staffId: null,
+        staffName: null,
+        notes: `Public booking - Email: ${email}, Phone: ${phone || 'Not provided'}`,
+      });
+      
+      res.status(201).json(appointment);
+    } catch (error: any) {
+      console.error("Public appointment booking error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Appointments - requires appointments.view/modify permission
   app.get("/api/appointments", isAuthenticated, requirePermission('appointments.view'), async (req, res) => {
     const { clientId, start, end } = req.query;

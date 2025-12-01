@@ -38,6 +38,7 @@ import PricingPage from "@/pages/PricingPage";
 import AboutPage from "@/pages/AboutPage";
 import ContactPage from "@/pages/ContactPage";
 import FAQPage from "@/pages/FAQPage";
+import BookAppointmentPage from "@/pages/BookAppointmentPage";
 import NotFound from "@/pages/not-found";
 
 import { usePermissions, PERMISSIONS } from "@/hooks/usePermissions";
@@ -269,7 +270,7 @@ function App() {
   const [location] = useLocation();
   
   const isHomePage = location === '/';
-  const isPublicPage = location === '/services' || location === '/agents' || location === '/pricing' || location === '/about' || location === '/contact' || location === '/faq';
+  const isPublicPage = location === '/services' || location === '/agents' || location === '/pricing' || location === '/about' || location === '/contact' || location === '/faq' || location === '/book-appointment';
   const isClientRoute = location.startsWith('/client-login') || location.startsWith('/client-portal');
   const isRedeemRoute = location.startsWith('/redeem-invite');
   const isRegisterRoute = location.startsWith('/register');
@@ -288,6 +289,7 @@ function App() {
             <Route path="/about" component={AboutPage} />
             <Route path="/contact" component={ContactPage} />
             <Route path="/faq" component={FAQPage} />
+            <Route path="/book-appointment" component={BookAppointmentPage} />
           </Switch>
         ) : isClientRoute ? (
           <Switch>
