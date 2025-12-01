@@ -1,0 +1,48 @@
+FAQ PAGE (/faq):
+
+## HERO SECTION:
+- Background: Dark teal/green gradient (same as other hero sections)
+- Text: "FAQ" (large, white, centered)
+
+## MAIN CONTENT SECTION:
+### Section Header:
+- Title: "Frequently Asked Question" (large, bold, dark text)
+- Subtitle/Description: "Suspendisse ac condimentum velit. Nullam pulvinar a velit ac convallis. Proin non leo ac quam blandit faucibus sed nec ex. Pellentesque dapibus mi vehicula tincidunt porttitor."
+- Layout: Centered
+
+### FAQ ACCORDION (6 Questions):
+
+**Question 1: What Services Does STS Tax Repair Offer?**
+Answer: "STS Tax Repair provides a range of services including professional tax filing, credit restoration, assistance with business registration, and support in securing business loans."
+
+**Question 2: How Can I Contact STS Tax Repair?**
+Answer: "You can reach us at different locations:
+Valley Stream, NY: (929) 235-0185
+Houston, TX: (954) 851-4159
+Fort Lauderdale, FL: (954) 851-4159
+Additionally, you can email us at amtaxrepair@gmail.com or ststaxrepair@gmail.com, and find us on Instagram: @amtaxrepair and @ststaxrepair respectively. What are the benefits of professional tax filing services? Our professional tax filing services ensure accuracy, compliance, and optimized returns, saving you time and stress while maximizing your eligible deductions."
+
+**Question 3: Can STS Tax Repair Help With Business Registration?**
+Answer: "Yes, we assist in streamlining the process of business registration, offering guidance on necessary paperwork and requirements to establish your business effectively."
+
+**Question 4: What Types Of Business Loans Does STS Tax Repair Assist With?**
+Answer: "We help businesses secure various types of loans including term loans, lines of credit, equipment financing, and Small Business Administration (SBA) loans, tailoring our assistance to specific business needs."
+
+**Question 5: How Long Does Credit Restoration Typically Take?**
+Answer: "Credit restoration timelines vary based on individual circumstances. However, our team at STS Tax Repair works efficiently to address issues and improve credit scores as quickly as possible."
+
+## NEWSLETTER SECTION:
+- Heading: "Subscribe For Our Newslater" (note: misspelling from original)
+- Subheading: "Stay Informed, Stay Ahead: Subscribe to STSTaxRepair"
+- Section Title: "Early Bird Notifications"
+- Email input field with "Submit" button
+- Background: Light gray or white
+- Layout: Centered
+
+## DESIGN REQUIREMENTS:
+- Accordion style for FAQ items (expandable/collapsible)
+- Clean spacing between FAQ items
+- Consistent styling with other pages
+- Mobile responsive
+- Newsletter section should be visually distinct from FAQ section
+- Use consistent color scheme (teal/green for accents)
