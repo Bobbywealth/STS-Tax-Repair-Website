@@ -26,7 +26,6 @@ import {
   Award,
   Target,
   Zap,
-  Play,
   ChevronLeft,
   Sparkles,
   Lock,
@@ -36,7 +35,12 @@ import {
   Banknote,
   UserCheck,
   Globe,
-  Quote
+  Quote,
+  RefreshCw,
+  CreditCard,
+  Landmark,
+  Search,
+  Check
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence, useInView, useScroll, useTransform } from "framer-motion";
@@ -74,6 +78,8 @@ function AnimatedCounter({ value, suffix = "", prefix = "" }: { value: number; s
   );
 }
 
+const STS_LOGO_URL = "https://www.ststaxrepair.net/wp-content/uploads/2023/12/STS-Logo.webp";
+
 export default function HomePage() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -102,6 +108,7 @@ export default function HomePage() {
     email: "",
     message: ""
   });
+  const [newsletterEmail, setNewsletterEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isInquirySubmitting, setIsInquirySubmitting] = useState(false);
 
@@ -200,52 +207,144 @@ export default function HomePage() {
     }
   };
 
+  const handleNewsletterSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newsletterEmail) {
+      toast({
+        title: "Subscribed!",
+        description: "You've been added to our newsletter.",
+      });
+      setNewsletterEmail("");
+    }
+  };
+
   const navLinks = [
     { label: "Home", href: "/" },
     { label: "Services", href: "#services" },
+    { label: "Agents", href: "#agents" },
+    { label: "Pricing", href: "#pricing" },
     { label: "About", href: "#about" },
-    { label: "Process", href: "#process" },
-    { label: "Testimonials", href: "#testimonials" },
     { label: "Contact", href: "#contact" },
     { label: "FAQ", href: "#faq" }
   ];
 
   const services = [
     {
-      icon: Calculator,
-      title: "Personal Tax Returns",
-      description: "Expert preparation for individual returns, maximizing deductions and ensuring IRS compliance.",
-      stats: "50K+ Returns Filed"
+      icon: RefreshCw,
+      title: "Professional Tax Filing",
+      description: "Our expert tax filing service ensures accuracy and maximum returns. We meticulously navigate the complexities of tax codes, asking the right questions to secure your highest refund. Trust our professionals to handle your taxes with precision and expertise, delivering peace of mind and financial benefit.",
+      hasButton: true
     },
     {
-      icon: Building2,
-      title: "Business Tax Services",
-      description: "Comprehensive solutions for LLCs, corporations, partnerships, and sole proprietors.",
-      stats: "5K+ Businesses Served"
+      icon: CreditCard,
+      title: "Credit Restoration",
+      description: "Rebuild your credit with our comprehensive restoration service. We analyze credit reports, identifying discrepancies and errors. Through strategic interventions, we dispute inaccuracies and guide you towards improved credit health. Let us help restore your financial standing and open doors to better opportunities.",
+      agent: "Jessica Zephir",
+      phone: "7868051104",
+      email: "Zephirfinancialgroup@Outlook.Com"
     },
     {
-      icon: Banknote,
-      title: "Refund Advances",
-      description: "Get your refund faster with same-day advance options up to $7,000.",
-      stats: "24hr Approval"
+      icon: Landmark,
+      title: "Business Registration",
+      description: "Seamlessly establish your business with our registration service. We navigate the bureaucratic landscape, ensuring your incorporation process is efficient and compliant. From paperwork to legal formalities, we handle every step, allowing you to focus on your business vision. Trust us to register your business accurately and expediently.",
+      hasButton: true
     },
     {
-      icon: Shield,
-      title: "Audit Protection",
-      description: "Full IRS representation and audit defense by enrolled agents.",
-      stats: "100% Defense Rate"
+      icon: Search,
+      title: "Business Loans",
+      description: "Access financial support for your business growth with our comprehensive loan service. We assess your needs, guiding you to suitable loan options. From application to approval, we streamline the process, securing favorable terms. Count on us to help your business thrive with tailored loan solutions designed for your success.",
+      hasButton: true
+    }
+  ];
+
+  const agents = [
+    {
+      name: "Stephedena Cherfils",
+      role: "Service Support",
+      phone: "954-534-5227",
+      email: "Info.ststax@gmail.com",
+      address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
+      image: "SC"
     },
     {
-      icon: TrendingUp,
-      title: "Tax Planning",
-      description: "Year-round strategies to minimize liability and maximize savings.",
-      stats: "Avg. $4,200 Saved"
+      name: "Withney Simon",
+      role: "Service Support",
+      phone: "4074277619",
+      email: "Withney.ststax@yahoo.com",
+      address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
+      image: "WS"
     },
     {
-      icon: FileCheck,
-      title: "Amendment Services",
-      description: "Correct past returns and claim missed deductions from previous years.",
-      stats: "3-Year Lookback"
+      name: "Keelie Duvignaud",
+      role: "Service Support",
+      phone: "772-877-1588",
+      email: "Taxesbykeys@gmail.com",
+      address: "3181 SW Crenshaw St, Port St. Lucie, FL 34953, USA",
+      image: "KD"
+    },
+    {
+      name: "Christy S Dor",
+      role: "Service Support",
+      phone: "561-932-6114",
+      email: "christyststaxrepair@gmail.com",
+      address: "Florida Office, USA",
+      image: "CD"
+    },
+    {
+      name: "Alexandra Isaac",
+      role: "Service Support",
+      phone: "786/352-2038",
+      email: "isaacalexandra.ststaxrepair@gmail.com",
+      address: "4000 Hollywood Blvd, Suite 555-S, Hollywood FL, 33021",
+      image: "AI"
+    },
+    {
+      name: "Jennifer Constantino",
+      role: "Service Support",
+      phone: "(954) 629-6424",
+      email: "jennconstantino93@gmail.com",
+      address: "4000 Hollywood Blvd, Suite 555-S, Hollywood FL, 33021",
+      image: "JC"
+    },
+    {
+      name: "Alix Alexandre",
+      role: "Service Support",
+      phone: "4074613644",
+      email: "Alixalexandre36@gmail.com",
+      address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
+      image: "AA"
+    },
+    {
+      name: "Leonela Reyes",
+      role: "Service Support",
+      phone: "(956)-739-4200",
+      email: "lmrtaxrepair@gmail.com",
+      address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
+      image: "LR"
+    }
+  ];
+
+  const pricingPlans = [
+    {
+      title: "Agent Packages",
+      price: "$950",
+      description: "Become a proficient tax preparer with our Agent Package. Access comprehensive training, top-notch software, ongoing support, and networking opportunities to kickstart your career in tax preparation.",
+      features: ["Professional Training", "Software & Tools", "Support & Guidance", "Networking Opportunities"],
+      featured: false
+    },
+    {
+      title: "Professional Tax Preparers Package",
+      price: "$1,850",
+      description: "Elevate your expertise with our Professional Tax Preparers Package. Gain advanced training, priority support, enhanced resources, and marketing assistance to excel in complex tax scenarios and grow your client base.",
+      features: ["Advanced Training", "Priority Support", "Enhanced Resources", "Marketing Support"],
+      featured: true
+    },
+    {
+      title: "Start A Franchise",
+      price: "$25,000",
+      description: "Invest in your future with our Franchise Package. Join an established brand, receive comprehensive training, exclusive territories, and business development assistance to launch and expand your tax preparation franchise successfully.",
+      features: ["Established Brand", "Comprehensive Training & Support", "Exclusive Territories", "Business Development Assistance"],
+      featured: false
     }
   ];
 
@@ -280,41 +379,6 @@ export default function HomePage() {
       content: "Self-employment taxes used to stress me out every year. Now with STS handling everything, I actually look forward to tax season. The quarterly planning sessions are a game-changer.",
       rating: 5,
       image: "SC"
-    },
-    {
-      name: "Robert Martinez",
-      role: "Restaurant Owner",
-      location: "Houston, TX",
-      content: "After an IRS audit notice, I was terrified. STS represented me professionally and resolved everything in my favor. I'm a client for life now.",
-      rating: 5,
-      image: "RM"
-    }
-  ];
-
-  const processSteps = [
-    {
-      step: "01",
-      title: "Schedule Consultation",
-      description: "Book a free 15-minute call to discuss your tax situation and needs.",
-      icon: Phone
-    },
-    {
-      step: "02",
-      title: "Upload Documents",
-      description: "Securely upload W-2s, 1099s, and other tax documents to our portal.",
-      icon: FileText
-    },
-    {
-      step: "03",
-      title: "Expert Review",
-      description: "Our certified preparers analyze your return for maximum refund.",
-      icon: UserCheck
-    },
-    {
-      step: "04",
-      title: "Get Your Refund",
-      description: "E-file and receive your refund via direct deposit or check.",
-      icon: DollarSign
     }
   ];
 
@@ -337,7 +401,7 @@ export default function HomePage() {
     },
     {
       q: "Do you work with clients nationwide?",
-      a: "Yes! While we have offices in California and Texas, we serve clients across all 50 states through our secure online portal."
+      a: "Yes! While we have offices in California, Texas, and Florida, we serve clients across all 50 states through our secure online portal."
     }
   ];
 
@@ -363,8 +427,8 @@ export default function HomePage() {
       <motion.header 
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
           isScrolled 
-            ? "bg-white/90 backdrop-blur-xl shadow-lg shadow-black/5 border-b border-gray-100" 
-            : "bg-transparent"
+            ? "bg-white/95 backdrop-blur-xl shadow-lg shadow-black/5 border-b border-gray-100" 
+            : "bg-sts-dark/90 backdrop-blur-md"
         }`}
         initial={{ y: -100 }}
         animate={{ y: 0 }}
@@ -373,24 +437,13 @@ export default function HomePage() {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
-            {/* Logo */}
+            {/* Real Logo */}
             <Link href="/" className="flex items-center gap-3 group" data-testid="link-home-logo">
-              <div className="relative">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-sts-primary via-sts-primary to-sts-dark flex items-center justify-center shadow-lg shadow-sts-primary/30 group-hover:shadow-sts-primary/50 transition-shadow">
-                  <span className="text-white font-black text-xl">S</span>
-                </div>
-                <div className="absolute -right-1 -bottom-1 w-5 h-5 bg-gradient-to-br from-sts-gold to-yellow-400 rounded-full flex items-center justify-center shadow-md">
-                  <DollarSign className="w-3 h-3 text-sts-dark" />
-                </div>
-              </div>
-              <div className="flex flex-col">
-                <span className={`font-black text-xl tracking-tight leading-none ${isScrolled ? "text-sts-dark" : "text-white"}`}>
-                  STS TaxRepair
-                </span>
-                <span className={`text-xs font-medium ${isScrolled ? "text-gray-500" : "text-white/70"}`}>
-                  Tax Solutions You Can Trust
-                </span>
-              </div>
+              <img 
+                src={STS_LOGO_URL} 
+                alt="STS TaxRepair" 
+                className="h-14 w-auto object-contain"
+              />
             </Link>
 
             {/* Desktop Navigation */}
@@ -496,14 +549,14 @@ export default function HomePage() {
         </div>
       </motion.header>
 
-      {/* Hero Section - Enhanced */}
+      {/* Hero Section */}
       <section 
         ref={heroRef}
         className="relative min-h-screen flex items-center overflow-hidden"
         style={{ position: 'relative' }}
         data-testid="section-hero"
       >
-        {/* Sophisticated Background */}
+        {/* Background */}
         <div className="absolute inset-0 bg-gradient-to-br from-[#0d2818] via-sts-dark to-[#1a4d2e]" />
         
         {/* Mesh Gradient Overlay */}
@@ -534,12 +587,6 @@ export default function HomePage() {
           />
         </div>
 
-        {/* Grid Pattern */}
-        <div className="absolute inset-0 opacity-[0.03]" style={{
-          backgroundImage: `linear-gradient(to right, white 1px, transparent 1px), linear-gradient(to bottom, white 1px, transparent 1px)`,
-          backgroundSize: '60px 60px'
-        }} />
-
         <motion.div 
           className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 lg:py-40"
           style={{ opacity: heroOpacity, y: heroY }}
@@ -555,7 +602,7 @@ export default function HomePage() {
               >
                 <Sparkles className="w-4 h-4 text-sts-gold" />
                 <span className="text-white/80 text-sm font-medium">
-                  Trusted by 50,000+ Clients Nationwide
+                  Trusted by 50,000+ Clients Across All 50 States
                 </span>
               </motion.div>
               
@@ -565,14 +612,13 @@ export default function HomePage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
               >
-                Get Your{" "}
                 <span className="relative inline-block">
                   <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-sts-gold via-yellow-300 to-sts-gold">
-                    Maximum
+                    Reliable
                   </span>
                 </span>
                 <br />
-                Tax Refund
+                Tax Advisors
               </motion.h1>
               
               <motion.p 
@@ -581,7 +627,7 @@ export default function HomePage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
               >
-                Professional tax preparation with a personal touch. Our certified experts find every deduction you deserve, guaranteed.
+                Let Us Be Your Trusted Partner. Work alongside a dependable ally invested in your best interests. For the maximum refund you deserve, your search ends here.
               </motion.p>
               
               <motion.div 
@@ -594,9 +640,9 @@ export default function HomePage() {
                   size="lg"
                   className="bg-gradient-to-r from-sts-gold to-yellow-400 hover:from-sts-gold hover:to-yellow-500 text-sts-dark font-bold px-8 h-14 text-base shadow-xl shadow-sts-gold/30 hover:shadow-sts-gold/50 transition-all group"
                   onClick={() => document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" })}
-                  data-testid="button-hero-consultation"
+                  data-testid="button-hero-contact"
                 >
-                  Free Consultation
+                  CONTACT US
                   <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                 </Button>
                 <Button 
@@ -604,9 +650,9 @@ export default function HomePage() {
                   variant="outline"
                   className="border-2 border-white/20 bg-white/5 backdrop-blur-sm text-white hover:bg-white/10 hover:border-white/30 font-semibold px-8 h-14 text-base"
                   onClick={() => navigate("/client-login")}
-                  data-testid="button-hero-portal"
+                  data-testid="button-hero-register"
                 >
-                  Client Portal
+                  REGISTER
                   <ChevronRight className="w-5 h-5 ml-1" />
                 </Button>
               </motion.div>
@@ -621,8 +667,8 @@ export default function HomePage() {
                 {[
                   { icon: Shield, text: "IRS Authorized E-File" },
                   { icon: Award, text: "CTEC Certified" },
-                  { icon: Lock, text: "Bank-Level Security" }
-                ].map((item, index) => (
+                  { icon: Lock, text: "100% Accuracy Guarantee" }
+                ].map((item) => (
                   <div key={item.text} className="flex items-center gap-2 text-white/60 hover:text-white/80 transition-colors">
                     <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
                       <item.icon className="w-4 h-4 text-sts-gold" />
@@ -641,7 +687,6 @@ export default function HomePage() {
               transition={{ delay: 0.4, duration: 0.8 }}
             >
               <div className="relative">
-                {/* Card Glow */}
                 <div className="absolute -inset-4 bg-gradient-to-r from-sts-primary/20 to-sts-gold/20 rounded-3xl blur-2xl opacity-60" />
                 
                 <Card className="relative bg-white/[0.03] backdrop-blur-xl border border-white/10 p-8 rounded-2xl shadow-2xl" data-testid="form-contact-sidebar">
@@ -650,44 +695,49 @@ export default function HomePage() {
                       <Phone className="w-6 h-6 text-sts-dark" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-white">Get Started Today</h3>
-                      <p className="text-white/60 text-sm">Free consultation • No obligation</p>
+                      <h3 className="text-xl font-bold text-white">Let's Connect!</h3>
+                      <p className="text-white/60 text-sm">Free consultation</p>
                     </div>
                   </div>
                   
                   <form onSubmit={handleContactSubmit} className="space-y-4">
-                    <div className="space-y-3">
-                      <Input
-                        placeholder="Full Name *"
-                        value={contactForm.name}
-                        onChange={(e) => setContactForm(prev => ({ ...prev, name: e.target.value }))}
-                        className="bg-white/5 border-white/10 text-white placeholder:text-white/40 focus:border-sts-gold focus:ring-sts-gold/20 h-12 rounded-xl"
-                        data-testid="input-contact-name"
-                      />
-                      <Input
-                        placeholder="Phone Number *"
-                        type="tel"
-                        value={contactForm.phone}
-                        onChange={(e) => setContactForm(prev => ({ ...prev, phone: e.target.value }))}
-                        className="bg-white/5 border-white/10 text-white placeholder:text-white/40 focus:border-sts-gold focus:ring-sts-gold/20 h-12 rounded-xl"
-                        data-testid="input-contact-phone"
-                      />
-                      <Input
-                        placeholder="Email Address *"
-                        type="email"
-                        value={contactForm.email}
-                        onChange={(e) => setContactForm(prev => ({ ...prev, email: e.target.value }))}
-                        className="bg-white/5 border-white/10 text-white placeholder:text-white/40 focus:border-sts-gold focus:ring-sts-gold/20 h-12 rounded-xl"
-                        data-testid="input-contact-email"
-                      />
-                      <Textarea
-                        placeholder="How can we help you?"
-                        value={contactForm.message}
-                        onChange={(e) => setContactForm(prev => ({ ...prev, message: e.target.value }))}
-                        className="bg-white/5 border-white/10 text-white placeholder:text-white/40 focus:border-sts-gold focus:ring-sts-gold/20 min-h-[80px] resize-none rounded-xl"
-                        data-testid="input-contact-message"
-                      />
-                    </div>
+                    <Input
+                      placeholder="Name *"
+                      value={contactForm.name}
+                      onChange={(e) => setContactForm(prev => ({ ...prev, name: e.target.value }))}
+                      className="bg-white/5 border-white/10 text-white placeholder:text-white/40 focus:border-sts-gold h-12 rounded-xl"
+                      data-testid="input-contact-name"
+                    />
+                    <Input
+                      placeholder="Location"
+                      value={contactForm.location}
+                      onChange={(e) => setContactForm(prev => ({ ...prev, location: e.target.value }))}
+                      className="bg-white/5 border-white/10 text-white placeholder:text-white/40 focus:border-sts-gold h-12 rounded-xl"
+                      data-testid="input-contact-location"
+                    />
+                    <Input
+                      placeholder="Phone Number *"
+                      type="tel"
+                      value={contactForm.phone}
+                      onChange={(e) => setContactForm(prev => ({ ...prev, phone: e.target.value }))}
+                      className="bg-white/5 border-white/10 text-white placeholder:text-white/40 focus:border-sts-gold h-12 rounded-xl"
+                      data-testid="input-contact-phone"
+                    />
+                    <Input
+                      placeholder="Email *"
+                      type="email"
+                      value={contactForm.email}
+                      onChange={(e) => setContactForm(prev => ({ ...prev, email: e.target.value }))}
+                      className="bg-white/5 border-white/10 text-white placeholder:text-white/40 focus:border-sts-gold h-12 rounded-xl"
+                      data-testid="input-contact-email"
+                    />
+                    <Textarea
+                      placeholder="Message"
+                      value={contactForm.message}
+                      onChange={(e) => setContactForm(prev => ({ ...prev, message: e.target.value }))}
+                      className="bg-white/5 border-white/10 text-white placeholder:text-white/40 focus:border-sts-gold min-h-[80px] resize-none rounded-xl"
+                      data-testid="input-contact-message"
+                    />
                     
                     <Button 
                       type="submit"
@@ -695,20 +745,9 @@ export default function HomePage() {
                       disabled={isSubmitting}
                       data-testid="button-contact-submit"
                     >
-                      {isSubmitting ? (
-                        <span className="flex items-center gap-2">
-                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          Sending...
-                        </span>
-                      ) : (
-                        "Request Free Consultation"
-                      )}
+                      {isSubmitting ? "Sending..." : "Send Message"}
                     </Button>
                   </form>
-
-                  <p className="text-white/40 text-xs text-center mt-4">
-                    We respect your privacy. No spam, ever.
-                  </p>
                 </Card>
               </div>
             </motion.div>
@@ -736,8 +775,26 @@ export default function HomePage() {
         </motion.div>
       </section>
 
-      {/* Stats Section - Glass Cards */}
-      <section className="relative py-20 bg-gradient-to-b from-sts-dark to-[#0d2818]" data-testid="section-stats">
+      {/* We Service All 50 States Banner */}
+      <section className="py-6 bg-sts-primary" data-testid="section-states-banner">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div 
+            className="flex items-center justify-center gap-4"
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+          >
+            <Globe className="w-8 h-8 text-white" />
+            <h2 className="text-2xl sm:text-3xl font-bold text-white text-center">
+              We Service All 50 States
+            </h2>
+            <Globe className="w-8 h-8 text-white" />
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      <section className="py-20 bg-gradient-to-b from-white to-gray-50" data-testid="section-stats">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div 
             className="grid grid-cols-2 lg:grid-cols-4 gap-6"
@@ -752,12 +809,11 @@ export default function HomePage() {
                 variants={fadeInUp}
                 className="relative group"
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-sts-primary/20 to-sts-gold/10 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 text-center hover:bg-white/10 transition-colors">
-                  <div className="text-4xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-sts-gold to-yellow-300 mb-2">
+                <div className="bg-white rounded-2xl p-6 text-center shadow-lg hover:shadow-xl transition-shadow border border-gray-100">
+                  <div className="text-4xl sm:text-5xl font-black text-sts-primary mb-2">
                     <AnimatedCounter value={stat.value} prefix={stat.prefix} suffix={stat.suffix} />
                   </div>
-                  <div className="text-white/60 font-medium text-sm">{stat.label}</div>
+                  <div className="text-gray-600 font-medium text-sm">{stat.label}</div>
                 </div>
               </motion.div>
             ))}
@@ -765,7 +821,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Services Section - Modern Cards */}
+      {/* Services Section */}
       <section id="services" className="py-24 bg-gray-50" data-testid="section-services">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div 
@@ -778,15 +834,12 @@ export default function HomePage() {
               Our Services
             </Badge>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900">
-              Comprehensive Tax <span className="text-sts-primary">Solutions</span>
+              Expert Tax Consulting <span className="text-sts-primary">Services</span>
             </h2>
-            <p className="text-gray-600 mt-4 max-w-2xl mx-auto text-lg">
-              From simple returns to complex business filings, we have the expertise to handle all your tax needs.
-            </p>
           </motion.div>
 
           <motion.div 
-            className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"
+            className="grid md:grid-cols-2 gap-8"
             initial="initial"
             whileInView="animate"
             viewport={{ once: true }}
@@ -795,24 +848,34 @@ export default function HomePage() {
             {services.map((service, index) => (
               <motion.div key={service.title} variants={fadeInUp}>
                 <Card 
-                  className="group relative p-6 bg-white border-0 shadow-lg shadow-gray-200/50 hover:shadow-xl hover:shadow-sts-primary/10 transition-all duration-300 overflow-hidden h-full"
+                  className="p-8 bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 h-full group"
                   data-testid={`card-service-${index}`}
                 >
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-sts-primary/5 to-transparent rounded-bl-full" />
-                  
-                  <div className="relative">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-sts-primary to-sts-dark flex items-center justify-center mb-5 shadow-lg shadow-sts-primary/30 group-hover:scale-110 transition-transform">
-                      <service.icon className="w-7 h-7 text-white" />
-                    </div>
-                    
-                    <h3 className="text-xl font-bold text-gray-900 mb-3">{service.title}</h3>
-                    <p className="text-gray-600 mb-4 leading-relaxed">{service.description}</p>
-                    
-                    <div className="flex items-center gap-2 text-sts-primary font-semibold text-sm">
-                      <BarChart3 className="w-4 h-4" />
-                      {service.stats}
-                    </div>
+                  <div className="w-16 h-16 rounded-2xl bg-sts-primary/10 flex items-center justify-center mb-6 group-hover:bg-sts-primary group-hover:scale-110 transition-all">
+                    <service.icon className="w-8 h-8 text-sts-primary group-hover:text-white transition-colors" />
                   </div>
+                  
+                  <h3 className="text-2xl font-bold text-sts-primary mb-4">{service.title}</h3>
+                  <p className="text-gray-600 leading-relaxed mb-6">{service.description}</p>
+                  
+                  {service.hasButton && (
+                    <Button className="bg-sts-primary hover:bg-sts-primary/90 text-white">
+                      Learn More
+                      <ChevronRight className="w-4 h-4 ml-1" />
+                    </Button>
+                  )}
+                  
+                  {service.agent && (
+                    <div className="pt-4 border-t border-gray-100 space-y-2">
+                      <p className="font-semibold text-gray-900">Agent: {service.agent}</p>
+                      <p className="text-sm text-gray-600 flex items-center gap-2">
+                        <Phone className="w-4 h-4 text-sts-primary" /> {service.phone}
+                      </p>
+                      <p className="text-sm text-gray-600 flex items-center gap-2">
+                        <Mail className="w-4 h-4 text-sts-primary" /> {service.email}
+                      </p>
+                    </div>
+                  )}
                 </Card>
               </motion.div>
             ))}
@@ -820,62 +883,39 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Process Section - Timeline */}
-      <section id="process" className="py-24 bg-white" data-testid="section-process">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
-            className="text-center mb-16"
+      {/* Beyond Traditional CTA Section */}
+      <section className="py-24 bg-sts-dark relative overflow-hidden" data-testid="section-beyond">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-sts-gold rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-sts-primary rounded-full blur-3xl" />
+        </div>
+        
+        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <Badge className="bg-sts-gold/10 text-sts-gold border-0 mb-4">
-              How It Works
-            </Badge>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900">
-              Simple <span className="text-sts-primary">4-Step</span> Process
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white mb-6">
+              Beyond Traditional Tax Services: <span className="text-sts-gold">Your Financial Advocates.</span>
             </h2>
-            <p className="text-gray-600 mt-4 max-w-2xl mx-auto text-lg">
-              Getting your maximum refund has never been easier. Here's how we work together.
+            <p className="text-white/70 text-lg mb-8 max-w-3xl mx-auto leading-relaxed">
+              Discover the difference with The Tax Team, your partners in comprehensive tax solutions. Our experts don't stop at routine tax preparation; we immerse ourselves in understanding your finances. Through meticulous questioning, we unearth potential credits and deductions, ensuring you receive every possible benefit.
             </p>
-          </motion.div>
-
-          <div className="relative">
-            {/* Connection Line */}
-            <div className="hidden lg:block absolute top-1/2 left-0 right-0 h-0.5 bg-gradient-to-r from-sts-primary via-sts-gold to-sts-primary -translate-y-1/2" />
-            
-            <motion.div 
-              className="grid md:grid-cols-2 lg:grid-cols-4 gap-8"
-              initial="initial"
-              whileInView="animate"
-              viewport={{ once: true }}
-              variants={staggerContainer}
+            <Button 
+              size="lg"
+              className="bg-gradient-to-r from-sts-gold to-yellow-400 hover:from-sts-gold hover:to-yellow-500 text-sts-dark font-bold px-10 h-14 shadow-xl"
+              data-testid="button-call-now"
             >
-              {processSteps.map((step, index) => (
-                <motion.div 
-                  key={step.step} 
-                  variants={fadeInUp}
-                  className="relative"
-                >
-                  <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-lg relative z-10">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-sts-primary to-sts-dark flex items-center justify-center mb-6 mx-auto shadow-lg shadow-sts-primary/30">
-                      <step.icon className="w-8 h-8 text-white" />
-                    </div>
-                    <div className="text-center">
-                      <span className="text-sts-gold font-black text-sm mb-2 block">{step.step}</span>
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">{step.title}</h3>
-                      <p className="text-gray-600">{step.description}</p>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
-          </div>
+              <Phone className="w-5 h-5 mr-2" />
+              Call Us Now
+            </Button>
+          </motion.div>
         </div>
       </section>
 
-      {/* Why Choose Us - Split Section */}
-      <section id="about" className="py-24 bg-gray-50" data-testid="section-about">
+      {/* About Section */}
+      <section id="about" className="py-24 bg-white" data-testid="section-about">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <motion.div
@@ -885,13 +925,13 @@ export default function HomePage() {
               transition={{ duration: 0.6 }}
             >
               <Badge className="bg-sts-primary/10 text-sts-primary border-0 mb-4">
-                Why Choose Us
+                About Us
               </Badge>
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900 mb-6">
-                Your Trusted <span className="text-sts-primary">Tax Partner</span>
+                Minimizing Liabilities, <span className="text-sts-primary">Maximizing Deductions</span>
               </h2>
-              <p className="text-gray-600 text-lg mb-8">
-                For over 15 years, STS TaxRepair has been helping individuals and businesses navigate the complex world of taxation. Our commitment to excellence has earned us the trust of over 50,000 clients.
+              <p className="text-gray-600 text-lg mb-8 leading-relaxed">
+                For over 15 years, STS TaxRepair has been helping individuals and businesses navigate the complex world of taxation. Our commitment to excellence has earned us the trust of over 50,000 clients across all 50 states.
               </p>
               
               <div className="space-y-4">
@@ -903,13 +943,13 @@ export default function HomePage() {
                 ].map((item, index) => (
                   <motion.div 
                     key={item.title} 
-                    className="flex gap-4 p-4 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
+                    className="flex gap-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
                     initial={{ opacity: 0, x: -20 }}
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: index * 0.1 }}
                   >
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-sts-gold/20 to-yellow-100 flex items-center justify-center flex-shrink-0">
+                    <div className="w-12 h-12 rounded-xl bg-sts-gold/20 flex items-center justify-center flex-shrink-0">
                       <item.icon className="w-6 h-6 text-sts-gold" />
                     </div>
                     <div>
@@ -931,7 +971,6 @@ export default function HomePage() {
               <div className="relative">
                 <div className="absolute -inset-4 bg-gradient-to-br from-sts-primary/20 to-sts-gold/20 rounded-3xl blur-2xl" />
                 <div className="relative bg-gradient-to-br from-sts-dark via-[#1a4d2e] to-sts-primary rounded-2xl p-8 text-white overflow-hidden">
-                  {/* Background Pattern */}
                   <div className="absolute inset-0 opacity-10">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full -translate-y-1/2 translate-x-1/2" />
                     <div className="absolute bottom-0 left-0 w-48 h-48 bg-white rounded-full translate-y-1/2 -translate-x-1/2" />
@@ -959,7 +998,7 @@ export default function HomePage() {
                       onClick={() => navigate("/client-login")}
                       data-testid="button-get-started"
                     >
-                      Schedule Your Free Consultation
+                      Get Started Today
                       <ArrowRight className="w-5 h-5 ml-2" />
                     </Button>
                   </div>
@@ -970,7 +1009,158 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Testimonials Section - Carousel */}
+      {/* Agents Section */}
+      <section id="agents" className="py-24 bg-gray-50" data-testid="section-agents">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div 
+            className="text-center mb-16"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <Badge className="bg-sts-primary/10 text-sts-primary border-0 mb-4">
+              Our Team
+            </Badge>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900">
+              Meet Our <span className="text-sts-primary">Agents</span>
+            </h2>
+          </motion.div>
+
+          <motion.div 
+            className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6"
+            initial="initial"
+            whileInView="animate"
+            viewport={{ once: true }}
+            variants={staggerContainer}
+          >
+            {agents.map((agent, index) => (
+              <motion.div key={agent.name} variants={fadeInUp}>
+                <Card 
+                  className="p-6 bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 group"
+                  data-testid={`card-agent-${index}`}
+                >
+                  {/* Agent Avatar */}
+                  <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-to-br from-sts-primary to-sts-dark flex items-center justify-center text-white text-2xl font-bold shadow-lg group-hover:scale-110 transition-transform">
+                    {agent.image}
+                  </div>
+                  
+                  <div className="text-center mb-4">
+                    <h3 className="text-lg font-bold text-gray-900">{agent.name}</h3>
+                    <p className="text-sm text-gray-500">{agent.role}</p>
+                    <div className="flex justify-center mt-2">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} className="w-4 h-4 text-sts-gold fill-sts-gold" />
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <Phone className="w-4 h-4 text-sts-primary flex-shrink-0" />
+                      <span className="truncate">{agent.phone}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <Mail className="w-4 h-4 text-sts-primary flex-shrink-0" />
+                      <span className="truncate text-xs">{agent.email}</span>
+                    </div>
+                    <div className="flex items-start gap-2 text-gray-600">
+                      <MapPin className="w-4 h-4 text-sts-primary flex-shrink-0 mt-0.5" />
+                      <span className="text-xs line-clamp-2">{agent.address}</span>
+                    </div>
+                  </div>
+                  
+                  <Button 
+                    className="w-full mt-4 bg-sts-primary hover:bg-sts-primary/90 text-white"
+                    size="sm"
+                  >
+                    Contact Agent
+                  </Button>
+                </Card>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section id="pricing" className="py-24 bg-white" data-testid="section-pricing">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div 
+            className="text-center mb-16"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <Badge className="bg-sts-primary/10 text-sts-primary border-0 mb-4">
+              PRICING PLAN
+            </Badge>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900 mb-4">
+              Find The Ideal Fit <span className="text-sts-primary">For You.</span>
+            </h2>
+            <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+              Enhance your experience with plans designed to suit your requirements
+            </p>
+          </motion.div>
+
+          <motion.div 
+            className="grid md:grid-cols-3 gap-8"
+            initial="initial"
+            whileInView="animate"
+            viewport={{ once: true }}
+            variants={staggerContainer}
+          >
+            {pricingPlans.map((plan, index) => (
+              <motion.div key={plan.title} variants={fadeInUp}>
+                <Card 
+                  className={`p-8 h-full ${
+                    plan.featured 
+                      ? "bg-sts-dark text-white border-0 shadow-2xl scale-105" 
+                      : "bg-white border-0 shadow-lg hover:shadow-xl"
+                  } transition-all duration-300`}
+                  data-testid={`card-pricing-${index}`}
+                >
+                  <h3 className={`text-xl font-bold mb-4 ${plan.featured ? "text-white" : "text-gray-900"}`}>
+                    {plan.title}
+                  </h3>
+                  
+                  <div className="mb-6">
+                    <span className="text-4xl sm:text-5xl font-black text-sts-gold">{plan.price}</span>
+                  </div>
+                  
+                  <p className={`mb-6 leading-relaxed ${plan.featured ? "text-white/70" : "text-gray-600"}`}>
+                    {plan.description}
+                  </p>
+                  
+                  <div className="space-y-3 mb-8">
+                    {plan.features.map((feature) => (
+                      <div key={feature} className="flex items-center gap-3">
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                          plan.featured ? "bg-sts-gold/20" : "bg-sts-primary/10"
+                        }`}>
+                          <Check className={`w-3 h-3 ${plan.featured ? "text-sts-gold" : "text-sts-primary"}`} />
+                        </div>
+                        <span className={plan.featured ? "text-white/90" : "text-gray-700"}>{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <Button 
+                    className={`w-full ${
+                      plan.featured 
+                        ? "bg-gradient-to-r from-sts-gold to-yellow-400 text-sts-dark hover:from-sts-gold hover:to-yellow-500" 
+                        : "bg-sts-primary hover:bg-sts-primary/90 text-white"
+                    } font-bold h-12`}
+                  >
+                    Get Started
+                  </Button>
+                </Card>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
       <section id="testimonials" className="py-24 bg-gradient-to-br from-sts-dark via-[#1a4d2e] to-sts-dark overflow-hidden" data-testid="section-testimonials">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div 
@@ -1124,6 +1314,55 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Newsletter Section */}
+      <section className="relative overflow-hidden" data-testid="section-newsletter">
+        <div className="grid md:grid-cols-2">
+          {/* Left Side - Dark */}
+          <div className="bg-sts-dark py-16 px-8 md:px-16">
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+            >
+              <h2 className="text-3xl sm:text-4xl font-black text-white mb-4">
+                Subscribe For Our Newslater
+              </h2>
+              <p className="text-white/70 text-lg">
+                Stay Informed, Stay Ahead: Subscribe to STSTaxRepair
+              </p>
+            </motion.div>
+          </div>
+          
+          {/* Right Side - Gold */}
+          <div className="bg-gradient-to-br from-sts-gold to-yellow-400 py-16 px-8 md:px-16">
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+            >
+              <p className="text-sts-dark/70 font-medium mb-4">Early Bird Notifications</p>
+              <form onSubmit={handleNewsletterSubmit} className="flex gap-3">
+                <Input
+                  type="email"
+                  placeholder="Enter your email"
+                  value={newsletterEmail}
+                  onChange={(e) => setNewsletterEmail(e.target.value)}
+                  className="bg-white border-0 h-12 flex-1"
+                  data-testid="input-newsletter-email"
+                />
+                <Button 
+                  type="submit"
+                  className="bg-sts-dark hover:bg-sts-dark/90 text-white h-12 px-8"
+                  data-testid="button-newsletter-submit"
+                >
+                  Submit
+                </Button>
+              </form>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
       {/* Contact Section */}
       <section id="contact" className="py-24 bg-gray-50" data-testid="section-contact">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1145,9 +1384,9 @@ export default function HomePage() {
 
               <div className="space-y-6">
                 {[
-                  { icon: Phone, label: "Phone", value: "(877) STS-TAXES", subtext: "Mon-Sat 8am-8pm" },
-                  { icon: Mail, label: "Email", value: "support@ststaxrepair.com", subtext: "We reply within 24 hours" },
-                  { icon: MapPin, label: "Office", value: "Los Angeles, CA", subtext: "Serving clients nationwide" }
+                  { icon: Phone, label: "Phone", value: "(929) 235-0185", subtext: "Mon-Sat 8am-8pm" },
+                  { icon: Mail, label: "Email", value: "ststaxrepair@gmail.com", subtext: "We reply within 24 hours" },
+                  { icon: MapPin, label: "Office", value: "4000 Hollywood Blvd, Suite 555-S", subtext: "Hollywood FL, 33021" }
                 ].map((item) => (
                   <div key={item.label} className="flex items-start gap-4">
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-sts-primary to-sts-dark flex items-center justify-center flex-shrink-0">
@@ -1237,127 +1476,87 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-sts-dark via-[#1a4d2e] to-sts-primary relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-white rounded-full blur-3xl" />
-          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-sts-gold rounded-full blur-3xl" />
-        </div>
-        
-        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white mb-6">
-              Ready to Maximize Your <span className="text-sts-gold">Refund?</span>
-            </h2>
-            <p className="text-white/70 text-lg mb-8 max-w-2xl mx-auto">
-              Don't leave money on the table. Schedule your free consultation today and let our experts find every deduction you deserve.
-            </p>
-            <div className="flex flex-wrap justify-center gap-4">
-              <Button 
-                size="lg"
-                className="bg-gradient-to-r from-sts-gold to-yellow-400 hover:from-sts-gold hover:to-yellow-500 text-sts-dark font-bold px-8 h-14 shadow-xl"
-                onClick={() => document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" })}
-                data-testid="button-cta-consultation"
-              >
-                Get Free Consultation
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </Button>
-              <Button 
-                size="lg"
-                variant="outline"
-                className="border-2 border-white/30 bg-white/10 text-white hover:bg-white/20 font-semibold px-8 h-14"
-                onClick={() => navigate("/client-login")}
-                data-testid="button-cta-login"
-              >
-                Client Login
-              </Button>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-16" data-testid="footer-main">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-12">
             {/* Brand */}
-            <div className="lg:col-span-1">
-              <Link href="/" className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-sts-primary to-sts-dark flex items-center justify-center">
-                  <span className="text-white font-black text-xl">S</span>
-                </div>
-                <span className="font-black text-xl">STS TaxRepair</span>
-              </Link>
-              <p className="text-gray-400 mb-6">
-                Professional tax services with a personal touch. Helping individuals and businesses maximize their refunds since 2009.
+            <div>
+              <img 
+                src={STS_LOGO_URL} 
+                alt="STS TaxRepair" 
+                className="h-16 w-auto mb-6"
+              />
+              <p className="text-gray-400 leading-relaxed">
+                It's simple, we focus on the details. Our team of professionals will ask you the right questions to ensure that you always receive the maximum return on your taxes.
               </p>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors cursor-pointer">
-                  <Globe className="w-5 h-5" />
-                </div>
+            </div>
+
+            {/* Address 1 */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <MapPin className="w-5 h-5 text-sts-gold" />
+                <h4 className="font-bold text-lg">Address</h4>
+              </div>
+              <div className="space-y-3 text-gray-400">
+                <p>4000 Hollywood Blvd, Suite 555-S, Hollywood FL, 33021</p>
+                <p className="flex items-center gap-2">
+                  <Phone className="w-4 h-4" />
+                  (929) 235-0185
+                </p>
+                <p className="flex items-center gap-2">
+                  <Mail className="w-4 h-4" />
+                  amtaxrepair@gmail.com
+                </p>
               </div>
             </div>
 
-            {/* Quick Links */}
+            {/* Address 2 */}
             <div>
-              <h4 className="font-bold text-lg mb-4">Quick Links</h4>
-              <ul className="space-y-3">
-                {["Home", "Services", "About Us", "Contact", "FAQ"].map((link) => (
-                  <li key={link}>
-                    <a href={`#${link.toLowerCase().replace(/\s/g, "-")}`} className="text-gray-400 hover:text-white transition-colors">
-                      {link}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Services */}
-            <div>
-              <h4 className="font-bold text-lg mb-4">Services</h4>
-              <ul className="space-y-3">
-                {["Personal Tax", "Business Tax", "Tax Planning", "IRS Resolution", "Bookkeeping"].map((service) => (
-                  <li key={service}>
-                    <a href="#services" className="text-gray-400 hover:text-white transition-colors">
-                      {service}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Contact */}
-            <div>
-              <h4 className="font-bold text-lg mb-4">Contact</h4>
-              <ul className="space-y-3">
-                <li className="flex items-center gap-2 text-gray-400">
+              <div className="flex items-center gap-2 mb-4">
+                <MapPin className="w-5 h-5 text-sts-gold" />
+                <h4 className="font-bold text-lg">Address</h4>
+              </div>
+              <div className="space-y-3 text-gray-400">
+                <p>24 Greenway Plz Suite 1800, Houston, TX 77046, USA</p>
+                <p className="flex items-center gap-2">
                   <Phone className="w-4 h-4" />
-                  (877) STS-TAXES
-                </li>
-                <li className="flex items-center gap-2 text-gray-400">
+                  (954) 851-4159
+                </p>
+                <p className="flex items-center gap-2">
                   <Mail className="w-4 h-4" />
-                  support@ststaxrepair.com
-                </li>
-                <li className="flex items-center gap-2 text-gray-400">
-                  <MapPin className="w-4 h-4" />
-                  Los Angeles, CA
-                </li>
-              </ul>
+                  ststaxrepair@gmail.com
+                </p>
+              </div>
+            </div>
+
+            {/* Address 3 */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <MapPin className="w-5 h-5 text-sts-gold" />
+                <h4 className="font-bold text-lg">Address</h4>
+              </div>
+              <div className="space-y-3 text-gray-400">
+                <p>110 East Broward Blvd., Suite 1700, Fort Lauderdale, 33301</p>
+                <p className="flex items-center gap-2">
+                  <Phone className="w-4 h-4" />
+                  9548514159
+                </p>
+                <p className="flex items-center gap-2">
+                  <Mail className="w-4 h-4" />
+                  ststaxrepair@gmail.com
+                </p>
+              </div>
             </div>
           </div>
 
           <div className="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-gray-500 text-sm">
-              © {new Date().getFullYear()} STS TaxRepair. All rights reserved.
+              ©Copyright 2024 Ststaxrepair.com. All Rights Reserved
             </p>
             <div className="flex items-center gap-6 text-sm text-gray-500">
-              <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
               <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
-              <a href="#" className="hover:text-white transition-colors">Cookie Policy</a>
+              <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
             </div>
           </div>
         </div>

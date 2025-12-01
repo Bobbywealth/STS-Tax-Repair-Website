@@ -1,0 +1,220 @@
+IMPORTANT - IMAGE URLS WITH EXACT POSITIONING FROM WORDPRESS SITE:
+
+## HERO SECTION:
+- Background Image: Team photo with 6 people (woman on left in blue, man in olive suit, woman in center with green coat, woman in green dress, woman in beige blazer, woman in green on right)
+- This is the MAIN hero image visible on ststaxrepair.net homepage
+
+## LOGO:
+- Header Logo: https://www.ststaxrepair.net/wp-content/uploads/2023/12/STS-Logo.webp
+- Green swirl design with "STS" text below
+
+## ABOUT SECTION IMAGES ("Minimizing Liabilities, Maximizing Deductions"):
+- LEFT image: Woman in green coat on brick steps
+- RIGHT image: Three professionals (man in suit with briefcase, woman in green dress, woman in blue dress)
+
+## "WHY CHOOSE US" SECTION IMAGE:
+- Same team of 3: Man in suit with briefcase, woman in green coat/dress, woman in blue dress
+- Background: Dark teal/green color
+
+## SERVICE ICONS (4 cards):
+1. Professional Tax Filing - Green circular arrows/refresh icon
+2. Credit Restoration - Green ID card/document icon  
+3. Business Registration - Green registered trademark ® icon
+4. Business Loans - Green magnifying glass with dollar sign icon
+
+## AGENTS SECTION (First 8 agents on homepage):
+1. Stephedena Cherfils - Woman in suit sitting on gray couch
+2. Withney Simon - Man in olive/green suit
+3. Keelie Duvignaud - Woman in green off-shoulder top
+4. Christy S Dor - Woman in green blazer by window
+5. Alexandra Isaac - Woman in white blazer with green accents
+6. Jennifer Constantino - Woman in green top by window
+7. Alix Alexandre - Man in suit on pathway outdoors
+8. Leonela Reyes - Woman in blue top outdoors with arms crossed
+
+All agent photos should be from: https://www.ststaxrepair.net/wp-content/uploads/
+
+## NOW BUILD THESE REMAINING SECTIONS:
+
+### 1. SERVICES BANNER:
+"We Service All 50 States" - centered text banner
+
+### 2. SERVICES SECTION:
+Heading: "Expert Tax Consulting Services"
+
+4 Service Cards:
+
+CARD 1:
+Icon: Green refresh/circular arrows
+Title: "Professional Tax Filing" (green)
+Text: "Our expert tax filing service ensures accuracy and maximum returns. We meticulously navigate the complexities of tax codes, asking the right questions to secure your highest refund. Trust our professionals to handle your taxes with precision and expertise, delivering peace of mind and financial benefit."
+Button: "Learn More" (green)
+
+CARD 2:
+Icon: Green ID card
+Title: "Credit Restoration" (green)
+Text: "Rebuild your credit with our comprehensive restoration service. We analyze credit reports, identifying discrepancies and errors. Through strategic interventions, we dispute inaccuracies and guide you towards improved credit health. Let us help restore your financial standing and open doors to better opportunities."
+Agent: Jessica Zephir
+Call: 7868051104
+Email: Zephirfinancialgroup@Outlook.Com
+
+CARD 3:
+Icon: Green ® symbol
+Title: "Business Registration" (green)
+Text: "Seamlessly establish your business with our registration service. We navigate the bureaucratic landscape, ensuring your incorporation process is efficient and compliant. From paperwork to legal formalities, we handle every step, allowing you to focus on your business vision. Trust us to register your business accurately and expediently."
+Button: "Learn More" (green)
+
+CARD 4:
+Icon: Green magnifying glass with $
+Title: "Business Loans" (green)
+Text: "Access financial support for your business growth with our comprehensive loan service. We assess your needs, guiding you to suitable loan options. From application to approval, we streamline the process, securing favorable terms. Count on us to help your business thrive with tailored loan solutions designed for your success."
+Button: "Learn More" (green)
+
+### 3. "BEYOND TRADITIONAL" CTA SECTION:
+Background: Dark teal/green
+Heading: "Beyond Traditional Tax Services: Your Financial Advocates."
+Text: "Discover the difference with The Tax Team, your partners in comprehensive tax solutions. Our experts don't stop at routine tax preparation; we immerse ourselves in understanding your finances. Through meticulous questioning, we unearth potential credits and deductions, ensuring you receive every possible benefit."
+Button: "Call Us Now" (yellow/gold)
+
+### 4. AGENTS SECTION:
+Heading: "Meet Our Agents"
+
+Show first 8 agents in 4x2 grid with REAL agent photos:
+
+1. Stephedena Cherfils
+Service Support | ⭐⭐⭐⭐⭐
+📞 954-534-5227
+✉️ Info.ststax@gmail.com  
+📍 24 Greenway Plz Suite 1800, Houston, TX 77046, USA
+[Contact Agent] button (green)
+
+2. Withney Simon  
+Service Support | ⭐⭐⭐⭐⭐
+📞 4074277619
+✉️ Withney.ststax@yahoo.com
+📍 24 Greenway Plz Suite 1800, Houston, TX 77046, USA
+[Contact Agent] button (green)
+
+3. Keelie Duvignaud
+Service Support | ⭐⭐⭐⭐⭐  
+📞 772-877-1588
+✉️ Taxesbykeys@gmail.com
+📍 3181 SW Crenshaw St, Port St. Lucie, FL 34953, USA
+[Contact Agent] button (green)
+
+4. Christy S Dor
+Service Support | ⭐⭐⭐⭐⭐
+📞 561-932-6114  
+✉️ christyststaxrepair@gmail.com
+📍 Florida Office, USA
+[Contact Agent] button (green)
+
+5. Alexandra Isaac
+Service Support | ⭐⭐⭐⭐⭐
+📞 786/352-2038
+✉️ isaacalexandra.ststaxrepair@gmail.com
+📍 4000 Hollywood Blvd, Suite 555-S, Hollywood FL, 33021  
+[Contact Agent] button (green)
+
+6. Jennifer Constantino
+Service Support | ⭐⭐⭐⭐⭐
+📞 (954) 629-6424
+✉️ jennconstantino93@gmail.com
+📍 4000 Hollywood Blvd, Suite 555-S, Hollywood FL, 33021
+[Contact Agent] button (green)
+
+7. Alix Alexandre
+Service Support | ⭐⭐⭐⭐⭐  
+📞 4074613644
+✉️ Alixalexandre36@gmail.com
+📍 24 Greenway Plz Suite 1800, Houston, TX 77046, USA
+[Contact Agent] button (green)
+
+8. Leonela Reyes
+Service Support | ⭐⭐⭐⭐⭐
+📞 (956)-739-4200
+✉️ lmrtaxrepair@gmail.com  
+📍 24 Greenway Plz Suite 1800, Houston, TX 77046, USA
+[Contact Agent] button (green)
+
+### 5. PRICING SECTION:
+Label: "PRICING PLAN" (green)
+Heading: "Find The Ideal Fit For You."
+Subtext: "Enhance your experience with plans designed to suit your requirements"
+
+3 Pricing Cards:
+
+CARD 1:
+Title: "Agent Packages"
+Price: "$950" (large, yellow)
+Text: "Become a proficient tax preparer with our Agent Package. Access comprehensive training, top-notch software, ongoing support, and networking opportunities to kickstart your career in tax preparation."
+Features:
+✓ Professional Training  
+✓ Software & Tools
+✓ Support & Guidance
+✓ Networking Opportunities
+
+CARD 2 (FEATURED - dark teal background):
+Title: "Professional Tax Preparers Package"  
+Price: "$1,850" (large, yellow)
+Text: "Elevate your expertise with our Professional Tax Preparers Package. Gain advanced training, priority support, enhanced resources, and marketing assistance to excel in complex tax scenarios and grow your client base."
+Features:
+✓ Advanced Training
+✓ Priority Support
+✓ Enhanced Resources  
+✓ Marketing Support
+
+CARD 3:
+Title: "Start A Franchise"
+Price: "$25,000" (large, yellow)
+Text: "Invest in your future with our Franchise Package. Join an established brand, receive comprehensive training, exclusive territories, and business development assistance to launch and expand your tax preparation franchise successfully."
+Features:
+✓ Established Brand
+✓ Comprehensive Training & Support
+✓ Exclusive Territories
+✓ Business Development Assistance
+
+### 6. NEWSLETTER SECTION:
+Background: Split design (left: dark, right: yellow/gold)
+
+Left side (dark):
+Heading: "Subscribe For Our Newslater" (note the typo - keep it)
+Subtext: "Stay Informed, Stay Ahead: Subscribe to STSTaxRepair"
+
+Right side (yellow):
+Label: "Early Bird Notifications"  
+Email input field
+[Submit] button (teal)
+
+### 7. FOOTER:
+Background: Dark navy/black
+
+Left column:
+STS Logo (green)
+Text: "It's simple, we focus on the details. Our team of professionals will ask you the right questions to ensure that you always receive the maximum return on your taxes."
+
+Center-Left column:
+Heading: "Address" (yellow location icon)
+📍 4000 Hollywood Blvd, Suite 555-S, Hollywood FL, 33021
+📞 (929) 235-0185  
+✉️ amtaxrepair@gmail.com
+
+Center-Right column:
+Heading: "Address" (yellow location icon)
+📍 24 Greenway Plz Suite 1800, Houston, TX 77046, USA
+📞 (954) 851-4159
+✉️ ststaxrepair@gmail.com
+
+Right column:
+Heading: "Address" (yellow location icon)
+📍 110 East Broward Blvd., Suite 1700, Fort Lauderdale, 33301  
+📞 9548514159
+✉️ ststaxrepair@gmail.com
+
+Bottom:
+"©Copyright 2024 Ststaxrepair.com. All Rights Reserved"
+Links: "Terms of Service" | "Privacy Policy"
+
+---
+
+Build ALL of these sections now with modern styling, animations, and responsive design. Use placeholder images for now (we'll replace with actual WordPress image URLs later). Make it look PROFESSIONAL and MODERN!
