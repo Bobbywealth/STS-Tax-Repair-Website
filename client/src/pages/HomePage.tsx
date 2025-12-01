@@ -548,7 +548,7 @@ export default function HomePage() {
       {/* Hero Section */}
       <section 
         ref={heroRef}
-        className="relative overflow-hidden"
+        className="relative overflow-hidden lg:min-h-screen"
         style={{ position: 'relative' }}
         data-testid="section-hero"
       >
@@ -560,10 +560,11 @@ export default function HomePage() {
           transition={{ duration: 1.2, ease: "easeOut" }}
         >
           <motion.div
-            className="absolute inset-0 bg-center"
+            className="absolute inset-0"
             style={{ 
               backgroundImage: `url('https://www.ststaxrepair.net/wp-content/uploads/2025/01/Untitled-design-3.png')`,
               backgroundSize: 'cover',
+              backgroundPosition: 'center top',
               backgroundRepeat: 'no-repeat'
             }}
             animate={{ 
@@ -604,7 +605,7 @@ export default function HomePage() {
                 height: Math.random() * 8 + 3,
                 left: `${Math.random() * 60}%`,
                 top: `${Math.random() * 100}%`,
-                background: i % 2 === 0 ? 'rgba(253, 185, 19, 0.7)' : 'rgba(76, 175, 80, 0.6)',
+                background: i % 2 === 0 ? 'rgba(253, 185, 19, 0.7)' : 'rgba(255, 215, 0, 0.5)',
               }}
               animate={{
                 y: [0, -40, 0],
@@ -628,7 +629,7 @@ export default function HomePage() {
             transition={{ duration: 5, repeat: Infinity, ease: "linear", repeatDelay: 3 }}
           />
           <motion.div
-            className="absolute top-0 w-[1px] h-full bg-gradient-to-b from-transparent via-sts-primary/30 to-transparent"
+            className="absolute top-0 w-[1px] h-full bg-gradient-to-b from-transparent via-sts-gold/20 to-transparent"
             animate={{ x: ['70%', '-5%'] }}
             transition={{ duration: 6, repeat: Infinity, ease: "linear", repeatDelay: 4, delay: 2 }}
           />
@@ -711,8 +712,8 @@ export default function HomePage() {
           }} />
         </div>
         
-        {/* Dark Overlay for Desktop */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0d2818]/90 via-sts-dark/70 to-sts-dark/40 hidden lg:block" />
+        {/* Dark Overlay for Desktop - Neutral gradient for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent hidden lg:block" />
 
         <div className="relative max-w-7xl mx-auto px-5 lg:px-8">
           {/* Mobile Futuristic Hero - shown only on mobile/tablet */}
