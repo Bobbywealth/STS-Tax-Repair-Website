@@ -20,6 +20,7 @@ export const sessions = mysqlTable(
 export type UserRole = 'client' | 'agent' | 'tax_office' | 'admin';
 
 // User storage table for Replit Auth + Client Data
+// Note: Schema matches actual MySQL database columns from Perfex CRM migration
 export const users = mysqlTable("users", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
   email: varchar("email", { length: 255 }).unique(),
@@ -32,30 +33,10 @@ export const users = mysqlTable("users", {
   state: varchar("state", { length: 100 }),
   zipCode: varchar("zip_code", { length: 20 }),
   country: varchar("country", { length: 100 }).default("United States"),
-  clientType: varchar("client_type", { length: 50 }),
-  notes: text("notes"),
-  originalSubmissionId: int("original_submission_id"),
-  referralSource: text("referral_source"),
-  referredById: varchar("referred_by_id", { length: 36 }),
   role: varchar("role", { length: 20 }).default("client").$type<UserRole>(),
   isActive: boolean("is_active").default(true),
-  lastLoginAt: timestamp("last_login_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-  // Authentication
-  passwordHash: varchar("password_hash", { length: 255 }),
-  // Additional client info
-  birthday: timestamp("birthday"),
-  occupation: varchar("occupation", { length: 100 }),
-  // Sensitive data - stored encrypted (AES-256) - only last 4 of SSN stored separately for display
-  ssnLast4: varchar("ssn_last4", { length: 4 }),
-  ssnEncrypted: text("ssn_encrypted"),
-  irsUsernameEncrypted: text("irs_username_encrypted"),
-  irsPasswordEncrypted: text("irs_password_encrypted"),
-  // Bank info - stored encrypted
-  directDepositBank: varchar("direct_deposit_bank", { length: 255 }),
-  bankRoutingEncrypted: text("bank_routing_encrypted"),
-  bankAccountEncrypted: text("bank_account_encrypted"),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({

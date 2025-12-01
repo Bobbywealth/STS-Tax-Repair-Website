@@ -84,19 +84,6 @@ export class MySQLStorage implements IStorage {
       updatedAt: new Date(),
     };
 
-    // Add optional fields only if they are provided
-    if (userData.passwordHash !== undefined) userValues.passwordHash = userData.passwordHash;
-    if (userData.birthday !== undefined) userValues.birthday = userData.birthday;
-    if (userData.occupation !== undefined) userValues.occupation = userData.occupation;
-    if (userData.ssnLast4 !== undefined) userValues.ssnLast4 = userData.ssnLast4;
-    if (userData.ssnEncrypted !== undefined) userValues.ssnEncrypted = userData.ssnEncrypted;
-    if (userData.irsUsernameEncrypted !== undefined) userValues.irsUsernameEncrypted = userData.irsUsernameEncrypted;
-    if (userData.irsPasswordEncrypted !== undefined) userValues.irsPasswordEncrypted = userData.irsPasswordEncrypted;
-    if (userData.referredById !== undefined) userValues.referredById = userData.referredById;
-    if (userData.directDepositBank !== undefined) userValues.directDepositBank = userData.directDepositBank;
-    if (userData.bankRoutingEncrypted !== undefined) userValues.bankRoutingEncrypted = userData.bankRoutingEncrypted;
-    if (userData.bankAccountEncrypted !== undefined) userValues.bankAccountEncrypted = userData.bankAccountEncrypted;
-
     if (existing) {
       await mysqlDb
         .update(usersTable)
