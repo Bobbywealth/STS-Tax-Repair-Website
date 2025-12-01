@@ -28,6 +28,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { ESignature } from "@shared/schema";
+import logoUrl from "@assets/sts-logo.png";
 
 export default function ClientPortal() {
   const { toast } = useToast();
@@ -165,10 +166,17 @@ export default function ClientPortal() {
     <div className="min-h-screen bg-animated-mesh">
       {/* Header */}
       <header className="bg-flow-gradient border-b border-border backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">STS TaxRepair</h1>
-            <p className="text-sm text-muted-foreground">Client Portal</p>
+        <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <img 
+              src={logoUrl} 
+              alt="STS TaxRepair" 
+              className="h-12 w-auto object-contain"
+            />
+            <div>
+              <h1 className="text-xl font-bold">Client Portal</h1>
+              <p className="text-xs text-muted-foreground">Track your tax refund status</p>
+            </div>
           </div>
           <div className="flex items-center gap-4">
             <div className="text-right">
