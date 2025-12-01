@@ -552,12 +552,13 @@ export default function HomePage() {
         style={{ position: 'relative' }}
         data-testid="section-hero"
       >
-        {/* Desktop Background Image - Full team visible with contain */}
+        {/* Desktop Background Image - Full team visible */}
         <div className="absolute inset-0 hidden lg:block overflow-hidden bg-[#e8e4df]">
           <img 
             src="https://www.ststaxrepair.net/wp-content/uploads/2025/01/Untitled-design-3.png"
             alt="STS Tax Repair Team"
-            className="w-full h-full object-contain object-top"
+            className="w-full h-full object-cover"
+            style={{ objectPosition: 'center 15%' }}
           />
         </div>
         
