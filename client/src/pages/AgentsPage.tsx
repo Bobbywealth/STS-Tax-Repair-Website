@@ -12,7 +12,7 @@ const agents = [
   {
     name: "Stephedena Cherfils",
     title: "Service Support",
-    image: "https://iili.io/fxO4Uog.png",
+    image: "https://iili.io/fxO48DF.jpg",
     phone: "954-534-5227",
     email: "Info.ststax@gmail.com",
     location: "Houston, TX"
@@ -20,7 +20,7 @@ const agents = [
   {
     name: "Withney Simon",
     title: "Service Support",
-    image: "https://iili.io/fxO48DF.jpg",
+    image: "https://iili.io/fxO4Uog.png",
     phone: "407-427-7619",
     email: "Withney.ststax@yahoo.com",
     location: "Houston, TX"

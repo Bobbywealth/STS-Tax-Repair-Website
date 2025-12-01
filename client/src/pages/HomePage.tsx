@@ -268,7 +268,7 @@ export default function HomePage() {
       phone: "954-534-5227",
       email: "Info.ststax@gmail.com",
       address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
-      image: "https://iili.io/fxO4Uog.png"
+      image: "https://iili.io/fxO48DF.jpg"
     },
     {
       name: "Withney Simon",
@@ -276,7 +276,7 @@ export default function HomePage() {
       phone: "4074277619",
       email: "Withney.ststax@yahoo.com",
       address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
-      image: "https://iili.io/fxO48DF.jpg"
+      image: "https://iili.io/fxO4Uog.png"
     },
     {
       name: "Keelie Duvignaud",
