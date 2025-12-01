@@ -24,6 +24,14 @@ const agents = [
     phone: "407-427-7619",
     email: "Withney.ststax@yahoo.com",
     location: "Houston, TX"
+  },
+  {
+    name: "Keelie Duvignaud",
+    title: "Service Support",
+    image: "https://iili.io/fxOivNS.png",
+    phone: "772-877-1588",
+    email: "Taxesbykeys@gmail.com",
+    location: "Port St. Lucie, FL"
   }
 ];
 
