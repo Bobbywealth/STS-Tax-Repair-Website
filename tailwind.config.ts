@@ -81,6 +81,13 @@ export default {
           busy: "rgb(239 68 68)",
           offline: "rgb(156 163 175)",
         },
+        sts: {
+          primary: "#4CAF50",
+          dark: "#1a4d2e",
+          gold: "#FDB913",
+          light: "#F5F5F5",
+          text: "#333333",
+        },
       },
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],

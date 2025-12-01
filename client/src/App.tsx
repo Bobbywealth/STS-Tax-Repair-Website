@@ -31,6 +31,7 @@ import ClientLogin from "@/pages/ClientLogin";
 import ClientPortal from "@/pages/ClientPortal";
 import RedeemInvite from "@/pages/RedeemInvite";
 import Register from "@/pages/Register";
+import HomePage from "@/pages/HomePage";
 import NotFound from "@/pages/not-found";
 
 import { usePermissions, PERMISSIONS } from "@/hooks/usePermissions";
@@ -96,7 +97,7 @@ function PermissionRoute({ component: Component, permission, adminOnly }: Permis
 function AdminRouter() {
   return (
     <Switch>
-      <Route path="/" component={Dashboard} />
+      <Route path="/dashboard" component={Dashboard} />
       <Route path="/clients">
         <PermissionRoute component={Clients} permission={PERMISSIONS.CLIENTS_VIEW} />
       </Route>
@@ -261,14 +262,18 @@ function AdminLayout() {
 function App() {
   const [location] = useLocation();
   
+  const isHomePage = location === '/';
   const isClientRoute = location.startsWith('/client-login') || location.startsWith('/client-portal');
   const isRedeemRoute = location.startsWith('/redeem-invite');
   const isRegisterRoute = location.startsWith('/register');
+  const isStaffRoute = location.startsWith('/staff') || location.startsWith('/dashboard');
 
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        {isClientRoute ? (
+        {isHomePage ? (
+          <HomePage />
+        ) : isClientRoute ? (
           <Switch>
             <Route path="/client-login" component={ClientLogin} />
             <Route path="/client-portal" component={ClientPortal} />
@@ -281,6 +286,8 @@ function App() {
           <Switch>
             <Route path="/register" component={Register} />
           </Switch>
+        ) : isStaffRoute ? (
+          <AdminLayout />
         ) : (
           <AdminLayout />
         )}
