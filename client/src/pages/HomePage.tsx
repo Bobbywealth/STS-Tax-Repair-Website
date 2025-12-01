@@ -802,6 +802,7 @@ export default function HomePage() {
                       <br />
                       <span className="text-white">Tax Advisors</span>
                     </h1>
+                    <p className="text-sts-gold font-semibold text-sm tracking-wide mt-2">STS TAX REPAIR</p>
                   </motion.div>
                   
                   {/* Supporting Text with Better Spacing */}
