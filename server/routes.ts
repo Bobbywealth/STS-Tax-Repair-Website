@@ -13,9 +13,12 @@ import {
 } from "@shared/mysql-schema";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { testPerfexConnection, getPerfexTables, queryPerfex, describePerfexTable } from "./perfex-db";
-import { mysqlPool } from "./mysql-db";
+import { mysqlPool, runMySQLMigrations } from "./mysql-db";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Run MySQL migrations on startup
+  await runMySQLMigrations();
+  
   // Setup Authentication
   await setupAuth(app);
 

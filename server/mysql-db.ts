@@ -38,3 +38,26 @@ export async function testMySQLConnection(): Promise<boolean> {
     return false;
   }
 }
+
+export async function runMySQLMigrations(): Promise<void> {
+  try {
+    const connection = await poolConnection.getConnection();
+    
+    // Check if form_data column exists in e_signatures table
+    const [columns] = await connection.query(
+      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'e_signatures' AND COLUMN_NAME = 'form_data'`,
+      [process.env.MYSQL_DATABASE]
+    );
+    
+    if (Array.isArray(columns) && columns.length === 0) {
+      console.log('Adding form_data column to e_signatures table...');
+      await connection.query(`ALTER TABLE e_signatures ADD COLUMN form_data JSON NULL`);
+      console.log('form_data column added successfully!');
+    }
+    
+    connection.release();
+  } catch (error) {
+    console.error('MySQL migration error:', error);
+  }
+}
