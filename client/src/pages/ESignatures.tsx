@@ -584,7 +584,18 @@ export default function ESignatures() {
 
             <div className="space-y-2">
               <Label htmlFor="documentType">Document Type</Label>
-              <Select value={documentType} onValueChange={setDocumentType}>
+              <Select 
+                value={documentType} 
+                onValueChange={(value) => {
+                  setDocumentType(value);
+                  if (value === "form_8879") {
+                    setDocumentUrl("https://www.irs.gov/pub/irs-pdf/f8879.pdf");
+                    if (!documentName) {
+                      setDocumentName(`Form 8879 - Tax Year ${new Date().getFullYear()}`);
+                    }
+                  }
+                }}
+              >
                 <SelectTrigger data-testid="select-document-type">
                   <SelectValue placeholder="Select document type..." />
                 </SelectTrigger>
@@ -653,8 +664,15 @@ export default function ESignatures() {
             <>
               <DialogHeader>
                 <DialogTitle>Complete & Sign Form 8879</DialogTitle>
-                <DialogDescription>
+                <DialogDescription className="flex items-center gap-2">
                   Fill in the required fields and sign to authorize e-filing
+                  <Button
+                    variant="link"
+                    className="h-auto p-0 text-primary"
+                    onClick={() => window.open("https://www.irs.gov/pub/irs-pdf/f8879.pdf", '_blank')}
+                  >
+                    View Official IRS Form
+                  </Button>
                 </DialogDescription>
               </DialogHeader>
               <Form8879
