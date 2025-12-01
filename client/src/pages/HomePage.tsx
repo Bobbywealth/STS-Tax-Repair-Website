@@ -432,7 +432,7 @@ export default function HomePage() {
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
           isScrolled 
             ? "bg-white/95 backdrop-blur-xl shadow-lg shadow-black/5 border-b border-gray-100" 
-            : "bg-sts-dark/90 backdrop-blur-md"
+            : "bg-sts-dark/90 backdrop-blur-md shadow-lg shadow-black/15"
         }`}
         initial={{ y: -100 }}
         animate={{ y: 0 }}
@@ -584,18 +584,8 @@ export default function HomePage() {
         
         {/* Desktop Futuristic Effects Layer */}
         <div className="absolute inset-0 hidden lg:block overflow-hidden pointer-events-none">
-          {/* Animated Mesh Gradients */}
-          <motion.div 
-            className="absolute top-0 left-0 w-full h-full opacity-[0.02]"
-            animate={{ 
-              background: [
-                'radial-gradient(ellipse at 10% 20%, rgba(76, 175, 80, 0.2) 0%, transparent 40%)',
-                'radial-gradient(ellipse at 30% 80%, rgba(76, 175, 80, 0.2) 0%, transparent 40%)',
-                'radial-gradient(ellipse at 10% 20%, rgba(76, 175, 80, 0.2) 0%, transparent 40%)'
-              ]
-            }}
-            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-          />
+          {/* Gradient Overlay - Light at top, transparent at bottom */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-transparent" />
           <motion.div 
             className="absolute top-0 left-0 w-full h-full opacity-[0.01]"
             animate={{ 
@@ -887,18 +877,18 @@ export default function HomePage() {
               {/* Hero Content */}
               <div className="space-y-6 lg:space-y-8 max-w-2xl text-center">
               <motion.h1 
-                className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black text-white leading-[1.1] tracking-tight text-center"
+                className="text-5xl sm:text-6xl lg:text-7xl xl:text-8xl font-black text-white leading-[1.1] tracking-wider text-center"
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
               >
                 <span className="relative inline-block">
-                  <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-sts-gold via-yellow-300 to-sts-gold">
+                  <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-sts-gold to-yellow-300">
                     Reliable
                   </span>
                 </span>
                 <br />
-                Tax Advisors
+                <span className="text-7xl sm:text-8xl lg:text-9xl font-black">Tax Advisors</span>
               </motion.h1>
               
               <motion.p 
@@ -918,16 +908,16 @@ export default function HomePage() {
               >
                 <Button 
                   size="lg"
-                  className="bg-gradient-to-r from-sts-gold to-yellow-400 hover:from-yellow-400 hover:to-sts-gold text-sts-dark font-bold px-8 h-14 text-base shadow-xl shadow-sts-gold/30 hover:shadow-sts-gold/50 transition-all group relative overflow-hidden"
+                  className="bg-gradient-to-r from-yellow-300 via-sts-gold to-yellow-400 hover:from-yellow-400 hover:via-yellow-300 hover:to-sts-gold text-sts-dark font-bold px-8 py-3 h-auto text-base shadow-2xl shadow-sts-gold/40 hover:shadow-sts-gold/60 transition-all group relative overflow-hidden rounded-lg"
                   onClick={() => document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" })}
                   data-testid="button-hero-contact"
                 >
-                  <span className="relative z-10 flex items-center gap-2">
+                  <span className="relative z-10 flex items-center gap-3">
                     CONTACT US
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
                   </span>
                   <motion.div
-                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -skew-x-12"
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent -skew-x-12"
                     animate={{ x: ['-200%', '200%'] }}
                     transition={{ duration: 2, repeat: Infinity, repeatDelay: 1.5 }}
                   />
@@ -935,20 +925,20 @@ export default function HomePage() {
                 <Button 
                   size="lg"
                   variant="outline"
-                  className="border-2 border-white/20 bg-white/5 backdrop-blur-sm text-white hover:bg-white/10 hover:border-sts-gold/50 font-semibold px-8 h-14 text-base relative overflow-hidden group"
+                  className="border-2 border-white/40 bg-white/5 backdrop-blur-sm text-white hover:bg-white/20 hover:border-white hover:text-sts-dark font-semibold px-8 py-3 h-auto text-base relative overflow-hidden group rounded-lg shadow-lg hover:shadow-white/30"
                   onClick={() => navigate("/client-login")}
                   data-testid="button-hero-register"
                 >
-                  <span className="relative z-10 flex items-center gap-1">
+                  <span className="relative z-10 flex items-center gap-2">
                     REGISTER
-                    <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    <ChevronRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
                   </span>
                 </Button>
               </motion.div>
 
               {/* Trust Indicators */}
               <motion.div 
-                className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 pt-8"
+                className="flex flex-wrap items-center justify-center gap-x-10 gap-y-3 pt-2"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.7 }}
@@ -958,11 +948,11 @@ export default function HomePage() {
                   { icon: Award, text: "CTEC Certified" },
                   { icon: Lock, text: "100% Accuracy Guarantee" }
                 ].map((item) => (
-                  <div key={item.text} className="flex items-center gap-2 text-white/60 hover:text-white/80 transition-colors">
-                    <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
-                      <item.icon className="w-4 h-4 text-sts-gold" />
+                  <div key={item.text} className="flex items-center gap-3 text-white/80 hover:text-white transition-colors">
+                    <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0">
+                      <item.icon className="w-5 h-5 text-sts-gold" />
                     </div>
-                    <span className="text-sm font-medium">{item.text}</span>
+                    <span className="text-sm font-semibold">{item.text}</span>
                   </div>
                 ))}
               </motion.div>
