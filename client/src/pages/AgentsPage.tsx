@@ -72,6 +72,22 @@ const agents = [
     phone: "(956)-739-4200",
     email: "lmrtaxrepair@gmail.com",
     location: "Houston, TX"
+  },
+  {
+    name: "Jean Julme",
+    title: "Service Support",
+    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face",
+    phone: "321-280-0658",
+    email: "Julmetaxpro@gmail.com",
+    location: "Florida"
+  },
+  {
+    name: "Alexandra D. Orelus",
+    title: "Service Support",
+    image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop&crop=face",
+    phone: "407-485-7998",
+    email: "lexi.financial97@gmail.com",
+    location: "Florida"
   }
 ];
 
