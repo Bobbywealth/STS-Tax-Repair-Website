@@ -1402,7 +1402,7 @@ export default function HomePage() {
                   data-testid={`card-agent-${index}`}
                 >
                   {/* Agent Avatar */}
-                  <div className="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden shadow-lg group-hover:scale-110 transition-transform ring-4 ring-sts-primary/20">
+                  <div className="w-40 h-40 mx-auto mb-4 rounded-lg overflow-hidden shadow-lg group-hover:scale-105 transition-transform ring-4 ring-sts-primary/20">
                     <img 
                       src={agent.image} 
                       alt={agent.name}
