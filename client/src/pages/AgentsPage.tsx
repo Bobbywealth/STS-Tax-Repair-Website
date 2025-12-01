@@ -96,6 +96,22 @@ const agents = [
     phone: "754-444-1482",
     email: "Ij20taxpro@gmail.com",
     location: "Houston, TX"
+  },
+  {
+    name: "Witnyder Nordelus",
+    title: "Service Support",
+    image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Witnyder-Nordelus.webp",
+    phone: "786-557-9906",
+    email: "Witnyder.Nordelus@gmail.com",
+    location: "Houston, TX"
+  },
+  {
+    name: "Dukens Clerge (Duke)",
+    title: "Service Support",
+    image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/WhatsApp-Image-2024-12-28-at-23.14.07_9982c8c1-1.jpg",
+    phone: "786-229-9224",
+    email: "Dukens@duketaxpros.com",
+    location: "Houston, TX"
   }
 ];
 
