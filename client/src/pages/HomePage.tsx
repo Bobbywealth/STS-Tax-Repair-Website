@@ -552,28 +552,15 @@ export default function HomePage() {
         style={{ position: 'relative' }}
         data-testid="section-hero"
       >
-        {/* Desktop Background Image with Animation - hidden on mobile */}
-        <motion.div 
-          className="absolute inset-0 hidden lg:block overflow-hidden"
-          initial={{ scale: 1.1 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 1.2, ease: "easeOut" }}
-        >
-          <motion.div
-            className="absolute inset-0"
-            style={{ 
-              backgroundImage: `url('https://www.ststaxrepair.net/wp-content/uploads/2025/01/Untitled-design-3.png')`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center top',
-              backgroundRepeat: 'no-repeat'
-            }}
-            animate={{ 
-              x: [0, -15, 0],
-              y: [0, -8, 0]
-            }}
-            transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
+        {/* Desktop Background Image - Full team visible */}
+        <div className="absolute inset-0 hidden lg:block overflow-hidden bg-gray-100">
+          <img 
+            src="https://www.ststaxrepair.net/wp-content/uploads/2025/01/Untitled-design-3.png"
+            alt="STS Tax Repair Team"
+            className="w-full h-full object-cover object-center"
+            style={{ objectPosition: '50% 20%' }}
           />
-        </motion.div>
+        </div>
         
         {/* Desktop Futuristic Effects Layer */}
         <div className="absolute inset-0 hidden lg:block overflow-hidden pointer-events-none">
