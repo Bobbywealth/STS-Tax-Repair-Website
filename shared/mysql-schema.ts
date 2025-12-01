@@ -138,6 +138,30 @@ export const insertDocumentVersionSchema = createInsertSchema(documentVersions).
 export type InsertDocumentVersion = z.infer<typeof insertDocumentVersionSchema>;
 export type DocumentVersion = typeof documentVersions.$inferSelect;
 
+// Form 8879 Data Type
+export interface Form8879Data {
+  taxYear?: string;
+  taxpayerName?: string;
+  taxpayerSSN?: string;
+  spouseName?: string;
+  spouseSSN?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  agi?: string;
+  totalTax?: string;
+  federalRefund?: string;
+  amountOwed?: string;
+  eroPin?: string;
+  taxpayerPin?: string;
+  spousePin?: string;
+  practitionerPin?: string;
+  dateOfBirth?: string;
+  priorYearAgi?: string;
+  identityProtectionPin?: string;
+}
+
 // E-Signatures Table
 export const eSignatures = mysqlTable("e_signatures", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
@@ -151,6 +175,7 @@ export const eSignatures = mysqlTable("e_signatures", {
   signedAt: timestamp("signed_at"),
   status: varchar("status", { length: 50 }).default("pending"),
   documentUrl: text("document_url"),
+  formData: json("form_data").$type<Form8879Data>(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

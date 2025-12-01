@@ -50,8 +50,9 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import type { ESignature, User as UserType } from "@shared/schema";
+import type { ESignature, User as UserType, Form8879Data } from "@shared/mysql-schema";
 import { SignaturePad, type SignaturePadRef } from "@/components/SignaturePad";
+import { Form8879 } from "@/components/Form8879";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -122,13 +123,14 @@ export default function ESignatures() {
 
   // Sign document mutation
   const signMutation = useMutation({
-    mutationFn: async ({ id, signatureData }: { id: string; signatureData: string }) => {
+    mutationFn: async ({ id, signatureData, formData }: { id: string; signatureData: string; formData?: Form8879Data }) => {
       const userAgent = navigator.userAgent;
       await apiRequest(`/api/signatures/${id}`, "PATCH", {
         signatureData,
         userAgent,
         signedAt: new Date().toISOString(),
         status: "signed",
+        formData: formData || null,
       });
     },
     onSuccess: () => {
@@ -256,6 +258,29 @@ export default function ESignatures() {
       id: selectedSignature.id,
       signatureData,
     });
+  };
+
+  const handleForm8879Submit = (formData: Form8879Data, signatureData: string) => {
+    if (!selectedSignature) return;
+    
+    signMutation.mutate({
+      id: selectedSignature.id,
+      signatureData,
+      formData,
+    });
+  };
+
+  const getSelectedClientDetails = () => {
+    if (!selectedSignature) return {};
+    const client = users?.find(u => u.id === selectedSignature.clientId);
+    if (!client) return { clientName: selectedSignature.clientName };
+    return {
+      clientName: `${client.firstName || ''} ${client.lastName || ''}`.trim() || selectedSignature.clientName,
+      clientAddress: client.address || '',
+      clientCity: client.city || '',
+      clientState: client.state || '',
+      clientZip: client.zipCode || '',
+    };
   };
 
   const getStatusBadge = (status: string | null) => {
@@ -623,55 +648,78 @@ export default function ESignatures() {
 
       {/* Sign Document Dialog */}
       <Dialog open={showSignDialog} onOpenChange={setShowSignDialog}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Sign Document</DialogTitle>
-            <DialogDescription>
-              Please review and sign {selectedSignature?.documentName}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="p-4 rounded-lg bg-muted/50">
-              <p className="font-medium mb-1">{selectedSignature?.documentName}</p>
-              <p className="text-sm text-muted-foreground">
-                {getDocumentTypeLabel(selectedSignature?.documentType || null)}
-              </p>
-              <p className="text-sm text-muted-foreground">Client: {selectedSignature?.clientName}</p>
-              {selectedSignature?.documentUrl && (
-                <Button
-                  variant="ghost"
-                  className="h-auto p-0 mt-2"
-                  onClick={() => window.open(selectedSignature.documentUrl!, '_blank')}
+        <DialogContent className={selectedSignature?.documentType === "form_8879" ? "sm:max-w-[900px] max-h-[90vh] overflow-y-auto" : "sm:max-w-[600px]"}>
+          {selectedSignature?.documentType === "form_8879" ? (
+            <>
+              <DialogHeader>
+                <DialogTitle>Complete & Sign Form 8879</DialogTitle>
+                <DialogDescription>
+                  Fill in the required fields and sign to authorize e-filing
+                </DialogDescription>
+              </DialogHeader>
+              <Form8879
+                clientName={getSelectedClientDetails().clientName || ''}
+                clientAddress={getSelectedClientDetails().clientAddress || ''}
+                clientCity={getSelectedClientDetails().clientCity || ''}
+                clientState={getSelectedClientDetails().clientState || ''}
+                clientZip={getSelectedClientDetails().clientZip || ''}
+                initialData={selectedSignature?.formData as Form8879Data}
+                onSubmit={handleForm8879Submit}
+                isSubmitting={signMutation.isPending}
+              />
+            </>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle>Sign Document</DialogTitle>
+                <DialogDescription>
+                  Please review and sign {selectedSignature?.documentName}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="p-4 rounded-lg bg-muted/50">
+                  <p className="font-medium mb-1">{selectedSignature?.documentName}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {getDocumentTypeLabel(selectedSignature?.documentType || null)}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Client: {selectedSignature?.clientName}</p>
+                  {selectedSignature?.documentUrl && (
+                    <Button
+                      variant="ghost"
+                      className="h-auto p-0 mt-2"
+                      onClick={() => window.open(selectedSignature.documentUrl!, '_blank')}
+                    >
+                      View Document Before Signing
+                    </Button>
+                  )}
+                </div>
+                
+                <SignaturePad ref={signaturePadRef} />
+                
+                <p className="text-xs text-muted-foreground">
+                  By signing this document, you certify that you have reviewed and agree to its contents.
+                  Your signature, IP address, and timestamp will be recorded for IRS compliance.
+                </p>
+              </div>
+              <DialogFooter>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowSignDialog(false)}
+                  data-testid="button-cancel-sign"
                 >
-                  View Document Before Signing
+                  Cancel
                 </Button>
-              )}
-            </div>
-            
-            <SignaturePad ref={signaturePadRef} />
-            
-            <p className="text-xs text-muted-foreground">
-              By signing this document, you certify that you have reviewed and agree to its contents.
-              Your signature, IP address, and timestamp will be recorded for IRS compliance.
-            </p>
-          </div>
-          <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setShowSignDialog(false)}
-              data-testid="button-cancel-sign"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSubmitSignature}
-              disabled={signMutation.isPending}
-              className="gradient-primary border-0"
-              data-testid="button-submit-signature"
-            >
-              {signMutation.isPending ? "Saving..." : "Submit Signature"}
-            </Button>
-          </DialogFooter>
+                <Button
+                  onClick={handleSubmitSignature}
+                  disabled={signMutation.isPending}
+                  className="gradient-primary border-0"
+                  data-testid="button-submit-signature"
+                >
+                  {signMutation.isPending ? "Saving..." : "Submit Signature"}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </div>
