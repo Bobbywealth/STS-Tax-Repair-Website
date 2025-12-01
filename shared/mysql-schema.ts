@@ -25,7 +25,6 @@ export const users = mysqlTable("users", {
   email: varchar("email", { length: 255 }).unique(),
   firstName: varchar("first_name", { length: 255 }),
   lastName: varchar("last_name", { length: 255 }),
-  fullName: varchar("full_name", { length: 255 }),
   profileImageUrl: varchar("profile_image_url", { length: 500 }),
   phone: varchar("phone", { length: 20 }),
   phoneSecondary: varchar("phone_secondary", { length: 20 }),
