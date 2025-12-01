@@ -73,22 +73,17 @@ export function AppSidebar({ user }: AppSidebarProps) {
   };
   const isAdmin = userRole === 'admin';
   
-  // While permissions are loading, show all items based on user role from props
-  // This prevents empty sidebar during initial load
   const filteredMenuItems = menuItems.filter(item => {
     if (item.alwaysShow) return true;
     if (item.adminOnly) return isAdmin;
     
-    // If still loading, use fallback role-based check
     if (isLoading) {
-      // Show items for staff roles while loading
       if (userRole === 'admin') return true;
       if (userRole === 'tax_office') return !item.adminOnly;
       if (userRole === 'agent') return !item.adminOnly && item.permission !== PERMISSIONS.PAYMENTS_VIEW && item.permission !== PERMISSIONS.REPORTS_VIEW && item.permission !== PERMISSIONS.SETTINGS_VIEW;
       return false;
     }
     
-    // After loading, use dynamic permissions
     if (item.permission) return hasPermission(item.permission);
     return true;
   });
@@ -113,32 +108,46 @@ export function AppSidebar({ user }: AppSidebarProps) {
   };
 
   return (
-    <Sidebar>
-      <SidebarHeader className="py-6 px-4 border-b border-sidebar-border flex-shrink-0">
-        <div className="flex items-center justify-center flex-shrink-0">
+    <Sidebar className="futuristic-sidebar border-r-0">
+      <div className="sidebar-scanlines" />
+      
+      <SidebarHeader className="py-6 px-4 border-b border-emerald-500/20 flex-shrink-0 relative z-10">
+        <div className="sidebar-logo-container flex items-center justify-center flex-shrink-0">
           <img 
             src={logoUrl} 
             alt="STS TaxRepair Logo" 
-            className="h-20 w-auto object-contain flex-shrink-0"
+            className="h-20 w-auto object-contain flex-shrink-0 drop-shadow-[0_0_10px_rgba(16,185,129,0.3)]"
           />
         </div>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="relative z-10">
         <SidebarGroup>
-          <SidebarGroupLabel>Menu</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-emerald-400/70 text-xs font-semibold tracking-wider uppercase">
+            Menu
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {filteredMenuItems.map((item) => {
                 const isActive = location === item.url;
                 return (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={isActive} data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, '-')}`}>
-                      <Link href={item.url}>
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
+                    <div 
+                      className="sidebar-menu-item-futuristic rounded-md"
+                      data-active={isActive}
+                    >
+                      <SidebarMenuButton 
+                        asChild 
+                        isActive={isActive} 
+                        data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+                        className="relative z-10"
+                      >
+                        <Link href={item.url}>
+                          <item.icon className="h-4 w-4 sidebar-icon transition-all duration-300" />
+                          <span className="transition-colors duration-300">{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </div>
                   </SidebarMenuItem>
                 );
               })}
@@ -147,24 +156,34 @@ export function AppSidebar({ user }: AppSidebarProps) {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4 border-t border-sidebar-border">
-        <div className="flex items-center gap-3 mb-2">
-          <Avatar className="h-9 w-9 border-2 border-primary/20">
-            <AvatarImage src={getProfileImageUrl()} alt={user?.name} />
-            <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-              {user?.name?.split(' ').map(n => n[0]).join('') || 'U'}
-            </AvatarFallback>
-          </Avatar>
+      <SidebarFooter className="p-4 sidebar-user-section relative z-10">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="relative">
+            <Avatar className="h-10 w-10 border-2 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+              <AvatarImage src={getProfileImageUrl()} alt={user?.name} />
+              <AvatarFallback className="bg-gradient-to-br from-emerald-600 to-emerald-800 text-white text-sm font-medium">
+                {user?.name?.split(' ').map(n => n[0]).join('') || 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-900 shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
+          </div>
           <div className="flex flex-col flex-1 min-w-0">
-            <span className="text-sm font-medium truncate">{user?.name || 'User'}</span>
-            <Badge variant={getRoleBadgeVariant(user?.role || '')} className="w-fit text-xs">
+            <span className="text-sm font-medium truncate text-white/90">{user?.name || 'User'}</span>
+            <Badge 
+              variant={getRoleBadgeVariant(user?.role || '')} 
+              className="w-fit text-xs mt-0.5 shadow-[0_0_8px_rgba(16,185,129,0.3)]"
+            >
               {getRoleDisplayName(user?.role || '')}
             </Badge>
           </div>
         </div>
-        <SidebarMenuButton asChild className="w-full" data-testid="button-logout">
+        <SidebarMenuButton 
+          asChild 
+          className="w-full sidebar-logout-btn rounded-md transition-all duration-300" 
+          data-testid="button-logout"
+        >
           <button onClick={() => window.location.href = '/api/logout'}>
-            <LogOut className="h-4 w-4" />
+            <LogOut className="h-4 w-4 logout-icon transition-all duration-300" />
             <span>Logout</span>
           </button>
         </SidebarMenuButton>

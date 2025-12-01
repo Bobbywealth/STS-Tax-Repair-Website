@@ -864,3 +864,160 @@
     inset: -1px;
   }
 }
+
+/* Futuristic Sidebar Styles */
+.futuristic-sidebar {
+  background: linear-gradient(180deg, 
+    hsl(220 15% 18%) 0%, 
+    hsl(220 15% 13%) 50%,
+    hsl(220 15% 10%) 100%
+  );
+  position: relative;
+  overflow: hidden;
+}
+
+.futuristic-sidebar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(ellipse at 50% 0%, rgba(16, 185, 129, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 0% 100%, rgba(52, 211, 153, 0.05) 0%, transparent 40%);
+  pointer-events: none;
+}
+
+.futuristic-sidebar::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(16, 185, 129, 0.5) 50%, 
+    transparent 100%
+  );
+}
+
+/* Sidebar menu item glow effect */
+.sidebar-menu-item-futuristic {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.sidebar-menu-item-futuristic::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 0;
+  background: linear-gradient(180deg, 
+    rgba(16, 185, 129, 0.8) 0%, 
+    rgba(52, 211, 153, 1) 50%,
+    rgba(16, 185, 129, 0.8) 100%
+  );
+  border-radius: 0 2px 2px 0;
+  transition: height 0.3s ease;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+}
+
+.sidebar-menu-item-futuristic:hover::before,
+.sidebar-menu-item-futuristic[data-active="true"]::before {
+  height: 60%;
+}
+
+.sidebar-menu-item-futuristic[data-active="true"] {
+  background: linear-gradient(90deg, 
+    rgba(16, 185, 129, 0.15) 0%, 
+    transparent 100%
+  );
+}
+
+.sidebar-menu-item-futuristic:hover {
+  background: linear-gradient(90deg, 
+    rgba(16, 185, 129, 0.1) 0%, 
+    transparent 100%
+  );
+}
+
+/* Icon glow on active */
+.sidebar-menu-item-futuristic[data-active="true"] .sidebar-icon {
+  color: rgb(52, 211, 153);
+  filter: drop-shadow(0 0 4px rgba(52, 211, 153, 0.6));
+}
+
+.sidebar-menu-item-futuristic:hover .sidebar-icon {
+  color: rgb(110, 231, 183);
+}
+
+/* Subtle scanline effect for sidebar */
+.sidebar-scanlines {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* User section glow */
+.sidebar-user-section {
+  background: linear-gradient(180deg, 
+    rgba(16, 185, 129, 0.08) 0%, 
+    transparent 100%
+  );
+  border-top: 1px solid rgba(16, 185, 129, 0.2);
+  position: relative;
+}
+
+.sidebar-user-section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 20%;
+  right: 20%;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(52, 211, 153, 0.5) 50%, 
+    transparent 100%
+  );
+}
+
+/* Logo glow effect */
+.sidebar-logo-container {
+  position: relative;
+}
+
+.sidebar-logo-container::after {
+  content: "";
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 20px;
+  background: radial-gradient(ellipse at center, rgba(16, 185, 129, 0.2) 0%, transparent 70%);
+  filter: blur(8px);
+}
+
+/* Logout button glow on hover */
+.sidebar-logout-btn:hover {
+  background: linear-gradient(90deg, 
+    rgba(239, 68, 68, 0.15) 0%, 
+    transparent 100%
+  );
+}
+
+.sidebar-logout-btn:hover .logout-icon {
+  color: rgb(248, 113, 113);
+  filter: drop-shadow(0 0 4px rgba(248, 113, 113, 0.5));
+}
