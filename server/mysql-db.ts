@@ -94,6 +94,18 @@ export async function runMySQLMigrations(): Promise<void> {
       console.log('last_login_at column added successfully!');
     }
     
+    const [passwordHashColumn] = await connection.query(
+      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'password_hash'`,
+      [dbName]
+    );
+    
+    if (Array.isArray(passwordHashColumn) && passwordHashColumn.length === 0) {
+      console.log('Adding password_hash column to users table...');
+      await connection.query(`ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) NULL`);
+      console.log('password_hash column added successfully!');
+    }
+    
     // Create role_audit_log table
     const [roleAuditTable] = await connection.query(
       `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
