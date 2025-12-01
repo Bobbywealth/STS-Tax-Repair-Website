@@ -562,14 +562,15 @@ export default function HomePage() {
       >
         {/* Background Image */}
         <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          className="absolute inset-0 bg-cover bg-no-repeat"
           style={{ 
-            backgroundImage: `url('https://www.ststaxrepair.net/wp-content/uploads/2025/01/Untitled-design-3.png')` 
+            backgroundImage: `url('https://www.ststaxrepair.net/wp-content/uploads/2025/01/Untitled-design-3.png')`,
+            backgroundPosition: 'center right'
           }}
         />
         
-        {/* Dark Overlay for Text Readability */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0d2818]/90 via-sts-dark/85 to-[#1a4d2e]/90" />
+        {/* Dark Overlay for Text Readability - lighter on right to show team */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0d2818]/95 via-sts-dark/80 to-[#1a4d2e]/60" />
         
         {/* Mesh Gradient Overlay */}
         <div className="absolute inset-0 opacity-30">
