@@ -440,13 +440,13 @@ export default function HomePage() {
         data-testid="header-main"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20">
+          <div className="flex items-center justify-between h-16">
             {/* Real Logo */}
             <Link href="/" className="flex items-center gap-3 group" data-testid="link-home-logo">
               <img 
                 src={STS_LOGO_URL} 
                 alt="STS TaxRepair" 
-                className="h-14 w-auto object-contain"
+                className="h-10 w-auto object-contain"
               />
             </Link>
 
@@ -880,7 +880,7 @@ export default function HomePage() {
           </div>
 
           <motion.div 
-            className="py-8 lg:py-40 lg:min-h-screen lg:flex lg:items-center"
+            className="py-8 lg:py-16 lg:flex lg:items-center"
             style={{ opacity: heroOpacity, y: heroY }}
           >
             <div className="grid lg:grid-cols-5 gap-8 lg:gap-16 items-center w-full">
