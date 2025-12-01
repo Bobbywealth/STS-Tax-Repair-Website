@@ -201,3 +201,50 @@ export const insertDocumentRequestTemplateSchema = createInsertSchema(documentRe
 
 export type InsertDocumentRequestTemplate = z.infer<typeof insertDocumentRequestTemplateSchema>;
 export type DocumentRequestTemplate = typeof documentRequestTemplates.$inferSelect;
+
+// Tasks Table
+export const tasks = mysqlTable("tasks", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+  title: text("title").notNull(),
+  description: text("description"),
+  clientId: varchar("client_id", { length: 36 }),
+  clientName: text("client_name"),
+  assignedToId: varchar("assigned_to_id", { length: 36 }),
+  assignedTo: text("assigned_to").notNull(),
+  dueDate: timestamp("due_date"),
+  priority: varchar("priority", { length: 20 }).default("medium"),
+  status: varchar("status", { length: 20 }).default("todo"),
+  category: varchar("category", { length: 50 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertTaskSchema = createInsertSchema(tasks).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertTask = z.infer<typeof insertTaskSchema>;
+export type Task = typeof tasks.$inferSelect;
+
+// Staff Members Table
+export const staffMembers = mysqlTable("staff_members", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+  userId: varchar("user_id", { length: 36 }),
+  name: text("name").notNull(),
+  email: varchar("email", { length: 255 }),
+  role: varchar("role", { length: 100 }).default("Tax Preparer"),
+  department: varchar("department", { length: 100 }),
+  isActive: boolean("is_active").default(true),
+  hireDate: timestamp("hire_date"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertStaffMemberSchema = createInsertSchema(staffMembers).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertStaffMember = z.infer<typeof insertStaffMemberSchema>;
+export type StaffMember = typeof staffMembers.$inferSelect;

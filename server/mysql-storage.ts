@@ -15,6 +15,10 @@ import {
   type InsertEmailLog,
   type DocumentRequestTemplate,
   type InsertDocumentRequestTemplate,
+  type Task,
+  type InsertTask,
+  type StaffMember,
+  type InsertStaffMember,
   users as usersTable,
   taxDeadlines as taxDeadlinesTable,
   appointments as appointmentsTable,
@@ -22,7 +26,9 @@ import {
   documentVersions as documentVersionsTable,
   eSignatures as eSignaturesTable,
   emailLogs as emailLogsTable,
-  documentRequestTemplates as templatesTable
+  documentRequestTemplates as templatesTable,
+  tasks as tasksTable,
+  staffMembers as staffTable
 } from "@shared/mysql-schema";
 import { randomUUID } from "crypto";
 import { mysqlDb } from "./mysql-db";
@@ -373,6 +379,101 @@ export class MySQLStorage implements IStorage {
 
   async deleteDocumentRequestTemplate(id: string): Promise<boolean> {
     const result = await mysqlDb.delete(templatesTable).where(eq(templatesTable.id, id));
+    return (result as any).affectedRows > 0;
+  }
+
+  // Tasks
+  async getTasks(): Promise<Task[]> {
+    return await mysqlDb.select().from(tasksTable).orderBy(desc(tasksTable.createdAt));
+  }
+
+  async getTasksByAssignee(assignedTo: string): Promise<Task[]> {
+    return await mysqlDb.select().from(tasksTable)
+      .where(eq(tasksTable.assignedTo, assignedTo))
+      .orderBy(desc(tasksTable.createdAt));
+  }
+
+  async getTasksByStatus(status: string): Promise<Task[]> {
+    return await mysqlDb.select().from(tasksTable)
+      .where(eq(tasksTable.status, status))
+      .orderBy(desc(tasksTable.createdAt));
+  }
+
+  async createTask(task: InsertTask): Promise<Task> {
+    const id = randomUUID();
+    const taskData = {
+      id,
+      title: task.title,
+      description: task.description ?? null,
+      clientId: task.clientId ?? null,
+      clientName: task.clientName ?? null,
+      assignedToId: task.assignedToId ?? null,
+      assignedTo: task.assignedTo,
+      dueDate: task.dueDate ?? null,
+      priority: task.priority ?? "medium",
+      status: task.status ?? "todo",
+      category: task.category ?? null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    await mysqlDb.insert(tasksTable).values(taskData);
+    const [inserted] = await mysqlDb.select().from(tasksTable).where(eq(tasksTable.id, id));
+    return inserted;
+  }
+
+  async updateTask(id: string, task: Partial<InsertTask>): Promise<Task | undefined> {
+    const existing = await mysqlDb.select().from(tasksTable).where(eq(tasksTable.id, id));
+    if (existing.length === 0) return undefined;
+    await mysqlDb.update(tasksTable).set({ ...task, updatedAt: new Date() }).where(eq(tasksTable.id, id));
+    const [updated] = await mysqlDb.select().from(tasksTable).where(eq(tasksTable.id, id));
+    return updated;
+  }
+
+  async deleteTask(id: string): Promise<boolean> {
+    const result = await mysqlDb.delete(tasksTable).where(eq(tasksTable.id, id));
+    return (result as any).affectedRows > 0;
+  }
+
+  // Staff Members
+  async getStaffMembers(): Promise<StaffMember[]> {
+    return await mysqlDb.select().from(staffTable)
+      .where(eq(staffTable.isActive, true))
+      .orderBy(asc(staffTable.name));
+  }
+
+  async getStaffMember(id: string): Promise<StaffMember | undefined> {
+    const [member] = await mysqlDb.select().from(staffTable).where(eq(staffTable.id, id));
+    return member;
+  }
+
+  async createStaffMember(member: InsertStaffMember): Promise<StaffMember> {
+    const id = randomUUID();
+    const memberData = {
+      id,
+      userId: member.userId ?? null,
+      name: member.name,
+      email: member.email ?? null,
+      role: member.role ?? "Tax Preparer",
+      department: member.department ?? null,
+      isActive: member.isActive ?? true,
+      hireDate: member.hireDate ?? null,
+      createdAt: new Date()
+    };
+    await mysqlDb.insert(staffTable).values(memberData);
+    const [inserted] = await mysqlDb.select().from(staffTable).where(eq(staffTable.id, id));
+    return inserted;
+  }
+
+  async updateStaffMember(id: string, member: Partial<InsertStaffMember>): Promise<StaffMember | undefined> {
+    const existing = await mysqlDb.select().from(staffTable).where(eq(staffTable.id, id));
+    if (existing.length === 0) return undefined;
+    await mysqlDb.update(staffTable).set(member).where(eq(staffTable.id, id));
+    const [updated] = await mysqlDb.select().from(staffTable).where(eq(staffTable.id, id));
+    return updated;
+  }
+
+  async deleteStaffMember(id: string): Promise<boolean> {
+    const result = await mysqlDb.delete(staffTable).where(eq(staffTable.id, id));
     return (result as any).affectedRows > 0;
   }
 }

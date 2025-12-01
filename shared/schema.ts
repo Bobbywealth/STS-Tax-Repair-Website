@@ -189,3 +189,50 @@ export const insertDocumentRequestTemplateSchema = createInsertSchema(documentRe
 
 export type InsertDocumentRequestTemplate = z.infer<typeof insertDocumentRequestTemplateSchema>;
 export type DocumentRequestTemplate = typeof documentRequestTemplates.$inferSelect;
+
+// Tasks Table
+export const tasks = pgTable("tasks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  description: text("description"),
+  clientId: varchar("client_id"),
+  clientName: text("client_name"),
+  assignedToId: varchar("assigned_to_id"),
+  assignedTo: text("assigned_to").notNull(),
+  dueDate: timestamp("due_date"),
+  priority: text("priority").default("medium"), // 'low', 'medium', 'high'
+  status: text("status").default("todo"), // 'todo', 'in-progress', 'done'
+  category: text("category"), // 'document_review', 'client_followup', 'filing', 'other'
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertTaskSchema = createInsertSchema(tasks).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertTask = z.infer<typeof insertTaskSchema>;
+export type Task = typeof tasks.$inferSelect;
+
+// Staff Members Table (extends users for internal staff)
+export const staffMembers = pgTable("staff_members", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id"),
+  name: text("name").notNull(),
+  email: varchar("email"),
+  role: text("role").default("Tax Preparer"), // 'Admin', 'Senior Tax Preparer', 'Tax Preparer', 'Junior Tax Preparer'
+  department: text("department"),
+  isActive: boolean("is_active").default(true),
+  hireDate: timestamp("hire_date"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertStaffMemberSchema = createInsertSchema(staffMembers).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertStaffMember = z.infer<typeof insertStaffMemberSchema>;
+export type StaffMember = typeof staffMembers.$inferSelect;

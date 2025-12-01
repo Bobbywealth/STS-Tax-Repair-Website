@@ -209,6 +209,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(204).send();
   });
 
+  // Tasks
+  app.get("/api/tasks", async (req, res) => {
+    const { assignedTo, status } = req.query;
+    
+    if (assignedTo) {
+      const tasks = await storage.getTasksByAssignee(assignedTo as string);
+      return res.json(tasks);
+    }
+    
+    if (status) {
+      const tasks = await storage.getTasksByStatus(status as string);
+      return res.json(tasks);
+    }
+    
+    const tasks = await storage.getTasks();
+    res.json(tasks);
+  });
+
+  app.post("/api/tasks", async (req, res) => {
+    try {
+      const task = await storage.createTask(req.body);
+      res.status(201).json(task);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/tasks/:id", async (req, res) => {
+    try {
+      const task = await storage.updateTask(req.params.id, req.body);
+      if (!task) {
+        return res.status(404).json({ error: "Task not found" });
+      }
+      res.json(task);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/tasks/:id", async (req, res) => {
+    const success = await storage.deleteTask(req.params.id);
+    if (!success) {
+      return res.status(404).json({ error: "Task not found" });
+    }
+    res.status(204).send();
+  });
+
+  // Staff Members
+  app.get("/api/staff", async (req, res) => {
+    const staff = await storage.getStaffMembers();
+    res.json(staff);
+  });
+
+  app.get("/api/staff/:id", async (req, res) => {
+    const member = await storage.getStaffMember(req.params.id);
+    if (!member) {
+      return res.status(404).json({ error: "Staff member not found" });
+    }
+    res.json(member);
+  });
+
+  app.post("/api/staff", async (req, res) => {
+    try {
+      const member = await storage.createStaffMember(req.body);
+      res.status(201).json(member);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/staff/:id", async (req, res) => {
+    try {
+      const member = await storage.updateStaffMember(req.params.id, req.body);
+      if (!member) {
+        return res.status(404).json({ error: "Staff member not found" });
+      }
+      res.json(member);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/staff/:id", async (req, res) => {
+    const success = await storage.deleteStaffMember(req.params.id);
+    if (!success) {
+      return res.status(404).json({ error: "Staff member not found" });
+    }
+    res.status(204).send();
+  });
+
   // Document Versions
   // Note: /all route must come before /:clientId to avoid matching "all" as a clientId
   app.get("/api/documents/all", async (req, res) => {

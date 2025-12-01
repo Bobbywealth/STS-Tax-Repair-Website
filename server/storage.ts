@@ -15,6 +15,10 @@ import {
   type InsertEmailLog,
   type DocumentRequestTemplate,
   type InsertDocumentRequestTemplate,
+  type Task,
+  type InsertTask,
+  type StaffMember,
+  type InsertStaffMember,
 } from "@shared/mysql-schema";
 
 export interface IStorage {
@@ -70,6 +74,21 @@ export interface IStorage {
   createDocumentRequestTemplate(template: InsertDocumentRequestTemplate): Promise<DocumentRequestTemplate>;
   updateDocumentRequestTemplate(id: string, template: Partial<InsertDocumentRequestTemplate>): Promise<DocumentRequestTemplate | undefined>;
   deleteDocumentRequestTemplate(id: string): Promise<boolean>;
+
+  // Tasks
+  getTasks(): Promise<Task[]>;
+  getTasksByAssignee(assignedTo: string): Promise<Task[]>;
+  getTasksByStatus(status: string): Promise<Task[]>;
+  createTask(task: InsertTask): Promise<Task>;
+  updateTask(id: string, task: Partial<InsertTask>): Promise<Task | undefined>;
+  deleteTask(id: string): Promise<boolean>;
+
+  // Staff Members
+  getStaffMembers(): Promise<StaffMember[]>;
+  getStaffMember(id: string): Promise<StaffMember | undefined>;
+  createStaffMember(member: InsertStaffMember): Promise<StaffMember>;
+  updateStaffMember(id: string, member: Partial<InsertStaffMember>): Promise<StaffMember | undefined>;
+  deleteStaffMember(id: string): Promise<boolean>;
 }
 
 // MySQL storage connected to cPanel database
