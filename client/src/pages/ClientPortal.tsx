@@ -28,8 +28,8 @@ import {
   Sparkles,
   RotateCcw
 } from "lucide-react";
-import introJs from "intro.js";
-import "intro.js/introjs.css";
+import IntroJs from "intro.js/intro.js";
+import "intro.js/minified/introjs.min.css";
 import { RefundStatusTracker } from "@/components/RefundStatusTracker";
 import { SignaturePad, type SignaturePadRef } from "@/components/SignaturePad";
 import { Form8879 } from "@/components/Form8879";
@@ -63,7 +63,7 @@ export default function ClientPortal() {
     setTourStarted(true);
     localStorage.setItem("clientPortalTourSeen", "true");
     
-    const tour = introJs();
+    const tour = new IntroJs();
     tour.setOptions({
       steps: [
         {
