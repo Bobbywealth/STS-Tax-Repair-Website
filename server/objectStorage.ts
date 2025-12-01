@@ -208,6 +208,49 @@ export class ObjectStorageService {
       requestedPermission: requestedPermission ?? ObjectPermission.READ,
     });
   }
+
+  async getProfilePhotoUploadURL(userId: string, fileName: string): Promise<{ uploadURL: string; objectPath: string }> {
+    const privateObjectDir = this.getPrivateObjectDir();
+    if (!privateObjectDir) {
+      throw new Error(
+        "PRIVATE_OBJECT_DIR not set. Create a bucket in 'Object Storage' " +
+          "tool and set PRIVATE_OBJECT_DIR env var."
+      );
+    }
+
+    const objectId = randomUUID();
+    const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const fullPath = `${privateObjectDir}/profile-photos/${userId}/${objectId}_${sanitizedFileName}`;
+    const { bucketName, objectName } = parseObjectPath(fullPath);
+
+    const uploadURL = await signObjectURL({
+      bucketName,
+      objectName,
+      method: "PUT",
+      ttlSec: 900,
+    });
+
+    return {
+      uploadURL,
+      objectPath: fullPath, // Store full path for retrieval
+    };
+  }
+
+  async getPrivateObject(objectPath: string): Promise<File | null> {
+    try {
+      const { bucketName, objectName } = parseObjectPath(objectPath);
+      const bucket = objectStorageClient.bucket(bucketName);
+      const file = bucket.file(objectName);
+      const [exists] = await file.exists();
+      if (exists) {
+        return file;
+      }
+      return null;
+    } catch (error) {
+      console.error("Error getting private object:", error);
+      return null;
+    }
+  }
 }
 
 function parseObjectPath(path: string): {

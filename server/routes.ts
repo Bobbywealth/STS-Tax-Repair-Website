@@ -324,6 +324,171 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update current user's profile
+  app.patch("/api/profile", isAuthenticated, async (req: any, res) => {
+    try {
+      // Get user ID from session or Replit Auth
+      let userId: string | undefined;
+      if (req.session?.userId && req.session?.isClientLogin) {
+        userId = req.session.userId;
+      } else if (req.user?.claims?.sub) {
+        userId = req.user.claims.sub;
+      }
+
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const existingUser = await storage.getUser(userId);
+      if (!existingUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Extract allowed update fields (prevent role/status updates through this endpoint)
+      const { firstName, lastName, phone, address, city, state, zipCode, country } = req.body;
+
+      const updatedUser = await storage.upsertUser({
+        id: userId,
+        email: existingUser.email,
+        firstName: firstName ?? existingUser.firstName,
+        lastName: lastName ?? existingUser.lastName,
+        profileImageUrl: existingUser.profileImageUrl,
+        phone: phone ?? existingUser.phone,
+        address: address ?? existingUser.address,
+        city: city ?? existingUser.city,
+        state: state ?? existingUser.state,
+        zipCode: zipCode ?? existingUser.zipCode,
+        country: country ?? existingUser.country,
+        role: existingUser.role,
+        isActive: existingUser.isActive,
+      });
+
+      res.json(updatedUser);
+    } catch (error: any) {
+      console.error("Profile update error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Upload profile photo
+  app.post("/api/profile/photo", isAuthenticated, async (req: any, res) => {
+    try {
+      // Get user ID from session or Replit Auth
+      let userId: string | undefined;
+      if (req.session?.userId && req.session?.isClientLogin) {
+        userId = req.session.userId;
+      } else if (req.user?.claims?.sub) {
+        userId = req.user.claims.sub;
+      }
+
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const existingUser = await storage.getUser(userId);
+      if (!existingUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Get upload URL from object storage
+      const objectStorage = new ObjectStorageService();
+      const fileName = `profile-photo-${Date.now()}.jpg`;
+      const { uploadURL, objectPath } = await objectStorage.getProfilePhotoUploadURL(userId, fileName);
+
+      res.json({ 
+        uploadURL, 
+        objectPath,
+        message: "Use the uploadURL to PUT the file, then call /api/profile/photo/confirm with the objectPath"
+      });
+    } catch (error: any) {
+      console.error("Photo upload URL error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Confirm profile photo upload and update user record
+  app.post("/api/profile/photo/confirm", isAuthenticated, async (req: any, res) => {
+    try {
+      // Get user ID from session or Replit Auth
+      let userId: string | undefined;
+      if (req.session?.userId && req.session?.isClientLogin) {
+        userId = req.session.userId;
+      } else if (req.user?.claims?.sub) {
+        userId = req.user.claims.sub;
+      }
+
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const existingUser = await storage.getUser(userId);
+      if (!existingUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const { objectPath } = req.body;
+      if (!objectPath) {
+        return res.status(400).json({ error: "objectPath is required" });
+      }
+
+      // Generate the URL to serve this photo
+      const profileImageUrl = `/api/profile/photo/${userId}`;
+
+      // Update user with new profile image URL
+      const updatedUser = await storage.upsertUser({
+        id: userId,
+        email: existingUser.email,
+        firstName: existingUser.firstName,
+        lastName: existingUser.lastName,
+        profileImageUrl: objectPath, // Store object path for retrieval
+        phone: existingUser.phone,
+        address: existingUser.address,
+        city: existingUser.city,
+        state: existingUser.state,
+        zipCode: existingUser.zipCode,
+        country: existingUser.country,
+        role: existingUser.role,
+        isActive: existingUser.isActive,
+      });
+
+      res.json({ 
+        success: true, 
+        profileImageUrl,
+        user: updatedUser 
+      });
+    } catch (error: any) {
+      console.error("Photo confirm error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Serve profile photo from object storage
+  app.get("/api/profile/photo/:userId", async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.params.userId);
+      if (!user || !user.profileImageUrl) {
+        return res.status(404).json({ error: "Photo not found" });
+      }
+
+      // If the profile image URL is an external URL (e.g., from Replit Auth), redirect to it
+      if (user.profileImageUrl.startsWith('http')) {
+        return res.redirect(user.profileImageUrl);
+      }
+
+      // Otherwise, serve from object storage
+      const objectStorage = new ObjectStorageService();
+      const file = await objectStorage.getPrivateObject(user.profileImageUrl);
+      if (!file) {
+        return res.status(404).json({ error: "Photo not found in storage" });
+      }
+
+      await objectStorage.downloadObject(file, res);
+    } catch (error: any) {
+      console.error("Photo serve error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Staff Invites (admin only)
   app.get("/api/staff-invites", isAuthenticated, async (req: any, res) => {
     try {

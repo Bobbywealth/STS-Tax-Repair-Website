@@ -1,4 +1,4 @@
-import { Switch, Route, useLocation, Redirect } from "wouter";
+import { Switch, Route, useLocation, Redirect, Link } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2 } from "lucide-react";
 
 import Dashboard from "@/pages/Dashboard";
@@ -207,6 +208,22 @@ function AdminLayout() {
     avatar: user.profileImageUrl || undefined,
   };
 
+  const getProfileImageUrl = () => {
+    if (!user?.profileImageUrl) return undefined;
+    if (user.profileImageUrl.startsWith("http")) {
+      return user.profileImageUrl;
+    }
+    return `/api/profile/photo/${user.id}`;
+  };
+
+  const getInitials = () => {
+    const first = user?.firstName?.[0] || "";
+    const last = user?.lastName?.[0] || "";
+    return (first + last).toUpperCase() || "U";
+  };
+
+  const displayName = `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email || "User";
+
   return (
     <SidebarProvider style={sidebarStyle as React.CSSProperties}>
       <div className="flex h-screen w-full">
@@ -214,7 +231,18 @@ function AdminLayout() {
         <div className="flex flex-col flex-1 overflow-hidden">
           <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-10">
             <SidebarTrigger data-testid="button-sidebar-toggle" />
-            <ThemeToggle />
+            <div className="flex items-center gap-3">
+              <Link href="/settings" className="flex items-center gap-2 hover-elevate rounded-full p-1 pr-3 transition-colors" data-testid="link-user-profile">
+                <Avatar className="h-8 w-8 border-2 border-primary/20">
+                  <AvatarImage src={getProfileImageUrl()} alt={displayName} />
+                  <AvatarFallback className="bg-primary text-primary-foreground text-sm font-medium">
+                    {getInitials()}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-sm font-medium hidden sm:inline">{displayName}</span>
+              </Link>
+              <ThemeToggle />
+            </div>
           </header>
           <main className="flex-1 overflow-y-auto p-4 bg-animated-mesh">
             <div className="max-w-7xl mx-auto">
