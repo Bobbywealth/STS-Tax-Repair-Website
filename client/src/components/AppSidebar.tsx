@@ -16,22 +16,31 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 
-const menuItems = [
-  { title: "Dashboard", url: "/", icon: Home },
-  { title: "Clients", url: "/clients", icon: Users },
-  { title: "Leads", url: "/leads", icon: UserPlus },
-  { title: "Tax Deadlines", url: "/deadlines", icon: Calendar },
-  { title: "Appointments", url: "/appointments", icon: CalendarClock },
-  { title: "Payments", url: "/payments", icon: DollarSign },
-  { title: "Documents", url: "/documents", icon: FileText },
-  { title: "E-Signatures", url: "/signatures", icon: FileSignature },
-  { title: "Tasks", url: "/tasks", icon: CheckSquare },
-  { title: "Manager", url: "/manager", icon: Crown },
-  { title: "Support Tickets", url: "/tickets", icon: Ticket },
-  { title: "Knowledge Base", url: "/knowledge", icon: BookOpen },
-  { title: "Reports", url: "/reports", icon: BarChart3 },
-  { title: "User Management", url: "/users", icon: Shield },
-  { title: "Settings", url: "/settings", icon: Settings },
+type UserRole = 'client' | 'agent' | 'tax_office' | 'admin';
+
+interface MenuItem {
+  title: string;
+  url: string;
+  icon: React.ComponentType<{ className?: string }>;
+  roles: UserRole[];
+}
+
+const menuItems: MenuItem[] = [
+  { title: "Dashboard", url: "/", icon: Home, roles: ['client', 'agent', 'tax_office', 'admin'] },
+  { title: "Clients", url: "/clients", icon: Users, roles: ['agent', 'tax_office', 'admin'] },
+  { title: "Leads", url: "/leads", icon: UserPlus, roles: ['agent', 'tax_office', 'admin'] },
+  { title: "Tax Deadlines", url: "/deadlines", icon: Calendar, roles: ['agent', 'tax_office', 'admin'] },
+  { title: "Appointments", url: "/appointments", icon: CalendarClock, roles: ['agent', 'tax_office', 'admin'] },
+  { title: "Payments", url: "/payments", icon: DollarSign, roles: ['tax_office', 'admin'] },
+  { title: "Documents", url: "/documents", icon: FileText, roles: ['agent', 'tax_office', 'admin'] },
+  { title: "E-Signatures", url: "/signatures", icon: FileSignature, roles: ['agent', 'tax_office', 'admin'] },
+  { title: "Tasks", url: "/tasks", icon: CheckSquare, roles: ['agent', 'tax_office', 'admin'] },
+  { title: "Manager", url: "/manager", icon: Crown, roles: ['tax_office', 'admin'] },
+  { title: "Support Tickets", url: "/tickets", icon: Ticket, roles: ['agent', 'tax_office', 'admin'] },
+  { title: "Knowledge Base", url: "/knowledge", icon: BookOpen, roles: ['agent', 'tax_office', 'admin'] },
+  { title: "Reports", url: "/reports", icon: BarChart3, roles: ['tax_office', 'admin'] },
+  { title: "User Management", url: "/users", icon: Shield, roles: ['admin'] },
+  { title: "Settings", url: "/settings", icon: Settings, roles: ['tax_office', 'admin'] },
 ];
 
 interface AppSidebarProps {
@@ -44,6 +53,30 @@ interface AppSidebarProps {
 
 export function AppSidebar({ user }: AppSidebarProps) {
   const [location] = useLocation();
+  const userRole = (user?.role?.toLowerCase() || 'client') as UserRole;
+  
+  const filteredMenuItems = menuItems.filter(item => 
+    item.roles.includes(userRole)
+  );
+
+  const getRoleBadgeVariant = (role: string) => {
+    switch (role?.toLowerCase()) {
+      case 'admin': return 'destructive';
+      case 'tax_office': return 'default';
+      case 'agent': return 'secondary';
+      default: return 'outline';
+    }
+  };
+
+  const getRoleDisplayName = (role: string) => {
+    switch (role?.toLowerCase()) {
+      case 'admin': return 'Admin';
+      case 'tax_office': return 'Tax Office';
+      case 'agent': return 'Agent';
+      case 'client': return 'Client';
+      default: return role || 'Staff';
+    }
+  };
 
   return (
     <Sidebar>
@@ -62,7 +95,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
           <SidebarGroupLabel>Menu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => {
+              {filteredMenuItems.map((item) => {
                 const isActive = location === item.url;
                 return (
                   <SidebarMenuItem key={item.title}>
@@ -90,7 +123,9 @@ export function AppSidebar({ user }: AppSidebarProps) {
           </Avatar>
           <div className="flex flex-col flex-1 min-w-0">
             <span className="text-sm font-medium truncate">{user?.name || 'User'}</span>
-            <Badge variant="secondary" className="w-fit text-xs">{user?.role || 'Staff'}</Badge>
+            <Badge variant={getRoleBadgeVariant(user?.role || '')} className="w-fit text-xs">
+              {getRoleDisplayName(user?.role || '')}
+            </Badge>
           </div>
         </div>
         <SidebarMenuButton asChild className="w-full" data-testid="button-logout">
