@@ -586,23 +586,23 @@ export default function HomePage() {
         <div className="absolute inset-0 hidden lg:block overflow-hidden pointer-events-none">
           {/* Animated Mesh Gradients */}
           <motion.div 
-            className="absolute top-0 left-0 w-full h-full opacity-10"
+            className="absolute top-0 left-0 w-full h-full opacity-[0.02]"
             animate={{ 
               background: [
-                'radial-gradient(ellipse at 10% 20%, rgba(76, 175, 80, 0.3) 0%, transparent 40%)',
-                'radial-gradient(ellipse at 30% 80%, rgba(76, 175, 80, 0.3) 0%, transparent 40%)',
-                'radial-gradient(ellipse at 10% 20%, rgba(76, 175, 80, 0.3) 0%, transparent 40%)'
+                'radial-gradient(ellipse at 10% 20%, rgba(76, 175, 80, 0.2) 0%, transparent 40%)',
+                'radial-gradient(ellipse at 30% 80%, rgba(76, 175, 80, 0.2) 0%, transparent 40%)',
+                'radial-gradient(ellipse at 10% 20%, rgba(76, 175, 80, 0.2) 0%, transparent 40%)'
               ]
             }}
             transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
           />
           <motion.div 
-            className="absolute top-0 left-0 w-full h-full opacity-5"
+            className="absolute top-0 left-0 w-full h-full opacity-[0.01]"
             animate={{ 
               background: [
-                'radial-gradient(ellipse at 60% 30%, rgba(253, 185, 19, 0.2) 0%, transparent 35%)',
-                'radial-gradient(ellipse at 40% 60%, rgba(253, 185, 19, 0.2) 0%, transparent 35%)',
-                'radial-gradient(ellipse at 60% 30%, rgba(253, 185, 19, 0.2) 0%, transparent 35%)'
+                'radial-gradient(ellipse at 60% 30%, rgba(253, 185, 19, 0.15) 0%, transparent 35%)',
+                'radial-gradient(ellipse at 40% 60%, rgba(253, 185, 19, 0.15) 0%, transparent 35%)',
+                'radial-gradient(ellipse at 60% 30%, rgba(253, 185, 19, 0.15) 0%, transparent 35%)'
               ]
             }}
             transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
@@ -880,12 +880,12 @@ export default function HomePage() {
           </div>
 
           <motion.div 
-            className="py-8 lg:py-16 lg:pt-32 lg:flex lg:items-center"
+            className="py-8 lg:py-16 lg:pt-32"
             style={{ opacity: heroOpacity, y: heroY }}
           >
-            <div className="grid lg:grid-cols-5 gap-8 lg:gap-16 items-center w-full">
+            <div className="w-full">
               {/* Hero Content */}
-              <div className="lg:col-span-3 space-y-6 lg:space-y-8">
+              <div className="space-y-6 lg:space-y-8 max-w-2xl">
               <motion.h1 
                 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black text-white leading-[1.1] tracking-tight"
                 initial={{ opacity: 0, y: 30 }}
@@ -970,10 +970,10 @@ export default function HomePage() {
 
             {/* Glass Contact Card with Animated Border */}
             <motion.div 
-              className="lg:col-span-2"
-              initial={{ opacity: 0, x: 50, rotateY: -10 }}
-              animate={{ opacity: 1, x: 0, rotateY: 0 }}
-              transition={{ delay: 0.2, duration: 0.4 }}
+              className="mt-12 max-w-md"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8, duration: 0.4 }}
             >
               <div className="relative">
                 {/* Outer Glow */}
