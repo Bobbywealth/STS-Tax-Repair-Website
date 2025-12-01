@@ -586,23 +586,23 @@ export default function HomePage() {
         <div className="absolute inset-0 hidden lg:block overflow-hidden pointer-events-none">
           {/* Animated Mesh Gradients */}
           <motion.div 
-            className="absolute top-0 left-0 w-full h-full opacity-30"
+            className="absolute top-0 left-0 w-full h-full opacity-10"
             animate={{ 
               background: [
-                'radial-gradient(ellipse at 10% 20%, rgba(76, 175, 80, 0.4) 0%, transparent 40%)',
-                'radial-gradient(ellipse at 30% 80%, rgba(76, 175, 80, 0.4) 0%, transparent 40%)',
-                'radial-gradient(ellipse at 10% 20%, rgba(76, 175, 80, 0.4) 0%, transparent 40%)'
+                'radial-gradient(ellipse at 10% 20%, rgba(76, 175, 80, 0.3) 0%, transparent 40%)',
+                'radial-gradient(ellipse at 30% 80%, rgba(76, 175, 80, 0.3) 0%, transparent 40%)',
+                'radial-gradient(ellipse at 10% 20%, rgba(76, 175, 80, 0.3) 0%, transparent 40%)'
               ]
             }}
             transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
           />
           <motion.div 
-            className="absolute top-0 left-0 w-full h-full opacity-20"
+            className="absolute top-0 left-0 w-full h-full opacity-5"
             animate={{ 
               background: [
-                'radial-gradient(ellipse at 60% 30%, rgba(253, 185, 19, 0.3) 0%, transparent 35%)',
-                'radial-gradient(ellipse at 40% 60%, rgba(253, 185, 19, 0.3) 0%, transparent 35%)',
-                'radial-gradient(ellipse at 60% 30%, rgba(253, 185, 19, 0.3) 0%, transparent 35%)'
+                'radial-gradient(ellipse at 60% 30%, rgba(253, 185, 19, 0.2) 0%, transparent 35%)',
+                'radial-gradient(ellipse at 40% 60%, rgba(253, 185, 19, 0.2) 0%, transparent 35%)',
+                'radial-gradient(ellipse at 60% 30%, rgba(253, 185, 19, 0.2) 0%, transparent 35%)'
               ]
             }}
             transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
@@ -880,7 +880,7 @@ export default function HomePage() {
           </div>
 
           <motion.div 
-            className="py-8 lg:py-16 lg:flex lg:items-center"
+            className="py-8 lg:py-16 lg:pt-32 lg:flex lg:items-center"
             style={{ opacity: heroOpacity, y: heroY }}
           >
             <div className="grid lg:grid-cols-5 gap-8 lg:gap-16 items-center w-full">
