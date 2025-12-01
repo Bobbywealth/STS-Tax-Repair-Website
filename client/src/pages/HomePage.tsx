@@ -883,11 +883,11 @@ export default function HomePage() {
             className="py-8 lg:py-16 lg:pt-32"
             style={{ opacity: heroOpacity, y: heroY }}
           >
-            <div className="w-full">
+            <div className="w-full flex justify-center">
               {/* Hero Content */}
-              <div className="space-y-6 lg:space-y-8 max-w-2xl">
+              <div className="space-y-6 lg:space-y-8 max-w-2xl text-center">
               <motion.h1 
-                className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black text-white leading-[1.1] tracking-tight"
+                className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black text-white leading-[1.1] tracking-tight text-center"
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
@@ -911,7 +911,7 @@ export default function HomePage() {
               </motion.p>
               
               <motion.div 
-                className="flex flex-wrap gap-4"
+                className="flex flex-wrap gap-4 justify-center"
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
@@ -948,7 +948,7 @@ export default function HomePage() {
 
               {/* Trust Indicators */}
               <motion.div 
-                className="flex flex-wrap items-center gap-x-8 gap-y-4 pt-8"
+                className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 pt-8"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.7 }}
