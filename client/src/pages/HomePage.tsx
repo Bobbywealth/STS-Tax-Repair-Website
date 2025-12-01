@@ -552,13 +552,12 @@ export default function HomePage() {
         style={{ position: 'relative' }}
         data-testid="section-hero"
       >
-        {/* Desktop Background Image - Full team visible */}
-        <div className="absolute inset-0 hidden lg:block overflow-hidden bg-gray-100">
+        {/* Desktop Background Image - Full team visible with contain */}
+        <div className="absolute inset-0 hidden lg:block overflow-hidden bg-[#e8e4df]">
           <img 
             src="https://www.ststaxrepair.net/wp-content/uploads/2025/01/Untitled-design-3.png"
             alt="STS Tax Repair Team"
-            className="w-full h-full object-cover object-center"
-            style={{ objectPosition: '50% 20%' }}
+            className="w-full h-full object-contain object-top"
           />
         </div>
         
@@ -705,12 +704,12 @@ export default function HomePage() {
         <div className="relative max-w-7xl mx-auto px-5 lg:px-8">
           {/* Mobile Futuristic Hero - shown only on mobile/tablet */}
           <div className="lg:hidden pt-28 pb-10">
-            {/* Team Photo with Animated Border */}
+            {/* Team Photo - Full width to show all members */}
             <motion.div
               initial={{ opacity: 0, y: 40, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ duration: 0.5, type: "spring", bounce: 0.2 }}
-              className="relative mx-auto max-w-sm"
+              className="relative mx-auto w-full"
             >
               {/* Outer Rotating Rainbow Border */}
               <div className="absolute -inset-1.5 rounded-2xl overflow-hidden">
@@ -724,27 +723,17 @@ export default function HomePage() {
                 />
               </div>
               
-              {/* Soft Gradient Glow Behind */}
-              <div className="absolute -inset-4 bg-gradient-to-br from-sts-primary/20 via-transparent to-sts-gold/15 rounded-3xl blur-xl" />
-              
-              {/* Clean Image Container */}
-              <div className="relative rounded-xl overflow-hidden shadow-2xl shadow-black/40 bg-sts-dark">
+              {/* Clean Image Container - Full width */}
+              <div className="relative rounded-xl overflow-hidden shadow-2xl shadow-black/40 bg-[#e8e4df]">
                 {/* Slight dark overlay for depth */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent z-10" />
                 
                 <motion.img 
                   src="https://www.ststaxrepair.net/wp-content/uploads/2025/01/Untitled-design-3.png"
                   alt="STS Tax Team"
-                  className="w-full h-64 object-cover object-center"
+                  className="w-full h-auto object-contain"
                   whileHover={{ scale: 1.02 }}
                   transition={{ type: "spring", stiffness: 200 }}
-                />
-                
-                {/* Subtle Scanline Effect */}
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-b from-transparent via-sts-gold/5 to-transparent pointer-events-none"
-                  animate={{ y: ['-100%', '100%'] }}
-                  transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
                 />
                 
                 {/* Corner Tech Brackets */}
