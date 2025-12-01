@@ -903,7 +903,31 @@ export default function HomePage() {
       <section className="py-20 bg-white" data-testid="section-about-agents">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Left - Content */}
+            {/* LEFT - Team Images Side by Side */}
+            <motion.div
+              initial={{ opacity: 0, x: -40 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+              className="grid grid-cols-2 gap-4"
+            >
+              <div className="rounded-2xl overflow-hidden shadow-2xl">
+                <img 
+                  src="https://www.ststaxrepair.net/wp-content/uploads/2024/12/stephedena-cherfils.webp"
+                  alt="STS Tax Repair Team Member"
+                  className="w-full h-full object-cover aspect-[3/4]"
+                />
+              </div>
+              <div className="rounded-2xl overflow-hidden shadow-2xl">
+                <img 
+                  src="https://www.ststaxrepair.net/wp-content/uploads/2024/12/c13f606f-7eac-4a87-8ddb-98f54020d6d1-6750cccc01f1b.webp"
+                  alt="STS Tax Repair Team"
+                  className="w-full h-full object-cover aspect-[3/4]"
+                />
+              </div>
+            </motion.div>
+
+            {/* RIGHT - Content */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -929,30 +953,6 @@ export default function HomePage() {
               >
                 Contact Us
               </Button>
-            </motion.div>
-
-            {/* Right - Team Images */}
-            <motion.div
-              initial={{ opacity: 0, x: 40 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-              className="flex gap-4"
-            >
-              <div className="flex-1 rounded-2xl overflow-hidden shadow-2xl">
-                <img 
-                  src="https://www.ststaxrepair.net/wp-content/uploads/2024/12/stephedena-cherfils.webp"
-                  alt="STS Tax Repair Team Member"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="flex-1 rounded-2xl overflow-hidden shadow-2xl">
-                <img 
-                  src="https://www.ststaxrepair.net/wp-content/uploads/2024/12/c13f606f-7eac-4a87-8ddb-98f54020d6d1-6750cccc01f1b.webp"
-                  alt="STS Tax Repair Team Member"
-                  className="w-full h-full object-cover"
-                />
-              </div>
             </motion.div>
           </div>
         </div>
