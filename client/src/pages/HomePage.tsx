@@ -1020,7 +1020,7 @@ export default function HomePage() {
       <section className="py-20 bg-white" data-testid="section-about-agents">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Left - Images */}
+            {/* Left - Team Image */}
             <motion.div
               initial={{ opacity: 0, x: -40 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -1028,30 +1028,13 @@ export default function HomePage() {
               transition={{ duration: 0.5 }}
               className="flex flex-col gap-6"
             >
-              <div className="rounded-2xl overflow-hidden shadow-xl">
+              <div className="rounded-2xl overflow-hidden shadow-2xl">
                 <img 
-                  src="https://www.ststaxrepair.net/wp-content/uploads/2024/12/c13f606f-7eac-4a87-8ddb-98f54020d6d1-6750cccc01f1b.webp"
-                  alt="STS Tax Repair Agents"
+                  src="https://www.ststaxrepair.net/wp-content/uploads/2024/12/stephedena-cherfils.webp"
+                  alt="STS Tax Repair Team"
                   className="w-full h-auto object-cover"
                 />
               </div>
-              <div className="flex items-center gap-4 text-sts-primary font-bold text-lg">
-                <span>Minimizing Liabilities, Maximizing Deductions.</span>
-                <motion.div
-                  animate={{ x: [0, 5, 0] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </motion.div>
-              </div>
-              <Button 
-                variant="ghost"
-                className="w-fit text-sts-primary font-bold hover:text-sts-primary hover:bg-sts-primary/5"
-                onClick={() => document.getElementById("services")?.scrollIntoView({ behavior: "smooth" })}
-                data-testid="button-our-agents"
-              >
-                Our Agents →
-              </Button>
             </motion.div>
 
             {/* Right - Content */}
