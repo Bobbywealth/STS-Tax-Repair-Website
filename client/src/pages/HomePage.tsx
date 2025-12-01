@@ -268,7 +268,7 @@ export default function HomePage() {
       phone: "954-534-5227",
       email: "Info.ststax@gmail.com",
       address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
-      image: "SC"
+      image: "https://www.ststaxrepair.net/wp-content/uploads/2023/12/stephedena-cherfils.jpg"
     },
     {
       name: "Withney Simon",
@@ -276,7 +276,7 @@ export default function HomePage() {
       phone: "4074277619",
       email: "Withney.ststax@yahoo.com",
       address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
-      image: "WS"
+      image: "https://www.ststaxrepair.net/wp-content/uploads/2023/12/withney-simon.jpg"
     },
     {
       name: "Keelie Duvignaud",
@@ -284,7 +284,7 @@ export default function HomePage() {
       phone: "772-877-1588",
       email: "Taxesbykeys@gmail.com",
       address: "3181 SW Crenshaw St, Port St. Lucie, FL 34953, USA",
-      image: "KD"
+      image: "https://www.ststaxrepair.net/wp-content/uploads/2024/02/keelie-duvignaud.jpg"
     },
     {
       name: "Christy S Dor",
@@ -292,7 +292,7 @@ export default function HomePage() {
       phone: "561-932-6114",
       email: "christyststaxrepair@gmail.com",
       address: "Florida Office, USA",
-      image: "CD"
+      image: "https://www.ststaxrepair.net/wp-content/uploads/2024/02/christy-s-dor.jpg"
     },
     {
       name: "Alexandra Isaac",
@@ -300,7 +300,7 @@ export default function HomePage() {
       phone: "786/352-2038",
       email: "isaacalexandra.ststaxrepair@gmail.com",
       address: "4000 Hollywood Blvd, Suite 555-S, Hollywood FL, 33021",
-      image: "AI"
+      image: "https://www.ststaxrepair.net/wp-content/uploads/2023/12/alexandra-issac.jpg"
     },
     {
       name: "Jennifer Constantino",
@@ -308,7 +308,7 @@ export default function HomePage() {
       phone: "(954) 629-6424",
       email: "jennconstantino93@gmail.com",
       address: "4000 Hollywood Blvd, Suite 555-S, Hollywood FL, 33021",
-      image: "JC"
+      image: "https://www.ststaxrepair.net/wp-content/uploads/2024/02/jennifer-constantino.jpg"
     },
     {
       name: "Alix Alexandre",
@@ -316,7 +316,7 @@ export default function HomePage() {
       phone: "4074613644",
       email: "Alixalexandre36@gmail.com",
       address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
-      image: "AA"
+      image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/alix-alexandre.jpg"
     },
     {
       name: "Leonela Reyes",
@@ -324,7 +324,7 @@ export default function HomePage() {
       phone: "(956)-739-4200",
       email: "lmrtaxrepair@gmail.com",
       address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
-      image: "LR"
+      image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/leonela-reyes.jpg"
     }
   ];
 
@@ -1053,8 +1053,12 @@ export default function HomePage() {
                   data-testid={`card-agent-${index}`}
                 >
                   {/* Agent Avatar */}
-                  <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-to-br from-sts-primary to-sts-dark flex items-center justify-center text-white text-2xl font-bold shadow-lg group-hover:scale-110 transition-transform">
-                    {agent.image}
+                  <div className="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden shadow-lg group-hover:scale-110 transition-transform ring-4 ring-sts-primary/20">
+                    <img 
+                      src={agent.image} 
+                      alt={agent.name}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                   
                   <div className="text-center mb-4">
