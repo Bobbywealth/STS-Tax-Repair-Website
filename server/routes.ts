@@ -174,9 +174,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid email or password" });
       }
 
-      // Check if user has a password hash (registered clients)
+      // Check if user has a password hash set
       if (!user.passwordHash) {
-        return res.status(401).json({ message: "This account uses Replit login. Please use the Staff Login option." });
+        return res.status(401).json({ message: "Invalid email or password" });
       }
 
       // Verify password
