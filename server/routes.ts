@@ -251,33 +251,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Note: Tasks are read from Perfex CRM - create/update/delete not supported yet
   app.post("/api/tasks", async (req, res) => {
-    try {
-      const task = await storage.createTask(req.body);
-      res.status(201).json(task);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
+    res.status(501).json({ 
+      error: "Task creation is managed through Perfex CRM. Please create tasks in Perfex." 
+    });
   });
 
   app.patch("/api/tasks/:id", async (req, res) => {
-    try {
-      const task = await storage.updateTask(req.params.id, req.body);
-      if (!task) {
-        return res.status(404).json({ error: "Task not found" });
-      }
-      res.json(task);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
+    res.status(501).json({ 
+      error: "Task updates are managed through Perfex CRM. Please update tasks in Perfex." 
+    });
   });
 
   app.delete("/api/tasks/:id", async (req, res) => {
-    const success = await storage.deleteTask(req.params.id);
-    if (!success) {
-      return res.status(404).json({ error: "Task not found" });
+    res.status(501).json({ 
+      error: "Task deletion is managed through Perfex CRM. Please delete tasks in Perfex." 
+    });
+  });
+
+  // Leads - Pull from Perfex CRM tblleads table
+  app.get("/api/leads", async (req, res) => {
+    try {
+      const leads = await queryPerfex(`
+        SELECT 
+          l.id,
+          l.name,
+          l.email,
+          l.phonenumber as phone,
+          l.company,
+          l.city,
+          l.state,
+          l.country,
+          l.source as sourceId,
+          COALESCE(ls.name, 'Unknown') as source,
+          l.status as statusId,
+          COALESCE(lst.name, 'New') as stage,
+          CONCAT(s.firstname, ' ', s.lastname) as assignedTo,
+          l.dateadded as created,
+          l.lastcontact as lastContact
+        FROM tblleads l
+        LEFT JOIN tblleads_sources ls ON l.source = ls.id
+        LEFT JOIN tblleads_status lst ON l.status = lst.id
+        LEFT JOIN tblstaff s ON l.assigned = s.staffid
+        ORDER BY l.dateadded DESC
+        LIMIT 100
+      `);
+      res.json(leads);
+    } catch (error: any) {
+      console.error('Error fetching Perfex leads:', error);
+      res.json([]);
     }
-    res.status(204).send();
   });
 
   // Staff Members - Pull from Perfex CRM tblstaff table
