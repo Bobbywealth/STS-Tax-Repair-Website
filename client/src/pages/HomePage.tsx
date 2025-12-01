@@ -1041,18 +1041,26 @@ export default function HomePage() {
               </Button>
             </motion.div>
 
-            {/* Right - Team Group Image */}
+            {/* Right - Team Images */}
             <motion.div
               initial={{ opacity: 0, x: 40 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
+              className="flex gap-4"
             >
-              <div className="rounded-2xl overflow-hidden shadow-2xl">
+              <div className="flex-1 rounded-2xl overflow-hidden shadow-2xl">
                 <img 
                   src="https://www.ststaxrepair.net/wp-content/uploads/2024/12/stephedena-cherfils.webp"
-                  alt="STS Tax Repair Team"
-                  className="w-full h-auto object-cover"
+                  alt="STS Tax Repair Team Member"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="flex-1 rounded-2xl overflow-hidden shadow-2xl">
+                <img 
+                  src="https://www.ststaxrepair.net/wp-content/uploads/2024/12/c13f606f-7eac-4a87-8ddb-98f54020d6d1-6750cccc01f1b.webp"
+                  alt="STS Tax Repair Team Member"
+                  className="w-full h-full object-cover"
                 />
               </div>
             </motion.div>
