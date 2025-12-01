@@ -1000,7 +1000,81 @@ export default function HomePage() {
       {/* Why Choose Us Section */}
       <section className="py-24 bg-[#3c4f56] relative overflow-hidden" data-testid="section-why-choose">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+          {/* Mobile Layout: Header first, then image */}
+          <div className="lg:hidden">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4 }}
+              className="text-center mb-8"
+            >
+              <Badge className="bg-sts-gold/20 text-sts-gold border-0 mb-4 text-sm font-semibold">
+                WHY CHOOSE US?
+              </Badge>
+              <h2 className="text-3xl sm:text-4xl font-black text-white mb-6 leading-tight">
+                Unleashing Your{" "}
+                <span className="text-sts-gold">Maximum</span>
+                {" "}Tax Return Potential.
+              </h2>
+            </motion.div>
+
+            {/* Image below heading on mobile */}
+            <motion.div
+              className="relative mb-8"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: 0.1 }}
+            >
+              <div className="absolute -inset-4 bg-gradient-to-br from-sts-gold/20 to-sts-primary/20 rounded-3xl blur-2xl opacity-50" />
+              <img 
+                src="https://www.ststaxrepair.net/wp-content/uploads/2024/12/a-1-6750cc8c5d05a.webp"
+                alt="STS Tax Team"
+                className="relative w-full h-auto object-cover rounded-3xl drop-shadow-2xl"
+              />
+            </motion.div>
+
+            {/* Description and bullet points */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: 0.2 }}
+            >
+              <p className="text-white/80 text-lg mb-10 leading-relaxed text-center">
+                At STS Tax Repair, we understand that when it comes to entrusting someone with your taxes, you want assurance, expertise, and a commitment to your financial success.
+              </p>
+
+              <div className="grid grid-cols-2 gap-4">
+                {[
+                  "Tailored Approach",
+                  "Unmatched Tax Code Mastery",
+                  "Refund Maximization",
+                  "Unwavering Commitment",
+                  "Dedication to Your Earnings",
+                  "Personalized Accountability"
+                ].map((item, index) => (
+                  <motion.div
+                    key={item}
+                    className="flex items-center gap-3"
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: index * 0.05 }}
+                  >
+                    <div className="w-6 h-6 rounded-full bg-sts-gold/20 flex items-center justify-center flex-shrink-0">
+                      <Check className="w-4 h-4 text-sts-gold" />
+                    </div>
+                    <span className="text-white font-medium text-sm">{item}</span>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Desktop Layout: Content left, image right */}
+          <div className="hidden lg:grid lg:grid-cols-2 gap-12 items-center">
             {/* Left Content */}
             <motion.div
               initial={{ opacity: 0, x: -40 }}
