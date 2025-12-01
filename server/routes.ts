@@ -685,132 +685,247 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const irsFormBytes = await irsFormResponse.arrayBuffer();
 
-      // Load the PDF
-      const pdfDoc = await PDFDocument.load(irsFormBytes);
+      // Load the PDF with form fields
+      const pdfDoc = await PDFDocument.load(irsFormBytes, { ignoreEncryption: true });
+      const form = pdfDoc.getForm();
       const pages = pdfDoc.getPages();
       const firstPage = pages[0];
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-      const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-      // Page dimensions (IRS forms are typically 8.5 x 11 inches = 612 x 792 points)
+      // Page dimensions for coordinate-based drawing
       const { height } = firstPage.getSize();
-      const fontSize = 10;
-      const smallFontSize = 8;
 
-      // Helper function to draw text at specific coordinates
-      const drawText = (text: string, x: number, y: number, size = fontSize, useBold = false) => {
-        if (text) {
-          firstPage.drawText(text, {
-            x,
-            y: height - y,
-            size,
-            font: useBold ? boldFont : font,
-            color: rgb(0, 0, 0),
-          });
+      // Try to fill using form fields first, then fall back to coordinates
+      // The IRS form field names follow patterns like f1_01, f1_02, etc.
+      
+      // Get all form fields to understand the structure
+      const fields = form.getFields();
+      const fieldNames = fields.map(f => f.getName());
+      console.log("Available form fields:", fieldNames);
+
+      // Helper to safely set text field value
+      const setTextField = (fieldName: string, value: string | undefined | null) => {
+        if (!value) return false;
+        try {
+          const field = form.getTextField(fieldName);
+          field.setText(value);
+          return true;
+        } catch (e) {
+          return false;
         }
       };
 
-      // Tax Year (top of form - checkbox area around y=85)
-      if (formData.taxYear) {
-        drawText(formData.taxYear, 285, 70, smallFontSize);
-      }
+      // Helper to safely check a checkbox
+      const setCheckbox = (fieldName: string, checked: boolean) => {
+        if (!checked) return false;
+        try {
+          const field = form.getCheckBox(fieldName);
+          field.check();
+          return true;
+        } catch (e) {
+          return false;
+        }
+      };
 
-      // Taxpayer name and SSN (Part I header area)
-      // Name field starts around x=70, y=127
-      if (formData.taxpayerName) {
-        drawText(formData.taxpayerName, 72, 127, fontSize);
-      }
-      // SSN field is on the right side around x=480
-      if (formData.taxpayerSSN) {
-        drawText(formData.taxpayerSSN, 485, 127, fontSize);
-      }
-
-      // Spouse name and SSN (if applicable)
-      // Spouse line is around y=145
+      // Based on IRS Form 8879 field structure, try common field names
+      // Tax Year field (usually at top)
+      setTextField('f1_01', formData.taxYear);
+      setTextField('topmostSubform[0].Page1[0].f1_01[0]', formData.taxYear);
+      
+      // Taxpayer name field
+      setTextField('f1_02', formData.taxpayerName);
+      setTextField('topmostSubform[0].Page1[0].f1_02[0]', formData.taxpayerName);
+      
+      // Taxpayer SSN
+      setTextField('f1_03', formData.taxpayerSSN);
+      setTextField('topmostSubform[0].Page1[0].f1_03[0]', formData.taxpayerSSN);
+      
+      // Spouse name
       if (formData.spouseName) {
-        drawText(formData.spouseName, 72, 145, fontSize);
+        setTextField('f1_04', formData.spouseName);
+        setTextField('topmostSubform[0].Page1[0].f1_04[0]', formData.spouseName);
       }
+      
+      // Spouse SSN
       if (formData.spouseSSN) {
-        drawText(formData.spouseSSN, 485, 145, fontSize);
+        setTextField('f1_05', formData.spouseSSN);
+        setTextField('topmostSubform[0].Page1[0].f1_05[0]', formData.spouseSSN);
       }
 
-      // Address (around y=163)
-      if (formData.address) {
-        drawText(formData.address, 72, 163, fontSize);
-      }
-
-      // City, State, ZIP (around y=181)
-      const cityStateZip = [formData.city, formData.state, formData.zipCode].filter(Boolean).join(", ");
-      if (cityStateZip) {
-        drawText(cityStateZip, 72, 181, fontSize);
-      }
-
-      // Part II - Tax Return Information
-      // AGI (Line 1, around y=230)
+      // Part I - Tax Return Information (Lines 1-5)
+      // Line 1: AGI
       if (formData.agi) {
-        drawText(`$${Number(formData.agi).toLocaleString()}`, 480, 230, fontSize);
+        const agiValue = Number(formData.agi).toLocaleString();
+        setTextField('f1_06', agiValue) || setTextField('f1_07', agiValue);
       }
-
-      // Total Tax (Line 2, around y=248)
+      
+      // Line 2: Total Tax
       if (formData.totalTax) {
-        drawText(`$${Number(formData.totalTax).toLocaleString()}`, 480, 248, fontSize);
+        const taxValue = Number(formData.totalTax).toLocaleString();
+        setTextField('f1_08', taxValue) || setTextField('f1_09', taxValue);
       }
-
-      // Federal Refund (Line 3, around y=266)
+      
+      // Line 3: Federal withheld
+      if (formData.federalWithheld) {
+        const withheldValue = Number(formData.federalWithheld).toLocaleString();
+        setTextField('f1_10', withheldValue);
+      }
+      
+      // Line 4: Refund amount
       if (formData.federalRefund) {
-        drawText(`$${Number(formData.federalRefund).toLocaleString()}`, 480, 266, fontSize);
+        const refundValue = Number(formData.federalRefund).toLocaleString();
+        setTextField('f1_11', refundValue) || setTextField('f1_12', refundValue);
       }
-
-      // Amount Owed (Line 4 - if applicable)
+      
+      // Line 5: Amount owed
       if (formData.amountOwed) {
-        drawText(`$${Number(formData.amountOwed).toLocaleString()}`, 480, 284, fontSize);
+        const owedValue = Number(formData.amountOwed).toLocaleString();
+        setTextField('f1_13', owedValue);
       }
 
-      // Part III - Declaration and Signature
-      // ERO PIN (around y=485)
-      if (formData.eroPin) {
-        drawText(formData.eroPin, 380, 485, fontSize, true);
+      // Part II - ERO firm name and PIN authorization
+      if (formData.eroFirmName) {
+        setTextField('f1_14', formData.eroFirmName);
+        setTextField('f1_15', formData.eroFirmName);
       }
-
-      // Taxpayer PIN (around y=520)
+      
+      // Taxpayer PIN
       if (formData.taxpayerPin) {
-        drawText(formData.taxpayerPin, 175, 520, fontSize, true);
+        setTextField('f1_16', formData.taxpayerPin);
+        setTextField('f1_17', formData.taxpayerPin);
       }
-
-      // Spouse PIN (if joint return, around y=555)
+      
+      // Spouse PIN
       if (formData.spousePin) {
-        drawText(formData.spousePin, 175, 555, fontSize, true);
+        setTextField('f1_18', formData.spousePin);
+        setTextField('f1_19', formData.spousePin);
       }
 
-      // Add signature image if available
+      // Part III - ERO EFIN/PIN
+      if (formData.eroPin) {
+        setTextField('f1_20', formData.eroPin);
+        setTextField('f1_21', formData.eroPin);
+      }
+
+      // If no form fields matched, use precise coordinate-based placement
+      // IRS Form 8879 (Rev. January 2021) layout - coordinates in points from bottom-left
+      // Page is 612 x 792 points (8.5" x 11")
+      const fontSize = 10;
+      const smallFontSize = 8;
+
+      // Track if form fields worked
+      let fieldsWorked = fieldNames.length > 0;
+      
+      // If form fields didn't work (empty or AcroForm issues), use coordinates
+      if (!fieldsWorked || fieldNames.length === 0) {
+        console.log("Using coordinate-based filling for Form 8879");
+        
+        // Tax year - in the header box area (approximately y=722 from bottom)
+        if (formData.taxYear) {
+          firstPage.drawText(formData.taxYear, { x: 298, y: 722, size: smallFontSize, font, color: rgb(0, 0, 0) });
+        }
+        
+        // Taxpayer name - left side of name/SSN row (y~665)
+        if (formData.taxpayerName) {
+          firstPage.drawText(formData.taxpayerName, { x: 120, y: 665, size: fontSize, font, color: rgb(0, 0, 0) });
+        }
+        
+        // Taxpayer SSN - right side (x~485)
+        if (formData.taxpayerSSN) {
+          firstPage.drawText(formData.taxpayerSSN, { x: 485, y: 665, size: fontSize, font, color: rgb(0, 0, 0) });
+        }
+        
+        // Spouse name (y~647)
+        if (formData.spouseName) {
+          firstPage.drawText(formData.spouseName, { x: 120, y: 647, size: fontSize, font, color: rgb(0, 0, 0) });
+        }
+        
+        // Spouse SSN
+        if (formData.spouseSSN) {
+          firstPage.drawText(formData.spouseSSN, { x: 485, y: 647, size: fontSize, font, color: rgb(0, 0, 0) });
+        }
+        
+        // Part I - Tax Return Information - dollar amounts right-aligned around x=555
+        // Line 1: AGI (y~562)
+        if (formData.agi) {
+          firstPage.drawText(Number(formData.agi).toLocaleString(), { x: 540, y: 562, size: fontSize, font, color: rgb(0, 0, 0) });
+        }
+        
+        // Line 2: Total Tax (y~544)
+        if (formData.totalTax) {
+          firstPage.drawText(Number(formData.totalTax).toLocaleString(), { x: 540, y: 544, size: fontSize, font, color: rgb(0, 0, 0) });
+        }
+        
+        // Line 3: Federal withheld (y~526)
+        if (formData.federalWithheld) {
+          firstPage.drawText(Number(formData.federalWithheld).toLocaleString(), { x: 540, y: 526, size: fontSize, font, color: rgb(0, 0, 0) });
+        }
+        
+        // Line 4: Refund amount (y~508)
+        if (formData.federalRefund) {
+          firstPage.drawText(Number(formData.federalRefund).toLocaleString(), { x: 540, y: 508, size: fontSize, font, color: rgb(0, 0, 0) });
+        }
+        
+        // Line 5: Amount owed (y~490)
+        if (formData.amountOwed) {
+          firstPage.drawText(Number(formData.amountOwed).toLocaleString(), { x: 540, y: 490, size: fontSize, font, color: rgb(0, 0, 0) });
+        }
+        
+        // Part II - ERO firm name in authorization line (y~390)
+        if (formData.eroFirmName) {
+          firstPage.drawText(formData.eroFirmName, { x: 140, y: 390, size: fontSize, font, color: rgb(0, 0, 0) });
+        }
+        
+        // Taxpayer PIN - 5 digits in PIN box (y~390, x~465)
+        if (formData.taxpayerPin) {
+          firstPage.drawText(formData.taxpayerPin, { x: 465, y: 390, size: fontSize, font, color: rgb(0, 0, 0) });
+        }
+        
+        // Spouse authorization with ERO firm name (y~310)
+        if (formData.spouseName && formData.eroFirmName) {
+          firstPage.drawText(formData.eroFirmName, { x: 140, y: 310, size: fontSize, font, color: rgb(0, 0, 0) });
+        }
+        
+        // Spouse PIN (y~310, x~465)
+        if (formData.spousePin) {
+          firstPage.drawText(formData.spousePin, { x: 465, y: 310, size: fontSize, font, color: rgb(0, 0, 0) });
+        }
+        
+        // Part III - ERO EFIN/PIN (y~195)
+        if (formData.eroPin) {
+          firstPage.drawText(formData.eroPin, { x: 400, y: 195, size: fontSize, font, color: rgb(0, 0, 0) });
+        }
+      } else {
+        // Flatten form fields so they appear as regular text
+        form.flatten();
+      }
+      
+      // Add taxpayer signature image
       if (signature.signatureData) {
         try {
-          // Remove data URL prefix if present
           const base64Data = signature.signatureData.replace(/^data:image\/\w+;base64,/, '');
           const signatureImageBytes = Buffer.from(base64Data, 'base64');
-          
-          // Embed the image as PNG
           const signatureImage = await pdfDoc.embedPng(signatureImageBytes);
           
-          // Scale signature to fit in signature box (around 150x40 pixels)
-          const scaleFactor = Math.min(150 / signatureImage.width, 40 / signatureImage.height);
+          const maxWidth = 150;
+          const maxHeight = 30;
+          const scaleFactor = Math.min(maxWidth / signatureImage.width, maxHeight / signatureImage.height);
           const signatureWidth = signatureImage.width * scaleFactor;
           const signatureHeight = signatureImage.height * scaleFactor;
 
-          // Draw taxpayer signature (around y=590)
+          // Taxpayer signature line is approximately at y=348 from bottom
           firstPage.drawImage(signatureImage, {
-            x: 72,
-            y: height - 610,
+            x: 82,
+            y: 348,
             width: signatureWidth,
             height: signatureHeight,
           });
         } catch (imgError) {
           console.error("Failed to embed signature image:", imgError);
-          // Continue without signature image
         }
       }
 
-      // Add signature date
+      // Taxpayer signature date (next to signature, y~350, x~475)
       if (signature.signedAt) {
         const signedDate = new Date(signature.signedAt);
         const dateStr = signedDate.toLocaleDateString('en-US', { 
@@ -818,18 +933,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
           day: '2-digit', 
           year: 'numeric' 
         });
-        drawText(dateStr, 400, 595, fontSize);
+        firstPage.drawText(dateStr, {
+          x: 475,
+          y: 350,
+          size: fontSize,
+          font,
+          color: rgb(0, 0, 0),
+        });
+      }
+      
+      // Spouse signature date (if joint return, y~268)
+      if (formData.spouseName && signature.signedAt) {
+        const signedDate = new Date(signature.signedAt);
+        const dateStr = signedDate.toLocaleDateString('en-US', { 
+          month: '2-digit', 
+          day: '2-digit', 
+          year: 'numeric' 
+        });
+        firstPage.drawText(dateStr, {
+          x: 475,
+          y: 268,
+          size: fontSize,
+          font,
+          color: rgb(0, 0, 0),
+        });
       }
 
-      // Add audit trail footer
+      // Audit trail at very bottom of page (y=15)
+      const auditY = 15;
+      const auditFontSize = 6;
+      
+      const auditParts: string[] = [];
       if (signature.ipAddress) {
-        drawText(`IP: ${signature.ipAddress}`, 72, 750, 7);
+        auditParts.push(`IP: ${signature.ipAddress}`);
       }
       if (signature.signedAt) {
-        const timestamp = new Date(signature.signedAt).toISOString();
-        drawText(`Signed: ${timestamp}`, 200, 750, 7);
+        auditParts.push(`Signed: ${new Date(signature.signedAt).toISOString()}`);
       }
-      drawText(`Signature ID: ${signature.id}`, 400, 750, 7);
+      auditParts.push(`ID: ${signature.id}`);
+      
+      firstPage.drawText(auditParts.join(' | '), {
+        x: 72,
+        y: auditY,
+        size: auditFontSize,
+        font,
+        color: rgb(0.4, 0.4, 0.4),
+      });
 
       // Serialize the PDF
       const pdfBytes = await pdfDoc.save();
