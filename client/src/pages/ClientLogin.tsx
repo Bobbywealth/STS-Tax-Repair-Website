@@ -1,12 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CheckCircle, Shield, Clock, FileText, Mail, Lock, UserCog, Sparkles, Zap } from "lucide-react";
+import { CheckCircle, Shield, Clock, FileText, Mail, Lock, UserCog, Sparkles, Zap, Menu, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import logoUrl from "@assets/sts-logo.png";
+
+const STS_LOGO_URL = "https://www.ststaxrepair.net/wp-content/uploads/2024/12/STS-Tax-Logo-2.png";
 
 function FloatingParticles() {
   return (
@@ -38,9 +40,21 @@ function GlowingOrbs() {
 
 export default function ClientLogin() {
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const navLinks = [
+    { href: "/", label: "Home" },
+    { href: "/services", label: "Services" },
+    { href: "/agents", label: "Agents" },
+    { href: "/pricing", label: "Pricing" },
+    { href: "/about", label: "About" },
+    { href: "/contact", label: "Contact" },
+    { href: "/faq", label: "FAQ" }
+  ];
 
   const handleClientLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -383,6 +397,69 @@ export default function ClientLogin() {
         }
       `}</style>
 
+      {/* Navigation */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md shadow-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-20">
+            <Link href="/" className="flex items-center gap-3">
+              <img src={STS_LOGO_URL} alt="STS TaxRepair" className="h-14 w-auto object-contain" />
+            </Link>
+
+            <nav className="hidden lg:flex items-center gap-6">
+              {navLinks.map((link) => (
+                <Link 
+                  key={link.href} 
+                  href={link.href}
+                  className="text-gray-700 hover:text-sts-primary font-medium transition-colors"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+
+            <div className="hidden lg:flex items-center gap-3">
+              <Button 
+                variant="outline"
+                onClick={() => navigate("/client-login")}
+                className="font-bold border-2 border-sts-primary text-sts-primary hover:bg-sts-primary hover:text-white"
+              >
+                Login
+              </Button>
+              <Button 
+                onClick={() => navigate("/client-login")}
+                className="bg-gradient-to-r from-sts-gold to-yellow-400 text-sts-dark font-semibold"
+              >
+                Book Appointment
+              </Button>
+            </div>
+
+            <button 
+              className="lg:hidden p-2"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
+        </div>
+
+        {isMobileMenuOpen && (
+          <div className="lg:hidden bg-white border-t">
+            <nav className="flex flex-col p-4 gap-2">
+              {navLinks.map((link) => (
+                <Link 
+                  key={link.href} 
+                  href={link.href}
+                  className="py-2 px-4 text-gray-700 hover:bg-gray-100 rounded-lg"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+        )}
+      </header>
+
       <div className="futuristic-bg">
         <div className="grid-overlay" />
         <FloatingParticles />
@@ -390,7 +467,7 @@ export default function ClientLogin() {
         <div className="scanline" />
       </div>
 
-      <div className="relative min-h-screen flex items-center justify-center p-6 z-10">
+      <div className="relative min-h-screen flex items-center justify-center p-6 pt-28 z-10">
         <div className="w-full max-w-5xl space-y-8 animate-fade-in">
           {/* Logo and Header */}
           <div className="text-center space-y-4">
