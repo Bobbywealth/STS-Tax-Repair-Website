@@ -112,6 +112,22 @@ const agents = [
     phone: "786-229-9224",
     email: "Dukens@duketaxpros.com",
     location: "Houston, TX"
+  },
+  {
+    name: "Jessica Zephir",
+    title: "Credit Specialist",
+    image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/whatsapp-image-2025-01-02-at-064332-2898178b-6779657b30e6d.webp",
+    phone: "786-805-1104",
+    email: "Zephirfinancialgroup@outlook.com",
+    location: "Houston, TX"
+  },
+  {
+    name: "Rhema Ita-Toyo",
+    title: "Service Support",
+    image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Rhema-Ita-Toyo.webp",
+    phone: "832-988-3167",
+    email: "rhematoyo@gmail.com",
+    location: "Houston, TX"
   }
 ];
 

@@ -365,6 +365,22 @@ export default function HomePage() {
       email: "Dukens@duketaxpros.com",
       address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
       image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/WhatsApp-Image-2024-12-28-at-23.14.07_9982c8c1-1.jpg"
+    },
+    {
+      name: "Jessica Zephir",
+      role: "Credit Specialist",
+      phone: "786-805-1104",
+      email: "Zephirfinancialgroup@outlook.com",
+      address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
+      image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/whatsapp-image-2025-01-02-at-064332-2898178b-6779657b30e6d.webp"
+    },
+    {
+      name: "Rhema Ita-Toyo",
+      role: "Service Support",
+      phone: "832-988-3167",
+      email: "rhematoyo@gmail.com",
+      address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
+      image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Rhema-Ita-Toyo.webp"
     }
   ];
 
