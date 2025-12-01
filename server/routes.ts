@@ -11,7 +11,9 @@ import {
   insertESignatureSchema,
   insertEmailLogSchema,
   insertDocumentRequestTemplateSchema,
-  type Form8879Data
+  insertTaxFilingSchema,
+  type Form8879Data,
+  type FilingStatus
 } from "@shared/mysql-schema";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { testPerfexConnection, getPerfexTables, queryPerfex, describePerfexTable } from "./perfex-db";
@@ -861,6 +863,143 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const success = await storage.deletePayment(req.params.id);
     if (!success) {
       return res.status(404).json({ error: "Payment not found" });
+    }
+    res.status(204).send();
+  });
+
+  // Tax Filings - tracks each client's tax filing per year
+  app.get("/api/tax-filings", isAuthenticated, requirePermission('clients.view'), async (req, res) => {
+    try {
+      const { year, status, clientId } = req.query;
+      
+      if (clientId) {
+        const filings = await storage.getTaxFilingsByClient(clientId as string);
+        return res.json(filings);
+      }
+      
+      if (year && status) {
+        const filings = await storage.getTaxFilingsByYearAndStatus(
+          parseInt(year as string), 
+          status as FilingStatus
+        );
+        return res.json(filings);
+      }
+      
+      if (year) {
+        const filings = await storage.getTaxFilingsByYear(parseInt(year as string));
+        return res.json(filings);
+      }
+      
+      if (status) {
+        const filings = await storage.getTaxFilingsByStatus(status as FilingStatus);
+        return res.json(filings);
+      }
+      
+      const filings = await storage.getTaxFilings();
+      res.json(filings);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/tax-filings/metrics/:year", isAuthenticated, requirePermission('clients.view'), async (req, res) => {
+    try {
+      const year = parseInt(req.params.year);
+      const metrics = await storage.getTaxFilingMetrics(year);
+      res.json(metrics);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/tax-filings/client/:clientId", isAuthenticated, requirePermission('clients.view'), async (req, res) => {
+    try {
+      const filings = await storage.getTaxFilingsByClient(req.params.clientId);
+      res.json(filings);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/tax-filings/client/:clientId/year/:year", isAuthenticated, requirePermission('clients.view'), async (req, res) => {
+    try {
+      const filing = await storage.getTaxFilingByClientYear(
+        req.params.clientId, 
+        parseInt(req.params.year)
+      );
+      if (!filing) {
+        return res.status(404).json({ error: "Tax filing not found for this client and year" });
+      }
+      res.json(filing);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/tax-filings", isAuthenticated, requirePermission('clients.edit'), async (req, res) => {
+    try {
+      const result = insertTaxFilingSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ error: result.error.message });
+      }
+      
+      // Check if filing already exists for this client+year
+      const existing = await storage.getTaxFilingByClientYear(
+        result.data.clientId, 
+        result.data.taxYear
+      );
+      if (existing) {
+        return res.status(400).json({ 
+          error: "A tax filing already exists for this client and year",
+          existingFiling: existing
+        });
+      }
+      
+      const filing = await storage.createTaxFiling(result.data);
+      res.status(201).json(filing);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/tax-filings/:id", isAuthenticated, requirePermission('clients.edit'), async (req, res) => {
+    try {
+      const filing = await storage.updateTaxFiling(req.params.id, req.body);
+      if (!filing) {
+        return res.status(404).json({ error: "Tax filing not found" });
+      }
+      res.json(filing);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/tax-filings/:id/status", isAuthenticated, requirePermission('clients.edit'), async (req, res) => {
+    try {
+      const { status, note } = req.body;
+      if (!status) {
+        return res.status(400).json({ error: "Status is required" });
+      }
+      
+      const validStatuses: FilingStatus[] = ['new', 'documents_pending', 'review', 'filed', 'accepted', 'approved', 'paid'];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` });
+      }
+      
+      const filing = await storage.updateTaxFilingStatus(req.params.id, status, note);
+      if (!filing) {
+        return res.status(404).json({ error: "Tax filing not found" });
+      }
+      res.json(filing);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/tax-filings/:id", isAuthenticated, requirePermission('clients.delete'), async (req, res) => {
+    const success = await storage.deleteTaxFiling(req.params.id);
+    if (!success) {
+      return res.status(404).json({ error: "Tax filing not found" });
     }
     res.status(204).send();
   });
