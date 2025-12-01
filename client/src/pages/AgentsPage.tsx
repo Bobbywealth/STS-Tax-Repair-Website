@@ -28,7 +28,7 @@ const agents = [
   {
     name: "Keelie Duvignaud",
     title: "Service Support",
-    image: "https://iili.io/fxOivNS.png",
+    image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Keelie-Duvignaud.webp",
     phone: "772-877-1588",
     email: "Taxesbykeys@gmail.com",
     location: "Port St. Lucie, FL"
