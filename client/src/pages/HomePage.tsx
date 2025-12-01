@@ -458,8 +458,8 @@ export default function HomePage() {
                   href={link.href}
                   className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 ${
                     isScrolled 
-                      ? "text-gray-600 hover:text-sts-primary hover:bg-sts-primary/5" 
-                      : "text-white/80 hover:text-white hover:bg-white/10"
+                      ? (link.label === "Agents" || link.label === "Pricing" ? "text-gray-700 font-bold hover:text-sts-primary hover:bg-sts-primary/5" : "text-gray-600 hover:text-sts-primary hover:bg-sts-primary/5")
+                      : (link.label === "Agents" || link.label === "Pricing" ? "text-white font-bold hover:text-white hover:bg-white/10" : "text-white/80 hover:text-white hover:bg-white/10")
                   }`}
                   data-testid={`nav-${link.label.toLowerCase().replace(/\s/g, "-")}`}
                 >
@@ -563,15 +563,15 @@ export default function HomePage() {
         {/* Desktop Background Image with Animation - hidden on mobile */}
         <motion.div 
           className="absolute inset-0 hidden lg:block overflow-hidden"
-          initial={{ scale: 1 }}
-          animate={{ scale: 1.05 }}
-          transition={{ duration: 20, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+          initial={{ scale: 1.1 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 1.2, ease: "easeOut" }}
         >
           <motion.div
             className="absolute inset-0 bg-center"
             style={{ 
               backgroundImage: `url('https://www.ststaxrepair.net/wp-content/uploads/2025/01/Untitled-design-3.png')`,
-              backgroundSize: 'contain',
+              backgroundSize: 'cover',
               backgroundRepeat: 'no-repeat'
             }}
             animate={{ 
@@ -584,8 +584,12 @@ export default function HomePage() {
         
         {/* Desktop Futuristic Effects Layer */}
         <div className="absolute inset-0 hidden lg:block overflow-hidden pointer-events-none">
-          {/* Gradient Overlay - Light at top, transparent at bottom */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-transparent" />
+          {/* Vignette Effect - Faint edges */}
+          <div className="absolute inset-0 bg-radial-gradient opacity-[0.15] pointer-events-none" style={{
+            background: 'radial-gradient(circle, transparent 30%, rgba(0,0,0,0.4) 100%)'
+          }} />
+          {/* Gradient Overlay - Light at top, fade to black at bottom */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-black/40" />
           <motion.div 
             className="absolute top-0 left-0 w-full h-full opacity-[0.01]"
             animate={{ 
@@ -892,7 +896,7 @@ export default function HomePage() {
               </motion.h1>
               
               <motion.p 
-                className="text-lg sm:text-xl text-white/70 max-w-xl leading-relaxed"
+                className="text-lg sm:text-xl text-white/70 max-w-xl leading-relaxed mb-4"
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
@@ -984,19 +988,30 @@ export default function HomePage() {
       </section>
 
       {/* We Service All 50 States Banner */}
-      <section className="py-6 bg-gradient-to-r from-sts-dark via-[#0a1f14] to-sts-dark border-t border-b border-sts-gold/20" data-testid="section-states-banner">
+      <section className="py-8 bg-gradient-to-r from-sts-dark via-[#0a1f14] to-sts-dark border-t border-b border-sts-gold/30 shadow-xl shadow-sts-gold/5" data-testid="section-states-banner">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div 
-            className="flex items-center justify-center gap-4"
+            className="flex items-center justify-center gap-6"
             initial={{ opacity: 0, scale: 0.9 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
+            transition={{ duration: 0.4 }}
           >
-            <Globe className="w-8 h-8 text-sts-gold" />
-            <h2 className="text-2xl sm:text-3xl font-bold text-sts-gold text-center">
+            <motion.div
+              animate={{ y: [0, -4, 0] }}
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <Globe className="w-10 h-10 text-sts-gold drop-shadow-lg" />
+            </motion.div>
+            <h2 className="text-3xl sm:text-4xl font-black text-sts-gold text-center drop-shadow-md tracking-wide">
               We Service All 50 States
             </h2>
-            <Globe className="w-8 h-8 text-sts-gold" />
+            <motion.div
+              animate={{ y: [0, -4, 0] }}
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 0.2 }}
+            >
+              <Globe className="w-10 h-10 text-sts-gold drop-shadow-lg" />
+            </motion.div>
           </motion.div>
         </div>
       </section>
