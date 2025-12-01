@@ -556,48 +556,49 @@ export default function HomePage() {
       {/* Hero Section */}
       <section 
         ref={heroRef}
-        className="relative min-h-screen flex items-center overflow-hidden"
+        className="relative overflow-hidden"
         style={{ position: 'relative' }}
         data-testid="section-hero"
       >
-        {/* Background Image */}
+        {/* Desktop Background Image - hidden on mobile */}
         <div 
-          className="absolute inset-0 bg-no-repeat"
+          className="absolute inset-0 bg-cover bg-center hidden lg:block"
           style={{ 
             backgroundImage: `url('https://www.ststaxrepair.net/wp-content/uploads/2025/01/Untitled-design-3.png')`,
-            backgroundPosition: 'top center',
-            backgroundSize: '100% auto'
           }}
         />
         
-        {/* Dark Overlay for Text Readability - lighter on right to show team */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0d2818]/85 via-sts-dark/50 to-transparent" />
+        {/* Mobile/Tablet Solid Background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-sts-dark to-[#0d2818] lg:hidden" />
         
-        {/* Mesh Gradient Overlay - subtle */}
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-0 left-0 w-1/2 h-full bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-sts-primary/30 via-transparent to-transparent" />
-        </div>
+        {/* Dark Overlay for Desktop */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0d2818]/90 via-sts-dark/70 to-sts-dark/40 hidden lg:block" />
 
-        {/* Animated Orbs - only on left side */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Mobile Team Photo - shown only on mobile/tablet */}
+          <div className="lg:hidden pt-24 pb-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="relative mx-auto max-w-md"
+            >
+              <div className="absolute -inset-2 bg-gradient-to-r from-sts-gold/30 to-sts-primary/30 rounded-2xl blur-xl" />
+              <img 
+                src="https://www.ststaxrepair.net/wp-content/uploads/2025/01/Untitled-design-3.png"
+                alt="STS Tax Team"
+                className="relative w-full rounded-2xl shadow-2xl"
+              />
+            </motion.div>
+          </div>
+
           <motion.div 
-            className="absolute top-1/4 left-0 w-[400px] h-[400px] bg-sts-primary/15 rounded-full blur-[100px]"
-            animate={{ 
-              x: [0, 30, 0],
-              y: [0, 20, 0],
-              scale: [1, 1.1, 1]
-            }}
-            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-          />
-        </div>
-
-        <motion.div 
-          className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 lg:py-40"
-          style={{ opacity: heroOpacity, y: heroY }}
-        >
-          <div className="grid lg:grid-cols-5 gap-12 lg:gap-16 items-center">
-            {/* Hero Content */}
-            <div className="lg:col-span-3 space-y-8">
+            className="py-8 lg:py-40 lg:min-h-screen lg:flex lg:items-center"
+            style={{ opacity: heroOpacity, y: heroY }}
+          >
+            <div className="grid lg:grid-cols-5 gap-8 lg:gap-16 items-center w-full">
+              {/* Hero Content */}
+              <div className="lg:col-span-3 space-y-6 lg:space-y-8">
               <motion.div 
                 className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 backdrop-blur-md rounded-full border border-white/10"
                 initial={{ opacity: 0, y: 20 }}
@@ -755,8 +756,9 @@ export default function HomePage() {
                 </Card>
               </div>
             </motion.div>
-          </div>
-        </motion.div>
+            </div>
+          </motion.div>
+        </div>
 
         {/* Scroll Indicator */}
         <motion.div 
