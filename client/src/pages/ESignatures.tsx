@@ -804,7 +804,13 @@ export default function ESignatures() {
               </div>
 
               {/* Form 8879 Data */}
-              {selectedSignature.formData && (
+              {selectedSignature.formData && (() => {
+                // Parse formData if it's a string
+                const formData: Form8879Data = typeof selectedSignature.formData === 'string' 
+                  ? JSON.parse(selectedSignature.formData) 
+                  : selectedSignature.formData as Form8879Data;
+                
+                return (
                 <div className="space-y-2">
                   <h4 className="font-semibold text-sm">Form 8879 Data</h4>
                   <div className="bg-muted/50 p-4 rounded-lg space-y-4">
@@ -812,21 +818,21 @@ export default function ESignatures() {
                     <div className="grid grid-cols-2 gap-3 text-sm">
                       <div>
                         <span className="text-muted-foreground">Taxpayer Name:</span>
-                        <p className="font-medium">{(selectedSignature.formData as Form8879Data).taxpayerName || "N/A"}</p>
+                        <p className="font-medium">{formData.taxpayerName || "N/A"}</p>
                       </div>
                       <div>
                         <span className="text-muted-foreground">SSN:</span>
-                        <p className="font-medium">{(selectedSignature.formData as Form8879Data).taxpayerSSN || "N/A"}</p>
+                        <p className="font-medium">{formData.taxpayerSSN || "N/A"}</p>
                       </div>
-                      {(selectedSignature.formData as Form8879Data).spouseName && (
+                      {formData.spouseName && (
                         <>
                           <div>
                             <span className="text-muted-foreground">Spouse Name:</span>
-                            <p className="font-medium">{(selectedSignature.formData as Form8879Data).spouseName}</p>
+                            <p className="font-medium">{formData.spouseName}</p>
                           </div>
                           <div>
                             <span className="text-muted-foreground">Spouse SSN:</span>
-                            <p className="font-medium">{(selectedSignature.formData as Form8879Data).spouseSSN || "N/A"}</p>
+                            <p className="font-medium">{formData.spouseSSN || "N/A"}</p>
                           </div>
                         </>
                       )}
@@ -836,10 +842,10 @@ export default function ESignatures() {
                     <div className="text-sm">
                       <span className="text-muted-foreground">Address:</span>
                       <p className="font-medium">
-                        {(selectedSignature.formData as Form8879Data).address || ""}{" "}
-                        {(selectedSignature.formData as Form8879Data).city || ""},{" "}
-                        {(selectedSignature.formData as Form8879Data).state || ""}{" "}
-                        {(selectedSignature.formData as Form8879Data).zipCode || ""}
+                        {formData.address || ""}{" "}
+                        {formData.city || ""},{" "}
+                        {formData.state || ""}{" "}
+                        {formData.zipCode || ""}
                       </p>
                     </div>
 
@@ -847,29 +853,29 @@ export default function ESignatures() {
                     <div className="grid grid-cols-2 gap-3 text-sm border-t pt-3">
                       <div>
                         <span className="text-muted-foreground">Tax Year:</span>
-                        <p className="font-medium">{(selectedSignature.formData as Form8879Data).taxYear || "N/A"}</p>
+                        <p className="font-medium">{formData.taxYear || "N/A"}</p>
                       </div>
                       <div>
                         <span className="text-muted-foreground">AGI:</span>
                         <p className="font-medium">
-                          {(selectedSignature.formData as Form8879Data).agi 
-                            ? `$${Number((selectedSignature.formData as Form8879Data).agi).toLocaleString()}` 
+                          {formData.agi 
+                            ? `$${Number(formData.agi).toLocaleString()}` 
                             : "N/A"}
                         </p>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Total Tax:</span>
                         <p className="font-medium">
-                          {(selectedSignature.formData as Form8879Data).totalTax 
-                            ? `$${Number((selectedSignature.formData as Form8879Data).totalTax).toLocaleString()}` 
+                          {formData.totalTax 
+                            ? `$${Number(formData.totalTax).toLocaleString()}` 
                             : "N/A"}
                         </p>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Federal Refund:</span>
                         <p className="font-medium">
-                          {(selectedSignature.formData as Form8879Data).federalRefund 
-                            ? `$${Number((selectedSignature.formData as Form8879Data).federalRefund).toLocaleString()}` 
+                          {formData.federalRefund 
+                            ? `$${Number(formData.federalRefund).toLocaleString()}` 
                             : "N/A"}
                         </p>
                       </div>
@@ -879,22 +885,23 @@ export default function ESignatures() {
                     <div className="grid grid-cols-3 gap-3 text-sm border-t pt-3">
                       <div>
                         <span className="text-muted-foreground">ERO PIN:</span>
-                        <p className="font-medium font-mono">{(selectedSignature.formData as Form8879Data).eroPin || "N/A"}</p>
+                        <p className="font-medium font-mono">{formData.eroPin || "N/A"}</p>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Taxpayer PIN:</span>
-                        <p className="font-medium font-mono">{(selectedSignature.formData as Form8879Data).taxpayerPin || "N/A"}</p>
+                        <p className="font-medium font-mono">{formData.taxpayerPin || "N/A"}</p>
                       </div>
-                      {(selectedSignature.formData as Form8879Data).spousePin && (
+                      {formData.spousePin && (
                         <div>
                           <span className="text-muted-foreground">Spouse PIN:</span>
-                          <p className="font-medium font-mono">{(selectedSignature.formData as Form8879Data).spousePin}</p>
+                          <p className="font-medium font-mono">{formData.spousePin}</p>
                         </div>
                       )}
                     </div>
                   </div>
                 </div>
-              )}
+                );
+              })()}
 
               {/* Captured Signature */}
               {selectedSignature.signatureData && (
