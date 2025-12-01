@@ -93,7 +93,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
           </div>
         </div>
         <SidebarMenuButton asChild className="w-full" data-testid="button-logout">
-          <button onClick={() => console.log('Logout clicked')}>
+          <button onClick={() => window.location.href = '/api/logout'}>
             <LogOut className="h-4 w-4" />
             <span>Logout</span>
           </button>
