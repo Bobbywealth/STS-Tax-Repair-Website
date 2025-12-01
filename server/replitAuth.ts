@@ -54,12 +54,36 @@ function updateUserSession(
 }
 
 async function upsertUser(claims: any) {
+  const userId = claims["sub"];
+  
+  // Check if user already exists to preserve their role
+  const existingUser = await storage.getUser(userId);
+  
+  // Determine role: keep existing role, or check if we need a first admin
+  let role = existingUser?.role || 'client';
+  
+  // If user doesn't exist or is a client, check if they should be an admin
+  // Make the first Replit Auth user an admin if no admins exist
+  if (!existingUser || existingUser.role === 'client') {
+    try {
+      const allUsers = await storage.getUsers();
+      const hasAdmin = allUsers.some(u => u.role === 'admin');
+      if (!hasAdmin) {
+        console.log(`No admin found - promoting ${claims["email"]} to admin`);
+        role = 'admin';
+      }
+    } catch (error) {
+      console.error("Error checking for admins:", error);
+    }
+  }
+  
   await storage.upsertUser({
-    id: claims["sub"],
+    id: userId,
     email: claims["email"],
     firstName: claims["first_name"],
     lastName: claims["last_name"],
     profileImageUrl: claims["profile_image_url"],
+    role: role,
   });
 }
 
@@ -104,10 +128,34 @@ export async function setupAuth(app: Express) {
     })(req, res, next);
   });
 
-  app.get("/api/callback", (req, res, next) => {
-    passport.authenticate(`replitauth:${req.hostname}`, {
-      successReturnToOrRedirect: "/client-portal",
-      failureRedirect: "/client-login",
+  app.get("/api/callback", async (req, res, next) => {
+    passport.authenticate(`replitauth:${req.hostname}`, async (err: any, user: any) => {
+      if (err || !user) {
+        return res.redirect("/client-login");
+      }
+      
+      req.login(user, async (loginErr: any) => {
+        if (loginErr) {
+          return res.redirect("/client-login");
+        }
+        
+        // Check user role to determine redirect
+        try {
+          const userId = user.claims?.sub;
+          if (userId) {
+            const dbUser = await storage.getUser(userId);
+            if (dbUser && dbUser.role !== 'client') {
+              // Staff/Admin goes to main dashboard
+              return res.redirect("/");
+            }
+          }
+        } catch (error) {
+          console.error("Error checking user role:", error);
+        }
+        
+        // Default: clients go to client portal
+        return res.redirect("/client-portal");
+      });
     })(req, res, next);
   });
 
