@@ -9,11 +9,13 @@ import {
   insertDocumentVersionSchema,
   insertESignatureSchema,
   insertEmailLogSchema,
-  insertDocumentRequestTemplateSchema
+  insertDocumentRequestTemplateSchema,
+  type Form8879Data
 } from "@shared/mysql-schema";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { testPerfexConnection, getPerfexTables, queryPerfex, describePerfexTable } from "./perfex-db";
 import { mysqlPool, runMySQLMigrations } from "./mysql-db";
+import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Run MySQL migrations on startup
@@ -491,6 +493,197 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(404).json({ error: "Signature not found" });
     }
     res.status(204).send();
+  });
+
+  // Generate filled IRS Form 8879 PDF
+  app.get("/api/signatures/:id/pdf", async (req, res) => {
+    try {
+      const signature = await storage.getESignature(req.params.id);
+      if (!signature) {
+        return res.status(404).json({ error: "Signature not found" });
+      }
+
+      if (signature.status !== 'signed') {
+        return res.status(400).json({ error: "Document has not been signed yet" });
+      }
+
+      // Parse formData
+      const formData: Form8879Data = typeof signature.formData === 'string'
+        ? JSON.parse(signature.formData)
+        : signature.formData as Form8879Data;
+
+      if (!formData) {
+        return res.status(400).json({ error: "No form data available" });
+      }
+
+      // Fetch the official IRS Form 8879 PDF
+      const irsFormUrl = "https://www.irs.gov/pub/irs-pdf/f8879.pdf";
+      const irsFormResponse = await fetch(irsFormUrl);
+      if (!irsFormResponse.ok) {
+        throw new Error("Failed to fetch IRS Form 8879");
+      }
+      const irsFormBytes = await irsFormResponse.arrayBuffer();
+
+      // Load the PDF
+      const pdfDoc = await PDFDocument.load(irsFormBytes);
+      const pages = pdfDoc.getPages();
+      const firstPage = pages[0];
+      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+      // Page dimensions (IRS forms are typically 8.5 x 11 inches = 612 x 792 points)
+      const { height } = firstPage.getSize();
+      const fontSize = 10;
+      const smallFontSize = 8;
+
+      // Helper function to draw text at specific coordinates
+      const drawText = (text: string, x: number, y: number, size = fontSize, useBold = false) => {
+        if (text) {
+          firstPage.drawText(text, {
+            x,
+            y: height - y,
+            size,
+            font: useBold ? boldFont : font,
+            color: rgb(0, 0, 0),
+          });
+        }
+      };
+
+      // Tax Year (top of form - checkbox area around y=85)
+      if (formData.taxYear) {
+        drawText(formData.taxYear, 285, 70, smallFontSize);
+      }
+
+      // Taxpayer name and SSN (Part I header area)
+      // Name field starts around x=70, y=127
+      if (formData.taxpayerName) {
+        drawText(formData.taxpayerName, 72, 127, fontSize);
+      }
+      // SSN field is on the right side around x=480
+      if (formData.taxpayerSSN) {
+        drawText(formData.taxpayerSSN, 485, 127, fontSize);
+      }
+
+      // Spouse name and SSN (if applicable)
+      // Spouse line is around y=145
+      if (formData.spouseName) {
+        drawText(formData.spouseName, 72, 145, fontSize);
+      }
+      if (formData.spouseSSN) {
+        drawText(formData.spouseSSN, 485, 145, fontSize);
+      }
+
+      // Address (around y=163)
+      if (formData.address) {
+        drawText(formData.address, 72, 163, fontSize);
+      }
+
+      // City, State, ZIP (around y=181)
+      const cityStateZip = [formData.city, formData.state, formData.zipCode].filter(Boolean).join(", ");
+      if (cityStateZip) {
+        drawText(cityStateZip, 72, 181, fontSize);
+      }
+
+      // Part II - Tax Return Information
+      // AGI (Line 1, around y=230)
+      if (formData.agi) {
+        drawText(`$${Number(formData.agi).toLocaleString()}`, 480, 230, fontSize);
+      }
+
+      // Total Tax (Line 2, around y=248)
+      if (formData.totalTax) {
+        drawText(`$${Number(formData.totalTax).toLocaleString()}`, 480, 248, fontSize);
+      }
+
+      // Federal Refund (Line 3, around y=266)
+      if (formData.federalRefund) {
+        drawText(`$${Number(formData.federalRefund).toLocaleString()}`, 480, 266, fontSize);
+      }
+
+      // Amount Owed (Line 4 - if applicable)
+      if (formData.amountOwed) {
+        drawText(`$${Number(formData.amountOwed).toLocaleString()}`, 480, 284, fontSize);
+      }
+
+      // Part III - Declaration and Signature
+      // ERO PIN (around y=485)
+      if (formData.eroPin) {
+        drawText(formData.eroPin, 380, 485, fontSize, true);
+      }
+
+      // Taxpayer PIN (around y=520)
+      if (formData.taxpayerPin) {
+        drawText(formData.taxpayerPin, 175, 520, fontSize, true);
+      }
+
+      // Spouse PIN (if joint return, around y=555)
+      if (formData.spousePin) {
+        drawText(formData.spousePin, 175, 555, fontSize, true);
+      }
+
+      // Add signature image if available
+      if (signature.signatureData) {
+        try {
+          // Remove data URL prefix if present
+          const base64Data = signature.signatureData.replace(/^data:image\/\w+;base64,/, '');
+          const signatureImageBytes = Buffer.from(base64Data, 'base64');
+          
+          // Embed the image as PNG
+          const signatureImage = await pdfDoc.embedPng(signatureImageBytes);
+          
+          // Scale signature to fit in signature box (around 150x40 pixels)
+          const scaleFactor = Math.min(150 / signatureImage.width, 40 / signatureImage.height);
+          const signatureWidth = signatureImage.width * scaleFactor;
+          const signatureHeight = signatureImage.height * scaleFactor;
+
+          // Draw taxpayer signature (around y=590)
+          firstPage.drawImage(signatureImage, {
+            x: 72,
+            y: height - 610,
+            width: signatureWidth,
+            height: signatureHeight,
+          });
+        } catch (imgError) {
+          console.error("Failed to embed signature image:", imgError);
+          // Continue without signature image
+        }
+      }
+
+      // Add signature date
+      if (signature.signedAt) {
+        const signedDate = new Date(signature.signedAt);
+        const dateStr = signedDate.toLocaleDateString('en-US', { 
+          month: '2-digit', 
+          day: '2-digit', 
+          year: 'numeric' 
+        });
+        drawText(dateStr, 400, 595, fontSize);
+      }
+
+      // Add audit trail footer
+      if (signature.ipAddress) {
+        drawText(`IP: ${signature.ipAddress}`, 72, 750, 7);
+      }
+      if (signature.signedAt) {
+        const timestamp = new Date(signature.signedAt).toISOString();
+        drawText(`Signed: ${timestamp}`, 200, 750, 7);
+      }
+      drawText(`Signature ID: ${signature.id}`, 400, 750, 7);
+
+      // Serialize the PDF
+      const pdfBytes = await pdfDoc.save();
+
+      // Send the PDF
+      const clientName = formData.taxpayerName?.replace(/[^a-zA-Z0-9]/g, '_') || 'client';
+      const filename = `Form_8879_${clientName}_${formData.taxYear || 'signed'}.pdf`;
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.send(Buffer.from(pdfBytes));
+    } catch (error: any) {
+      console.error("Error generating PDF:", error);
+      res.status(500).json({ error: error.message });
+    }
   });
 
   // Email Logs

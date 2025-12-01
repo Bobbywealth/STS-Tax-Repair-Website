@@ -46,7 +46,8 @@ import {
   Trash2,
   ChevronsUpDown,
   Check,
-  Search
+  Search,
+  Download
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -926,6 +927,22 @@ export default function ESignatures() {
                 >
                   <Eye className="h-4 w-4 mr-2" />
                   View Original IRS Form
+                </Button>
+              )}
+
+              {/* Download Signed PDF Button - Only for signed Form 8879 */}
+              {selectedSignature.status === 'signed' && 
+               selectedSignature.documentType === 'form_8879' && 
+               selectedSignature.formData && (
+                <Button
+                  className="w-full gradient-primary border-0"
+                  onClick={() => {
+                    window.open(`/api/signatures/${selectedSignature.id}/pdf`, '_blank');
+                  }}
+                  data-testid="button-download-signed-pdf"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Signed Form 8879 PDF
                 </Button>
               )}
             </div>
