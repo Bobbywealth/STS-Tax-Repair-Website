@@ -633,11 +633,28 @@ export default function HomePage() {
         {/* MOBILE HERO */}
         <div className="lg:hidden bg-gradient-to-b from-[#0a1f14] via-sts-dark to-[#0a1f14]">
           <div className="pt-24 pb-10 px-4">
-            {/* Full Team Image - Mobile */}
+            {/* Title FIRST - At Top */}
             <motion.div
+              className="text-center mb-6"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
+            >
+              <h1 className="text-4xl font-black leading-[1.15] tracking-tight">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-sts-gold via-yellow-300 to-sts-gold drop-shadow-lg">
+                  Reliable
+                </span>
+                <br />
+                <span className="text-white">Tax Advisors</span>
+              </h1>
+              <p className="text-sts-gold font-semibold text-sm tracking-wide mt-2">STS TAX REPAIR</p>
+            </motion.div>
+
+            {/* Team Image SECOND - Below Title */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
               className="relative rounded-xl overflow-hidden shadow-2xl mb-8"
             >
               <img 
@@ -653,48 +670,31 @@ export default function HomePage() {
               <div className="absolute bottom-2 right-2 w-6 h-6 border-r-2 border-b-2 border-sts-gold/60" />
             </motion.div>
             
-            {/* Content Section with Dark Overlay */}
+            {/* Content Section - Buttons and Badges THIRD */}
             <motion.div
-              className="mt-8 mx-auto max-w-sm"
+              className="mx-auto max-w-sm"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.5 }}
             >
-              {/* Soft Dark Overlay Card */}
               <div className="relative p-6 rounded-2xl bg-black/20 backdrop-blur-md">
                 <div className="space-y-5 text-center flex flex-col items-center">
-                  {/* Title with Better Hierarchy */}
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.3 }}
-                  >
-                    <h1 className="text-4xl font-black leading-[1.15] tracking-tight text-center">
-                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-sts-gold via-yellow-300 to-sts-gold drop-shadow-lg">
-                        Reliable
-                      </span>
-                      <br />
-                      <span className="text-white">Tax Advisors</span>
-                    </h1>
-                    <p className="text-sts-gold font-semibold text-sm tracking-wide mt-2">STS TAX REPAIR</p>
-                  </motion.div>
-                  
-                  {/* Supporting Text with Better Spacing */}
+                  {/* Supporting Text */}
                   <motion.p 
                     className="text-white/80 text-base leading-relaxed px-2 text-center"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: 0.4 }}
+                    transition={{ delay: 0.3 }}
                   >
                     Let us be your trusted partner. Work alongside a dependable ally invested in your best interests.
                   </motion.p>
                   
-                  {/* CTA Buttons - Full Width with Better Styling */}
+                  {/* CTA Buttons */}
                   <motion.div 
                     className="flex flex-col gap-4 pt-3 w-full"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: 0.5 }}
+                    transition={{ delay: 0.4 }}
                   >
                     <Button 
                       size="lg"
@@ -722,12 +722,12 @@ export default function HomePage() {
                     </Button>
                   </motion.div>
                   
-                  {/* Trust Badges - Directly Under Buttons */}
+                  {/* Trust Badges */}
                   <motion.div 
                     className="flex flex-wrap justify-center gap-4 pt-4"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: 0.6 }}
+                    transition={{ delay: 0.5 }}
                   >
                     {[
                       { icon: Shield, text: "IRS Authorized" },
@@ -739,7 +739,7 @@ export default function HomePage() {
                         className="flex items-center gap-2"
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.7 + index * 0.1, type: "spring" }}
+                        transition={{ delay: 0.6 + index * 0.1, type: "spring" }}
                       >
                         <item.icon className="w-5 h-5 text-sts-gold" />
                         <span className="text-white/90 text-sm font-medium">{item.text}</span>
