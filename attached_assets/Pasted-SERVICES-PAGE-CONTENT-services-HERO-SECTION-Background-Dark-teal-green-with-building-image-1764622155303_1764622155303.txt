@@ -1,0 +1,37 @@
+SERVICES PAGE CONTENT (/services):
+
+## HERO SECTION:
+Background: Dark teal/green with building image overlay
+Heading: "Services" (large, white, centered)
+
+## MAIN CONTENT:
+Label: "Our Services" (beige background pill)
+Heading: "Expert Tax Consulting Services" (centered, large)
+
+## 4 SERVICE CARDS (2x2 grid):
+
+CARD 1:
+Icon: Green refresh/circular arrows (svgviewer-output-3.svg)
+Title: "Professional Tax Filing" (green)
+Text: "Our expert tax filing service ensures accuracy and maximum returns. We meticulously navigate the complexities of tax codes, asking the right questions to secure your highest refund. Trust our professionals to handle your taxes with precision and expertise, delivering peace of mind and financial benefit."
+Button: "Learn More" (green link with arrow)
+
+CARD 2:
+Icon: Green ID card (svgviewer-output-2.svg)
+Title: "Credit Restoration" (green)
+Text: "Rebuild your credit with our comprehensive restoration service. We analyze credit reports, identifying discrepancies and errors. Through strategic interventions, we dispute inaccuracies and guide you towards improved credit health. Let us help restore your financial standing and open doors to better opportunities."
+Button: "Learn More" (green link with arrow)
+
+CARD 3:
+Icon: Green ® symbol  
+Title: "Business Registration" (green)
+Text: "Seamlessly establish your business with our registration service. We navigate the bureaucratic landscape, ensuring your incorporation process is efficient and compliant. From paperwork to legal formalities, we handle every step, allowing you to focus on your business vision. Trust us to register your business accurately and expediently."
+Button: "Learn More" (green link with arrow)
+
+CARD 4:
+Icon: Green magnifying glass with $
+Title: "Business Loans" (green)
+Text: "Access financial support for your business growth with our comprehensive loan service. We assess your needs, guiding you to suitable loan options. From application to approval, we streamline the process, securing favorable terms. Count on us to help your business thrive with tailored loan solutions designed for your success."
+Button: "Learn More" (green link with arrow)
+
+Use same icons as homepage! Build this page now with same modern styling.
