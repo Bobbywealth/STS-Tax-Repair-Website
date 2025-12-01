@@ -16,6 +16,14 @@ const agents = [
     phone: "954-534-5227",
     email: "Info.ststax@gmail.com",
     location: "Houston, TX"
+  },
+  {
+    name: "Withney Simon",
+    title: "Service Support",
+    image: "https://www.ststaxrepair.net/wp-content/uploads/2025/11/WhatsApp-Image-2025-11-20-at-19.17.28.jpeg",
+    phone: "407-427-7619",
+    email: "Withney.ststax@yahoo.com",
+    location: "Houston, TX"
   }
 ];
 
