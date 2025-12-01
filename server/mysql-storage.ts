@@ -26,6 +26,9 @@ import {
   type InsertStaffInvite,
   type Permission,
   type RolePermission,
+  type TaxFiling,
+  type InsertTaxFiling,
+  type FilingStatus,
   users as usersTable,
   taxDeadlines as taxDeadlinesTable,
   appointments as appointmentsTable,
@@ -39,7 +42,8 @@ import {
   roleAuditLog as roleAuditLogTable,
   staffInvites as staffInvitesTable,
   permissions as permissionsTable,
-  rolePermissions as rolePermissionsTable
+  rolePermissions as rolePermissionsTable,
+  taxFilings as taxFilingsTable
 } from "@shared/mysql-schema";
 import { randomUUID } from "crypto";
 import { mysqlDb } from "./mysql-db";
@@ -805,6 +809,183 @@ export class MySQLStorage implements IStorage {
     }
 
     return { permissions, matrix };
+  }
+
+  // Tax Filings
+  async getTaxFilings(): Promise<TaxFiling[]> {
+    return await mysqlDb.select().from(taxFilingsTable).orderBy(desc(taxFilingsTable.createdAt));
+  }
+
+  async getTaxFilingsByYear(year: number): Promise<TaxFiling[]> {
+    return await mysqlDb.select().from(taxFilingsTable)
+      .where(eq(taxFilingsTable.taxYear, year))
+      .orderBy(desc(taxFilingsTable.createdAt));
+  }
+
+  async getTaxFilingsByClient(clientId: string): Promise<TaxFiling[]> {
+    return await mysqlDb.select().from(taxFilingsTable)
+      .where(eq(taxFilingsTable.clientId, clientId))
+      .orderBy(desc(taxFilingsTable.taxYear));
+  }
+
+  async getTaxFilingByClientYear(clientId: string, year: number): Promise<TaxFiling | undefined> {
+    const [filing] = await mysqlDb.select().from(taxFilingsTable)
+      .where(and(
+        eq(taxFilingsTable.clientId, clientId),
+        eq(taxFilingsTable.taxYear, year)
+      ));
+    return filing;
+  }
+
+  async getTaxFilingsByStatus(status: FilingStatus): Promise<TaxFiling[]> {
+    return await mysqlDb.select().from(taxFilingsTable)
+      .where(eq(taxFilingsTable.status, status))
+      .orderBy(desc(taxFilingsTable.createdAt));
+  }
+
+  async getTaxFilingsByYearAndStatus(year: number, status: FilingStatus): Promise<TaxFiling[]> {
+    return await mysqlDb.select().from(taxFilingsTable)
+      .where(and(
+        eq(taxFilingsTable.taxYear, year),
+        eq(taxFilingsTable.status, status)
+      ))
+      .orderBy(desc(taxFilingsTable.createdAt));
+  }
+
+  async createTaxFiling(filing: InsertTaxFiling): Promise<TaxFiling> {
+    const id = randomUUID();
+    const now = new Date();
+    const filingData = {
+      id,
+      clientId: filing.clientId,
+      taxYear: filing.taxYear,
+      status: filing.status ?? 'new' as FilingStatus,
+      documentsReceivedAt: filing.documentsReceivedAt ?? null,
+      submittedAt: filing.submittedAt ?? null,
+      acceptedAt: filing.acceptedAt ?? null,
+      approvedAt: filing.approvedAt ?? null,
+      fundedAt: filing.fundedAt ?? null,
+      estimatedRefund: filing.estimatedRefund ?? null,
+      actualRefund: filing.actualRefund ?? null,
+      serviceFee: filing.serviceFee ?? null,
+      feePaid: filing.feePaid ?? false,
+      preparerId: filing.preparerId ?? null,
+      preparerName: filing.preparerName ?? null,
+      officeLocation: filing.officeLocation ?? null,
+      filingType: filing.filingType ?? 'individual',
+      federalStatus: filing.federalStatus ?? null,
+      stateStatus: filing.stateStatus ?? null,
+      statesFiled: filing.statesFiled ?? null,
+      notes: filing.notes ?? null,
+      statusHistory: [{ status: filing.status ?? 'new', date: now.toISOString() }],
+      createdAt: now,
+      updatedAt: now
+    };
+
+    await mysqlDb.insert(taxFilingsTable).values(filingData);
+    const [created] = await mysqlDb.select().from(taxFilingsTable).where(eq(taxFilingsTable.id, id));
+    return created;
+  }
+
+  async updateTaxFiling(id: string, filing: Partial<InsertTaxFiling>): Promise<TaxFiling | undefined> {
+    const existing = await mysqlDb.select().from(taxFilingsTable).where(eq(taxFilingsTable.id, id));
+    if (!existing.length) return undefined;
+
+    await mysqlDb.update(taxFilingsTable)
+      .set({ ...filing, updatedAt: new Date() })
+      .where(eq(taxFilingsTable.id, id));
+    
+    const [updated] = await mysqlDb.select().from(taxFilingsTable).where(eq(taxFilingsTable.id, id));
+    return updated;
+  }
+
+  async updateTaxFilingStatus(id: string, status: FilingStatus, note?: string): Promise<TaxFiling | undefined> {
+    const [existing] = await mysqlDb.select().from(taxFilingsTable).where(eq(taxFilingsTable.id, id));
+    if (!existing) return undefined;
+
+    const now = new Date();
+    const statusHistory = existing.statusHistory || [];
+    statusHistory.push({ status, date: now.toISOString(), note });
+
+    const updates: Partial<TaxFiling> = {
+      status,
+      statusHistory,
+      updatedAt: now
+    };
+
+    // Set date fields based on status transition
+    switch (status) {
+      case 'documents_pending':
+        break;
+      case 'review':
+        updates.documentsReceivedAt = now;
+        break;
+      case 'filed':
+        updates.submittedAt = now;
+        break;
+      case 'accepted':
+        updates.acceptedAt = now;
+        break;
+      case 'approved':
+        updates.approvedAt = now;
+        break;
+      case 'paid':
+        updates.fundedAt = now;
+        break;
+    }
+
+    await mysqlDb.update(taxFilingsTable)
+      .set(updates)
+      .where(eq(taxFilingsTable.id, id));
+    
+    const [updated] = await mysqlDb.select().from(taxFilingsTable).where(eq(taxFilingsTable.id, id));
+    return updated;
+  }
+
+  async deleteTaxFiling(id: string): Promise<boolean> {
+    const result = await mysqlDb.delete(taxFilingsTable).where(eq(taxFilingsTable.id, id));
+    return true;
+  }
+
+  async getTaxFilingMetrics(year: number): Promise<{
+    total: number;
+    byStatus: Record<FilingStatus, number>;
+    totalEstimatedRefund: number;
+    totalActualRefund: number;
+  }> {
+    const filings = await this.getTaxFilingsByYear(year);
+    
+    const byStatus: Record<FilingStatus, number> = {
+      new: 0,
+      documents_pending: 0,
+      review: 0,
+      filed: 0,
+      accepted: 0,
+      approved: 0,
+      paid: 0
+    };
+
+    let totalEstimatedRefund = 0;
+    let totalActualRefund = 0;
+
+    for (const filing of filings) {
+      if (filing.status) {
+        byStatus[filing.status]++;
+      }
+      if (filing.estimatedRefund) {
+        totalEstimatedRefund += parseFloat(filing.estimatedRefund);
+      }
+      if (filing.actualRefund) {
+        totalActualRefund += parseFloat(filing.actualRefund);
+      }
+    }
+
+    return {
+      total: filings.length,
+      byStatus,
+      totalEstimatedRefund,
+      totalActualRefund
+    };
   }
 }
 

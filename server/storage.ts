@@ -25,6 +25,9 @@ import {
   type StaffInvite,
   type InsertStaffInvite,
   type Permission,
+  type TaxFiling,
+  type InsertTaxFiling,
+  type FilingStatus,
 } from "@shared/mysql-schema";
 
 export interface IStorage {
@@ -122,6 +125,24 @@ export interface IStorage {
   setRolePermission(role: UserRole, permissionSlug: string, granted: boolean): Promise<void>;
   updateRolePermissions(role: UserRole, permissions: Record<string, boolean>): Promise<void>;
   getRolePermissionMatrix(): Promise<{ permissions: Permission[]; matrix: Record<UserRole, Record<string, boolean>>; }>;
+
+  // Tax Filings
+  getTaxFilings(): Promise<TaxFiling[]>;
+  getTaxFilingsByYear(year: number): Promise<TaxFiling[]>;
+  getTaxFilingsByClient(clientId: string): Promise<TaxFiling[]>;
+  getTaxFilingByClientYear(clientId: string, year: number): Promise<TaxFiling | undefined>;
+  getTaxFilingsByStatus(status: FilingStatus): Promise<TaxFiling[]>;
+  getTaxFilingsByYearAndStatus(year: number, status: FilingStatus): Promise<TaxFiling[]>;
+  createTaxFiling(filing: InsertTaxFiling): Promise<TaxFiling>;
+  updateTaxFiling(id: string, filing: Partial<InsertTaxFiling>): Promise<TaxFiling | undefined>;
+  updateTaxFilingStatus(id: string, status: FilingStatus, note?: string): Promise<TaxFiling | undefined>;
+  deleteTaxFiling(id: string): Promise<boolean>;
+  getTaxFilingMetrics(year: number): Promise<{
+    total: number;
+    byStatus: Record<FilingStatus, number>;
+    totalEstimatedRefund: number;
+    totalActualRefund: number;
+  }>;
 }
 
 // MySQL storage connected to cPanel database

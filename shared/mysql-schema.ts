@@ -229,6 +229,65 @@ export const insertDocumentRequestTemplateSchema = createInsertSchema(documentRe
 export type InsertDocumentRequestTemplate = z.infer<typeof insertDocumentRequestTemplateSchema>;
 export type DocumentRequestTemplate = typeof documentRequestTemplates.$inferSelect;
 
+// Filing Status Type - tracks the lifecycle of a tax filing
+export type FilingStatus = 'new' | 'documents_pending' | 'review' | 'filed' | 'accepted' | 'approved' | 'paid';
+
+// Tax Filings Table - tracks each client's tax filing per year
+export const taxFilings = mysqlTable(
+  "tax_filings",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+    clientId: varchar("client_id", { length: 36 }).notNull(),
+    taxYear: int("tax_year").notNull(),
+    status: varchar("status", { length: 30 }).default("new").$type<FilingStatus>(),
+    
+    // Key dates in the filing lifecycle
+    createdAt: timestamp("created_at").defaultNow(),
+    documentsReceivedAt: timestamp("documents_received_at"),
+    submittedAt: timestamp("submitted_at"),
+    acceptedAt: timestamp("accepted_at"),
+    approvedAt: timestamp("approved_at"),
+    fundedAt: timestamp("funded_at"),
+    
+    // Financial details
+    estimatedRefund: decimal("estimated_refund", { precision: 10, scale: 2 }),
+    actualRefund: decimal("actual_refund", { precision: 10, scale: 2 }),
+    serviceFee: decimal("service_fee", { precision: 10, scale: 2 }),
+    feePaid: boolean("fee_paid").default(false),
+    
+    // Assignment
+    preparerId: varchar("preparer_id", { length: 36 }),
+    preparerName: text("preparer_name"),
+    officeLocation: varchar("office_location", { length: 100 }),
+    
+    // Filing details
+    filingType: varchar("filing_type", { length: 50 }).default("individual"),
+    federalStatus: varchar("federal_status", { length: 50 }),
+    stateStatus: varchar("state_status", { length: 50 }),
+    statesFiled: json("states_filed").$type<string[]>(),
+    
+    // Notes and tracking
+    notes: text("notes"),
+    statusHistory: json("status_history").$type<Array<{status: string; date: string; note?: string}>>(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => ({
+    clientYearIdx: index("filing_client_year_idx").on(table.clientId, table.taxYear),
+    statusIdx: index("filing_status_idx").on(table.status),
+    yearIdx: index("filing_year_idx").on(table.taxYear),
+    preparerIdx: index("filing_preparer_idx").on(table.preparerId),
+  }),
+);
+
+export const insertTaxFilingSchema = createInsertSchema(taxFilings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertTaxFiling = z.infer<typeof insertTaxFilingSchema>;
+export type TaxFiling = typeof taxFilings.$inferSelect;
+
 // Tasks Table
 export const tasks = mysqlTable("tasks", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
