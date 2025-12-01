@@ -383,6 +383,119 @@
     background-size: 200% 100%;
     animation: shimmer 2s infinite;
   }
+
+  /* Slide up fade animation for cards */
+  @keyframes slideUpFade {
+    from { 
+      opacity: 0; 
+      transform: translateY(20px); 
+    }
+    to { 
+      opacity: 1; 
+      transform: translateY(0); 
+    }
+  }
+
+  .animate-slide-up {
+    animation: slideUpFade 500ms ease-out both;
+  }
+
+  /* Scale in animation */
+  @keyframes scaleIn {
+    from { 
+      opacity: 0; 
+      transform: scale(0.9); 
+    }
+    to { 
+      opacity: 1; 
+      transform: scale(1); 
+    }
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 400ms ease-out both;
+  }
+
+  /* Floating animation for icons */
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  /* Subtle bounce animation */
+  @keyframes bounce-subtle {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+  }
+
+  .animate-bounce-subtle {
+    animation: bounce-subtle 2s ease-in-out infinite;
+  }
+
+  /* Gradient shift for hero sections */
+  @keyframes heroGradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  .animate-hero-gradient {
+    background-size: 200% 200%;
+    animation: heroGradient 8s ease infinite;
+  }
+
+  /* Glow pulse animation */
+  @keyframes glowPulse {
+    0%, 100% { 
+      box-shadow: 0 0 5px rgba(34, 197, 94, 0.3), 
+                  0 0 10px rgba(34, 197, 94, 0.2), 
+                  0 0 15px rgba(34, 197, 94, 0.1); 
+    }
+    50% { 
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.5), 
+                  0 0 20px rgba(34, 197, 94, 0.3), 
+                  0 0 30px rgba(34, 197, 94, 0.2); 
+    }
+  }
+
+  .animate-glow {
+    animation: glowPulse 2s ease-in-out infinite;
+  }
+
+  /* Rotate animation for icons */
+  @keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  .animate-spin-slow {
+    animation: spin-slow 8s linear infinite;
+  }
+
+  /* Wiggle animation for attention */
+  @keyframes wiggle {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-3deg); }
+    75% { transform: rotate(3deg); }
+  }
+
+  .animate-wiggle {
+    animation: wiggle 1s ease-in-out infinite;
+  }
+
+  /* Counter number animation */
+  @keyframes countUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .animate-count {
+    animation: countUp 600ms ease-out both;
+  }
 }
 
 /**

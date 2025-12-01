@@ -29,25 +29,25 @@ function StatCard({
 }) {
   return (
     <Card 
-      className="overflow-hidden hover-elevate transition-all duration-300"
+      className="overflow-visible hover-elevate transition-all duration-300 animate-slide-up group"
       style={{ animationDelay: `${delay}ms` }}
     >
       <CardContent className="p-0">
-        <div className={cn("p-6 text-white relative overflow-hidden", gradient)}>
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-          <div className="absolute bottom-0 left-0 w-20 h-20 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
+        <div className={cn("p-6 text-white relative overflow-hidden rounded-t-lg", gradient)}>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-110 transition-transform duration-500" />
+          <div className="absolute bottom-0 left-0 w-20 h-20 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2 group-hover:scale-125 transition-transform duration-700" />
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-4">
-              <div className="h-12 w-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+              <div className="h-12 w-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:animate-bounce-subtle">
                 <Icon className="h-6 w-6 text-white" />
               </div>
-              <Sparkles className="h-5 w-5 text-white/60" />
+              <Sparkles className="h-5 w-5 text-white/60 group-hover:animate-spin-slow" />
             </div>
-            <p className="text-3xl font-bold">{value}</p>
+            <p className="text-3xl font-bold animate-count" style={{ animationDelay: `${delay + 200}ms` }}>{value}</p>
             <p className="text-sm text-white/80 mt-1">{title}</p>
           </div>
         </div>
-        <div className="px-6 py-3 bg-card border-t">
+        <div className="px-6 py-3 bg-card border-t rounded-b-lg">
           <p className="text-xs text-muted-foreground">{subtitle}</p>
         </div>
       </CardContent>
@@ -96,36 +96,36 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-600 via-emerald-500 to-teal-500 p-8 text-white">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-600 via-emerald-500 to-teal-500 p-8 text-white animate-scale-in animate-hero-gradient">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRjMC0yIDItNCAyLTRzMiAyIDIgNGMwIDItMiA0LTIgNHMtMi0yLTItNHoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-30" />
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-teal-400/20 rounded-full translate-y-1/2 -translate-x-1/2 blur-2xl" />
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl animate-float" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-teal-400/20 rounded-full translate-y-1/2 -translate-x-1/2 blur-2xl animate-float" style={{ animationDelay: '1s' }} />
         
         <div className="relative z-10">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-            <div>
+            <div className="animate-fade-in">
               <h1 className="text-3xl lg:text-4xl font-bold tracking-tight">
                 {getGreeting()}!
               </h1>
               <p className="text-emerald-100 mt-2 text-lg">
                 Welcome to your STS TaxRepair dashboard
               </p>
-              <div className="flex items-center gap-4 mt-4">
-                <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
+              <div className="flex flex-wrap items-center gap-4 mt-4">
+                <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 hover:bg-white/30 transition-colors duration-300 animate-slide-up" style={{ animationDelay: '100ms' }}>
                   <CheckCircle2 className="h-4 w-4" />
                   <span className="text-sm font-medium">{totalClients} Active Clients</span>
                 </div>
-                <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
+                <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 hover:bg-white/30 transition-colors duration-300 animate-slide-up" style={{ animationDelay: '200ms' }}>
                   <FileText className="h-4 w-4" />
                   <span className="text-sm font-medium">{totalDocuments.toLocaleString()} Documents</span>
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 animate-slide-up" style={{ animationDelay: '300ms' }}>
               <Link href="/clients">
                 <Button 
                   size="lg" 
-                  className="bg-white text-emerald-600 hover:bg-emerald-50 shadow-lg"
+                  className="bg-white text-emerald-600 hover:bg-emerald-50 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
                   data-testid="button-view-clients"
                 >
                   <Users className="h-4 w-4 mr-2" />
@@ -136,7 +136,7 @@ export default function Dashboard() {
                 <Button 
                   size="lg" 
                   variant="outline" 
-                  className="border-white/30 text-white hover:bg-white/20 backdrop-blur-sm"
+                  className="border-white/30 text-white hover:bg-white/20 backdrop-blur-sm hover:scale-105 transition-all duration-300"
                   data-testid="button-view-documents"
                 >
                   <FileText className="h-4 w-4 mr-2" />
@@ -191,8 +191,8 @@ export default function Dashboard() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="lg:col-span-2">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <Card className="lg:col-span-2 animate-slide-up" style={{ animationDelay: '400ms' }}>
+              <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
                 <CardTitle className="text-lg font-semibold">Document Overview</CardTitle>
                 <Link href="/documents">
                   <Button variant="ghost" size="sm" className="text-primary">
@@ -212,12 +212,12 @@ export default function Dashboard() {
                         "bg-amber-500"
                       ];
                       return (
-                        <div key={type} className="space-y-2">
+                        <div key={type} className="space-y-2 animate-slide-up" style={{ animationDelay: `${500 + index * 100}ms` }}>
                           <div className="flex items-center justify-between text-sm">
                             <span className="font-medium">{type}</span>
                             <span className="text-muted-foreground">{count.toLocaleString()} ({percentage}%)</span>
                           </div>
-                          <Progress value={percentage} className={cn("h-2", colors[index])} />
+                          <Progress value={percentage} className={cn("h-2 transition-all duration-700", colors[index])} />
                         </div>
                       );
                     })
@@ -252,8 +252,8 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <Card className="animate-slide-up" style={{ animationDelay: '500ms' }}>
+              <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
                 <CardTitle className="text-lg font-semibold">Recent Clients</CardTitle>
                 <Link href="/clients">
                   <Button variant="ghost" size="sm" className="text-primary">
@@ -266,10 +266,10 @@ export default function Dashboard() {
                   recentClients.map((client, index) => (
                     <Link key={client.id} href={`/clients/${client.id}`}>
                       <div 
-                        className="flex items-center gap-3 p-3 rounded-lg hover-elevate cursor-pointer transition-all duration-200"
-                        style={{ animationDelay: `${index * 50}ms` }}
+                        className="flex items-center gap-3 p-3 rounded-lg hover-elevate cursor-pointer transition-all duration-200 animate-slide-up group"
+                        style={{ animationDelay: `${600 + index * 80}ms` }}
                       >
-                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-semibold">
+                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-semibold group-hover:scale-110 transition-transform duration-200">
                           {(client.firstName?.[0] || client.email?.[0] || '?').toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
