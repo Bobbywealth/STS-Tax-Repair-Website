@@ -96,7 +96,16 @@ Preferred communication style: Simple, everyday language.
 - MySQL-compatible schema with UUID primary keys generated via MySQL UUID() function
 - Drizzle-Zod integration for automatic Zod schema generation from database schema
 - Schema definitions in /shared/mysql-schema.ts for MySQL-specific types
-- Tables: users, sessions, tax_deadlines, appointments, payments, document_versions, e_signatures, email_logs, document_request_templates
+- Tables: users, sessions, tax_deadlines, appointments, payments, document_versions, e_signatures, email_logs, document_request_templates, tax_filings
+
+**Tax Filings Per-Year Tracking**
+- tax_filings table with unique constraint on (client_id, tax_year) for per-year filing management
+- Status enum: new, documents_pending, review, filed, accepted, approved, paid
+- Tracks refund amounts (federal, state), date transitions (filed_date, approved_date, paid_date)
+- Preparer assignment (prepared_by, reviewed_by) for accountability
+- Status history stored as JSON for audit trail
+- API endpoints: GET /api/tax-filings (with year/status filters), POST /api/tax-filings, PATCH /api/tax-filings/:id/status, GET /api/tax-filings/metrics (aggregated counts)
+- Frontend: Year selector dropdown on Clients page, filing history timeline on Client Detail page
 
 **Session Management**
 - Session storage supported via MySQL sessions table
