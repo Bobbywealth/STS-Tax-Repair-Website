@@ -231,6 +231,139 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============================================
+  // PERMISSIONS MANAGEMENT
+  // ============================================
+
+  // Get all permissions
+  app.get("/api/permissions", isAuthenticated, requireAdmin(), async (req, res) => {
+    try {
+      const permissions = await storage.getPermissions();
+      res.json(permissions);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get permissions grouped by feature
+  app.get("/api/permissions/grouped", isAuthenticated, requireAdmin(), async (req, res) => {
+    try {
+      const grouped = await storage.getPermissionsByGroup();
+      res.json(grouped);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get complete permission matrix (all roles x all permissions)
+  app.get("/api/permissions/matrix", isAuthenticated, requireAdmin(), async (req, res) => {
+    try {
+      const matrix = await storage.getRolePermissionMatrix();
+      res.json(matrix);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get current user's permissions
+  app.get("/api/auth/permissions", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Admin has all permissions
+      if (user.role === 'admin') {
+        const allPermissions = await storage.getPermissions();
+        return res.json({
+          role: user.role,
+          permissions: allPermissions.map(p => p.slug)
+        });
+      }
+      
+      const permissions = await storage.getRolePermissions(user.role);
+      res.json({
+        role: user.role,
+        permissions
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get permissions for a specific role
+  app.get("/api/roles/:role/permissions", isAuthenticated, requireAdmin(), async (req, res) => {
+    try {
+      const role = req.params.role as any;
+      if (!['client', 'agent', 'tax_office', 'admin'].includes(role)) {
+        return res.status(400).json({ error: "Invalid role" });
+      }
+      const permissions = await storage.getRolePermissions(role);
+      res.json(permissions);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Update permissions for a role
+  app.put("/api/roles/:role/permissions", isAuthenticated, requireAdmin(), async (req: any, res) => {
+    try {
+      const role = req.params.role as any;
+      if (!['client', 'agent', 'tax_office', 'admin'].includes(role)) {
+        return res.status(400).json({ error: "Invalid role" });
+      }
+      
+      const { permissions } = req.body;
+      if (!permissions || typeof permissions !== 'object') {
+        return res.status(400).json({ error: "permissions object required" });
+      }
+      
+      // Update permissions
+      await storage.updateRolePermissions(role, permissions);
+      
+      // Clear cache for this role
+      const { clearPermissionCache } = await import('./authorization');
+      clearPermissionCache(role);
+      
+      // Log the change
+      const adminUser = await storage.getUser(req.user.claims.sub);
+      const adminName = `${adminUser?.firstName || ''} ${adminUser?.lastName || ''}`.trim() || adminUser?.email || 'Admin';
+      console.log(`Permissions updated for ${role} by ${adminName}:`, permissions);
+      
+      // Return updated permissions
+      const updated = await storage.getRolePermissions(role);
+      res.json({ role, permissions: updated });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Toggle a single permission for a role
+  app.patch("/api/roles/:role/permissions/:slug", isAuthenticated, requireAdmin(), async (req: any, res) => {
+    try {
+      const { role, slug } = req.params;
+      if (!['client', 'agent', 'tax_office', 'admin'].includes(role)) {
+        return res.status(400).json({ error: "Invalid role" });
+      }
+      
+      const { granted } = req.body;
+      if (typeof granted !== 'boolean') {
+        return res.status(400).json({ error: "granted boolean required" });
+      }
+      
+      await storage.setRolePermission(role, slug, granted);
+      
+      // Clear cache for this role
+      const { clearPermissionCache } = await import('./authorization');
+      clearPermissionCache(role);
+      
+      res.json({ role, permission: slug, granted });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Tax Deadlines - staff only
   app.get("/api/deadlines", isAuthenticated, requireStaff(), async (req, res) => {
     const deadlines = await storage.getTaxDeadlines();
