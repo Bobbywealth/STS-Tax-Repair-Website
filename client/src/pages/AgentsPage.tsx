@@ -12,7 +12,7 @@ const agents = [
   {
     name: "Stephedena Cherfils",
     title: "Service Support",
-    image: "https://www.ststaxrepair.net/wp-content/uploads/2025/11/WhatsApp-Image-2025-11-20-at-17.02.38-scaled.jpeg",
+    image: "https://iili.io/fxO4Uog.png",
     phone: "954-534-5227",
     email: "Info.ststax@gmail.com",
     location: "Houston, TX"
@@ -20,7 +20,7 @@ const agents = [
   {
     name: "Withney Simon",
     title: "Service Support",
-    image: "https://www.ststaxrepair.net/wp-content/uploads/2025/11/WhatsApp-Image-2025-11-20-at-19.17.28.jpeg",
+    image: "https://iili.io/fxO48DF.jpg",
     phone: "407-427-7619",
     email: "Withney.ststax@yahoo.com",
     location: "Houston, TX"
