@@ -74,7 +74,7 @@ function App() {
                 <SidebarTrigger data-testid="button-sidebar-toggle" />
                 <ThemeToggle />
               </header>
-              <main className="flex-1 overflow-y-auto p-4 bg-background">
+              <main className="flex-1 overflow-y-auto p-4 bg-animated-mesh">
                 <div className="max-w-7xl mx-auto">
                   <Router />
                 </div>
