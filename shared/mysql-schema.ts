@@ -35,6 +35,7 @@ export const users = mysqlTable("users", {
   country: varchar("country", { length: 100 }).default("United States"),
   role: varchar("role", { length: 20 }).default("client").$type<UserRole>(),
   isActive: boolean("is_active").default(true),
+  passwordHash: varchar("password_hash", { length: 255 }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

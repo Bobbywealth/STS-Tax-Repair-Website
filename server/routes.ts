@@ -23,6 +23,57 @@ import bcrypt from "bcrypt";
 import { encrypt, decrypt } from "./encryption";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Password reset endpoint - works for both Replit and Render
+  // This resets the password hash fresh so it works in the current environment
+  app.post('/api/setup/reset-password', async (req, res) => {
+    try {
+      const { email, newPassword, secretKey } = req.body;
+      
+      // Simple secret key protection (change this in production)
+      if (secretKey !== 'sts-admin-reset-2025') {
+        return res.status(403).json({ error: "Invalid secret key" });
+      }
+      
+      if (!email || !newPassword) {
+        return res.status(400).json({ error: "Email and newPassword required" });
+      }
+      
+      // Find user by email
+      const [rows] = await mysqlPool.query(
+        'SELECT id, email, first_name, last_name, role FROM users WHERE email = ?',
+        [email]
+      );
+      
+      if (!Array.isArray(rows) || rows.length === 0) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      const user = rows[0] as any;
+      
+      // Hash the new password fresh in THIS environment
+      const newPasswordHash = await bcrypt.hash(newPassword, 10);
+      
+      // Update the password hash
+      await mysqlPool.query(
+        'UPDATE users SET password_hash = ? WHERE id = ?',
+        [newPasswordHash, user.id]
+      );
+      
+      // Log for debugging (remove in production)
+      console.log(`Password reset for ${email}. Hash starts with: ${newPasswordHash.substring(0, 20)}...`);
+      
+      res.json({ 
+        success: true, 
+        message: `Password reset for ${email}`,
+        environment: process.env.REPL_ID ? 'Replit' : 'Render/Other',
+        hashPrefix: newPasswordHash.substring(0, 7) // $2b$10$ indicates bcrypt
+      });
+    } catch (error: any) {
+      console.error('Password reset error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // One-time setup endpoint to make a user admin by email
   app.post('/api/setup/make-admin', async (req, res) => {
     try {
