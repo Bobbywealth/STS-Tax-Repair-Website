@@ -29,7 +29,7 @@ interface MenuItem {
 }
 
 const menuItems: MenuItem[] = [
-  { title: "Dashboard", url: "/", icon: Home, alwaysShow: true },
+  { title: "Dashboard", url: "/dashboard", icon: Home, alwaysShow: true },
   { title: "Clients", url: "/clients", icon: Users, permission: PERMISSIONS.CLIENTS_VIEW },
   { title: "Leads", url: "/leads", icon: UserPlus, permission: PERMISSIONS.LEADS_VIEW },
   { title: "Tax Deadlines", url: "/deadlines", icon: Calendar, permission: PERMISSIONS.DEADLINES_VIEW },

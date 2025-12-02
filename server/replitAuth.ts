@@ -186,7 +186,7 @@ export async function setupAuth(app: Express) {
             const dbUser = await storage.getUser(userId);
             if (dbUser && dbUser.role !== 'client') {
               // Staff/Admin goes to main dashboard
-              return res.redirect("/");
+              return res.redirect("/dashboard");
             }
           }
         } catch (error) {
