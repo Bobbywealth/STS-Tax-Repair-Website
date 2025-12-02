@@ -23,6 +23,42 @@ import bcrypt from "bcrypt";
 import { encrypt, decrypt } from "./encryption";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // One-time setup endpoint to make a user admin by email
+  app.post('/api/setup/make-admin', async (req, res) => {
+    try {
+      const { email } = req.body;
+      if (!email) {
+        return res.status(400).json({ error: "Email required" });
+      }
+      
+      // Find user by email
+      const [rows] = await mysqlPool.query(
+        'SELECT id, email, first_name, last_name, role FROM users WHERE email = ?',
+        [email]
+      );
+      
+      if (!Array.isArray(rows) || rows.length === 0) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      const user = rows[0] as any;
+      
+      // Update role to admin
+      await mysqlPool.query(
+        'UPDATE users SET role = ? WHERE id = ?',
+        ['admin', user.id]
+      );
+      
+      res.json({ 
+        success: true, 
+        message: `User ${email} is now an admin`,
+        user: { id: user.id, email: user.email, role: 'admin' }
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Debug endpoint to test MySQL connection
   app.get('/api/debug/mysql-test', async (req, res) => {
     try {
