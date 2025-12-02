@@ -23,6 +23,37 @@ import bcrypt from "bcrypt";
 import { encrypt, decrypt } from "./encryption";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Debug endpoint to test MySQL connection
+  app.get('/api/debug/mysql-test', async (req, res) => {
+    try {
+      const host = process.env.MYSQL_HOST || 'not set';
+      const user = process.env.MYSQL_USER || 'not set';
+      const db = process.env.MYSQL_DATABASE || 'not set';
+      const hasPassword = process.env.MYSQL_PASSWORD ? 'YES (length: ' + process.env.MYSQL_PASSWORD.length + ')' : 'NO';
+      
+      // Try to connect
+      let connectionStatus = 'Not tested';
+      try {
+        const connection = await mysqlPool.getConnection();
+        await connection.ping();
+        connection.release();
+        connectionStatus = 'SUCCESS';
+      } catch (connError: any) {
+        connectionStatus = `FAILED: ${connError.message}`;
+      }
+      
+      res.json({
+        host,
+        user,
+        database: db,
+        hasPassword,
+        connectionStatus
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Run MySQL migrations on startup
   await runMySQLMigrations();
   
