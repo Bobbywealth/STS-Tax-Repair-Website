@@ -277,6 +277,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin/Staff Login (email/password) - for non-Replit environments
+  app.post('/api/admin/login', async (req: any, res) => {
+    try {
+      const { email, password } = req.body;
+
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+      }
+
+      // Find user by email
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+
+      // Check if user has a password hash set
+      if (!user.passwordHash) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+
+      // Verify password
+      const isValidPassword = await bcrypt.compare(password, user.passwordHash);
+      if (!isValidPassword) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+
+      // Check if user is admin or staff (not client)
+      if (user.role === 'client') {
+        return res.status(403).json({ message: "Access denied. This login is for staff and administrators only." });
+      }
+
+      // Check if user is active
+      if (!user.isActive) {
+        return res.status(403).json({ message: "Account is deactivated. Please contact support." });
+      }
+
+      // Create session for admin/staff
+      req.session.userId = user.id;
+      req.session.userRole = user.role;
+      req.session.isAdminLogin = true;
+
+      res.json({ 
+        message: "Login successful",
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role,
+        },
+        redirectUrl: '/dashboard'
+      });
+    } catch (error: any) {
+      console.error("Admin login error:", error);
+      res.status(500).json({ message: "Login failed. Please try again." });
+    }
+  });
+
   // Client Login (email/password) - public endpoint
   app.post('/api/client-login', async (req: any, res) => {
     try {

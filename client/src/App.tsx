@@ -28,6 +28,7 @@ import Settings from "@/pages/Settings";
 import UserManagement from "@/pages/UserManagement";
 import Permissions from "@/pages/Permissions";
 import ClientLogin from "@/pages/ClientLogin";
+import AdminLogin from "@/pages/AdminLogin";
 import ClientPortal from "@/pages/ClientPortal";
 import RedeemInvite from "@/pages/RedeemInvite";
 import Register from "@/pages/Register";
@@ -272,6 +273,7 @@ function App() {
   const isHomePage = location === '/';
   const isPublicPage = location === '/services' || location === '/agents' || location === '/pricing' || location === '/about' || location === '/contact' || location === '/faq' || location === '/book-appointment';
   const isClientRoute = location.startsWith('/client-login') || location.startsWith('/client-portal');
+  const isAdminLoginRoute = location === '/admin-login' || location === '/login';
   const isRedeemRoute = location.startsWith('/redeem-invite');
   const isRegisterRoute = location.startsWith('/register');
   const isStaffRoute = location.startsWith('/staff') || location.startsWith('/dashboard');
@@ -290,6 +292,11 @@ function App() {
             <Route path="/contact" component={ContactPage} />
             <Route path="/faq" component={FAQPage} />
             <Route path="/book-appointment" component={BookAppointmentPage} />
+          </Switch>
+        ) : isAdminLoginRoute ? (
+          <Switch>
+            <Route path="/admin-login" component={AdminLogin} />
+            <Route path="/login" component={AdminLogin} />
           </Switch>
         ) : isClientRoute ? (
           <Switch>
