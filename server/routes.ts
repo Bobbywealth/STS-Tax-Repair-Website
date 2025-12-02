@@ -651,9 +651,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get current user's permissions
-  app.get("/api/auth/permissions", isAuthenticated, async (req: any, res) => {
+  app.get("/api/auth/permissions", async (req: any, res) => {
     try {
-      const userId = req.userId || req.user?.claims?.sub;
+      // Check for client session login first
+      let userId = null;
+      if (req.session?.userId && req.session?.isClientLogin) {
+        userId = req.session.userId;
+      } else if (req.user?.claims?.sub) {
+        userId = req.user.claims.sub;
+      }
+      
       if (!userId) {
         return res.status(401).json({ error: "Not authenticated" });
       }
