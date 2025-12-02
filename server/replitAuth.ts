@@ -106,11 +106,11 @@ export async function setupAuth(app: Express) {
     
     // Redirect staff login to client login when not on Replit
     app.get("/api/login", (req, res) => {
-      res.redirect("/client-login?notice=replit-auth-unavailable");
+      return res.redirect("/client-login?notice=replit-auth-unavailable");
     });
     
     app.get("/api/callback", (req, res) => {
-      res.redirect("/client-login");
+      return res.redirect("/client-login");
     });
     
     app.get("/api/logout", (req: any, res) => {
@@ -119,9 +119,10 @@ export async function setupAuth(app: Express) {
         req.session.userId = null;
         req.session.userRole = null;
         req.session.isClientLogin = null;
+        req.session.isAdminLogin = null;
       }
       req.logout(() => {
-        res.redirect("/client-login");
+        return res.redirect("/client-login");
       });
     });
     
@@ -221,8 +222,8 @@ export async function setupAuth(app: Express) {
 
 // Updated isAuthenticated middleware that works for both auth methods
 export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
-  // Check for client session login first (email/password auth)
-  if (req.session?.userId && req.session?.isClientLogin) {
+  // Check for session-based login (both client and admin email/password auth)
+  if (req.session?.userId && (req.session?.isClientLogin || req.session?.isAdminLogin)) {
     try {
       const user = await storage.getUser(req.session.userId);
       if (user) {

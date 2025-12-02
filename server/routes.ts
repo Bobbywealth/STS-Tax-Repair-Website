@@ -62,7 +62,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Log for debugging (remove in production)
       console.log(`Password reset for ${email}. Hash starts with: ${newPasswordHash.substring(0, 20)}...`);
       
-      res.json({ 
+      return res.json({ 
         success: true, 
         message: `Password reset for ${email}`,
         environment: process.env.REPL_ID ? 'Replit' : 'Render/Other',
@@ -70,7 +70,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       console.error('Password reset error:', error);
-      res.status(500).json({ error: error.message });
+      return res.status(500).json({ error: error.message });
     }
   });
 
@@ -100,13 +100,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ['admin', user.id]
       );
       
-      res.json({ 
+      return res.json({ 
         success: true, 
         message: `User ${email} is now an admin`,
         user: { id: user.id, email: user.email, role: 'admin' }
       });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      return res.status(500).json({ error: error.message });
     }
   });
 
@@ -129,7 +129,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         connectionStatus = `FAILED: ${connError.message}`;
       }
       
-      res.json({
+      return res.json({
         host,
         user,
         database: db,
@@ -137,7 +137,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         connectionStatus
       });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      return res.status(500).json({ error: error.message });
     }
   });
 
@@ -159,14 +159,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Perfex uses 'clients' not 'customers' in the actual file path
     const filePath = `uploads/clients/${clientId}/${filename}`;
     const fullUrl = `${perfexBaseUrl}/download/preview_image?path=${encodeURIComponent(filePath)}`;
-    res.redirect(fullUrl);
+    return res.redirect(fullUrl);
   });
 
-  // Auth routes - supports both Replit Auth and client session login
+  // Auth routes - supports both Replit Auth and client/admin session login
   app.get('/api/auth/user', async (req: any, res) => {
     try {
-      // Check for client session login first
-      if (req.session?.userId && req.session?.isClientLogin) {
+      // Check for session-based login (both client and admin)
+      if (req.session?.userId && (req.session?.isClientLogin || req.session?.isAdminLogin)) {
         const user = await storage.getUser(req.session.userId);
         if (user) {
           return res.json(user);
@@ -183,7 +183,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(401).json({ message: "Not authenticated" });
     } catch (error) {
       console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
+      return res.status(500).json({ message: "Failed to fetch user" });
     }
   });
 
@@ -267,13 +267,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         bankAccountEncrypted,
       });
 
-      res.status(201).json({ 
+      return res.status(201).json({ 
         message: "Registration successful",
         userId: user.id 
       });
     } catch (error: any) {
       console.error("Registration error:", error);
-      res.status(500).json({ message: error.message || "Registration failed" });
+      return res.status(500).json({ message: error.message || "Registration failed" });
     }
   });
 
@@ -318,7 +318,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.session.userRole = user.role;
       req.session.isAdminLogin = true;
 
-      res.json({ 
+      return res.json({ 
         message: "Login successful",
         user: {
           id: user.id,
@@ -331,7 +331,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       console.error("Admin login error:", error);
-      res.status(500).json({ message: "Login failed. Please try again." });
+      return res.status(500).json({ message: "Login failed. Please try again." });
     }
   });
 
@@ -372,7 +372,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.session.userRole = user.role;
       req.session.isClientLogin = true;
 
-      res.json({ 
+      return res.json({ 
         message: "Login successful",
         user: {
           id: user.id,
@@ -384,7 +384,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       console.error("Client login error:", error);
-      res.status(500).json({ message: "Login failed. Please try again." });
+      return res.status(500).json({ message: "Login failed. Please try again." });
     }
   });
 
