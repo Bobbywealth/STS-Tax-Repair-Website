@@ -301,6 +301,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup Authentication
   await setupAuth(app);
 
+  // DEBUG SESSION ROUTE - Check session state (must be AFTER setupAuth)
+  app.get('/api/debug/session', (req: any, res) => {
+    return res.json({
+      sessionID: req.sessionID,
+      hasSession: !!req.session,
+      sessionData: req.session ? {
+        userId: req.session.userId || null,
+        userRole: req.session.userRole || null,
+        isClientLogin: req.session.isClientLogin || false,
+        isAdminLogin: req.session.isAdminLogin || false,
+        cookie: req.session.cookie
+      } : null,
+      cookies: req.headers.cookie || 'none',
+      isAuthenticated: req.isAuthenticated?.() || false,
+      user: req.user || null,
+    });
+  });
+
   // Redirect Perfex document URLs to the actual Perfex server
   // Perfex stores files at: uploads/clients/[CLIENT_ID]/filename
   // Accessed via: /download/preview_image?path=uploads/clients/[CLIENT_ID]/filename
@@ -472,6 +490,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.session.userRole = user.role;
       req.session.isAdminLogin = true;
 
+      // Explicitly save session to ensure it persists
+      await new Promise<void>((resolve, reject) => {
+        req.session.save((err: any) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+
       return res.json({ 
         message: "Login successful",
         user: {
@@ -525,6 +551,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.session.userId = user.id;
       req.session.userRole = user.role;
       req.session.isClientLogin = true;
+
+      // Explicitly save session to ensure it persists
+      await new Promise<void>((resolve, reject) => {
+        req.session.save((err: any) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
 
       return res.json({ 
         message: "Login successful",

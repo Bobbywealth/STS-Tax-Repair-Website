@@ -49,14 +49,18 @@ export function getSession() {
     checkExpirationInterval: 900000, // 15 minutes
   });
 
+  const isProduction = process.env.NODE_ENV === 'production';
+  
   return session({
     secret: process.env.SESSION_SECRET!,
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
+    proxy: isProduction, // Trust the reverse proxy in production (Render)
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: isProduction, // HTTPS only in production
+      sameSite: isProduction ? 'none' : 'lax', // 'none' required for cross-origin cookies with credentials
       maxAge: sessionTtl,
     },
   });

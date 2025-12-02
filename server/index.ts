@@ -1,4 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
+import cors from "cors";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
@@ -14,6 +15,19 @@ process.on('uncaughtException', (error) => {
 });
 
 const app = express();
+
+// Trust proxy for Render deployment (required for secure cookies behind reverse proxy)
+app.set('trust proxy', 1);
+
+// CORS configuration with credentials support for cross-origin session cookies
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://sts-tax-repair-website.onrender.com', 'https://ststaxrepair.org', 'https://www.ststaxrepair.org']
+    : true,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
 
 declare module 'http' {
   interface IncomingMessage {
