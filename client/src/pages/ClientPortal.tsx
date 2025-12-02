@@ -32,7 +32,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { ESignature, Form8879Data } from "@shared/mysql-schema";
-import logoUrl from "@assets/sts-logo.png";
+import logoUrl from "@/assets/sts-logo.png";
 
 export default function ClientPortal() {
   const { toast } = useToast();

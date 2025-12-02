@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Shield, Mail, Lock, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
-import logoUrl from "@assets/sts-logo.png";
+import logoUrl from "@/assets/sts-logo.png";
 
 export default function AdminLogin() {
   const { toast } = useToast();

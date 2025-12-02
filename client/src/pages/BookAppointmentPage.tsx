@@ -16,7 +16,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, CalendarDays, Clock, User, Mail, Phone, CheckCircle2, FileText, Building } from "lucide-react";
-import stsLogo from "@assets/sts-logo.png";
+import stsLogo from "@/assets/sts-logo.png";
 
 const bookingSchema = z.object({
   firstName: z.string().min(2, "First name is required"),

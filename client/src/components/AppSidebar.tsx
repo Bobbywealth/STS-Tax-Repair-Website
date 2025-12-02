@@ -1,6 +1,6 @@
 import { Home, Users, UserPlus, CheckSquare, Crown, Ticket, BookOpen, BarChart3, Settings, LogOut, Calendar, CalendarClock, DollarSign, FileText, FileSignature, Shield, Lock } from "lucide-react";
 import { Link, useLocation } from "wouter";
-import logoUrl from "@assets/sts-logo.png";
+import logoUrl from "@/assets/sts-logo.png";
 import {
   Sidebar,
   SidebarContent,

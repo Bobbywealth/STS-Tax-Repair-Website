@@ -43,7 +43,7 @@ import {
   Briefcase,
   Users
 } from "lucide-react";
-import logoUrl from "@assets/sts-logo.png";
+import logoUrl from "@/assets/sts-logo.png";
 
 const US_STATES = [
   "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut",
