@@ -4,7 +4,7 @@ import passport from "passport";
 import session from "express-session";
 import type { Express, RequestHandler } from "express";
 import memoize from "memoizee";
-import connectPg from "connect-pg-simple";
+import MySQLStore from "express-mysql-session";
 import { storage } from "./storage";
 
 // Check if we're running on Replit (has required env vars)
@@ -26,13 +26,29 @@ const getOidcConfig = memoize(
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
-  const pgStore = connectPg(session);
-  const sessionStore = new pgStore({
-    conString: process.env.DATABASE_URL,
-    createTableIfMissing: false,
-    ttl: sessionTtl,
-    tableName: "sessions",
+  
+  // Use MySQL session store (works on both Replit and Render)
+  const MySQLSessionStore = MySQLStore(session);
+  const sessionStore = new MySQLSessionStore({
+    host: process.env.MYSQL_HOST || process.env.DB_HOST,
+    port: parseInt(process.env.MYSQL_PORT || '3306'),
+    user: process.env.MYSQL_USER || process.env.DB_USER,
+    password: process.env.MYSQL_PASSWORD || process.env.DB_PASSWORD,
+    database: process.env.MYSQL_DATABASE || process.env.DB_NAME,
+    createDatabaseTable: true,
+    schema: {
+      tableName: 'express_sessions',
+      columnNames: {
+        session_id: 'session_id',
+        expires: 'expires',
+        data: 'data'
+      }
+    },
+    expiration: sessionTtl,
+    clearExpired: true,
+    checkExpirationInterval: 900000, // 15 minutes
   });
+
   return session({
     secret: process.env.SESSION_SECRET!,
     store: sessionStore,
