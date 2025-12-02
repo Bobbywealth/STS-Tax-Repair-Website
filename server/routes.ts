@@ -141,6 +141,160 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // COMPREHENSIVE DATABASE DIAGNOSTIC ROUTE
+  // Claude AI diagnosis: Render connects but returns 0 results (should be 869 clients)
+  app.get('/api/debug/database', async (req, res) => {
+    const diagnostics: any = {
+      timestamp: new Date().toISOString(),
+      environment: process.env.REPL_ID ? 'Replit' : 'Render/Other',
+      results: {}
+    };
+
+    try {
+      // 1. CONNECTION INFO
+      diagnostics.results.connectionInfo = {
+        MYSQL_HOST: process.env.MYSQL_HOST || 'NOT SET',
+        MYSQL_DATABASE: process.env.MYSQL_DATABASE || 'NOT SET',
+        MYSQL_USER: process.env.MYSQL_USER || 'NOT SET',
+        MYSQL_PASSWORD: process.env.MYSQL_PASSWORD ? `SET (${process.env.MYSQL_PASSWORD.length} chars)` : 'NOT SET',
+        MYSQL_PORT: process.env.MYSQL_PORT || '3306 (default)'
+      };
+
+      // 2. TEST RAW CONNECTION
+      let connection;
+      try {
+        connection = await mysqlPool.getConnection();
+        await connection.ping();
+        diagnostics.results.connectionTest = { status: 'SUCCESS', message: 'Pool connection acquired and ping successful' };
+      } catch (connError: any) {
+        diagnostics.results.connectionTest = { status: 'FAILED', error: connError.message };
+        return res.json(diagnostics);
+      }
+
+      // 3. WHAT DATABASE ARE WE CONNECTED TO?
+      try {
+        const [dbResult] = await connection.query('SELECT DATABASE() as currentDatabase, USER() as currentUser, VERSION() as mysqlVersion');
+        diagnostics.results.currentConnection = (dbResult as any[])[0];
+      } catch (e: any) {
+        diagnostics.results.currentConnection = { error: e.message };
+      }
+
+      // 4. LIST ALL TABLES
+      try {
+        const [tables] = await connection.query('SHOW TABLES');
+        diagnostics.results.allTables = {
+          count: (tables as any[]).length,
+          tables: (tables as any[]).map((t: any) => Object.values(t)[0])
+        };
+      } catch (e: any) {
+        diagnostics.results.allTables = { error: e.message };
+      }
+
+      // 5. RAW COUNT QUERIES (bypasses Drizzle)
+      try {
+        const [usersCount] = await connection.query('SELECT COUNT(*) as count FROM users');
+        const [clientsCount] = await connection.query("SELECT COUNT(*) as count FROM users WHERE role = 'client' OR role IS NULL");
+        const [staffCount] = await connection.query("SELECT COUNT(*) as count FROM users WHERE role IN ('admin', 'staff', 'manager', 'agent', 'tax_office')");
+        
+        diagnostics.results.rawCounts = {
+          totalUsers: (usersCount as any[])[0].count,
+          clients: (clientsCount as any[])[0].count,
+          staff: (staffCount as any[])[0].count
+        };
+      } catch (e: any) {
+        diagnostics.results.rawCounts = { error: e.message };
+      }
+
+      // 6. DESCRIBE USERS TABLE STRUCTURE
+      try {
+        const [columns] = await connection.query('DESCRIBE users');
+        diagnostics.results.usersTableStructure = {
+          columnCount: (columns as any[]).length,
+          columns: (columns as any[]).map((c: any) => ({
+            field: c.Field,
+            type: c.Type,
+            null: c.Null,
+            key: c.Key,
+            default: c.Default
+          }))
+        };
+      } catch (e: any) {
+        diagnostics.results.usersTableStructure = { error: e.message };
+      }
+
+      // 7. SAMPLE RAW DATA (first 5 users)
+      try {
+        const [sampleUsers] = await connection.query('SELECT id, email, first_name, last_name, role, is_active FROM users LIMIT 5');
+        diagnostics.results.sampleUsersRaw = {
+          count: (sampleUsers as any[]).length,
+          data: sampleUsers
+        };
+      } catch (e: any) {
+        diagnostics.results.sampleUsersRaw = { error: e.message };
+      }
+
+      // 8. CHECK FOR PERFEX-IMPORTED CLIENTS
+      try {
+        const [perfexClients] = await connection.query("SELECT COUNT(*) as count FROM users WHERE id LIKE 'perfex-%'");
+        diagnostics.results.perfexImportedClients = (perfexClients as any[])[0].count;
+      } catch (e: any) {
+        diagnostics.results.perfexImportedClients = { error: e.message };
+      }
+
+      // 9. DRIZZLE ORM QUERY (compare with raw)
+      try {
+        const drizzleUsers = await storage.getUsers();
+        diagnostics.results.drizzleQuery = {
+          status: 'SUCCESS',
+          count: drizzleUsers.length,
+          sampleIds: drizzleUsers.slice(0, 5).map(u => ({ id: u.id, email: u.email, role: u.role }))
+        };
+      } catch (e: any) {
+        diagnostics.results.drizzleQuery = { status: 'FAILED', error: e.message };
+      }
+
+      // 10. CHECK TABLE GRANTS/PERMISSIONS
+      try {
+        const [grants] = await connection.query('SHOW GRANTS FOR CURRENT_USER()');
+        diagnostics.results.userPermissions = (grants as any[]).map((g: any) => Object.values(g)[0]);
+      } catch (e: any) {
+        diagnostics.results.userPermissions = { error: e.message };
+      }
+
+      // 11. CHECK IF IT'S THE RIGHT DATABASE
+      try {
+        const dbName = process.env.MYSQL_DATABASE;
+        const [tableCheck] = await connection.query(
+          `SELECT TABLE_NAME, TABLE_ROWS FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ?`,
+          [dbName]
+        );
+        diagnostics.results.informationSchemaCheck = {
+          database: dbName,
+          tables: (tableCheck as any[]).map(t => ({ name: t.TABLE_NAME, estimatedRows: t.TABLE_ROWS }))
+        };
+      } catch (e: any) {
+        diagnostics.results.informationSchemaCheck = { error: e.message };
+      }
+
+      connection.release();
+
+      // SUMMARY
+      diagnostics.summary = {
+        connectionWorks: diagnostics.results.connectionTest?.status === 'SUCCESS',
+        rawUserCount: diagnostics.results.rawCounts?.totalUsers || 0,
+        drizzleUserCount: diagnostics.results.drizzleQuery?.count || 0,
+        tablesFound: diagnostics.results.allTables?.count || 0,
+        mismatch: (diagnostics.results.rawCounts?.totalUsers || 0) !== (diagnostics.results.drizzleQuery?.count || 0)
+      };
+
+      return res.json(diagnostics);
+    } catch (error: any) {
+      diagnostics.error = error.message;
+      diagnostics.stack = error.stack;
+      return res.status(500).json(diagnostics);
+    }
+  });
+
   // Run MySQL migrations on startup
   await runMySQLMigrations();
   
