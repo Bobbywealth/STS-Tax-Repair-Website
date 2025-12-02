@@ -986,9 +986,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get current user's permissions
   app.get("/api/auth/permissions", async (req: any, res) => {
     try {
-      // Check for client session login first
+      // Check for session-based login (both client and admin) or Replit Auth
       let userId = null;
-      if (req.session?.userId && req.session?.isClientLogin) {
+      if (req.session?.userId && (req.session?.isClientLogin || req.session?.isAdminLogin)) {
         userId = req.session.userId;
       } else if (req.user?.claims?.sub) {
         userId = req.user.claims.sub;
