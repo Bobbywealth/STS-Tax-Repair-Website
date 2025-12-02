@@ -96,11 +96,13 @@ export function requireStaff() {
 
 export function isOwnResourceOrStaff(getResourceOwnerId: (req: Request) => string | undefined) {
   return async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-    if (!req.user) {
+    // Check for both Replit Auth (req.user) and session-based auth (req.userId)
+    if (!req.user && !req.userId) {
       return res.status(401).json({ error: "Authentication required" });
     }
 
-    const userId = req.user.claims.sub;
+    // Get userId from either auth method
+    const userId = req.userId || req.user?.claims?.sub;
     const userRole = req.userRole as UserRole;
     const resourceOwnerId = getResourceOwnerId(req);
 
@@ -154,7 +156,8 @@ export function clearPermissionCache(role?: UserRole) {
 // Middleware to require specific permission(s)
 export function requirePermission(...requiredPermissions: string[]) {
   return async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-    if (!req.user) {
+    // Check for both Replit Auth (req.user) and session-based auth (req.userId)
+    if (!req.user && !req.userId) {
       return res.status(401).json({ error: "Authentication required" });
     }
 
@@ -191,7 +194,8 @@ export function requirePermission(...requiredPermissions: string[]) {
 // Middleware to load user permissions into request
 export function loadPermissions() {
   return async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-    if (req.user && req.userRole) {
+    // Support both Replit Auth (req.user) and session-based auth (req.userId)
+    if ((req.user || req.userId) && req.userRole) {
       req.userPermissions = await loadUserPermissions(req.userRole);
     }
     next();

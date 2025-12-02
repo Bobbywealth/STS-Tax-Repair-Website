@@ -6,6 +6,7 @@ import type { Express, RequestHandler } from "express";
 import memoize from "memoizee";
 import MySQLStore from "express-mysql-session";
 import { storage } from "./storage";
+import { mysqlPool } from "./mysql-db";
 
 // Check if we're running on Replit (has required env vars)
 export const isReplitEnvironment = !!(process.env.REPL_ID && process.env.REPLIT_DOMAINS);
@@ -27,14 +28,9 @@ const getOidcConfig = memoize(
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
   
-  // Use MySQL session store (works on both Replit and Render)
+  // Use MySQL session store with SHARED connection pool (prevents connection exhaustion)
   const MySQLSessionStore = MySQLStore(session);
   const sessionStore = new MySQLSessionStore({
-    host: process.env.MYSQL_HOST || process.env.DB_HOST,
-    port: parseInt(process.env.MYSQL_PORT || '3306'),
-    user: process.env.MYSQL_USER || process.env.DB_USER,
-    password: process.env.MYSQL_PASSWORD || process.env.DB_PASSWORD,
-    database: process.env.MYSQL_DATABASE || process.env.DB_NAME,
     createDatabaseTable: true,
     schema: {
       tableName: 'express_sessions',
@@ -47,7 +43,7 @@ export function getSession() {
     expiration: sessionTtl,
     clearExpired: true,
     checkExpirationInterval: 900000, // 15 minutes
-  });
+  }, mysqlPool as any); // Pass existing pool to prevent separate connections
 
   const isProduction = process.env.NODE_ENV === 'production';
   
@@ -242,16 +238,6 @@ export async function setupAuth(app: Express) {
 
 // Updated isAuthenticated middleware that works for both auth methods
 export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
-  // DEBUG: Log session state for troubleshooting
-  console.log('isAuthenticated check:', {
-    hasSession: !!req.session,
-    sessionId: req.sessionID,
-    userId: req.session?.userId,
-    isClientLogin: req.session?.isClientLogin,
-    isAdminLogin: req.session?.isAdminLogin,
-    path: req.path
-  });
-
   // Check for session-based login (both client and admin email/password auth)
   if (req.session?.userId && (req.session?.isClientLogin || req.session?.isAdminLogin)) {
     try {
@@ -259,7 +245,6 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
       if (user) {
         req.userRole = user.role || 'client';
         req.userId = user.id;
-        console.log('Session auth SUCCESS for user:', user.id);
         return next();
       }
     } catch (error) {
@@ -269,7 +254,6 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
 
   // If not on Replit, only session auth is available
   if (!isReplitEnvironment) {
-    console.log('Session auth FAILED - no valid session found');
     return res.status(401).json({ message: "Unauthorized - Please log in" });
   }
 

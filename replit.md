@@ -80,8 +80,11 @@ Preferred communication style: Simple, everyday language.
 **Render Deployment Notes**
 - App automatically detects non-Replit environment and disables Replit Auth
 - Staff login redirects to client login page with notice when Replit Auth unavailable
-- All routes use `req.userId` fallback pattern to support both auth methods
-- Required environment variables for Render: DATABASE_URL, SESSION_SECRET, MYSQL_* variables
+- All authorization middleware checks both `req.user` (Replit Auth) AND `req.userId` (session auth)
+- MySQLStore uses shared connection pool (`mysqlPool`) to prevent connection exhaustion
+- CORS configured with credentials support for cross-origin requests
+- Session cookies use `sameSite: 'none'` in production for cross-origin cookie handling
+- Required environment variables for Render: SESSION_SECRET, MYSQL_HOST, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD
 
 ### Data Storage Solutions
 
