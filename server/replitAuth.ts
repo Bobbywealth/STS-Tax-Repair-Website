@@ -242,6 +242,16 @@ export async function setupAuth(app: Express) {
 
 // Updated isAuthenticated middleware that works for both auth methods
 export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
+  // DEBUG: Log session state for troubleshooting
+  console.log('isAuthenticated check:', {
+    hasSession: !!req.session,
+    sessionId: req.sessionID,
+    userId: req.session?.userId,
+    isClientLogin: req.session?.isClientLogin,
+    isAdminLogin: req.session?.isAdminLogin,
+    path: req.path
+  });
+
   // Check for session-based login (both client and admin email/password auth)
   if (req.session?.userId && (req.session?.isClientLogin || req.session?.isAdminLogin)) {
     try {
@@ -249,6 +259,7 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
       if (user) {
         req.userRole = user.role || 'client';
         req.userId = user.id;
+        console.log('Session auth SUCCESS for user:', user.id);
         return next();
       }
     } catch (error) {
@@ -258,6 +269,7 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
 
   // If not on Replit, only session auth is available
   if (!isReplitEnvironment) {
+    console.log('Session auth FAILED - no valid session found');
     return res.status(401).json({ message: "Unauthorized - Please log in" });
   }
 

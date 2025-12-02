@@ -40,7 +40,8 @@ export function hasMinimumRole(userRole: UserRole, requiredRole: UserRole): bool
 
 export function requireRole(...allowedRoles: UserRole[]) {
   return async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-    if (!req.user) {
+    // Check for both Replit Auth (req.user) and session-based auth (req.userId)
+    if (!req.user && !req.userId) {
       return res.status(401).json({ error: "Authentication required" });
     }
 
@@ -63,7 +64,8 @@ export function requireRole(...allowedRoles: UserRole[]) {
 
 export function requireMinRole(minimumRole: UserRole) {
   return async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-    if (!req.user) {
+    // Check for both Replit Auth (req.user) and session-based auth (req.userId)
+    if (!req.user && !req.userId) {
       return res.status(401).json({ error: "Authentication required" });
     }
 
