@@ -115,7 +115,11 @@ function AdminRouter() {
       <Route path="/leads">
         <PermissionRoute component={Leads} permission={PERMISSIONS.LEADS_VIEW} />
       </Route>
+      {/* Tax Deadlines - both short and long URL formats */}
       <Route path="/deadlines">
+        <PermissionRoute component={TaxDeadlines} permission={PERMISSIONS.DEADLINES_VIEW} />
+      </Route>
+      <Route path="/tax-deadlines">
         <PermissionRoute component={TaxDeadlines} permission={PERMISSIONS.DEADLINES_VIEW} />
       </Route>
       <Route path="/appointments">
@@ -127,7 +131,11 @@ function AdminRouter() {
       <Route path="/documents">
         <PermissionRoute component={Documents} permission={PERMISSIONS.DOCUMENTS_VIEW} />
       </Route>
+      {/* E-Signatures - both short and long URL formats */}
       <Route path="/signatures">
+        <PermissionRoute component={ESignatures} permission={PERMISSIONS.SIGNATURES_VIEW} />
+      </Route>
+      <Route path="/e-signatures">
         <PermissionRoute component={ESignatures} permission={PERMISSIONS.SIGNATURES_VIEW} />
       </Route>
       <Route path="/tasks">
@@ -136,10 +144,18 @@ function AdminRouter() {
       <Route path="/manager">
         <PermissionRoute component={Manager} permission={PERMISSIONS.SETTINGS_VIEW} />
       </Route>
+      {/* Support Tickets - both short and long URL formats */}
       <Route path="/tickets">
         <PermissionRoute component={Tickets} permission={PERMISSIONS.SUPPORT_VIEW} />
       </Route>
+      <Route path="/support-tickets">
+        <PermissionRoute component={Tickets} permission={PERMISSIONS.SUPPORT_VIEW} />
+      </Route>
+      {/* Knowledge Base - both short and long URL formats */}
       <Route path="/knowledge">
+        <PermissionRoute component={Knowledge} permission={PERMISSIONS.KNOWLEDGE_VIEW} />
+      </Route>
+      <Route path="/knowledge-base">
         <PermissionRoute component={Knowledge} permission={PERMISSIONS.KNOWLEDGE_VIEW} />
       </Route>
       <Route path="/reports">
@@ -148,7 +164,11 @@ function AdminRouter() {
       <Route path="/settings">
         <PermissionRoute component={Settings} permission={PERMISSIONS.SETTINGS_VIEW} />
       </Route>
+      {/* User Management - both short and long URL formats */}
       <Route path="/users">
+        <PermissionRoute component={UserManagement} adminOnly />
+      </Route>
+      <Route path="/user-management">
         <PermissionRoute component={UserManagement} adminOnly />
       </Route>
       <Route path="/permissions">
