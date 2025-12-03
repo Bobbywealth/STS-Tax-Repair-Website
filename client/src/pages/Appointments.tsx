@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,22 +10,104 @@ import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Calendar as CalendarIcon, Clock, MapPin, User, Plus, List, Grid, Phone, Mail, Check, X, AlertCircle } from "lucide-react";
 import { format, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, isToday, isFuture, parseISO } from "date-fns";
 import type { Appointment } from "@shared/mysql-schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
+const createAppointmentSchema = z.object({
+  clientId: z.string().min(1, "Please select a client"),
+  clientName: z.string().min(1, "Client name is required"),
+  title: z.string().min(1, "Title is required"),
+  description: z.string().optional(),
+  appointmentDate: z.string().min(1, "Date and time are required"),
+  duration: z.number().min(15).max(480).default(60),
+  location: z.string().optional(),
+  notes: z.string().optional(),
+  status: z.string().default("scheduled"),
+});
+
+type CreateAppointmentForm = z.infer<typeof createAppointmentSchema>;
+
+interface Client {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
 export default function Appointments() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const { data: appointments, isLoading } = useQuery<Appointment[]>({
     queryKey: ['/api/appointments'],
   });
+
+  const { data: clients } = useQuery<Client[]>({
+    queryKey: ['/api/users'],
+  });
+
+  const form = useForm<CreateAppointmentForm>({
+    resolver: zodResolver(createAppointmentSchema),
+    defaultValues: {
+      clientId: "",
+      clientName: "",
+      title: "",
+      description: "",
+      appointmentDate: "",
+      duration: 60,
+      location: "",
+      notes: "",
+      status: "scheduled",
+    },
+  });
+
+  const createAppointmentMutation = useMutation({
+    mutationFn: async (data: CreateAppointmentForm) => {
+      return apiRequest("POST", "/api/appointments", {
+        ...data,
+        appointmentDate: new Date(data.appointmentDate).toISOString(),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/appointments'] });
+      toast({
+        title: "Appointment Created",
+        description: "The appointment has been scheduled successfully.",
+      });
+      setIsCreateDialogOpen(false);
+      form.reset();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Creation Failed",
+        description: error.message || "Could not create appointment.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmitCreate = (data: CreateAppointmentForm) => {
+    createAppointmentMutation.mutate(data);
+  };
+
+  const handleClientSelect = (clientId: string) => {
+    const client = clients?.find(c => c.id === clientId);
+    if (client) {
+      form.setValue("clientId", clientId);
+      form.setValue("clientName", `${client.firstName} ${client.lastName}`.trim());
+    }
+  };
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
@@ -114,6 +199,13 @@ export default function Appointments() {
           <p className="text-muted-foreground mt-1">Schedule and manage client consultations</p>
         </div>
         <div className="flex gap-2">
+          <Button 
+            onClick={() => setIsCreateDialogOpen(true)}
+            data-testid="button-create-appointment"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            New Appointment
+          </Button>
           <Button 
             variant="outline" 
             onClick={() => setViewMode(viewMode === "calendar" ? "list" : "calendar")}
@@ -432,6 +524,214 @@ export default function Appointments() {
               </DialogFooter>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Appointment Dialog */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5" />
+              Schedule New Appointment
+            </DialogTitle>
+            <DialogDescription>
+              Create a new appointment for a client
+            </DialogDescription>
+          </DialogHeader>
+
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmitCreate)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="clientId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Client</FormLabel>
+                    <Select onValueChange={handleClientSelect} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-client">
+                          <SelectValue placeholder="Select a client" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {clients?.filter(c => c.firstName || c.lastName).map((client) => (
+                          <SelectItem key={client.id} value={client.id}>
+                            {`${client.firstName || ''} ${client.lastName || ''}`.trim() || client.email}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Title</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="e.g., Tax Consultation, Document Review" 
+                        {...field} 
+                        data-testid="input-title"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Brief description of the appointment" 
+                        {...field} 
+                        data-testid="input-description"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="appointmentDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Date & Time</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="datetime-local" 
+                          {...field} 
+                          data-testid="input-datetime"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="duration"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Duration (minutes)</FormLabel>
+                      <Select 
+                        onValueChange={(val) => field.onChange(parseInt(val))} 
+                        value={field.value?.toString()}
+                      >
+                        <FormControl>
+                          <SelectTrigger data-testid="select-duration">
+                            <SelectValue placeholder="Select duration" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="15">15 minutes</SelectItem>
+                          <SelectItem value="30">30 minutes</SelectItem>
+                          <SelectItem value="45">45 minutes</SelectItem>
+                          <SelectItem value="60">1 hour</SelectItem>
+                          <SelectItem value="90">1.5 hours</SelectItem>
+                          <SelectItem value="120">2 hours</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Location (Optional)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="e.g., Office, Virtual, Phone Call" 
+                        {...field} 
+                        data-testid="input-location"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-status">
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="scheduled">Scheduled</SelectItem>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="confirmed">Confirmed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Notes (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Additional notes for this appointment" 
+                        {...field} 
+                        data-testid="input-notes"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <DialogFooter className="gap-2">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => {
+                    setIsCreateDialogOpen(false);
+                    form.reset();
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={createAppointmentMutation.isPending}
+                  data-testid="button-submit-appointment"
+                >
+                  {createAppointmentMutation.isPending ? "Creating..." : "Create Appointment"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
     </div>
