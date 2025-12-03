@@ -165,8 +165,12 @@ export default function Settings() {
     // Save notification preferences
     const handleSaveNotifications = async () => {
       try {
-        const response = await apiRequest("PATCH", "/api/notifications/preferences", notificationPrefs);
-        if (response.ok) {
+        const response = await fetch('/api/notifications/preferences', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(notificationPrefs)
+        });        if (response.ok) {
           toast({
             title: "Notifications Updated",
             description: "Your notification preferences have been saved successfully.",
