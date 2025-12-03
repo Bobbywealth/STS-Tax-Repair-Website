@@ -612,6 +612,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid email or password" });
       }
 
+      // Check if user is NOT a client (staff/admin should use /api/admin/login)
+      if (user.role !== "client") {
+        return res
+          .status(403)
+          .json({
+            message:
+              "Access denied. This login is for clients only. Staff and administrators should use the staff login.",
+          });
+      }
+
       // Check if user is active
       if (!user.isActive) {
         return res
@@ -619,26 +629,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .json({ message: "Account is deactivated. Please contact support." });
       }
 
-      // Create session for the user
-      // Store user info in session (similar to Replit Auth but for password-based login)
+      // Create session for the client
       req.session.userId = user.id;
       req.session.userRole = user.role;
-
-      // Set appropriate login flag based on role and determine redirect
-      // Roles: 'client' | 'agent' | 'tax_office' | 'admin'
-      let redirectUrl = "/client-portal";
-      if (
-        user.role === "admin" ||
-        user.role === "agent" ||
-        user.role === "tax_office"
-      ) {
-        req.session.isAdminLogin = true;
-        req.session.isClientLogin = false;
-        redirectUrl = "/dashboard";
-      } else {
-        req.session.isClientLogin = true;
-        req.session.isAdminLogin = false;
-      }
+      req.session.isClientLogin = true;
+      req.session.isAdminLogin = false;
 
       // Explicitly save session to ensure it persists
       await new Promise<void>((resolve, reject) => {
@@ -657,7 +652,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lastName: user.lastName,
           role: user.role,
         },
-        redirectUrl,
+        redirectUrl: "/client-portal",
       });
     } catch (error: any) {
       console.error("Client login error:", error);
