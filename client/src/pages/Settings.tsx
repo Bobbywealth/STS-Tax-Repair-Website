@@ -163,30 +163,6 @@ export default function Settings() {
     };
 
     // Save notification preferences
-    const handleSaveNotifications = async () => {
-      try {
-        const response = await fetch('/api/notifications/preferences', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify(notificationPrefs)
-        });        if (response.ok) {
-          toast({
-            title: "Notifications Updated",
-            description: "Your notification preferences have been saved successfully.",
-          });
-        } else {
-          throw new Error("Failed to save notification preferences");
-        }
-      } catch (error: any) {
-        toast({
-          title: "Update Failed",
-          description: error.message || "Could not save notification preferences. Please try again.",
-          variant: "destructive",
-        });
-      }
-    };
-  };
 
   const handleSubmit = () => {
     if (!user) {
