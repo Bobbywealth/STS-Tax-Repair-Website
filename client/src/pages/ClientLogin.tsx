@@ -26,9 +26,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
 import logoUrl from "@/assets/sts-logo.png";
 
-const STS_LOGO_URL =
-  "https://www.ststaxrepair.net/wp-content/uploads/2024/12/STS-Tax-Logo-2.png";
-
 function FloatingParticles() {
   return (
     <div className="particles-container">

@@ -44,6 +44,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence, useInView, useScroll, useTransform } from "framer-motion";
+import logoUrl from "@/assets/sts-logo.png";
 
 const MotionCard = motion.create(Card);
 
@@ -77,8 +78,6 @@ function AnimatedCounter({ value, suffix = "", prefix = "" }: { value: number; s
     </span>
   );
 }
-
-const STS_LOGO_URL = "https://www.ststaxrepair.net/wp-content/uploads/2023/12/STS-Logo.webp";
 
 export default function HomePage() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -500,7 +499,7 @@ export default function HomePage() {
             {/* Real Logo */}
             <Link href="/" className="flex items-center gap-3 group" data-testid="link-home-logo">
               <img 
-                src={STS_LOGO_URL} 
+                src={logoUrl} 
                 alt="STS TaxRepair" 
                 className="h-14 w-auto object-contain"
               />
@@ -1896,7 +1895,7 @@ export default function HomePage() {
             {/* Brand */}
             <div>
               <img 
-                src={STS_LOGO_URL} 
+                src={logoUrl} 
                 alt="STS TaxRepair" 
                 className="h-16 w-auto mb-6"
               />

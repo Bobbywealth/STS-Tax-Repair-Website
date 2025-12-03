@@ -11,8 +11,7 @@ import {
 import { Menu, X, Mail } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-
-const STS_LOGO_URL = "https://www.ststaxrepair.net/wp-content/uploads/2024/12/STS-Tax-Logo-2.png";
+import logoUrl from "@/assets/sts-logo.png";
 
 const faqs = [
   {
@@ -75,7 +74,7 @@ export default function FAQPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
             <Link href="/" className="flex items-center gap-3">
-              <img src={STS_LOGO_URL} alt="STS TaxRepair" className="h-14 w-auto object-contain" />
+              <img src={logoUrl} alt="STS TaxRepair" className="h-14 w-auto object-contain" />
             </Link>
 
             <nav className="hidden lg:flex items-center gap-6">
@@ -237,7 +236,7 @@ export default function FAQPage() {
       {/* Footer */}
       <footer className="py-12 bg-gray-900 text-white">
         <div className="max-w-7xl mx-auto px-4 text-center">
-          <img src={STS_LOGO_URL} alt="STS TaxRepair" className="h-12 mx-auto mb-4" />
+          <img src={logoUrl} alt="STS TaxRepair" className="h-12 mx-auto mb-4" />
           <p className="text-gray-400">© 2024 STS Tax Repair. All rights reserved.</p>
         </div>
       </footer>
