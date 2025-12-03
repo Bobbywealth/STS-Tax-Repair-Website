@@ -383,30 +383,6 @@ export default function HomePage() {
     }
   ];
 
-  const pricingPlans = [
-    {
-      title: "Agent Packages",
-      price: "$950",
-      description: "Become a proficient tax preparer with our Agent Package. Access comprehensive training, top-notch software, ongoing support, and networking opportunities to kickstart your career in tax preparation.",
-      features: ["Professional Training", "Software & Tools", "Support & Guidance", "Networking Opportunities"],
-      featured: false
-    },
-    {
-      title: "Professional Tax Preparers Package",
-      price: "$1,850",
-      description: "Elevate your expertise with our Professional Tax Preparers Package. Gain advanced training, priority support, enhanced resources, and marketing assistance to excel in complex tax scenarios and grow your client base.",
-      features: ["Advanced Training", "Priority Support", "Enhanced Resources", "Marketing Support"],
-      featured: true
-    },
-    {
-      title: "Start A Franchise",
-      price: "$25,000",
-      description: "Invest in your future with our Franchise Package. Join an established brand, receive comprehensive training, exclusive territories, and business development assistance to launch and expand your tax preparation franchise successfully.",
-      features: ["Established Brand", "Comprehensive Training & Support", "Exclusive Territories", "Business Development Assistance"],
-      featured: false
-    }
-  ];
-
   const stats = [
     { value: 15, suffix: "+", label: "Years Experience" },
     { value: 50000, suffix: "+", label: "Clients Served" },
@@ -1491,84 +1467,6 @@ export default function HomePage() {
             <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-gray-50 to-transparent z-10 pointer-events-none" />
             <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-gray-50 to-transparent z-10 pointer-events-none" />
           </div>
-        </div>
-      </section>
-
-      {/* Pricing Section */}
-      <section id="pricing" className="py-24 bg-white" data-testid="section-pricing">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
-            className="text-center mb-16"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            <Badge className="bg-sts-primary/10 text-sts-primary border-0 mb-4">
-              PRICING PLAN
-            </Badge>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900 mb-4">
-              Find The Ideal Fit <span className="text-sts-primary">For You.</span>
-            </h2>
-            <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-              Enhance your experience with plans designed to suit your requirements
-            </p>
-          </motion.div>
-
-          <motion.div 
-            className="grid md:grid-cols-3 gap-8"
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-            variants={staggerContainer}
-          >
-            {pricingPlans.map((plan, index) => (
-              <motion.div key={plan.title} variants={fadeInUp}>
-                <Card 
-                  className={`p-8 h-full ${
-                    plan.featured 
-                      ? "bg-sts-dark text-white border-0 shadow-2xl scale-105" 
-                      : "bg-white border-0 shadow-lg hover:shadow-xl"
-                  } transition-all duration-300`}
-                  data-testid={`card-pricing-${index}`}
-                >
-                  <h3 className={`text-xl font-bold mb-4 ${plan.featured ? "text-white" : "text-gray-900"}`}>
-                    {plan.title}
-                  </h3>
-                  
-                  <div className="mb-6">
-                    <span className="text-4xl sm:text-5xl font-black text-sts-gold">{plan.price}</span>
-                  </div>
-                  
-                  <p className={`mb-6 leading-relaxed ${plan.featured ? "text-white/70" : "text-gray-600"}`}>
-                    {plan.description}
-                  </p>
-                  
-                  <div className="space-y-3 mb-8">
-                    {plan.features.map((feature) => (
-                      <div key={feature} className="flex items-center gap-3">
-                        <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
-                          plan.featured ? "bg-sts-gold/20" : "bg-sts-primary/10"
-                        }`}>
-                          <Check className={`w-3 h-3 ${plan.featured ? "text-sts-gold" : "text-sts-primary"}`} />
-                        </div>
-                        <span className={plan.featured ? "text-white/90" : "text-gray-700"}>{feature}</span>
-                      </div>
-                    ))}
-                  </div>
-                  
-                  <Button 
-                    className={`w-full ${
-                      plan.featured 
-                        ? "bg-gradient-to-r from-sts-gold to-yellow-400 text-sts-dark hover:from-sts-gold hover:to-yellow-500" 
-                        : "bg-sts-primary hover:bg-sts-primary/90 text-white"
-                    } font-bold h-12`}
-                  >
-                    Get Started
-                  </Button>
-                </Card>
-              </motion.div>
-            ))}
-          </motion.div>
         </div>
       </section>
 
