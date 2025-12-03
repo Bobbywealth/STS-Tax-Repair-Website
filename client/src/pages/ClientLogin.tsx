@@ -79,7 +79,8 @@ export default function ClientLogin() {
         description: "Redirecting to your portal...",
       });
 
-      window.location.href = "/client-portal";
+      // Use the redirect URL from the server response (based on user role)
+      window.location.href = data.redirectUrl || "/client-portal";
     } catch (error: any) {
       toast({
         title: "Login Failed",

@@ -546,11 +546,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Account is deactivated. Please contact support." });
       }
 
-      // Create session for the client
+      // Create session for the user
       // Store user info in session (similar to Replit Auth but for password-based login)
       req.session.userId = user.id;
       req.session.userRole = user.role;
-      req.session.isClientLogin = true;
+      
+      // Set appropriate login flag based on role and determine redirect
+      // Roles: 'client' | 'agent' | 'tax_office' | 'admin'
+      let redirectUrl = '/client-portal';
+      if (user.role === 'admin' || user.role === 'agent' || user.role === 'tax_office') {
+        req.session.isAdminLogin = true;
+        req.session.isClientLogin = false;
+        redirectUrl = '/dashboard';
+      } else {
+        req.session.isClientLogin = true;
+        req.session.isAdminLogin = false;
+      }
 
       // Explicitly save session to ensure it persists
       await new Promise<void>((resolve, reject) => {
@@ -568,7 +579,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           firstName: user.firstName,
           lastName: user.lastName,
           role: user.role,
-        }
+        },
+        redirectUrl
       });
     } catch (error: any) {
       console.error("Client login error:", error);
