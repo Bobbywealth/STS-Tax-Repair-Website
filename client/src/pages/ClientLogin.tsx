@@ -1,14 +1,33 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CheckCircle, Shield, Clock, FileText, Mail, Lock, UserCog, Sparkles, Zap, Menu, X } from "lucide-react";
+import {
+  CheckCircle,
+  Shield,
+  Clock,
+  FileText,
+  Mail,
+  Lock,
+  UserCog,
+  Sparkles,
+  Zap,
+  Menu,
+  X,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
 import logoUrl from "@/assets/sts-logo.png";
 
-const STS_LOGO_URL = "https://www.ststaxrepair.net/wp-content/uploads/2024/12/STS-Tax-Logo-2.png";
+const STS_LOGO_URL =
+  "https://www.ststaxrepair.net/wp-content/uploads/2024/12/STS-Tax-Logo-2.png";
 
 function FloatingParticles() {
   return (
@@ -50,10 +69,9 @@ export default function ClientLogin() {
     { href: "/", label: "Home" },
     { href: "/services", label: "Services" },
     { href: "/agents", label: "Agents" },
-    { href: "/pricing", label: "Pricing" },
     { href: "/about", label: "About" },
     { href: "/contact", label: "Contact" },
-    { href: "/faq", label: "FAQ" }
+    { href: "/faq", label: "FAQ" },
   ];
 
   const handleClientLogin = async (e: React.FormEvent) => {
@@ -403,13 +421,17 @@ export default function ClientLogin() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
             <Link href="/" className="flex items-center gap-3">
-              <img src={STS_LOGO_URL} alt="STS TaxRepair" className="h-14 w-auto object-contain" />
+              <img
+                src={STS_LOGO_URL}
+                alt="STS TaxRepair"
+                className="h-14 w-auto object-contain"
+              />
             </Link>
 
             <nav className="hidden lg:flex items-center gap-6">
               {navLinks.map((link) => (
-                <Link 
-                  key={link.href} 
+                <Link
+                  key={link.href}
                   href={link.href}
                   className="text-gray-700 hover:text-sts-primary font-medium transition-colors"
                 >
@@ -419,14 +441,14 @@ export default function ClientLogin() {
             </nav>
 
             <div className="hidden lg:flex items-center gap-3">
-              <Button 
+              <Button
                 variant="outline"
                 onClick={() => navigate("/client-login")}
                 className="font-bold border-2 border-sts-primary text-sts-primary hover:bg-sts-primary hover:text-white"
               >
                 Login
               </Button>
-              <Button 
+              <Button
                 onClick={() => navigate("/client-login")}
                 className="bg-gradient-to-r from-sts-gold to-yellow-400 text-sts-dark font-semibold"
               >
@@ -434,11 +456,15 @@ export default function ClientLogin() {
               </Button>
             </div>
 
-            <button 
+            <button
               className="lg:hidden p-2"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             >
-              {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {isMobileMenuOpen ? (
+                <X className="w-6 h-6" />
+              ) : (
+                <Menu className="w-6 h-6" />
+              )}
             </button>
           </div>
         </div>
@@ -447,8 +473,8 @@ export default function ClientLogin() {
           <div className="lg:hidden bg-white border-t">
             <nav className="flex flex-col p-4 gap-2">
               {navLinks.map((link) => (
-                <Link 
-                  key={link.href} 
+                <Link
+                  key={link.href}
                   href={link.href}
                   className="py-2 px-4 text-gray-700 hover:bg-gray-100 rounded-lg"
                   onClick={() => setIsMobileMenuOpen(false)}
@@ -472,12 +498,15 @@ export default function ClientLogin() {
         <div className="w-full max-w-5xl space-y-8 animate-fade-in">
           {/* Logo and Header */}
           <div className="text-center space-y-4">
-            <img 
-              src={logoUrl} 
-              alt="STS TaxRepair Logo" 
+            <img
+              src={logoUrl}
+              alt="STS TaxRepair Logo"
               className="h-24 w-auto object-contain mx-auto logo-glow"
             />
-            <h1 className="text-5xl font-bold neon-text" data-testid="text-welcome-title">
+            <h1
+              className="text-5xl font-bold neon-text"
+              data-testid="text-welcome-title"
+            >
               Welcome
             </h1>
             <p className="text-xl text-gray-300/80">
@@ -492,12 +521,16 @@ export default function ClientLogin() {
                 <Sparkles className="h-5 w-5 text-emerald-400" />
                 Client Login
               </CardTitle>
-              <CardDescription className="text-gray-400">Sign in to track your refund status and documents</CardDescription>
+              <CardDescription className="text-gray-400">
+                Sign in to track your refund status and documents
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <form onSubmit={handleClientLogin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-gray-300">Email</Label>
+                  <Label htmlFor="email" className="text-gray-300">
+                    Email
+                  </Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-400" />
                     <Input
@@ -513,7 +546,9 @@ export default function ClientLogin() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-gray-300">Password</Label>
+                  <Label htmlFor="password" className="text-gray-300">
+                    Password
+                  </Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-400" />
                     <Input
@@ -528,7 +563,7 @@ export default function ClientLogin() {
                     />
                   </div>
                 </div>
-                <Button 
+                <Button
                   type="submit"
                   className="w-full neon-button h-12 text-base font-semibold text-white transition-all duration-300"
                   disabled={isLoading}
@@ -551,7 +586,10 @@ export default function ClientLogin() {
               <div className="text-center space-y-3 pt-2">
                 <p className="text-sm text-gray-400">
                   New client?{" "}
-                  <Link href="/register" className="text-emerald-400 hover:text-emerald-300 font-medium transition-colors">
+                  <Link
+                    href="/register"
+                    className="text-emerald-400 hover:text-emerald-300 font-medium transition-colors"
+                  >
                     Register here
                   </Link>
                 </p>
@@ -569,12 +607,14 @@ export default function ClientLogin() {
                   </div>
                   <div>
                     <p className="font-medium text-white">Staff / Admin</p>
-                    <p className="text-sm text-gray-400">Login with your Replit account</p>
+                    <p className="text-sm text-gray-400">
+                      Login with your Replit account
+                    </p>
                   </div>
                 </div>
-                <Button 
+                <Button
                   variant="outline"
-                  onClick={() => window.location.href = '/api/login'}
+                  onClick={() => (window.location.href = "/api/login")}
                   className="bg-transparent border-amber-500/50 text-amber-400 hover:bg-amber-500/20 hover:border-amber-400 hover:text-amber-300 transition-all duration-300"
                   data-testid="button-admin-login"
                 >
@@ -593,37 +633,58 @@ export default function ClientLogin() {
                   <CheckCircle className="h-7 w-7 text-emerald-400 feature-icon" />
                 </div>
                 <h3 className="font-semibold mb-2 text-white">Track Status</h3>
-                <p className="text-sm text-gray-400">Monitor your refund progress in real-time</p>
+                <p className="text-sm text-gray-400">
+                  Monitor your refund progress in real-time
+                </p>
               </CardContent>
             </Card>
 
             <Card className="glass-card feature-card rounded-xl border-0">
               <CardContent className="pt-6 text-center">
                 <div className="h-14 w-14 rounded-full bg-gradient-to-br from-green-500/20 to-teal-500/20 flex items-center justify-center mx-auto mb-4 border border-green-500/30">
-                  <FileText className="h-7 w-7 text-green-400 feature-icon" style={{ animationDelay: '0.2s' }} />
+                  <FileText
+                    className="h-7 w-7 text-green-400 feature-icon"
+                    style={{ animationDelay: "0.2s" }}
+                  />
                 </div>
-                <h3 className="font-semibold mb-2 text-white">Upload Documents</h3>
-                <p className="text-sm text-gray-400">Submit W-2s and 1099s securely online</p>
+                <h3 className="font-semibold mb-2 text-white">
+                  Upload Documents
+                </h3>
+                <p className="text-sm text-gray-400">
+                  Submit W-2s and 1099s securely online
+                </p>
               </CardContent>
             </Card>
 
             <Card className="glass-card feature-card rounded-xl border-0">
               <CardContent className="pt-6 text-center">
                 <div className="h-14 w-14 rounded-full bg-gradient-to-br from-amber-500/20 to-yellow-500/20 flex items-center justify-center mx-auto mb-4 border border-amber-500/30">
-                  <Clock className="h-7 w-7 text-amber-400 feature-icon" style={{ animationDelay: '0.4s' }} />
+                  <Clock
+                    className="h-7 w-7 text-amber-400 feature-icon"
+                    style={{ animationDelay: "0.4s" }}
+                  />
                 </div>
                 <h3 className="font-semibold mb-2 text-white">24/7 Access</h3>
-                <p className="text-sm text-gray-400">Check your status anytime, from anywhere</p>
+                <p className="text-sm text-gray-400">
+                  Check your status anytime, from anywhere
+                </p>
               </CardContent>
             </Card>
 
             <Card className="glass-card feature-card rounded-xl border-0">
               <CardContent className="pt-6 text-center">
                 <div className="h-14 w-14 rounded-full bg-gradient-to-br from-teal-500/20 to-emerald-500/20 flex items-center justify-center mx-auto mb-4 border border-teal-500/30">
-                  <Shield className="h-7 w-7 text-teal-400 feature-icon" style={{ animationDelay: '0.6s' }} />
+                  <Shield
+                    className="h-7 w-7 text-teal-400 feature-icon"
+                    style={{ animationDelay: "0.6s" }}
+                  />
                 </div>
-                <h3 className="font-semibold mb-2 text-white">Secure & Private</h3>
-                <p className="text-sm text-gray-400">Your data is encrypted and protected</p>
+                <h3 className="font-semibold mb-2 text-white">
+                  Secure & Private
+                </h3>
+                <p className="text-sm text-gray-400">
+                  Your data is encrypted and protected
+                </p>
               </CardContent>
             </Card>
           </div>
@@ -632,7 +693,10 @@ export default function ClientLogin() {
           <div className="text-center space-y-2">
             <p className="text-sm text-gray-400">
               Need help? Contact us at{" "}
-              <a href="mailto:support@ststaxrepair.com" className="text-emerald-400 hover:text-emerald-300 transition-colors">
+              <a
+                href="mailto:support@ststaxrepair.com"
+                className="text-emerald-400 hover:text-emerald-300 transition-colors"
+              >
                 support@ststaxrepair.com
               </a>
             </p>

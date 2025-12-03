@@ -35,6 +35,15 @@ export default function Settings() {
     country: "",
   });
 
+  // Notification preferences state
+  const [notificationPrefs, setNotificationPrefs] = useState({
+    emailNotifications: true,
+    documentAlerts: true,
+    statusNotifications
+    messageAlerts: true,
+    smsNotifications: true,
+  });
+
   // Update form when user data loads (using useEffect to avoid render-time state updates)
   useEffect(() => {
     if (user) {
@@ -147,6 +156,32 @@ export default function Settings() {
         fileInputRef.current.value = "";
       }
     }
+
+    // Handle notification preference changes
+    const handleNotificationChange = (key: keyof typeof notificationPrefs) => {
+      setNotificationPrefs(prev => ({ ...prev, [key]: !prev[key] }));
+    };
+
+    // Save notification preferences
+    const handleSaveNotifications = async () => {
+      try {
+        const response = await apiRequest("PATCH", "/api/notifications/preferences", notificationPrefs);
+        if (response.ok) {
+          toast({
+            title: "Notifications Updated",
+            description: "Your notification preferences have been saved successfully.",
+          });
+        } else {
+          throw new Error("Failed to save notification preferences");
+        }
+      } catch (error: any) {
+        toast({
+          title: "Update Failed",
+          description: error.message || "Could not save notification preferences. Please try again.",
+          variant: "destructive",
+        });
+      }
+    };
   };
 
   const handleSubmit = () => {
@@ -431,7 +466,7 @@ export default function Settings() {
                   <Label>Email Notifications</Label>
                   <p className="text-sm text-muted-foreground">Receive email updates for important events</p>
                 </div>
-                <Switch defaultChecked data-testid="switch-email-notifications" />
+                <Switch checked={notificationPrefs.emailNotifications} onCheckedChange={() => handleNotificationChange('emailNotifications')} data-testid="switch-email-notifications" />
               </div>
 
               <Separator />
@@ -441,7 +476,7 @@ export default function Settings() {
                   <Label>Document Upload Alerts</Label>
                   <p className="text-sm text-muted-foreground">Get notified when clients upload documents</p>
                 </div>
-                <Switch defaultChecked data-testid="switch-document-alerts" />
+                <Switch checked={notificationPrefs.documentAlerts} onCheckedChange={() => handleNotificationChange('documentAlerts')} data-testid="switch-document-alerts" />
               </div>
 
               <Separator />
@@ -451,7 +486,7 @@ export default function Settings() {
                   <Label>Status Change Notifications</Label>
                   <p className="text-sm text-muted-foreground">Alerts when refund status changes</p>
                 </div>
-                <Switch defaultChecked data-testid="switch-status-notifications" />
+                <Switch checked={notificationPrefs.statusNotifications} onCheckedChange={() => handleNotificationChange('statusNotifications')} data-testid="switch-status-notifications" />
               </div>
 
               <Separator />
@@ -461,7 +496,7 @@ export default function Settings() {
                   <Label>New Message Alerts</Label>
                   <p className="text-sm text-muted-foreground">Notifications for new client messages</p>
                 </div>
-                <Switch defaultChecked data-testid="switch-message-alerts" />
+                <Switch checked={notificationPrefs.messageAlerts} onCheckedChange={() => handleNotificationChange('messageAlerts')} data-testid="switch-message-alerts" />
               </div>
 
               <Separator />
@@ -471,10 +506,10 @@ export default function Settings() {
                   <Label>SMS Notifications</Label>
                   <p className="text-sm text-muted-foreground">Receive text messages for critical updates</p>
                 </div>
-                <Switch data-testid="switch-sms-notifications" />
+                <Switch  checked={notificationPrefs.smsNotifications} onCheckedChange={() => handleNotificationChange('smsNotifications')}data-testid="switch-sms-notifications" />
               </div>
 
-              <Button data-testid="button-save-notifications">Save Preferences</Button>
+              <Button data-testid="button-save-notifications" onClick={handleSaveNotifications}>Save Preferences</Button>
             </CardContent>
           </Card>
         </TabsContent>
