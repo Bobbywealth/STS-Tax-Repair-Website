@@ -8,7 +8,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { MobileNav } from "@/components/MobileNav";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2 } from "lucide-react";
+import { Loader2, Mail } from "lucide-react";
 
 import Dashboard from "@/pages/Dashboard";
 import Clients from "@/pages/Clients";
@@ -182,18 +182,45 @@ function AdminLayout() {
   if (error || !user) {
     return (
       <div className="flex items-center justify-center h-screen bg-animated-mesh">
-        <div className="flex flex-col items-center gap-4 p-8 bg-card rounded-lg border shadow-sm">
-          <h2 className="text-xl font-semibold">Please Sign In</h2>
-          <p className="text-muted-foreground text-center max-w-sm">
-            You need to be logged in to access the CRM dashboard.
+        <div className="flex flex-col items-center gap-6 p-8 bg-card rounded-lg border shadow-sm max-w-md w-full mx-4">
+          <div className="text-center space-y-2">
+            <h2 className="text-xl font-semibold">Staff Portal Access</h2>
+            <p className="text-muted-foreground text-sm">
+              Sign in to access the CRM dashboard.
+            </p>
+          </div>
+          
+          <div className="w-full space-y-3">
+            <Link 
+              href="/admin-login"
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 py-2 w-full bg-primary text-primary-foreground hover:bg-primary/90"
+              data-testid="button-email-login"
+            >
+              <Mail className="mr-2 h-4 w-4" />
+              Sign In with Email
+            </Link>
+            
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">Or</span>
+              </div>
+            </div>
+            
+            <a 
+              href="/api/login" 
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 py-2 w-full border border-input bg-background hover:bg-accent hover:text-accent-foreground"
+              data-testid="button-replit-login"
+            >
+              Sign In with Replit
+            </a>
+          </div>
+          
+          <p className="text-xs text-muted-foreground text-center">
+            Client portal? <Link href="/login" className="text-primary hover:underline">Login here</Link>
           </p>
-          <a 
-            href="/api/login" 
-            className="inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90"
-            data-testid="button-login"
-          >
-            Sign In with Replit
-          </a>
         </div>
       </div>
     );
