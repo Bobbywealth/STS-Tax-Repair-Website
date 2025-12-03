@@ -30,7 +30,7 @@ export function getSession() {
   
   // Use MySQL session store with SHARED connection pool (prevents connection exhaustion)
   const MySQLSessionStore = MySQLStore(session);
-  const sessionStore = new MySQLSessionStore({
+  const sessionStore = new (MySQLSessionStore as any)({
     createDatabaseTable: true,
     schema: {
       tableName: 'express_sessions',
@@ -43,7 +43,7 @@ export function getSession() {
     expiration: sessionTtl,
     clearExpired: true,
     checkExpirationInterval: 900000, // 15 minutes
-  }, mysqlPool as any); // Pass existing pool to prevent separate connections
+  }, mysqlPool); // Pass existing pool to prevent separate connections
 
   const isProduction = process.env.NODE_ENV === 'production';
   
@@ -156,10 +156,10 @@ export async function setupAuth(app: Express) {
     tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
     verified: passport.AuthenticateCallback
   ) => {
-    const user = {};
+    const user: any = {};
     updateUserSession(user, tokens);
     await upsertUser(tokens.claims());
-    verified(null, user);
+    verified(null, user as Express.User);
   };
 
   for (const domain of process.env.REPLIT_DOMAINS!.split(",")) {

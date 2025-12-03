@@ -174,7 +174,7 @@ export default function ServicesPage() {
                   
                   {/* Learn More Link */}
                   <Button 
-                    variant="link" 
+                    variant="ghost" 
                     className="text-sts-primary p-0 h-auto font-semibold group/btn"
                     onClick={() => navigate("/contact")}
                   >

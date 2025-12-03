@@ -39,7 +39,7 @@ export default function Settings() {
   const [notificationPrefs, setNotificationPrefs] = useState({
     emailNotifications: true,
     documentAlerts: true,
-    statusNotifications
+    statusNotifications: true,
     messageAlerts: true,
     smsNotifications: true,
   });
@@ -156,13 +156,20 @@ export default function Settings() {
         fileInputRef.current.value = "";
       }
     }
+  };
 
-    // Handle notification preference changes
-    const handleNotificationChange = (key: keyof typeof notificationPrefs) => {
-      setNotificationPrefs(prev => ({ ...prev, [key]: !prev[key] }));
-    };
+  // Handle notification preference changes
+  const handleNotificationChange = (key: keyof typeof notificationPrefs) => {
+    setNotificationPrefs(prev => ({ ...prev, [key]: !prev[key] }));
+  };
 
-    // Save notification preferences
+  // Save notification preferences
+  const handleSaveNotifications = () => {
+    toast({
+      title: "Preferences Saved",
+      description: "Your notification preferences have been updated.",
+    });
+  };
 
   const handleSubmit = () => {
     if (!user) {

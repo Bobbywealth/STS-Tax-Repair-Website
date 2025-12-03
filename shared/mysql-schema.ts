@@ -155,6 +155,7 @@ export interface Form8879Data {
   agi?: string;
   totalTax?: string;
   federalRefund?: string;
+  federalWithheld?: string;
   amountOwed?: string;
   eroPin?: string;
   taxpayerPin?: string;
@@ -163,6 +164,7 @@ export interface Form8879Data {
   dateOfBirth?: string;
   priorYearAgi?: string;
   identityProtectionPin?: string;
+  eroFirmName?: string;
 }
 
 // E-Signatures Table

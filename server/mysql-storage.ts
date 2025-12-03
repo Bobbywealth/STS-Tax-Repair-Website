@@ -855,11 +855,12 @@ export class MySQLStorage implements IStorage {
   async createTaxFiling(filing: InsertTaxFiling): Promise<TaxFiling> {
     const id = randomUUID();
     const now = new Date();
-    const filingData = {
+    const status = (filing.status ?? 'new') as FilingStatus;
+    const filingData: any = {
       id,
       clientId: filing.clientId,
       taxYear: filing.taxYear,
-      status: filing.status ?? 'new' as FilingStatus,
+      status,
       documentsReceivedAt: filing.documentsReceivedAt ?? null,
       submittedAt: filing.submittedAt ?? null,
       acceptedAt: filing.acceptedAt ?? null,
@@ -877,7 +878,7 @@ export class MySQLStorage implements IStorage {
       stateStatus: filing.stateStatus ?? null,
       statesFiled: filing.statesFiled ?? null,
       notes: filing.notes ?? null,
-      statusHistory: [{ status: filing.status ?? 'new', date: now.toISOString() }],
+      statusHistory: [{ status, date: now.toISOString() }],
       createdAt: now,
       updatedAt: now
     };
@@ -891,8 +892,9 @@ export class MySQLStorage implements IStorage {
     const existing = await mysqlDb.select().from(taxFilingsTable).where(eq(taxFilingsTable.id, id));
     if (!existing.length) return undefined;
 
+    const updateData: any = { ...filing, updatedAt: new Date() };
     await mysqlDb.update(taxFilingsTable)
-      .set({ ...filing, updatedAt: new Date() })
+      .set(updateData)
       .where(eq(taxFilingsTable.id, id));
     
     const [updated] = await mysqlDb.select().from(taxFilingsTable).where(eq(taxFilingsTable.id, id));

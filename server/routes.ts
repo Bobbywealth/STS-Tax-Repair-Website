@@ -478,15 +478,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? encrypt(bankAccountNumber)
         : null;
 
-      // Create user
+      // Create user with basic profile fields (extended fields stored separately if needed)
       const user = await storage.upsertUser({
         id: crypto.randomUUID(),
         email,
         firstName,
         lastName,
-        fullName,
         phone: phone || null,
-        phoneSecondary: phoneSecondary || null,
         address: address || null,
         city: city || null,
         state: state || null,
@@ -495,16 +493,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         role: "client",
         isActive: true,
         passwordHash,
-        birthday: birthday ? new Date(birthday) : null,
-        occupation: occupation || null,
-        ssnLast4,
-        ssnEncrypted,
-        irsUsernameEncrypted,
-        irsPasswordEncrypted,
-        referredById: referredById === "none" ? null : referredById || null,
-        directDepositBank: directDepositBank || null,
-        bankRoutingEncrypted,
-        bankAccountEncrypted,
       });
 
       return res.status(201).json({
@@ -1190,7 +1178,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const permissions = await storage.getRolePermissions(user.role);
+      const permissions = await storage.getRolePermissions(user.role || 'client');
       res.json({
         role: user.role,
         permissions,
@@ -3072,7 +3060,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch(
     "/api/notifications/preferences",
     isAuthenticated,
-    async (req, res) => {
+    async (req: any, res) => {
       try {
         const {
           emailNotifications,
@@ -3081,7 +3069,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           messageAlerts,
           smsNotifications,
         } = req.body;
-        const userId = req.user?.id;
+        const userId = req.userId || req.user?.claims?.sub;
 
         if (!userId) {
           return res.status(401).json({ error: "Unauthorized" });
