@@ -422,7 +422,7 @@ export default function ClientLogin() {
           <div className="flex items-center justify-between h-20">
             <Link href="/" className="flex items-center gap-3">
               <img
-                src={STS_LOGO_URL}
+                src={logoUrl}
                 alt="STS TaxRepair"
                 className="h-14 w-auto object-contain"
               />
