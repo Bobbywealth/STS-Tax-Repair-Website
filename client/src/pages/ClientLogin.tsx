@@ -639,10 +639,7 @@ export default function ClientLogin() {
           {/* Staff/Admin Login Card */}
           <Card className="glass-card staff-card mx-auto max-w-md rounded-2xl">
             <CardContent className="pt-6 pb-6">
-              <div 
-                className="flex items-center justify-between gap-4 cursor-pointer"
-                onClick={() => setShowStaffForm(!showStaffForm)}
-              >
+              <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <div className="h-12 w-12 rounded-full bg-amber-500/20 flex items-center justify-center border border-amber-500/30">
                     <UserCog className="h-6 w-6 text-amber-400" />
@@ -657,6 +654,11 @@ export default function ClientLogin() {
                 <Button
                   variant="outline"
                   type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setShowStaffForm(!showStaffForm);
+                  }}
                   className="bg-transparent border-amber-500/50 text-amber-400 hover:bg-amber-500/20 hover:border-amber-400 hover:text-amber-300 transition-all duration-300"
                   data-testid="button-toggle-staff-login"
                 >
