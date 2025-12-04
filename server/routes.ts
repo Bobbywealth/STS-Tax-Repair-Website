@@ -574,7 +574,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lastName: user.lastName,
           role: user.role,
         },
-        redirectUrl: "/client-portal",
+        redirectUrl: "/dashboard",
       });
     } catch (error: any) {
       console.error("Admin login error:", error);
