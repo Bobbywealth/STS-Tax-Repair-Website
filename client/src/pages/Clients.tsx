@@ -2,7 +2,8 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ClientsTable } from "@/components/ClientsTable";
 import { Button } from "@/components/ui/button";
-import { UserPlus, Download, Loader2, Calendar, ChevronDown } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { UserPlus, Download, Loader2, Calendar, Search, X } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -56,6 +57,7 @@ const availableYears = Array.from({ length: 5 }, (_, i) => currentYear - i);
 export default function Clients() {
   const [activeFilter, setActiveFilter] = useState<StatusFilter>("all");
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
+  const [searchQuery, setSearchQuery] = useState("");
   
   const { data: users, isLoading: usersLoading, error: usersError } = useQuery<User[]>({
     queryKey: ["/api/users"],
@@ -106,13 +108,26 @@ export default function Clients() {
       });
   }, [users, filingsByClientId, selectedYear]);
 
+  const searchedClients = useMemo(() => {
+    if (!searchQuery.trim()) return allClients;
+    
+    const query = searchQuery.toLowerCase().trim();
+    return allClients.filter(client => 
+      client.name.toLowerCase().includes(query) ||
+      client.email.toLowerCase().includes(query) ||
+      client.phone.toLowerCase().includes(query) ||
+      (client.city && client.city.toLowerCase().includes(query)) ||
+      (client.state && client.state.toLowerCase().includes(query))
+    );
+  }, [allClients, searchQuery]);
+
   const clients = activeFilter === "all" 
-    ? allClients 
-    : allClients.filter(client => client.filingStatus === activeFilter);
+    ? searchedClients 
+    : searchedClients.filter(client => client.filingStatus === activeFilter);
 
   const getStatusCount = (status: StatusFilter) => {
-    if (status === "all") return allClients.length;
-    return allClients.filter(client => client.filingStatus === status).length;
+    if (status === "all") return searchedClients.length;
+    return searchedClients.filter(client => client.filingStatus === status).length;
   };
 
   if (usersError) {
@@ -132,7 +147,11 @@ export default function Clients() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Clients</h1>
           <p className="text-muted-foreground mt-1">
-            {isLoading ? "Loading..." : `${clients.length} clients for tax year ${selectedYear}`}
+            {isLoading ? "Loading..." : (
+              searchQuery 
+                ? `${clients.length} result${clients.length !== 1 ? 's' : ''} for "${searchQuery}" in tax year ${selectedYear}`
+                : `${clients.length} clients for tax year ${selectedYear}`
+            )}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -166,6 +185,28 @@ export default function Clients() {
             Add Client
           </Button>
         </div>
+      </div>
+
+      {/* Search Bar */}
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          type="text"
+          placeholder="Search by name, email, phone, city, or state..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-10 pr-10"
+          data-testid="input-search-clients"
+        />
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            data-testid="button-clear-search"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-2" data-testid="client-status-filters">
