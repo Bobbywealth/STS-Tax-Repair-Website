@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Switch, Route, useLocation, Redirect, Link } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
@@ -9,6 +10,10 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { MobileNav } from "@/components/MobileNav";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, Mail } from "lucide-react";
+import { SplashScreen } from "@/components/SplashScreen";
+import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
+import { OfflineIndicator } from "@/components/OfflineIndicator";
+import { usePWA } from "@/hooks/usePWA";
 
 import Dashboard from "@/pages/Dashboard";
 import Clients from "@/pages/Clients";
@@ -316,6 +321,8 @@ function AdminLayout() {
 
 function App() {
   const [location] = useLocation();
+  const [showSplash, setShowSplash] = useState(true);
+  const { isPWA } = usePWA();
   
   const isHomePage = location === '/';
   const isPublicPage = location === '/services' || location === '/agents' || location === '/pricing' || location === '/about' || location === '/contact' || location === '/faq' || location === '/book-appointment';
@@ -325,9 +332,20 @@ function App() {
   const isRegisterRoute = location.startsWith('/register');
   const isStaffRoute = location.startsWith('/staff') || location.startsWith('/dashboard');
 
+  useEffect(() => {
+    if (!isPWA) {
+      setShowSplash(false);
+    }
+  }, [isPWA]);
+
+  if (showSplash && isPWA) {
+    return <SplashScreen onComplete={() => setShowSplash(false)} minimumDisplayTime={2500} />;
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
+        <OfflineIndicator />
         {isHomePage ? (
           <HomePage />
         ) : isPublicPage ? (
@@ -363,6 +381,7 @@ function App() {
         ) : (
           <AdminLayout />
         )}
+        <PWAInstallPrompt />
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>
