@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -25,6 +25,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
 import logoUrl from "@/assets/sts-logo.png";
+import { PWALoginScreen } from "@/components/PWALoginScreen";
 
 function FloatingParticles() {
   return (
@@ -61,12 +62,23 @@ export default function ClientLogin() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isPWA, setIsPWA] = useState(false);
   
   // Staff/Admin login state
   const [staffEmail, setStaffEmail] = useState("");
   const [staffPassword, setStaffPassword] = useState("");
   const [isStaffLoading, setIsStaffLoading] = useState(false);
   const [showStaffForm, setShowStaffForm] = useState(false);
+
+  useEffect(() => {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                        (window.navigator as any).standalone === true;
+    setIsPWA(isStandalone);
+  }, []);
+
+  if (isPWA) {
+    return <PWALoginScreen onLoginSuccess={() => {}} />;
+  }
 
   const navLinks = [
     { href: "/", label: "Home" },
