@@ -657,6 +657,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         passwordHash,
       });
 
+      // Send welcome email to new client (non-blocking)
+      sendWelcomeEmail(email, firstName, 'client')
+        .then(result => {
+          if (result.success) {
+            console.log(`Welcome email sent to ${email}`);
+          } else {
+            console.warn(`Failed to send welcome email to ${email}:`, result.error);
+          }
+        })
+        .catch(err => {
+          console.error(`Error sending welcome email to ${email}:`, err);
+        });
+
       return res.status(201).json({
         message: "Registration successful",
         userId: user.id,
