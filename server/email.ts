@@ -5,11 +5,16 @@ import crypto from 'crypto';
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 const FROM_EMAIL = 'ststaxrepair@gmail.com';
 const FROM_NAME = 'STS Tax Repair';
-const APP_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://ststaxrepair.org'
-  : process.env.REPLIT_DEV_DOMAIN 
-    ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-    : 'http://localhost:5000';
+
+// Determine the app URL based on environment
+// Priority: APP_URL env var > Render URL > production domain > Replit dev domain > localhost
+const APP_URL = process.env.APP_URL 
+  || process.env.RENDER_EXTERNAL_URL
+  || (process.env.NODE_ENV === 'production' ? 'https://ststaxrepair.org' : null)
+  || (process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : null)
+  || 'http://localhost:5000';
+
+console.log(`[EMAIL] APP_URL configured as: ${APP_URL}`);
 
 if (SENDGRID_API_KEY) {
   sgMail.setApiKey(SENDGRID_API_KEY);
