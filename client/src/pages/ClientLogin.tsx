@@ -613,6 +613,15 @@ export default function ClientLogin() {
                       data-testid="input-password"
                     />
                   </div>
+                  <div className="text-right">
+                    <Link
+                      href="/forgot-password"
+                      className="text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
+                      data-testid="link-forgot-password"
+                    >
+                      Forgot password?
+                    </Link>
+                  </div>
                 </div>
                 <Button
                   type="submit"

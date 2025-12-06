@@ -257,6 +257,31 @@ export async function runMySQLMigrations(): Promise<void> {
       console.log('tax_filings table created successfully!');
     }
     
+    // Create password_reset_tokens table
+    const [passwordResetTable] = await connection.query(
+      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'password_reset_tokens'`,
+      [dbName]
+    );
+    
+    if (Array.isArray(passwordResetTable) && passwordResetTable.length === 0) {
+      console.log('Creating password_reset_tokens table...');
+      await connection.query(`
+        CREATE TABLE password_reset_tokens (
+          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+          user_id VARCHAR(36) NOT NULL,
+          token VARCHAR(64) NOT NULL UNIQUE,
+          expires_at TIMESTAMP NOT NULL,
+          used_at TIMESTAMP NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_password_reset_user (user_id),
+          INDEX idx_password_reset_token (token),
+          INDEX idx_password_reset_expires (expires_at)
+        )
+      `);
+      console.log('password_reset_tokens table created successfully!');
+    }
+    
     connection.release();
   } catch (error) {
     console.error('MySQL migration error:', error);

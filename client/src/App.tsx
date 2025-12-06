@@ -37,6 +37,8 @@ import AdminLogin from "@/pages/AdminLogin";
 import ClientPortal from "@/pages/ClientPortal";
 import RedeemInvite from "@/pages/RedeemInvite";
 import Register from "@/pages/Register";
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 import HomePage from "@/pages/HomePage";
 import ServicesPage from "@/pages/ServicesPage";
 import AgentsPage from "@/pages/AgentsPage";
@@ -327,6 +329,7 @@ function App() {
   const isHomePage = location === '/';
   const isPublicPage = location === '/services' || location === '/agents' || location === '/pricing' || location === '/about' || location === '/contact' || location === '/faq' || location === '/book-appointment';
   const isClientRoute = location.startsWith('/client-login') || location.startsWith('/client-portal');
+  const isPasswordResetRoute = location === '/forgot-password' || location.startsWith('/reset-password');
   const isAdminLoginRoute = location === '/admin-login' || location === '/login';
   const isRedeemRoute = location.startsWith('/redeem-invite');
   const isRegisterRoute = location.startsWith('/register');
@@ -367,6 +370,11 @@ function App() {
           <Switch>
             <Route path="/client-login" component={ClientLogin} />
             <Route path="/client-portal" component={ClientPortal} />
+          </Switch>
+        ) : isPasswordResetRoute ? (
+          <Switch>
+            <Route path="/forgot-password" component={ForgotPassword} />
+            <Route path="/reset-password" component={ResetPassword} />
           </Switch>
         ) : isRedeemRoute ? (
           <Switch>

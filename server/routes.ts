@@ -32,6 +32,11 @@ import { mysqlPool, runMySQLMigrations } from "./mysql-db";
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 import bcrypt from "bcrypt";
 import { encrypt, decrypt } from "./encryption";
+import { 
+  sendPasswordResetEmail, 
+  sendWelcomeEmail, 
+  generateSecureToken 
+} from "./email";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Password reset endpoint - works for both Replit and Render
@@ -122,6 +127,163 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       return res.status(500).json({ error: error.message });
+    }
+  });
+
+  // =====================================================
+  // PASSWORD RESET ENDPOINTS (Public - No Auth Required)
+  // =====================================================
+
+  // Request Password Reset - sends email with reset link
+  app.post("/api/auth/forgot-password", async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({ error: "Email is required" });
+      }
+
+      // Find user by email
+      const user = await storage.getUserByEmail(email);
+
+      // Always return success to prevent email enumeration attacks
+      if (!user) {
+        console.log(`Password reset requested for non-existent email: ${email}`);
+        return res.json({ 
+          success: true, 
+          message: "If an account exists with this email, you will receive a password reset link shortly." 
+        });
+      }
+
+      // Generate secure token
+      const token = generateSecureToken(32);
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
+
+      // Store the reset token
+      await storage.createPasswordResetToken(user.id, token, expiresAt);
+
+      // Send password reset email
+      const emailResult = await sendPasswordResetEmail(
+        email,
+        token,
+        user.firstName || undefined
+      );
+
+      if (!emailResult.success) {
+        console.error(`Failed to send password reset email to ${email}:`, emailResult.error);
+      }
+
+      // Log the email for tracking
+      await storage.createEmailLog({
+        clientId: user.id,
+        toEmail: email,
+        fromEmail: "noreply@ststaxrepair.org",
+        subject: "Reset Your Password - STS Tax Repair",
+        body: `Password reset requested`,
+        emailType: "password_reset",
+        status: emailResult.success ? "sent" : "failed",
+      });
+
+      return res.json({ 
+        success: true, 
+        message: "If an account exists with this email, you will receive a password reset link shortly." 
+      });
+    } catch (error: any) {
+      console.error("Forgot password error:", error);
+      return res.status(500).json({ error: "An error occurred. Please try again later." });
+    }
+  });
+
+  // Verify Password Reset Token
+  app.get("/api/auth/verify-reset-token", async (req, res) => {
+    try {
+      const { token } = req.query;
+
+      if (!token || typeof token !== 'string') {
+        return res.status(400).json({ valid: false, error: "Token is required" });
+      }
+
+      const resetToken = await storage.getPasswordResetToken(token);
+
+      if (!resetToken) {
+        return res.json({ valid: false, error: "Invalid or expired reset link" });
+      }
+
+      // Check if token has been used
+      if (resetToken.usedAt) {
+        return res.json({ valid: false, error: "This reset link has already been used" });
+      }
+
+      // Check if token has expired
+      if (new Date() > new Date(resetToken.expiresAt)) {
+        return res.json({ valid: false, error: "This reset link has expired" });
+      }
+
+      return res.json({ valid: true });
+    } catch (error: any) {
+      console.error("Verify reset token error:", error);
+      return res.status(500).json({ valid: false, error: "An error occurred" });
+    }
+  });
+
+  // Complete Password Reset
+  app.post("/api/auth/reset-password", async (req, res) => {
+    try {
+      const { token, newPassword } = req.body;
+
+      if (!token || !newPassword) {
+        return res.status(400).json({ error: "Token and new password are required" });
+      }
+
+      // Validate password strength
+      if (newPassword.length < 8) {
+        return res.status(400).json({ error: "Password must be at least 8 characters long" });
+      }
+
+      // Get the reset token
+      const resetToken = await storage.getPasswordResetToken(token);
+
+      if (!resetToken) {
+        return res.status(400).json({ error: "Invalid or expired reset link" });
+      }
+
+      // Check if token has been used
+      if (resetToken.usedAt) {
+        return res.status(400).json({ error: "This reset link has already been used" });
+      }
+
+      // Check if token has expired
+      if (new Date() > new Date(resetToken.expiresAt)) {
+        return res.status(400).json({ error: "This reset link has expired" });
+      }
+
+      // Hash the new password
+      const newPasswordHash = await bcrypt.hash(newPassword, 10);
+
+      // Update the user's password
+      await mysqlPool.query(
+        "UPDATE users SET password_hash = ?, updated_at = NOW() WHERE id = ?",
+        [newPasswordHash, resetToken.userId]
+      );
+
+      // Mark the token as used
+      await storage.markPasswordResetTokenUsed(token);
+
+      // Clean up expired tokens
+      await storage.deleteExpiredPasswordResetTokens();
+
+      // Get user for logging
+      const user = await storage.getUser(resetToken.userId);
+
+      console.log(`Password reset completed for user: ${user?.email || resetToken.userId}`);
+
+      return res.json({ 
+        success: true, 
+        message: "Your password has been reset successfully. You can now log in with your new password." 
+      });
+    } catch (error: any) {
+      console.error("Reset password error:", error);
+      return res.status(500).json({ error: "An error occurred. Please try again later." });
     }
   });
 

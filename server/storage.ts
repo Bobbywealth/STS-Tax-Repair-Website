@@ -28,6 +28,8 @@ import {
   type TaxFiling,
   type InsertTaxFiling,
   type FilingStatus,
+  type PasswordResetToken,
+  type InsertPasswordResetToken,
 } from "@shared/mysql-schema";
 
 export interface IStorage {
@@ -143,6 +145,12 @@ export interface IStorage {
     totalEstimatedRefund: number;
     totalActualRefund: number;
   }>;
+
+  // Password Reset Tokens
+  createPasswordResetToken(userId: string, token: string, expiresAt: Date): Promise<PasswordResetToken>;
+  getPasswordResetToken(token: string): Promise<PasswordResetToken | undefined>;
+  markPasswordResetTokenUsed(token: string): Promise<void>;
+  deleteExpiredPasswordResetTokens(): Promise<void>;
 }
 
 // MySQL storage connected to cPanel database

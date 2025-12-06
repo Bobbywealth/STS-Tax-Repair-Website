@@ -29,6 +29,7 @@ import {
   type TaxFiling,
   type InsertTaxFiling,
   type FilingStatus,
+  type PasswordResetToken,
   users as usersTable,
   taxDeadlines as taxDeadlinesTable,
   appointments as appointmentsTable,
@@ -43,11 +44,12 @@ import {
   staffInvites as staffInvitesTable,
   permissions as permissionsTable,
   rolePermissions as rolePermissionsTable,
-  taxFilings as taxFilingsTable
+  taxFilings as taxFilingsTable,
+  passwordResetTokens as passwordResetTokensTable
 } from "@shared/mysql-schema";
 import { randomUUID } from "crypto";
 import { mysqlDb } from "./mysql-db";
-import { eq, and, gte, lte, desc, asc } from "drizzle-orm";
+import { eq, and, gte, lte, lt, desc, asc } from "drizzle-orm";
 import type { IStorage } from "./storage";
 
 export class MySQLStorage implements IStorage {
@@ -988,6 +990,38 @@ export class MySQLStorage implements IStorage {
       totalEstimatedRefund,
       totalActualRefund
     };
+  }
+
+  // Password Reset Tokens
+  async createPasswordResetToken(userId: string, token: string, expiresAt: Date): Promise<PasswordResetToken> {
+    const id = randomUUID();
+    await mysqlDb.insert(passwordResetTokensTable).values({
+      id,
+      userId,
+      token,
+      expiresAt,
+      createdAt: new Date(),
+    });
+    const [created] = await mysqlDb.select().from(passwordResetTokensTable).where(eq(passwordResetTokensTable.id, id));
+    return created;
+  }
+
+  async getPasswordResetToken(token: string): Promise<PasswordResetToken | undefined> {
+    const [resetToken] = await mysqlDb.select()
+      .from(passwordResetTokensTable)
+      .where(eq(passwordResetTokensTable.token, token));
+    return resetToken;
+  }
+
+  async markPasswordResetTokenUsed(token: string): Promise<void> {
+    await mysqlDb.update(passwordResetTokensTable)
+      .set({ usedAt: new Date() })
+      .where(eq(passwordResetTokensTable.token, token));
+  }
+
+  async deleteExpiredPasswordResetTokens(): Promise<void> {
+    await mysqlDb.delete(passwordResetTokensTable)
+      .where(lt(passwordResetTokensTable.expiresAt, new Date()));
   }
 }
 
