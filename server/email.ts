@@ -33,8 +33,12 @@ interface SendEmailParams {
 }
 
 async function sendEmail(params: SendEmailParams): Promise<EmailResult> {
+  console.log(`[EMAIL] Attempting to send email to: ${params.to}, subject: ${params.subject}`);
+  console.log(`[EMAIL] SendGrid API key configured: ${SENDGRID_API_KEY ? 'YES (length: ' + SENDGRID_API_KEY.length + ')' : 'NO'}`);
+  console.log(`[EMAIL] From email: ${FROM_EMAIL}`);
+  
   if (!SENDGRID_API_KEY) {
-    console.warn('SendGrid API key not configured. Email not sent:', params.subject);
+    console.warn('[EMAIL] SendGrid API key not configured. Email not sent:', params.subject);
     return { success: false, error: 'SendGrid not configured' };
   }
 
@@ -50,18 +54,21 @@ async function sendEmail(params: SendEmailParams): Promise<EmailResult> {
       text: params.text || params.html.replace(/<[^>]*>/g, ''),
     };
 
+    console.log(`[EMAIL] Sending via SendGrid...`);
     const [response] = await sgMail.send(msg);
-    console.log(`Email sent to ${params.to}: ${params.subject}`);
+    console.log(`[EMAIL] SUCCESS - Email sent to ${params.to}: ${params.subject}`);
+    console.log(`[EMAIL] Response status: ${response.statusCode}`);
     
     return { 
       success: true, 
       messageId: response.headers['x-message-id'] as string 
     };
   } catch (error: any) {
-    console.error('SendGrid error:', error.response?.body || error.message);
+    console.error('[EMAIL] SendGrid ERROR:', JSON.stringify(error.response?.body || error.message, null, 2));
+    console.error('[EMAIL] Full error:', error);
     return { 
       success: false, 
-      error: error.message 
+      error: error.response?.body?.errors?.[0]?.message || error.message 
     };
   }
 }
