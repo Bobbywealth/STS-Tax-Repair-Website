@@ -730,6 +730,15 @@ export default function ClientLogin() {
                         data-testid="input-staff-password"
                       />
                     </div>
+                    <div className="text-right">
+                      <Link
+                        href="/forgot-password?type=admin"
+                        className="text-sm text-amber-400 hover:text-amber-300 transition-colors"
+                        data-testid="link-staff-forgot-password"
+                      >
+                        Forgot password?
+                      </Link>
+                    </div>
                   </div>
 
                   <Button
