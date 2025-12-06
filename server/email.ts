@@ -3,7 +3,7 @@ import { EmailType } from '@shared/mysql-schema';
 import crypto from 'crypto';
 
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
-const FROM_EMAIL = 'noreply@ststaxrepair.org';
+const FROM_EMAIL = 'ststaxrepair@gmail.com';
 const FROM_NAME = 'STS Tax Repair';
 const APP_URL = process.env.NODE_ENV === 'production' 
   ? 'https://ststaxrepair.org'
