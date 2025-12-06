@@ -18,6 +18,7 @@ import {
   insertEmailLogSchema,
   insertDocumentRequestTemplateSchema,
   insertTaxFilingSchema,
+  insertUserSchema,
   type Form8879Data,
   type FilingStatus,
 } from "@shared/mysql-schema";
@@ -857,13 +858,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Users (for staff to select clients) - requires clients.view permission
+  // Role-based filtering: Agents only see assigned clients, Admins see all
+  // Staff members are always visible for assignee dropdowns
   app.get(
     "/api/users",
     isAuthenticated,
     requirePermission("clients.view"),
-    async (req, res) => {
-      const users = await storage.getUsers();
-      res.json(users);
+    async (req: any, res) => {
+      try {
+        const userId = req.userId || req.user?.claims?.sub;
+        const currentUser = await storage.getUser(userId);
+        const allUsers = await storage.getUsers();
+        
+        // Admins see all users
+        const userRole = currentUser?.role?.toLowerCase();
+        if (userRole === 'admin') {
+          return res.json(allUsers);
+        }
+        
+        // Agents and tax_office see only clients assigned to them (via tax_filings.preparerId)
+        // Staff members (non-clients) are always visible for assignee dropdowns
+        if (userRole === 'agent' || userRole === 'tax_office') {
+          const taxFilings = await storage.getTaxFilings();
+          const assignedClientIds = new Set(
+            taxFilings
+              .filter(f => f.preparerId === userId)
+              .map(f => f.clientId)
+          );
+          
+          const filteredUsers = allUsers.filter(user => {
+            const role = user.role?.toLowerCase();
+            // Staff members (non-clients) are always visible for assignment dropdowns
+            if (role !== 'client') return true;
+            // Clients are only visible if assigned to this preparer
+            return assignedClientIds.has(user.id);
+          });
+          
+          return res.json(filteredUsers);
+        }
+        
+        // Default: return all users
+        res.json(allUsers);
+      } catch (error: any) {
+        console.error("Error fetching users:", error);
+        res.status(500).json({ error: error.message });
+      }
+    },
+  );
+
+  // Create new client - requires clients.create permission
+  // Note: Only allows creating clients (role='client'), not staff/admin
+  app.post(
+    "/api/users",
+    isAuthenticated,
+    requirePermission("clients.create"),
+    async (req: any, res) => {
+      try {
+        // Extract only allowed fields - prevent privilege escalation by ignoring id, role, passwordHash
+        const { firstName, lastName, email, phone, address, city, state, zipCode, country } = req.body;
+        
+        // Validate required email
+        if (!email || typeof email !== 'string' || email.trim().length === 0) {
+          return res.status(400).json({ error: "Email is required" });
+        }
+
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email.trim())) {
+          return res.status(400).json({ error: "Invalid email format" });
+        }
+
+        // Check if email already exists
+        const existingUser = await storage.getUserByEmail(email.trim());
+        if (existingUser) {
+          return res.status(400).json({ error: "A client with this email already exists" });
+        }
+
+        // Create the new client - explicitly set role to 'client' to prevent privilege escalation
+        const newUser = await storage.upsertUser({
+          email: email.trim(),
+          firstName: firstName?.trim() || null,
+          lastName: lastName?.trim() || null,
+          phone: phone?.trim() || null,
+          address: address?.trim() || null,
+          city: city?.trim() || null,
+          state: state?.trim() || null,
+          zipCode: zipCode?.trim() || null,
+          country: country?.trim() || 'United States',
+          role: 'client', // Always force client role
+          isActive: true,
+        });
+
+        res.status(201).json(newUser);
+      } catch (error: any) {
+        console.error("Error creating client:", error);
+        res.status(500).json({ error: error.message || "Failed to create client" });
+      }
     },
   );
 
@@ -1923,74 +2013,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
-  // Tasks - Pull from Perfex CRM tbltasks table - requires tasks.view permission
+  // Tasks - Local task management with full CRUD
+  // Role-based filtering: Only admins see all tasks, everyone else sees only assigned tasks
   app.get(
     "/api/tasks",
     isAuthenticated,
     requirePermission("tasks.view"),
-    async (req, res) => {
+    async (req: any, res) => {
       try {
-        const tasks = await queryPerfex(`
-        SELECT 
-          t.id,
-          t.name as title,
-          t.description,
-          t.rel_id as clientId,
-          c.company as clientName,
-          ta.staffid as assignedToId,
-          CONCAT(s.firstname, ' ', s.lastname) as assignedTo,
-          t.duedate as dueDate,
-          CASE 
-            WHEN t.priority = 1 THEN 'low'
-            WHEN t.priority = 2 THEN 'medium'
-            WHEN t.priority = 3 THEN 'high'
-            ELSE 'medium'
-          END as priority,
-          CASE 
-            WHEN t.status = 1 THEN 'todo'
-            WHEN t.status = 2 THEN 'in-progress'
-            WHEN t.status = 3 THEN 'in-progress'
-            WHEN t.status = 4 THEN 'in-progress'
-            WHEN t.status = 5 THEN 'done'
-            ELSE 'todo'
-          END as status,
-          t.dateadded as createdAt
-        FROM tbltasks t
-        LEFT JOIN tbltask_assigned ta ON t.id = ta.taskid
-        LEFT JOIN tblstaff s ON ta.staffid = s.staffid
-        LEFT JOIN tblclients c ON t.rel_id = c.userid AND t.rel_type = 'customer'
-        ORDER BY t.dateadded DESC
-        LIMIT 100
-      `);
-        res.json(tasks);
+        const userId = req.userId || req.user?.claims?.sub;
+        const currentUser = await storage.getUser(userId);
+        const allTasks = await storage.getTasks();
+        
+        const userRole = currentUser?.role?.toLowerCase();
+        
+        // ONLY admins see all tasks - explicit check
+        if (userRole === 'admin') {
+          return res.json(allTasks);
+        }
+        
+        // ALL other users (agent, tax_office, or unknown) only see tasks assigned to them
+        // This ensures role-based security even for users with undefined roles
+        const filteredTasks = allTasks.filter(task => task.assignedToId === userId);
+        return res.json(filteredTasks);
       } catch (error: any) {
-        console.error("Error fetching Perfex tasks:", error);
-        res.json([]);
+        console.error("Error fetching tasks:", error);
+        res.status(500).json({ error: error.message });
       }
     },
   );
 
-  // Note: Tasks are read from Perfex CRM - create/update/delete not supported yet
-  app.post("/api/tasks", async (req, res) => {
-    res.status(501).json({
-      error:
-        "Task creation is managed through Perfex CRM. Please create tasks in Perfex.",
-    });
-  });
+  // Create new task
+  app.post(
+    "/api/tasks",
+    isAuthenticated,
+    requirePermission("tasks.create"),
+    async (req: any, res) => {
+      try {
+        const { title, description, clientId, clientName, assignedToId, assignedTo, dueDate, priority, status, category } = req.body;
 
-  app.patch("/api/tasks/:id", async (req, res) => {
-    res.status(501).json({
-      error:
-        "Task updates are managed through Perfex CRM. Please update tasks in Perfex.",
-    });
-  });
+        if (!title) {
+          return res.status(400).json({ error: "Task title is required" });
+        }
 
-  app.delete("/api/tasks/:id", async (req, res) => {
-    res.status(501).json({
-      error:
-        "Task deletion is managed through Perfex CRM. Please delete tasks in Perfex.",
-    });
-  });
+        if (!assignedTo) {
+          return res.status(400).json({ error: "Task must be assigned to someone" });
+        }
+
+        const task = await storage.createTask({
+          title,
+          description: description || null,
+          clientId: clientId || null,
+          clientName: clientName || null,
+          assignedToId: assignedToId || null,
+          assignedTo,
+          dueDate: dueDate ? new Date(dueDate) : null,
+          priority: priority || "medium",
+          status: status || "todo",
+          category: category || null,
+        });
+
+        res.status(201).json(task);
+      } catch (error: any) {
+        console.error("Error creating task:", error);
+        res.status(500).json({ error: error.message });
+      }
+    },
+  );
+
+  // Update task
+  app.patch(
+    "/api/tasks/:id",
+    isAuthenticated,
+    requirePermission("tasks.edit"),
+    async (req: any, res) => {
+      try {
+        const { title, description, clientId, clientName, assignedToId, assignedTo, dueDate, priority, status, category } = req.body;
+
+        const updateData: any = {};
+        if (title !== undefined) updateData.title = title;
+        if (description !== undefined) updateData.description = description;
+        if (clientId !== undefined) updateData.clientId = clientId;
+        if (clientName !== undefined) updateData.clientName = clientName;
+        if (assignedToId !== undefined) updateData.assignedToId = assignedToId;
+        if (assignedTo !== undefined) updateData.assignedTo = assignedTo;
+        if (dueDate !== undefined) updateData.dueDate = dueDate ? new Date(dueDate) : null;
+        if (priority !== undefined) updateData.priority = priority;
+        if (status !== undefined) updateData.status = status;
+        if (category !== undefined) updateData.category = category;
+
+        const task = await storage.updateTask(req.params.id, updateData);
+        if (!task) {
+          return res.status(404).json({ error: "Task not found" });
+        }
+
+        res.json(task);
+      } catch (error: any) {
+        console.error("Error updating task:", error);
+        res.status(500).json({ error: error.message });
+      }
+    },
+  );
+
+  // Delete task
+  app.delete(
+    "/api/tasks/:id",
+    isAuthenticated,
+    requirePermission("tasks.edit"),
+    async (req: any, res) => {
+      try {
+        const success = await storage.deleteTask(req.params.id);
+        if (!success) {
+          return res.status(404).json({ error: "Task not found" });
+        }
+        res.status(204).send();
+      } catch (error: any) {
+        console.error("Error deleting task:", error);
+        res.status(500).json({ error: error.message });
+      }
+    },
+  );
 
   // Leads - Pull from Perfex CRM tblleads table - requires leads.view permission
   app.get(

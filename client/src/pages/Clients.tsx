@@ -1,8 +1,9 @@
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { ClientsTable } from "@/components/ClientsTable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { UserPlus, Download, Loader2, Calendar, Search, X } from "lucide-react";
 import {
   Select,
@@ -11,6 +12,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { User, TaxFiling, FilingStatus } from "@shared/mysql-schema";
 
 type StatusFilter = "all" | FilingStatus;
@@ -54,10 +65,35 @@ const filingStatusToDisplay: Record<FilingStatus, ClientTableData["status"]> = {
 const currentYear = new Date().getFullYear();
 const availableYears = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
+interface NewClientForm {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+}
+
+const initialFormState: NewClientForm = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  phone: "",
+  address: "",
+  city: "",
+  state: "",
+  zipCode: "",
+};
+
 export default function Clients() {
+  const { toast } = useToast();
   const [activeFilter, setActiveFilter] = useState<StatusFilter>("all");
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [newClientForm, setNewClientForm] = useState<NewClientForm>(initialFormState);
   
   const { data: users, isLoading: usersLoading, error: usersError } = useQuery<User[]>({
     queryKey: ["/api/users"],
@@ -73,6 +109,41 @@ export default function Clients() {
       return res.json();
     },
   });
+
+  const addClientMutation = useMutation({
+    mutationFn: async (data: NewClientForm) => {
+      return apiRequest("POST", "/api/users", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({
+        title: "Client Added",
+        description: "New client has been successfully created.",
+      });
+      setShowAddDialog(false);
+      setNewClientForm(initialFormState);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to Add Client",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleAddClient = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newClientForm.email) {
+      toast({
+        title: "Email Required",
+        description: "Please enter an email address for the client.",
+        variant: "destructive",
+      });
+      return;
+    }
+    addClientMutation.mutate(newClientForm);
+  };
 
   const isLoading = usersLoading || filingsLoading;
 
@@ -180,7 +251,7 @@ export default function Clients() {
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
-          <Button data-testid="button-add-client">
+          <Button onClick={() => setShowAddDialog(true)} data-testid="button-add-client">
             <UserPlus className="h-4 w-4 mr-2" />
             Add Client
           </Button>
@@ -252,6 +323,129 @@ export default function Clients() {
           onStatusChange={(id, newStatus) => console.log(`Client ${id} status changed to ${newStatus}`)}
         />
       )}
+
+      {/* Add Client Dialog */}
+      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Add New Client</DialogTitle>
+            <DialogDescription>
+              Enter the client's information to create a new account.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleAddClient} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="firstName">First Name</Label>
+                <Input
+                  id="firstName"
+                  value={newClientForm.firstName}
+                  onChange={(e) => setNewClientForm({ ...newClientForm, firstName: e.target.value })}
+                  placeholder="John"
+                  data-testid="input-new-first-name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Last Name</Label>
+                <Input
+                  id="lastName"
+                  value={newClientForm.lastName}
+                  onChange={(e) => setNewClientForm({ ...newClientForm, lastName: e.target.value })}
+                  placeholder="Doe"
+                  data-testid="input-new-last-name"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email *</Label>
+              <Input
+                id="email"
+                type="email"
+                value={newClientForm.email}
+                onChange={(e) => setNewClientForm({ ...newClientForm, email: e.target.value })}
+                placeholder="john.doe@example.com"
+                required
+                data-testid="input-new-email"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone</Label>
+              <Input
+                id="phone"
+                value={newClientForm.phone}
+                onChange={(e) => setNewClientForm({ ...newClientForm, phone: e.target.value })}
+                placeholder="(555) 123-4567"
+                data-testid="input-new-phone"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="address">Address</Label>
+              <Input
+                id="address"
+                value={newClientForm.address}
+                onChange={(e) => setNewClientForm({ ...newClientForm, address: e.target.value })}
+                placeholder="123 Main Street"
+                data-testid="input-new-address"
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="city">City</Label>
+                <Input
+                  id="city"
+                  value={newClientForm.city}
+                  onChange={(e) => setNewClientForm({ ...newClientForm, city: e.target.value })}
+                  placeholder="Atlanta"
+                  data-testid="input-new-city"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="state">State</Label>
+                <Input
+                  id="state"
+                  value={newClientForm.state}
+                  onChange={(e) => setNewClientForm({ ...newClientForm, state: e.target.value })}
+                  placeholder="GA"
+                  data-testid="input-new-state"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="zipCode">ZIP Code</Label>
+                <Input
+                  id="zipCode"
+                  value={newClientForm.zipCode}
+                  onChange={(e) => setNewClientForm({ ...newClientForm, zipCode: e.target.value })}
+                  placeholder="30301"
+                  data-testid="input-new-zip"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowAddDialog(false);
+                  setNewClientForm(initialFormState);
+                }}
+                data-testid="button-cancel-add-client"
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={addClientMutation.isPending} data-testid="button-submit-add-client">
+                {addClientMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  "Add Client"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
