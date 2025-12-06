@@ -1,0 +1,744 @@
+import sgMail from '@sendgrid/mail';
+import { EmailType } from '@shared/mysql-schema';
+import crypto from 'crypto';
+
+const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
+const FROM_EMAIL = 'noreply@ststaxrepair.org';
+const FROM_NAME = 'STS Tax Repair';
+const APP_URL = process.env.NODE_ENV === 'production' 
+  ? 'https://ststaxrepair.org'
+  : process.env.REPLIT_DEV_DOMAIN 
+    ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+    : 'http://localhost:5000';
+
+if (SENDGRID_API_KEY) {
+  sgMail.setApiKey(SENDGRID_API_KEY);
+}
+
+export function generateSecureToken(length: number = 32): string {
+  return crypto.randomBytes(length).toString('hex');
+}
+
+interface EmailResult {
+  success: boolean;
+  messageId?: string;
+  error?: string;
+}
+
+interface SendEmailParams {
+  to: string;
+  subject: string;
+  html: string;
+  text?: string;
+}
+
+async function sendEmail(params: SendEmailParams): Promise<EmailResult> {
+  if (!SENDGRID_API_KEY) {
+    console.warn('SendGrid API key not configured. Email not sent:', params.subject);
+    return { success: false, error: 'SendGrid not configured' };
+  }
+
+  try {
+    const msg = {
+      to: params.to,
+      from: {
+        email: FROM_EMAIL,
+        name: FROM_NAME,
+      },
+      subject: params.subject,
+      html: params.html,
+      text: params.text || params.html.replace(/<[^>]*>/g, ''),
+    };
+
+    const [response] = await sgMail.send(msg);
+    console.log(`Email sent to ${params.to}: ${params.subject}`);
+    
+    return { 
+      success: true, 
+      messageId: response.headers['x-message-id'] as string 
+    };
+  } catch (error: any) {
+    console.error('SendGrid error:', error.response?.body || error.message);
+    return { 
+      success: false, 
+      error: error.message 
+    };
+  }
+}
+
+function getEmailTemplate(type: EmailType, data: Record<string, any>): { subject: string; html: string } {
+  const baseStyles = `
+    <style>
+      body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }
+      .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+      .header { background: linear-gradient(135deg, #1a4d2e 0%, #4CAF50 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+      .header img { max-width: 150px; }
+      .header h1 { color: #FDB913; margin: 10px 0 0 0; font-size: 24px; }
+      .content { background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; }
+      .button { display: inline-block; background: #4CAF50; color: white !important; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 20px 0; }
+      .button:hover { background: #1a4d2e; }
+      .footer { background: #f5f5f5; padding: 20px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 10px 10px; border: 1px solid #e0e0e0; border-top: none; }
+      .highlight { background: #FDB913; color: #1a4d2e; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
+      .warning { background: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 6px; margin: 15px 0; }
+      .info { background: #e8f5e9; border: 1px solid #4CAF50; padding: 15px; border-radius: 6px; margin: 15px 0; }
+    </style>
+  `;
+
+  const header = `
+    <div class="header">
+      <h1>STS Tax Repair</h1>
+      <p style="color: #ffffff; margin: 5px 0 0 0;">Professional Tax Services</p>
+    </div>
+  `;
+
+  const footer = `
+    <div class="footer">
+      <p>STS Tax Repair | Professional Tax Services</p>
+      <p>Phone: (555) 123-4567 | Email: support@ststaxrepair.org</p>
+      <p style="margin-top: 15px;">This is an automated message. Please do not reply directly to this email.</p>
+    </div>
+  `;
+
+  switch (type) {
+    case 'password_reset':
+      return {
+        subject: 'Reset Your Password - STS Tax Repair',
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>${baseStyles}</head>
+          <body>
+            <div class="container">
+              ${header}
+              <div class="content">
+                <h2>Password Reset Request</h2>
+                <p>Hello ${data.firstName || 'there'},</p>
+                <p>We received a request to reset your password for your STS Tax Repair account.</p>
+                <p style="text-align: center;">
+                  <a href="${data.resetLink}" class="button">Reset My Password</a>
+                </p>
+                <div class="warning">
+                  <strong>Important:</strong> This link will expire in 1 hour for your security.
+                </div>
+                <p>If you didn't request this password reset, you can safely ignore this email. Your password will remain unchanged.</p>
+                <p>For security reasons, never share this link with anyone.</p>
+              </div>
+              ${footer}
+            </div>
+          </body>
+          </html>
+        `
+      };
+
+    case 'welcome':
+      return {
+        subject: 'Welcome to STS Tax Repair!',
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>${baseStyles}</head>
+          <body>
+            <div class="container">
+              ${header}
+              <div class="content">
+                <h2>Welcome to STS Tax Repair!</h2>
+                <p>Hello ${data.firstName || 'there'},</p>
+                <p>Thank you for joining STS Tax Repair! We're excited to help you with your tax needs.</p>
+                <div class="info">
+                  <strong>Your Account Details:</strong><br>
+                  Email: ${data.email}<br>
+                  Account Type: ${data.role === 'client' ? 'Client' : 'Staff Member'}
+                </div>
+                <p>Here's what you can do with your account:</p>
+                <ul>
+                  <li>Upload and manage your tax documents securely</li>
+                  <li>Track the status of your tax filing</li>
+                  <li>Schedule appointments with our tax professionals</li>
+                  <li>Communicate directly with your assigned preparer</li>
+                  <li>Sign documents electronically (Form 8879)</li>
+                </ul>
+                <p style="text-align: center;">
+                  <a href="${APP_URL}/client-login" class="button">Access Your Account</a>
+                </p>
+                <p>If you have any questions, our support team is here to help!</p>
+              </div>
+              ${footer}
+            </div>
+          </body>
+          </html>
+        `
+      };
+
+    case 'document_request':
+      return {
+        subject: 'Document Request - STS Tax Repair',
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>${baseStyles}</head>
+          <body>
+            <div class="container">
+              ${header}
+              <div class="content">
+                <h2>Document Request</h2>
+                <p>Hello ${data.firstName || 'there'},</p>
+                <p>We need the following documents to proceed with your tax filing:</p>
+                <div class="info">
+                  ${data.documents?.map((doc: string) => `<li>${doc}</li>`).join('') || '<li>Tax documents</li>'}
+                </div>
+                ${data.notes ? `<p><strong>Notes:</strong> ${data.notes}</p>` : ''}
+                <p style="text-align: center;">
+                  <a href="${APP_URL}/portal/documents" class="button">Upload Documents</a>
+                </p>
+                <p>Please upload these documents at your earliest convenience to avoid delays.</p>
+              </div>
+              ${footer}
+            </div>
+          </body>
+          </html>
+        `
+      };
+
+    case 'appointment_confirmation':
+      return {
+        subject: 'Appointment Confirmed - STS Tax Repair',
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>${baseStyles}</head>
+          <body>
+            <div class="container">
+              ${header}
+              <div class="content">
+                <h2>Appointment Confirmed</h2>
+                <p>Hello ${data.firstName || 'there'},</p>
+                <p>Your appointment has been confirmed!</p>
+                <div class="info">
+                  <strong>Appointment Details:</strong><br>
+                  Date: ${data.date}<br>
+                  Time: ${data.time}<br>
+                  ${data.location ? `Location: ${data.location}<br>` : ''}
+                  ${data.staffName ? `With: ${data.staffName}<br>` : ''}
+                </div>
+                ${data.notes ? `<p><strong>Notes:</strong> ${data.notes}</p>` : ''}
+                <p>Please arrive 10 minutes early and bring any required documents.</p>
+                <p style="text-align: center;">
+                  <a href="${APP_URL}/portal/appointments" class="button">View Appointments</a>
+                </p>
+              </div>
+              ${footer}
+            </div>
+          </body>
+          </html>
+        `
+      };
+
+    case 'appointment_reminder':
+      return {
+        subject: 'Appointment Reminder - STS Tax Repair',
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>${baseStyles}</head>
+          <body>
+            <div class="container">
+              ${header}
+              <div class="content">
+                <h2>Appointment Reminder</h2>
+                <p>Hello ${data.firstName || 'there'},</p>
+                <p>This is a friendly reminder about your upcoming appointment.</p>
+                <div class="warning">
+                  <strong>Your appointment is ${data.timeUntil || 'coming up soon'}!</strong>
+                </div>
+                <div class="info">
+                  Date: ${data.date}<br>
+                  Time: ${data.time}<br>
+                  ${data.location ? `Location: ${data.location}<br>` : ''}
+                </div>
+                <p>Please remember to bring all required documents.</p>
+              </div>
+              ${footer}
+            </div>
+          </body>
+          </html>
+        `
+      };
+
+    case 'payment_reminder':
+      return {
+        subject: 'Payment Reminder - STS Tax Repair',
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>${baseStyles}</head>
+          <body>
+            <div class="container">
+              ${header}
+              <div class="content">
+                <h2>Payment Reminder</h2>
+                <p>Hello ${data.firstName || 'there'},</p>
+                <p>This is a reminder about your outstanding payment.</p>
+                <div class="info">
+                  <strong>Payment Details:</strong><br>
+                  Amount Due: <span class="highlight">$${data.amount}</span><br>
+                  Due Date: ${data.dueDate}<br>
+                  Service: ${data.service || 'Tax Preparation Services'}
+                </div>
+                <p style="text-align: center;">
+                  <a href="${APP_URL}/portal/payments" class="button">Make Payment</a>
+                </p>
+                <p>If you have already made this payment, please disregard this notice.</p>
+              </div>
+              ${footer}
+            </div>
+          </body>
+          </html>
+        `
+      };
+
+    case 'payment_received':
+      return {
+        subject: 'Payment Received - STS Tax Repair',
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>${baseStyles}</head>
+          <body>
+            <div class="container">
+              ${header}
+              <div class="content">
+                <h2>Payment Received</h2>
+                <p>Hello ${data.firstName || 'there'},</p>
+                <p>Thank you! We have received your payment.</p>
+                <div class="info">
+                  <strong>Payment Details:</strong><br>
+                  Amount: <span class="highlight">$${data.amount}</span><br>
+                  Date: ${data.date}<br>
+                  Method: ${data.method || 'N/A'}<br>
+                  Reference: ${data.reference || 'N/A'}
+                </div>
+                <p>This payment has been applied to your account.</p>
+              </div>
+              ${footer}
+            </div>
+          </body>
+          </html>
+        `
+      };
+
+    case 'tax_filing_status':
+      return {
+        subject: `Tax Filing Update: ${data.status} - STS Tax Repair`,
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>${baseStyles}</head>
+          <body>
+            <div class="container">
+              ${header}
+              <div class="content">
+                <h2>Tax Filing Status Update</h2>
+                <p>Hello ${data.firstName || 'there'},</p>
+                <p>There's an update on your ${data.taxYear} tax filing.</p>
+                <div class="info">
+                  <strong>Current Status:</strong> <span class="highlight">${data.status}</span><br>
+                  Tax Year: ${data.taxYear}<br>
+                  ${data.refundAmount ? `Estimated Refund: $${data.refundAmount}<br>` : ''}
+                </div>
+                ${data.message ? `<p>${data.message}</p>` : ''}
+                <p style="text-align: center;">
+                  <a href="${APP_URL}/portal" class="button">View Details</a>
+                </p>
+              </div>
+              ${footer}
+            </div>
+          </body>
+          </html>
+        `
+      };
+
+    case 'signature_request':
+      return {
+        subject: 'Signature Required - Form 8879 - STS Tax Repair',
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>${baseStyles}</head>
+          <body>
+            <div class="container">
+              ${header}
+              <div class="content">
+                <h2>E-Signature Required</h2>
+                <p>Hello ${data.firstName || 'there'},</p>
+                <p>Your tax return is ready for filing! Please sign Form 8879 (IRS e-file Signature Authorization) to authorize electronic filing.</p>
+                <div class="warning">
+                  <strong>Action Required:</strong> Your signature is needed to file your return.
+                </div>
+                <div class="info">
+                  Document: Form 8879 - IRS e-file Signature Authorization<br>
+                  Tax Year: ${data.taxYear || 'Current Year'}
+                </div>
+                <p style="text-align: center;">
+                  <a href="${APP_URL}/portal/signatures" class="button">Sign Now</a>
+                </p>
+                <p>Electronic signatures are legally binding and accepted by the IRS.</p>
+              </div>
+              ${footer}
+            </div>
+          </body>
+          </html>
+        `
+      };
+
+    case 'signature_completed':
+      return {
+        subject: 'Form 8879 Signed Successfully - STS Tax Repair',
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>${baseStyles}</head>
+          <body>
+            <div class="container">
+              ${header}
+              <div class="content">
+                <h2>Signature Confirmed</h2>
+                <p>Hello ${data.firstName || 'there'},</p>
+                <p>Thank you! Your Form 8879 has been signed successfully.</p>
+                <div class="info">
+                  <strong>Details:</strong><br>
+                  Document: Form 8879<br>
+                  Signed on: ${data.signedDate}<br>
+                  Tax Year: ${data.taxYear || 'Current Year'}
+                </div>
+                <p>We will now proceed with filing your tax return electronically with the IRS.</p>
+                <p>You will receive another notification once your return has been accepted.</p>
+              </div>
+              ${footer}
+            </div>
+          </body>
+          </html>
+        `
+      };
+
+    case 'staff_invite':
+      return {
+        subject: "You're Invited to Join STS Tax Repair",
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>${baseStyles}</head>
+          <body>
+            <div class="container">
+              ${header}
+              <div class="content">
+                <h2>Team Invitation</h2>
+                <p>Hello,</p>
+                <p>You have been invited to join the STS Tax Repair team as a <strong>${data.role}</strong>.</p>
+                <p>${data.invitedBy ? `Invited by: ${data.invitedBy}` : ''}</p>
+                <div class="warning">
+                  <strong>Note:</strong> This invitation expires in 7 days.
+                </div>
+                <p style="text-align: center;">
+                  <a href="${data.inviteLink}" class="button">Accept Invitation</a>
+                </p>
+                <p>If you didn't expect this invitation, you can safely ignore this email.</p>
+              </div>
+              ${footer}
+            </div>
+          </body>
+          </html>
+        `
+      };
+
+    case 'support_ticket_created':
+      return {
+        subject: `Support Ticket #${data.ticketId} Created - STS Tax Repair`,
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>${baseStyles}</head>
+          <body>
+            <div class="container">
+              ${header}
+              <div class="content">
+                <h2>Support Ticket Created</h2>
+                <p>Hello ${data.firstName || 'there'},</p>
+                <p>Your support ticket has been created successfully.</p>
+                <div class="info">
+                  <strong>Ticket Details:</strong><br>
+                  Ticket #: ${data.ticketId}<br>
+                  Subject: ${data.subject}<br>
+                  Priority: ${data.priority || 'Normal'}
+                </div>
+                <p>Our support team will review your request and respond as soon as possible.</p>
+                <p style="text-align: center;">
+                  <a href="${APP_URL}/portal/support" class="button">View Ticket</a>
+                </p>
+              </div>
+              ${footer}
+            </div>
+          </body>
+          </html>
+        `
+      };
+
+    case 'support_ticket_response':
+      return {
+        subject: `Response to Support Ticket #${data.ticketId} - STS Tax Repair`,
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>${baseStyles}</head>
+          <body>
+            <div class="container">
+              ${header}
+              <div class="content">
+                <h2>New Response on Your Ticket</h2>
+                <p>Hello ${data.firstName || 'there'},</p>
+                <p>There's a new response on your support ticket.</p>
+                <div class="info">
+                  <strong>Ticket #${data.ticketId}:</strong> ${data.subject}<br>
+                  Response from: ${data.respondedBy || 'Support Team'}
+                </div>
+                <div style="background: #f9f9f9; padding: 15px; border-left: 4px solid #4CAF50; margin: 15px 0;">
+                  ${data.message}
+                </div>
+                <p style="text-align: center;">
+                  <a href="${APP_URL}/portal/support" class="button">View Full Conversation</a>
+                </p>
+              </div>
+              ${footer}
+            </div>
+          </body>
+          </html>
+        `
+      };
+
+    default:
+      return {
+        subject: 'Notification from STS Tax Repair',
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>${baseStyles}</head>
+          <body>
+            <div class="container">
+              ${header}
+              <div class="content">
+                <h2>Notification</h2>
+                <p>Hello,</p>
+                <p>${data.message || 'You have a new notification from STS Tax Repair.'}</p>
+                <p style="text-align: center;">
+                  <a href="${APP_URL}/portal" class="button">Visit Portal</a>
+                </p>
+              </div>
+              ${footer}
+            </div>
+          </body>
+          </html>
+        `
+      };
+  }
+}
+
+export async function sendPasswordResetEmail(
+  email: string, 
+  resetToken: string,
+  firstName?: string
+): Promise<EmailResult> {
+  const resetLink = `${APP_URL}/reset-password?token=${resetToken}`;
+  const template = getEmailTemplate('password_reset', { firstName, resetLink });
+  
+  return sendEmail({
+    to: email,
+    subject: template.subject,
+    html: template.html,
+  });
+}
+
+export async function sendWelcomeEmail(
+  email: string,
+  firstName: string,
+  role: string
+): Promise<EmailResult> {
+  const template = getEmailTemplate('welcome', { firstName, email, role });
+  
+  return sendEmail({
+    to: email,
+    subject: template.subject,
+    html: template.html,
+  });
+}
+
+export async function sendDocumentRequestEmail(
+  email: string,
+  firstName: string,
+  documents: string[],
+  notes?: string
+): Promise<EmailResult> {
+  const template = getEmailTemplate('document_request', { firstName, documents, notes });
+  
+  return sendEmail({
+    to: email,
+    subject: template.subject,
+    html: template.html,
+  });
+}
+
+export async function sendAppointmentConfirmationEmail(
+  email: string,
+  firstName: string,
+  date: string,
+  time: string,
+  location?: string,
+  staffName?: string,
+  notes?: string
+): Promise<EmailResult> {
+  const template = getEmailTemplate('appointment_confirmation', { 
+    firstName, date, time, location, staffName, notes 
+  });
+  
+  return sendEmail({
+    to: email,
+    subject: template.subject,
+    html: template.html,
+  });
+}
+
+export async function sendPaymentReminderEmail(
+  email: string,
+  firstName: string,
+  amount: string,
+  dueDate: string,
+  service?: string
+): Promise<EmailResult> {
+  const template = getEmailTemplate('payment_reminder', { firstName, amount, dueDate, service });
+  
+  return sendEmail({
+    to: email,
+    subject: template.subject,
+    html: template.html,
+  });
+}
+
+export async function sendPaymentReceivedEmail(
+  email: string,
+  firstName: string,
+  amount: string,
+  date: string,
+  method?: string,
+  reference?: string
+): Promise<EmailResult> {
+  const template = getEmailTemplate('payment_received', { 
+    firstName, amount, date, method, reference 
+  });
+  
+  return sendEmail({
+    to: email,
+    subject: template.subject,
+    html: template.html,
+  });
+}
+
+export async function sendTaxFilingStatusEmail(
+  email: string,
+  firstName: string,
+  taxYear: string,
+  status: string,
+  message?: string,
+  refundAmount?: string
+): Promise<EmailResult> {
+  const template = getEmailTemplate('tax_filing_status', { 
+    firstName, taxYear, status, message, refundAmount 
+  });
+  
+  return sendEmail({
+    to: email,
+    subject: template.subject,
+    html: template.html,
+  });
+}
+
+export async function sendSignatureRequestEmail(
+  email: string,
+  firstName: string,
+  taxYear?: string
+): Promise<EmailResult> {
+  const template = getEmailTemplate('signature_request', { firstName, taxYear });
+  
+  return sendEmail({
+    to: email,
+    subject: template.subject,
+    html: template.html,
+  });
+}
+
+export async function sendSignatureCompletedEmail(
+  email: string,
+  firstName: string,
+  signedDate: string,
+  taxYear?: string
+): Promise<EmailResult> {
+  const template = getEmailTemplate('signature_completed', { firstName, signedDate, taxYear });
+  
+  return sendEmail({
+    to: email,
+    subject: template.subject,
+    html: template.html,
+  });
+}
+
+export async function sendStaffInviteEmail(
+  email: string,
+  role: string,
+  inviteCode: string,
+  invitedBy?: string
+): Promise<EmailResult> {
+  const inviteLink = `${APP_URL}/accept-invite?code=${inviteCode}`;
+  const template = getEmailTemplate('staff_invite', { role, inviteLink, invitedBy });
+  
+  return sendEmail({
+    to: email,
+    subject: template.subject,
+    html: template.html,
+  });
+}
+
+export async function sendSupportTicketCreatedEmail(
+  email: string,
+  firstName: string,
+  ticketId: string,
+  subject: string,
+  priority?: string
+): Promise<EmailResult> {
+  const template = getEmailTemplate('support_ticket_created', { 
+    firstName, ticketId, subject, priority 
+  });
+  
+  return sendEmail({
+    to: email,
+    subject: template.subject,
+    html: template.html,
+  });
+}
+
+export async function sendSupportTicketResponseEmail(
+  email: string,
+  firstName: string,
+  ticketId: string,
+  subject: string,
+  message: string,
+  respondedBy?: string
+): Promise<EmailResult> {
+  const template = getEmailTemplate('support_ticket_response', { 
+    firstName, ticketId, subject, message, respondedBy 
+  });
+  
+  return sendEmail({
+    to: email,
+    subject: template.subject,
+    html: template.html,
+  });
+}
+
+export { sendEmail, getEmailTemplate };

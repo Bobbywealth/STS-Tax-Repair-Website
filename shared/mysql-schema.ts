@@ -530,3 +530,40 @@ export const DefaultPermissions: Array<{
   { slug: 'admin.invites', label: 'Manage Invites', description: 'Create and manage staff invites', featureGroup: 'admin', defaultRoles: ['admin'] },
   { slug: 'admin.system', label: 'System Administration', description: 'Full system administration access', featureGroup: 'admin', defaultRoles: ['admin'] },
 ];
+
+// Password Reset Tokens Table
+export const passwordResetTokens = mysqlTable("password_reset_tokens", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+  userId: varchar("user_id", { length: 36 }).notNull(),
+  token: varchar("token", { length: 64 }).notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  usedAt: timestamp("used_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens).omit({
+  id: true,
+  createdAt: true,
+  usedAt: true,
+});
+
+export type InsertPasswordResetToken = z.infer<typeof insertPasswordResetTokenSchema>;
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+
+// Email Types for the system
+export type EmailType = 
+  | 'welcome'
+  | 'password_reset'
+  | 'email_verification'
+  | 'document_request'
+  | 'document_uploaded'
+  | 'appointment_confirmation'
+  | 'appointment_reminder'
+  | 'payment_reminder'
+  | 'payment_received'
+  | 'tax_filing_status'
+  | 'signature_request'
+  | 'signature_completed'
+  | 'staff_invite'
+  | 'support_ticket_created'
+  | 'support_ticket_response';
