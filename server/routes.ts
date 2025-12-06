@@ -1305,6 +1305,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Redeem staff invite
+  // CRITICAL: Verifies the logged-in user's email matches the invitation email
   app.post(
     "/api/staff-invites/redeem",
     isAuthenticated,
@@ -1314,12 +1315,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!userId) {
           return res.status(401).json({ error: "Not authenticated" });
         }
+        
+        // Get the current user's email to verify against the invitation
+        const currentUser = await storage.getUser(userId);
+        if (!currentUser || !currentUser.email) {
+          return res.status(401).json({ error: "User not found or no email associated" });
+        }
+        
         const { inviteCode } = req.body;
         if (!inviteCode) {
           return res.status(400).json({ error: "Invite code required" });
         }
 
-        const invite = await storage.useStaffInvite(inviteCode, userId);
+        // Pass the user's email so storage can verify it matches the invitation
+        const invite = await storage.useStaffInvite(inviteCode, userId, currentUser.email);
         if (!invite) {
           return res
             .status(404)

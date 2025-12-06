@@ -626,7 +626,7 @@ export class MySQLStorage implements IStorage {
     return inserted;
   }
 
-  async useStaffInvite(inviteCode: string, userId: string): Promise<StaffInvite | undefined> {
+  async useStaffInvite(inviteCode: string, userId: string, userEmail: string): Promise<StaffInvite | undefined> {
     const invite = await this.getStaffInviteByCode(inviteCode);
     if (!invite) return undefined;
     
@@ -638,6 +638,16 @@ export class MySQLStorage implements IStorage {
       throw new Error("Invite has expired");
     }
 
+    // CRITICAL: Verify that the logged-in user's email matches the invited email
+    // This prevents accidentally changing the wrong user's role
+    if (invite.email.toLowerCase() !== userEmail.toLowerCase()) {
+      throw new Error(`This invitation was sent to ${invite.email}. Please log in with that email address to redeem it.`);
+    }
+
+    // Get the user's current role for audit log
+    const currentUser = await this.getUser(userId);
+    const previousRole = currentUser?.role || 'client';
+
     await mysqlDb.update(staffInvitesTable)
       .set({ usedAt: new Date(), usedById: userId })
       .where(eq(staffInvitesTable.inviteCode, inviteCode));
@@ -648,7 +658,7 @@ export class MySQLStorage implements IStorage {
 
     await this.createRoleAuditLog({
       userId,
-      previousRole: 'client',
+      previousRole: previousRole as UserRole,
       newRole: invite.role,
       changedById: invite.invitedById,
       changedByName: invite.invitedByName,
