@@ -9,6 +9,7 @@ import logoUrl from "@/assets/sts-logo.png";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
+  const [accountType, setAccountType] = useState<"client" | "admin">("client");
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState("");
@@ -81,7 +82,7 @@ export default function ForgotPassword() {
                   >
                     Try a different email
                   </Button>
-                  <Link href="/client-login">
+                  <Link href={accountType === "admin" ? "/admin-login" : "/client-login"}>
                     <Button variant="ghost" className="w-full" data-testid="link-back-to-login">
                       <ArrowLeft className="w-4 h-4 mr-2" />
                       Back to Login
@@ -91,6 +92,34 @@ export default function ForgotPassword() {
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Account Type</Label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="accountType"
+                        value="client"
+                        checked={accountType === "client"}
+                        onChange={(e) => setAccountType(e.target.value as "client" | "admin")}
+                        data-testid="radio-account-type-client"
+                      />
+                      <span className="text-sm">Client Account</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="accountType"
+                        value="admin"
+                        checked={accountType === "admin"}
+                        onChange={(e) => setAccountType(e.target.value as "client" | "admin")}
+                        data-testid="radio-account-type-admin"
+                      />
+                      <span className="text-sm">Admin/Staff Account</span>
+                    </label>
+                  </div>
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="email">Email Address</Label>
                   <div className="relative">
@@ -130,7 +159,7 @@ export default function ForgotPassword() {
                   )}
                 </Button>
 
-                <Link href="/client-login">
+                <Link href={accountType === "admin" ? "/admin-login" : "/client-login"}>
                   <Button variant="ghost" className="w-full" data-testid="link-back-to-login">
                     <ArrowLeft className="w-4 h-4 mr-2" />
                     Back to Login
@@ -143,7 +172,7 @@ export default function ForgotPassword() {
 
         <p className="text-center text-gray-400 text-sm mt-6">
           Remember your password?{" "}
-          <Link href="/client-login" className="text-[#FDB913] hover:underline">
+          <Link href={accountType === "admin" ? "/admin-login" : "/client-login"} className="text-[#FDB913] hover:underline">
             Sign in
           </Link>
         </p>

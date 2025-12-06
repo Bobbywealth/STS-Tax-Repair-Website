@@ -14,6 +14,7 @@ export default function ResetPassword() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [accountType, setAccountType] = useState<"client" | "admin">("client");
   const [isLoading, setIsLoading] = useState(false);
   const [isVerifying, setIsVerifying] = useState(true);
   const [isTokenValid, setIsTokenValid] = useState(false);
@@ -24,6 +25,11 @@ export default function ResetPassword() {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const tokenParam = urlParams.get("token");
+    const typeParam = urlParams.get("type") as "client" | "admin" | null;
+    
+    if (typeParam) {
+      setAccountType(typeParam);
+    }
     
     if (!tokenParam) {
       setIsVerifying(false);
@@ -141,7 +147,7 @@ export default function ResetPassword() {
                 <p className="text-muted-foreground mb-6">
                   You can now log in with your new password.
                 </p>
-                <Link href="/client-login">
+                <Link href={accountType === "admin" ? "/admin-login" : "/client-login"}>
                   <Button className="w-full bg-[#4CAF50] hover:bg-[#1a4d2e]" data-testid="button-go-to-login">
                     Go to Login
                   </Button>
@@ -149,6 +155,34 @@ export default function ResetPassword() {
               </div>
             ) : isTokenValid ? (
               <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Account Type</Label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="accountType"
+                        value="client"
+                        checked={accountType === "client"}
+                        onChange={(e) => setAccountType(e.target.value as "client" | "admin")}
+                        data-testid="radio-account-type-client"
+                      />
+                      <span className="text-sm">Client Account</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="accountType"
+                        value="admin"
+                        checked={accountType === "admin"}
+                        onChange={(e) => setAccountType(e.target.value as "client" | "admin")}
+                        data-testid="radio-account-type-admin"
+                      />
+                      <span className="text-sm">Admin/Staff Account</span>
+                    </label>
+                  </div>
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="password">New Password</Label>
                   <div className="relative">
@@ -255,7 +289,7 @@ export default function ResetPassword() {
                       Request New Reset Link
                     </Button>
                   </Link>
-                  <Link href="/client-login">
+                  <Link href={accountType === "admin" ? "/admin-login" : "/client-login"}>
                     <Button variant="ghost" className="w-full" data-testid="link-back-to-login">
                       <ArrowLeft className="w-4 h-4 mr-2" />
                       Back to Login
