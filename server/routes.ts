@@ -1185,8 +1185,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (aPriority !== bPriority) {
           return aPriority - bPriority;
         }
-        // Then by name
-        return a.fullName.localeCompare(b.fullName);
+        // Then by name (fullName is guaranteed to be non-null string from line 1167)
+        return (a.fullName || '').localeCompare(b.fullName || '');
       });
       
       res.json(referrers);
@@ -1797,29 +1797,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
           role: invite.role,
           passwordHash,
           isActive: true,
-          emailVerifiedAt: new Date(), // Auto-verify since they came from email invite
+          // Email NOT auto-verified - staff must verify to ensure proper email delivery
         });
       }
 
       // Mark invite as used
       await storage.markStaffInviteUsed(inviteCode, user!.id);
 
-      // Create session for the new staff member
-      req.session.userId = user!.id;
-      req.session.userRole = user!.role;
-      req.session.isAdminLogin = true;
-      req.session.isClientLogin = false;
+      // Create email verification token for staff member
+      const verificationToken = generateSecureToken();
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      
+      await storage.createEmailVerificationToken(
+        user!.id,
+        invite.email,
+        verificationToken,
+        expiresAt
+      );
 
-      await new Promise<void>((resolve, reject) => {
-        req.session.save((err: any) => {
-          if (err) reject(err);
-          else resolve();
+      // Send verification email to staff member (non-blocking)
+      sendEmailVerificationEmail(invite.email, verificationToken, firstName)
+        .then(result => {
+          if (result.success) {
+            console.log(`Staff verification email sent to ${invite.email}`);
+          } else {
+            console.warn(`Failed to send staff verification email to ${invite.email}:`, result.error);
+          }
+        })
+        .catch(err => {
+          console.error(`Error sending staff verification email to ${invite.email}:`, err);
         });
-      });
 
       res.json({ 
         success: true, 
         role: invite.role,
+        requiresVerification: true,
         user: {
           id: user!.id,
           email: user!.email,
@@ -1827,7 +1839,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lastName: user!.lastName,
           role: user!.role
         },
-        redirectUrl: "/dashboard"
+        message: "Account created! Please check your email to verify your address before logging in."
       });
     } catch (error: any) {
       console.error("Staff invite redemption error:", error);

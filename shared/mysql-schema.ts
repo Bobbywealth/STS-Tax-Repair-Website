@@ -93,6 +93,8 @@ export const users = mysqlTable("users", {
   country: varchar("country", { length: 100 }).default("United States"),
   role: varchar("role", { length: 20 }).default("client").$type<UserRole>(),
   officeId: varchar("office_id", { length: 36 }),
+  assignedTo: varchar("assigned_to", { length: 36 }), // Staff member assigned to this client
+  referralSource: varchar("referral_source", { length: 255 }), // Who referred this client
   themePreference: varchar("theme_preference", { length: 10 }).default("system").$type<ThemePreference>(),
   isActive: boolean("is_active").default(true),
   passwordHash: varchar("password_hash", { length: 255 }),
