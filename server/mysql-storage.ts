@@ -1504,6 +1504,14 @@ export class MySQLStorage implements IStorage {
     return office;
   }
 
+  async getOfficeBySlug(slug: string): Promise<Office | undefined> {
+    const [office] = await mysqlDb
+      .select()
+      .from(officesTable)
+      .where(eq(officesTable.slug, slug));
+    return office;
+  }
+
   async getOffices(): Promise<Office[]> {
     return await mysqlDb
       .select()
@@ -1810,53 +1818,60 @@ export class MySQLStorage implements IStorage {
     return result;
   }
 
-  // Office methods
-  async getOffice(id: string): Promise<Office | undefined> {
-    const [office] = await mysqlDb.select().from(officesTable).where(eq(officesTable.id, id));
-    return office;
-  }
+  // ============================================================================
+  // OFFICE BRANDING - White-labeling for Tax Offices
+  // ============================================================================
 
-  async getOfficeBySlug(slug: string): Promise<Office | undefined> {
-    const [office] = await mysqlDb.select().from(officesTable).where(eq(officesTable.slug, slug));
-    return office;
-  }
-
-  async getOffices(): Promise<Office[]> {
-    return await mysqlDb.select().from(officesTable).orderBy(asc(officesTable.name));
-  }
-
-  async createOffice(office: InsertOffice): Promise<Office> {
-    const id = randomUUID();
-    await mysqlDb.insert(officesTable).values({ id, ...office });
-    const [result] = await mysqlDb.select().from(officesTable).where(eq(officesTable.id, id));
-    return result;
-  }
-
-  async updateOffice(id: string, office: Partial<InsertOffice>): Promise<Office | undefined> {
-    await mysqlDb.update(officesTable).set(office).where(eq(officesTable.id, id));
-    const [result] = await mysqlDb.select().from(officesTable).where(eq(officesTable.id, id));
-    return result;
-  }
-
-  // Office Branding methods (White-labeling)
   async getOfficeBranding(officeId: string): Promise<OfficeBranding | undefined> {
-    const [branding] = await mysqlDb.select().from(officeBrandingTable).where(eq(officeBrandingTable.officeId, officeId));
+    const [branding] = await mysqlDb
+      .select()
+      .from(officeBrandingTable)
+      .where(eq(officeBrandingTable.officeId, officeId));
     return branding;
   }
 
   async createOfficeBranding(branding: InsertOfficeBranding): Promise<OfficeBranding> {
     const id = randomUUID();
-    await mysqlDb.insert(officeBrandingTable).values({ id, ...branding });
-    const [result] = await mysqlDb.select().from(officeBrandingTable).where(eq(officeBrandingTable.id, id));
+    await mysqlDb.insert(officeBrandingTable).values({
+      id,
+      officeId: branding.officeId,
+      companyName: branding.companyName,
+      logoUrl: branding.logoUrl,
+      logoObjectKey: branding.logoObjectKey,
+      primaryColor: branding.primaryColor,
+      secondaryColor: branding.secondaryColor,
+      accentColor: branding.accentColor,
+      defaultTheme: branding.defaultTheme as 'light' | 'dark' | undefined,
+      replyToEmail: branding.replyToEmail,
+      replyToName: branding.replyToName,
+      updatedByUserId: branding.updatedByUserId
+    });
+    const [result] = await mysqlDb
+      .select()
+      .from(officeBrandingTable)
+      .where(eq(officeBrandingTable.id, id));
     return result;
   }
 
   async updateOfficeBranding(officeId: string, branding: Partial<InsertOfficeBranding>): Promise<OfficeBranding | undefined> {
-    await mysqlDb.update(officeBrandingTable).set({
-      ...branding,
-      updatedAt: new Date()
-    }).where(eq(officeBrandingTable.officeId, officeId));
-    const [result] = await mysqlDb.select().from(officeBrandingTable).where(eq(officeBrandingTable.officeId, officeId));
+    const updateData: Record<string, unknown> = {};
+    if (branding.companyName !== undefined) updateData.companyName = branding.companyName;
+    if (branding.logoUrl !== undefined) updateData.logoUrl = branding.logoUrl;
+    if (branding.logoObjectKey !== undefined) updateData.logoObjectKey = branding.logoObjectKey;
+    if (branding.primaryColor !== undefined) updateData.primaryColor = branding.primaryColor;
+    if (branding.secondaryColor !== undefined) updateData.secondaryColor = branding.secondaryColor;
+    if (branding.accentColor !== undefined) updateData.accentColor = branding.accentColor;
+    if (branding.defaultTheme !== undefined) updateData.defaultTheme = branding.defaultTheme as 'light' | 'dark';
+    if (branding.replyToEmail !== undefined) updateData.replyToEmail = branding.replyToEmail;
+    if (branding.replyToName !== undefined) updateData.replyToName = branding.replyToName;
+    if (branding.updatedByUserId !== undefined) updateData.updatedByUserId = branding.updatedByUserId;
+    updateData.updatedAt = new Date();
+    
+    await mysqlDb.update(officeBrandingTable).set(updateData).where(eq(officeBrandingTable.officeId, officeId));
+    const [result] = await mysqlDb
+      .select()
+      .from(officeBrandingTable)
+      .where(eq(officeBrandingTable.officeId, officeId));
     return result;
   }
 

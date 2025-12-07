@@ -25,8 +25,11 @@ import {
   insertDocumentRequestTemplateSchema,
   insertTaxFilingSchema,
   insertUserSchema,
+  insertOfficeBrandingSchema,
   type Form8879Data,
   type FilingStatus,
+  type OfficeBranding,
+  type ThemePreference,
 } from "@shared/mysql-schema";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import {
@@ -4700,6 +4703,326 @@ export async function registerRoutes(app: Express): Promise<Server> {
         monthlyClients,
         year,
       });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ===========================================
+  // OFFICE BRANDING ENDPOINTS (White-labeling)
+  // ===========================================
+
+  // Default STS branding for fallback
+  const DEFAULT_BRANDING: Partial<OfficeBranding> = {
+    companyName: 'STS TaxRepair',
+    logoUrl: null,
+    primaryColor: '#1a4d2e',
+    secondaryColor: '#4CAF50',
+    accentColor: '#22c55e',
+    defaultTheme: 'light',
+    replyToEmail: 'support@ststaxrepair.org',
+    replyToName: 'STS TaxRepair Support'
+  };
+
+  // Public endpoint - Get branding for current subdomain or officeId
+  // This is used on login pages before authentication
+  app.get("/api/branding", async (req: any, res) => {
+    try {
+      const officeId = req.query.officeId as string;
+      const slug = req.query.slug as string;
+      
+      let branding: OfficeBranding | undefined;
+      
+      if (officeId) {
+        branding = await storage.getOfficeBranding(officeId);
+      } else if (slug) {
+        const office = await storage.getOfficeBySlug(slug);
+        if (office) {
+          branding = await storage.getOfficeBranding(office.id);
+        }
+      }
+      
+      // Return office branding merged with defaults
+      res.json({
+        ...DEFAULT_BRANDING,
+        ...(branding || {}),
+        isCustom: !!branding
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get branding for specific office (authenticated)
+  app.get("/api/offices/:id/branding", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Check authorization - must be admin or belong to office
+      const userId = req.userId || req.user?.claims?.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || (user.role !== 'admin' && user.officeId !== id)) {
+        return res.status(403).json({ error: 'Unauthorized - cannot access this office branding' });
+      }
+      
+      const branding = await storage.getOfficeBranding(id);
+      const office = await storage.getOffice(id);
+      
+      res.json({
+        ...DEFAULT_BRANDING,
+        ...(branding || {}),
+        officeName: office?.name,
+        officeSlug: office?.slug,
+        isCustom: !!branding
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Update office branding (requires branding.manage permission)
+  app.put("/api/offices/:id/branding", isAuthenticated, requirePermission('branding.manage'), async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.userId || req.user?.claims?.sub;
+      const user = await storage.getUser(userId);
+      
+      // Only admin or users in this office can update
+      if (!user || (user.role !== 'admin' && user.officeId !== id)) {
+        return res.status(403).json({ error: 'Unauthorized - cannot update this office branding' });
+      }
+      
+      // Validate input (allow partial updates)
+      const {
+        companyName,
+        logoUrl,
+        logoObjectKey,
+        primaryColor,
+        secondaryColor,
+        accentColor,
+        defaultTheme,
+        replyToEmail,
+        replyToName,
+        slug
+      } = req.body;
+      
+      // Check for existing branding
+      let branding = await storage.getOfficeBranding(id);
+      
+      const brandingData = {
+        companyName: companyName !== undefined ? companyName : branding?.companyName,
+        logoUrl: logoUrl !== undefined ? logoUrl : branding?.logoUrl,
+        logoObjectKey: logoObjectKey !== undefined ? logoObjectKey : branding?.logoObjectKey,
+        primaryColor: primaryColor !== undefined ? primaryColor : branding?.primaryColor,
+        secondaryColor: secondaryColor !== undefined ? secondaryColor : branding?.secondaryColor,
+        accentColor: accentColor !== undefined ? accentColor : branding?.accentColor,
+        defaultTheme: defaultTheme !== undefined ? defaultTheme : branding?.defaultTheme,
+        replyToEmail: replyToEmail !== undefined ? replyToEmail : branding?.replyToEmail,
+        replyToName: replyToName !== undefined ? replyToName : branding?.replyToName,
+        updatedByUserId: userId
+      };
+      
+      if (!branding) {
+        // Create new branding
+        branding = await storage.createOfficeBranding({
+          officeId: id,
+          ...brandingData
+        });
+      } else {
+        // Update existing branding
+        branding = await storage.updateOfficeBranding(id, brandingData);
+      }
+      
+      // Update office slug if provided
+      if (slug !== undefined) {
+        await storage.updateOffice(id, { slug });
+      }
+      
+      // Log branding change
+      await mysqlStorage.createAuditLog({
+        userId,
+        action: 'settings.update',
+        targetType: 'office_branding',
+        targetId: id,
+        previousValue: null,
+        newValue: JSON.stringify(brandingData),
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+      
+      res.json({
+        ...DEFAULT_BRANDING,
+        ...branding,
+        isCustom: true
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Delete/Reset office branding to defaults (requires branding.manage permission)
+  app.delete("/api/offices/:id/branding", isAuthenticated, requirePermission('branding.manage'), async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.userId || req.user?.claims?.sub;
+      const user = await storage.getUser(userId);
+      
+      // Only admin or users in this office can reset
+      if (!user || (user.role !== 'admin' && user.officeId !== id)) {
+        return res.status(403).json({ error: 'Unauthorized - cannot reset this office branding' });
+      }
+      
+      // Delete the branding record (will fall back to defaults)
+      const deleted = await storage.deleteOfficeBranding(id);
+      
+      // Log branding reset
+      await mysqlStorage.createAuditLog({
+        userId,
+        action: 'settings.update',
+        targetType: 'office_branding',
+        targetId: id,
+        previousValue: 'custom',
+        newValue: 'reset_to_defaults',
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+      
+      res.json({
+        ...DEFAULT_BRANDING,
+        isCustom: false,
+        reset: deleted
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Update user theme preference
+  app.patch("/api/users/:id/theme", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { theme } = req.body;
+      const userId = req.userId || req.user?.claims?.sub;
+      
+      // Can only update own theme
+      if (userId !== id) {
+        return res.status(403).json({ error: 'Can only update your own theme preference' });
+      }
+      
+      // Validate theme value
+      const validThemes: ThemePreference[] = ['system', 'light', 'dark'];
+      if (!validThemes.includes(theme)) {
+        return res.status(400).json({ error: 'Invalid theme. Must be system, light, or dark' });
+      }
+      
+      const updatedUser = await storage.updateUserThemePreference(id, theme);
+      
+      if (!updatedUser) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      
+      res.json({ theme: updatedUser.themePreference });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ===========================================
+  // OFFICES ENDPOINTS
+  // ===========================================
+
+  // Get all offices (admin only)
+  app.get("/api/offices", isAuthenticated, requireAdmin, async (req: any, res) => {
+    try {
+      const offices = await storage.getOffices();
+      res.json(offices);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get office by id (admin or office members)
+  app.get("/api/offices/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.userId || req.user?.claims?.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || (user.role !== 'admin' && user.officeId !== id)) {
+        return res.status(403).json({ error: 'Unauthorized' });
+      }
+      
+      const office = await storage.getOffice(id);
+      if (!office) {
+        return res.status(404).json({ error: 'Office not found' });
+      }
+      
+      res.json(office);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Create office (admin only)
+  app.post("/api/offices", isAuthenticated, requireAdmin, async (req: any, res) => {
+    try {
+      const { name, slug, address, phone, email } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({ error: 'Office name is required' });
+      }
+      
+      // Check slug uniqueness
+      if (slug) {
+        const existing = await storage.getOfficeBySlug(slug);
+        if (existing) {
+          return res.status(400).json({ error: 'Slug already in use' });
+        }
+      }
+      
+      const office = await storage.createOffice({ name, slug, address, phone, email });
+      res.status(201).json(office);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Update office (admin or tax_office of that office)
+  app.patch("/api/offices/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.userId || req.user?.claims?.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || (user.role !== 'admin' && (user.role !== 'tax_office' || user.officeId !== id))) {
+        return res.status(403).json({ error: 'Unauthorized' });
+      }
+      
+      const { name, slug, address, phone, email, isActive } = req.body;
+      
+      // Check slug uniqueness if changing
+      if (slug) {
+        const existing = await storage.getOfficeBySlug(slug);
+        if (existing && existing.id !== id) {
+          return res.status(400).json({ error: 'Slug already in use' });
+        }
+      }
+      
+      const office = await storage.updateOffice(id, { 
+        name, 
+        slug, 
+        address, 
+        phone, 
+        email,
+        isActive 
+      });
+      
+      if (!office) {
+        return res.status(404).json({ error: 'Office not found' });
+      }
+      
+      res.json(office);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
