@@ -65,11 +65,6 @@ export default function ClientLogin() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isPWA, setIsPWA] = useState(false);
   
-  // Staff/Admin login state
-  const [staffEmail, setStaffEmail] = useState("");
-  const [staffPassword, setStaffPassword] = useState("");
-  const [isStaffLoading, setIsStaffLoading] = useState(false);
-  const [showStaffForm, setShowStaffForm] = useState(false);
   
   // Office branding for white-label customization
   const { branding, isCustomBranding } = useBranding();
@@ -131,41 +126,6 @@ export default function ClientLogin() {
     }
   };
 
-  const handleStaffLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsStaffLoading(true);
-
-    try {
-      const response = await fetch("/api/admin/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ email: staffEmail, password: staffPassword }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Login failed");
-      }
-
-      toast({
-        title: "Welcome back!",
-        description: "Redirecting to admin dashboard...",
-      });
-
-      // Redirect to dashboard for admin/staff
-      window.location.href = data.redirectUrl || "/dashboard";
-    } catch (error: any) {
-      toast({
-        title: "Login Failed",
-        description: error.message || "Invalid email or password",
-        variant: "destructive",
-      });
-    } finally {
-      setIsStaffLoading(false);
-    }
-  };
 
   return (
     <>
@@ -663,112 +623,18 @@ export default function ClientLogin() {
             </CardContent>
           </Card>
 
-          {/* Staff/Admin Login Card */}
-          <Card className="glass-card staff-card mx-auto max-w-md rounded-2xl">
-            <CardContent className="pt-6 pb-6">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-full bg-amber-500/20 flex items-center justify-center border border-amber-500/30">
-                    <UserCog className="h-6 w-6 text-amber-400" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-white">Staff / Admin</p>
-                    <p className="text-sm text-gray-400">
-                      Login with your staff credentials
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  variant="outline"
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setShowStaffForm(!showStaffForm);
-                  }}
-                  className="bg-transparent border-amber-500/50 text-amber-400 hover:bg-amber-500/20 hover:border-amber-400 hover:text-amber-300 transition-all duration-300"
-                  data-testid="button-toggle-staff-login"
-                >
-                  <Shield className="h-4 w-4 mr-2" />
-                  {showStaffForm ? "Hide" : "Staff Login"}
-                </Button>
-              </div>
-              
-              {showStaffForm && (
-                <form onSubmit={handleStaffLogin} className="space-y-4 mt-6 pt-6 border-t border-amber-500/20">
-                  <div className="space-y-2">
-                    <Label htmlFor="staff-email" className="text-gray-300 text-sm font-medium">
-                      Email
-                    </Label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Mail className="h-5 w-5 text-amber-400/50" />
-                      </div>
-                      <Input
-                        id="staff-email"
-                        type="email"
-                        placeholder="admin@ststaxrepair.com"
-                        value={staffEmail}
-                        onChange={(e) => setStaffEmail(e.target.value)}
-                        required
-                        className="pl-10 bg-amber-950/30 border-amber-500/30 text-white placeholder:text-gray-500 focus:border-amber-400 focus:ring-amber-400/20"
-                        data-testid="input-staff-email"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="staff-password" className="text-gray-300 text-sm font-medium">
-                      Password
-                    </Label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Lock className="h-5 w-5 text-amber-400/50" />
-                      </div>
-                      <Input
-                        id="staff-password"
-                        type="password"
-                        placeholder="••••••••••••"
-                        value={staffPassword}
-                        onChange={(e) => setStaffPassword(e.target.value)}
-                        required
-                        className="pl-10 bg-amber-950/30 border-amber-500/30 text-white placeholder:text-gray-500 focus:border-amber-400 focus:ring-amber-400/20"
-                        data-testid="input-staff-password"
-                      />
-                    </div>
-                    <div className="text-right">
-                      <Link
-                        href="/forgot-password?type=admin"
-                        className="text-sm text-amber-400 hover:text-amber-300 transition-colors"
-                        data-testid="link-staff-forgot-password"
-                      >
-                        Forgot password?
-                      </Link>
-                    </div>
-                  </div>
-
-                  <Button
-                    type="submit"
-                    disabled={isStaffLoading}
-                    className="w-full bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white font-semibold h-12 transition-all duration-300"
-                    data-testid="button-staff-submit"
-                  >
-                    {isStaffLoading ? (
-                      <span className="flex items-center gap-2">
-                        <Zap className="h-4 w-4 animate-pulse" />
-                        Authenticating...
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-2">
-                        <Shield className="h-4 w-4" />
-                        Access Admin Portal
-                      </span>
-                    )}
-                  </Button>
-                </form>
-              )}
-            </CardContent>
-          </Card>
+          {/* Staff/Admin Login Link */}
+          <div className="mx-auto max-w-md text-center">
+            <Link
+              href="/admin-login"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 hover:border-amber-400 hover:text-amber-300 transition-all duration-300"
+              data-testid="link-staff-login"
+            >
+              <UserCog className="h-5 w-5" />
+              <span className="font-medium">Staff / Admin Login</span>
+              <Shield className="h-4 w-4 ml-1" />
+            </Link>
+          </div>
 
           {/* Features Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
