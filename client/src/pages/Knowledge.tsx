@@ -355,6 +355,593 @@ Admins can:
 - **Financial**: View payments, fees
       `
     },
+    {
+      id: "admin-7",
+      title: "E-Signatures and Form 8879",
+      category: "Documents",
+      excerpt: "Guide clients through the e-signature process for IRS Form 8879.",
+      lastUpdated: "Dec 1, 2024",
+      audience: "admin",
+      content: `
+# E-Signatures and IRS Form 8879
+
+## What is Form 8879?
+
+Form 8879 is the Declaration for Electronic Filing authorization. It's required by the IRS when filing tax returns electronically. It authorizes you to e-file on the client's behalf.
+
+## When You Need E-Signatures
+
+- Before filing any tax return electronically
+- For both federal and state returns
+- For each client
+- Separate signature per tax year if needed
+
+## Sending E-Signature Request
+
+1. Go to **E-Signatures** section
+2. Click **Request Signature**
+3. Select client
+4. Select tax year
+5. Choose document type (Form 8879)
+6. Add any special instructions
+7. Click **Send Request**
+
+Client will receive:
+- Email notification
+- Link to sign document
+- Clear instructions
+
+## Client Signing Process
+
+Clients receive email with:
+- Link to secure signing page
+- PDF of Form 8879
+- Instructions
+- 7-day expiration
+
+They can:
+1. Review the document
+2. Click to sign
+3. Enter signature (draws with mouse/touchscreen)
+4. Confirm and submit
+
+## After Signature Received
+
+1. Signature automatically appears on form
+2. Document is timestamped
+3. You can proceed with filing
+4. Keep copy for records
+
+## Document Storage
+
+Signed forms are:
+- Securely stored in client folder
+- Available for download
+- Kept for tax record retention (7 years minimum)
+
+## Compliance Notes
+
+- E-signatures have legal validity
+- Forms are electronically bound to tax return
+- IRS accepts forms filed this way
+- Keep audit trail for records
+      `
+    },
+    {
+      id: "admin-8",
+      title: "Appointments and Scheduling",
+      category: "Appointments",
+      excerpt: "Schedule and manage client meetings and consultations.",
+      lastUpdated: "Dec 1, 2024",
+      audience: "admin",
+      content: `
+# Appointments and Scheduling
+
+## Creating Appointments
+
+1. Go to **Appointments** section
+2. Click **Schedule Appointment**
+3. Fill in:
+   - **Client**: Select from your client list
+   - **Staff Member**: Choose who will meet
+   - **Date & Time**: Pick date and time
+   - **Duration**: How long (30 min, 1 hour, etc.)
+   - **Type**: Consultation, Review, Planning, Other
+   - **Notes**: Any special details
+4. Click **Create Appointment**
+
+## Appointment Types
+
+- **Consultation**: Initial meeting to discuss taxes
+- **Document Review**: Going through client documents
+- **Planning**: Discussing strategies and options
+- **E-Sign**: Getting signatures on forms
+- **Follow-up**: Check-in on status
+- **Payment**: Discussing fees and payment
+
+## Client Notifications
+
+When you create an appointment:
+1. Client gets email notification
+2. Includes date, time, staff member
+3. Link to confirm/reschedule
+4. Calendar invite attached
+
+## Managing Appointments
+
+### View Schedule
+1. Go to **Appointments**
+2. See all upcoming meetings
+3. Filter by staff member or client
+
+### Updating Appointment
+1. Click on appointment
+2. Modify date/time/notes
+3. Changes email to client automatically
+
+### Canceling Appointment
+1. Click appointment
+2. Click **Cancel**
+3. Client gets cancellation notice
+
+## No-Show Tracking
+
+If client misses appointment:
+1. Mark as "No Show"
+2. Automatically log incident
+3. Client gets follow-up message
+4. Helps identify patterns
+
+## Calendar Integration
+
+You can:
+- Sync with personal calendar
+- Export appointment list
+- Set reminders
+- View availability
+
+## Best Practices
+
+- Schedule 24+ hours in advance
+- Send reminder email day before
+- Build buffer time between appointments
+- Group similar tasks together
+- Keep notes on what was discussed
+      `
+    },
+    {
+      id: "admin-9",
+      title: "Payment Tracking and Financial Management",
+      category: "Financial",
+      excerpt: "Manage client payments, service fees, and financial records.",
+      lastUpdated: "Dec 1, 2024",
+      audience: "admin",
+      content: `
+# Payment Tracking and Financial Management
+
+## Recording Payments
+
+### Adding a Payment
+1. Go to **Payments** section
+2. Click **Record Payment**
+3. Select client
+4. Choose payment type:
+   - Service fee
+   - Retainer
+   - Payment plan installment
+   - Consultation fee
+5. Enter amount
+6. Select payment method
+7. Add reference number (check, transaction ID, etc.)
+8. Click **Save**
+
+## Payment Methods
+
+- **Credit Card**: Online payment
+- **Bank Transfer**: ACH/wire transfer
+- **Check**: Paper check received
+- **Cash**: In-person payment
+- **Payment Plan**: Installment payments
+
+## Payment Tracking
+
+### View Client Payments
+1. Open client profile
+2. Go to **Financial** section
+3. See:
+   - Total fees
+   - Payments made
+   - Outstanding balance
+   - Payment history
+
+### Generate Payment Reports
+1. Go to **Reports**
+2. Select **Payment Report**
+3. Choose date range
+4. Filter by:
+   - Client
+   - Payment type
+   - Status
+5. Export as PDF or CSV
+
+## Service Fees
+
+Standard fees for:
+- Tax preparation: $[Amount]
+- E-filing: $[Amount]
+- Consultation: $[Amount]
+- Amendment filing: $[Amount]
+
+## Payment Plans
+
+For larger fees, offer:
+- Installment options
+- Specific payment schedule
+- Interest terms if applicable
+- Auto-payment setup
+
+## Refund Advances
+
+Some clients can receive advance on refund:
+1. Assess client refund likelihood
+2. Set advance amount
+3. Document agreement
+4. Track repayment from refund
+5. Keep compliance records
+
+## Financial Reports
+
+View:
+- Total revenue by month/year
+- Payment collection rate
+- Outstanding receivables
+- Payment trends
+- Client profitability
+
+## Best Practices
+
+- Get signed fee agreement upfront
+- Collect payment before filing
+- Send payment reminders early
+- Document all transactions
+- Maintain fee structure consistently
+- Reconcile monthly
+      `
+    },
+    {
+      id: "admin-10",
+      title: "Analytics and Reporting",
+      category: "Reports",
+      excerpt: "Generate reports and analyze business metrics and performance.",
+      lastUpdated: "Dec 1, 2024",
+      audience: "admin",
+      content: `
+# Analytics and Reporting
+
+## Dashboard Analytics
+
+The main dashboard shows:
+- Total clients count
+- Active cases in progress
+- Completed refunds (this year)
+- Revenue generated
+- Status distribution
+- Activity feed
+
+## Available Reports
+
+### Client Reports
+- Client list by status
+- Clients by preparer
+- Client acquisition trends
+- Client retention rate
+
+### Financial Reports
+- Monthly revenue
+- Outstanding payments
+- Payment collection rate
+- Average fee per client
+- Profitability by preparer
+
+### Filing Reports
+- Filings by status
+- Filings by tax year
+- Average processing time
+- Filing success rate
+- Refund statistics
+
+### Task Reports
+- Open tasks
+- Overdue tasks
+- Tasks by priority
+- Completion rate
+- Tasks by assignee
+
+### Support Reports
+- Total support tickets
+- Average resolution time
+- Customer satisfaction
+- Common issue categories
+- Response time metrics
+
+## Generating Custom Reports
+
+1. Go to **Reports** section
+2. Click **Generate Report**
+3. Select report type
+4. Choose parameters:
+   - Date range
+   - Filter criteria (client, staff, status)
+   - Grouping options
+5. Select format (PDF, CSV, Excel)
+6. Click **Generate**
+
+## Exporting Data
+
+Reports can be:
+- Downloaded as PDF (formatted)
+- Exported as CSV (for analysis)
+- Emailed automatically
+- Scheduled for recurring runs
+
+## Performance Metrics
+
+Key metrics to track:
+- **Average Processing Time**: Days from new to paid
+- **Collection Rate**: % of payments received
+- **Client Satisfaction**: Support ticket feedback
+- **Filing Success Rate**: % filed successfully
+- **Staff Productivity**: Cases per preparer
+- **Revenue per Client**: Average income per relationship
+
+## Setting Goals and Targets
+
+Use reports to:
+- Set team targets
+- Track individual performance
+- Identify process improvements
+- Plan capacity
+- Make business decisions
+
+## Data Insights
+
+Look for:
+- Peak times (higher volume periods)
+- Bottlenecks (where cases slow down)
+- High-risk clients (patterns in issues)
+- Top performers (staff, processes)
+- Trends (seasonal patterns)
+
+## Best Practices
+
+- Review reports weekly
+- Compare to previous periods
+- Share metrics with team
+- Use data for improvement
+- Document changes and results
+      `
+    },
+    {
+      id: "admin-11",
+      title: "Lead Management and Prospecting",
+      category: "Leads",
+      excerpt: "Manage leads, track prospects, and convert them to clients.",
+      lastUpdated: "Dec 1, 2024",
+      audience: "admin",
+      content: `
+# Lead Management and Prospecting
+
+## What is a Lead?
+
+A lead is a prospective client who has shown interest but isn't yet a paying customer.
+
+## Creating Leads
+
+### Manually Add Lead
+1. Go to **Leads** section
+2. Click **Add Lead**
+3. Fill in:
+   - Name
+   - Email
+   - Phone
+   - How they heard about you
+   - Service interested in
+   - Notes
+4. Click **Create Lead**
+
+### Lead Status
+
+Leads move through stages:
+- **New**: Just entered system
+- **Contacted**: Initial outreach made
+- **Interested**: Responded positively
+- **Qualified**: Has budget and need
+- **Proposal Sent**: Quote provided
+- **Negotiating**: Discussing terms
+- **Converted**: Now a paying client
+- **Lost**: Prospect declined
+
+## Converting Leads to Clients
+
+When lead is ready:
+1. Open lead record
+2. Click **Convert to Client**
+3. System creates client account
+4. All lead info transfers over
+5. Move to **Clients** section
+6. Can now file taxes
+
+## Lead Follow-up
+
+### Tracking Interactions
+1. Click lead
+2. Add notes on each contact
+3. Record email, call, or meeting
+4. Log date and outcome
+
+### Setting Reminders
+1. Click **Set Follow-up**
+2. Choose date
+3. Add task
+4. System reminds you
+
+### Lead Scoring
+
+Score leads by:
+- Budget (can afford service)
+- Timeline (need immediate service)
+- Fit (right type of client)
+- Engagement (responsive, interested)
+
+## Lead Nurturing
+
+Ways to engage leads:
+- Send helpful tax articles
+- Follow-up emails with info
+- Educational webinars
+- Service discounts
+- Personal contact calls
+
+## Bulk Import Leads
+
+1. Go to **Leads**
+2. Click **Import**
+3. Upload CSV with:
+   - Name
+   - Email
+   - Phone
+   - Source
+4. System imports automatically
+
+## Analyzing Lead Data
+
+Track:
+- Conversion rate (leads → clients)
+- Time to conversion
+- Cost per lead
+- Source effectiveness
+- Lead quality by source
+
+## Best Practices
+
+- Respond to leads within 24 hours
+- Personalize outreach
+- Follow up consistently
+- Track all interactions
+- Don't abandon leads
+- Set clear follow-up dates
+- Use data to refine process
+      `
+    },
+    {
+      id: "admin-12",
+      title: "Tax Deadlines and Compliance",
+      category: "Tax Deadlines",
+      excerpt: "Track important tax deadlines and ensure compliance.",
+      lastUpdated: "Dec 1, 2024",
+      audience: "admin",
+      content: `
+# Tax Deadlines and Compliance
+
+## Important Federal Deadlines
+
+### Annual Deadlines
+
+**April 15** (Individual Income Tax Return)
+- Federal and most state returns due
+- Extension available until October 15
+- Estimated tax payments also due
+
+**September 15** (S-Corp and Partnership Returns)
+- Form 1120-S and 1065 due
+- Extension available until December 15
+
+**October 15** (Extended Deadline)
+- For those who filed extension
+- Last day to file without penalty
+
+**December 31** (Year-End)
+- Last day for 2024 tax year
+- IRA contributions due
+- SEP-IRA/Solo 401k contributions
+
+### Quarterly Deadlines
+
+**Estimated Tax Payments**
+- Q1: April 15
+- Q2: June 15
+- Q3: September 15
+- Q4: January 15 (next year)
+
+## State Deadlines
+
+Varies by state, generally:
+- Same as federal (April 15) for most states
+- Some states differ slightly
+- Check individual state requirements
+
+## Using the Deadline Tracker
+
+### Setting Reminders
+1. Go to **Tax Deadlines** section
+2. View all upcoming deadlines
+3. Red flags: Due within 30 days
+4. Yellow flags: Due within 60 days
+
+### Client Notification
+1. Create task for deadline
+2. Assign to staff member
+3. Set due date (1 week before actual)
+4. System sends reminder email
+
+## Extension Filing
+
+When to file extension (Form 4868):
+- Client needs more time
+- Documents not ready
+- Complex return
+- Before April 15 deadline
+
+Extension gives:
+- 6 months more time
+- Still need to pay estimated tax
+- Penalties if payment not made
+
+## Compliance Checklist
+
+For each client, ensure:
+- [ ] All required documents collected
+- [ ] Deadlines tracked
+- [ ] Return filed on time
+- [ ] Payment made on time
+- [ ] Records stored 7 years minimum
+- [ ] Client has copy of return
+
+## Penalties and Interest
+
+Avoid by:
+- Filing on time (even if extension)
+- Paying taxes owed
+- Reporting all income
+- Keeping good records
+
+Penalties:
+- **Late Filing**: 5% per month
+- **Late Payment**: 0.5% per month
+- **Accuracy**: 20% of underpayment
+- **Interest**: Daily accrual
+
+## Best Practices
+
+- Create calendar reminders
+- Mark deadline date clearly
+- Start preparation 2-3 months early
+- Send client reminders
+- Track all deadlines per client
+- Document all communications
+- File even if extension needed
+      `
+    },
 
     // Client Articles
     {
@@ -775,6 +1362,514 @@ Message our support team:
 - We help clients understand what they owe
 - Discuss all available options
 - Find best solution for your situation
+      `
+    },
+    {
+      id: "client-7",
+      title: "Data Privacy and Security",
+      category: "Security",
+      excerpt: "Learn how we protect your personal and financial information.",
+      lastUpdated: "Dec 1, 2024",
+      audience: "client",
+      content: `
+# Data Privacy and Security
+
+## Our Commitment to Your Privacy
+
+Your personal and tax information is sensitive. We take security seriously.
+
+## How We Protect Your Information
+
+### Encryption
+- All data in transit is encrypted (HTTPS/TLS)
+- Documents stored with industry-standard encryption
+- Passwords are encrypted and never stored in plain text
+
+### Access Control
+- Only authorized staff can see your information
+- Staff access is logged and audited
+- Role-based permissions limit who sees what
+- Admin review of all access requests
+
+### Data Storage
+- Secure servers with firewalls
+- Regular security audits
+- Backup systems for disaster recovery
+- Data centers comply with SOC 2 standards
+
+## What Information We Collect
+
+We collect only what's necessary:
+- Name and contact information
+- Address and location
+- Tax documents you upload
+- Communication history
+- Payment information
+- Refund details
+
+## What We DON'T Do
+
+- We never sell your information
+- We don't share with third parties (except filing authorities)
+- We don't use your data for marketing
+- We don't combine data with other businesses
+- We don't store passwords insecurely
+
+## Your Rights
+
+You can:
+- Request a copy of your data (free)
+- Request data corrections
+- Ask what data we have
+- Request data deletion (after tax period)
+- Opt out of non-essential communications
+
+## Filing Authority Information
+
+To file your taxes, we:
+- Share return info with IRS/state (required by law)
+- Use secure e-filing systems
+- Don't control how they store data
+- Must comply with their requirements
+
+## Contact Information Changes
+
+If information is incorrect:
+1. Log into your portal
+2. Go to **Account Settings**
+3. Click **Edit Profile**
+4. Update information
+5. We'll notify authorities of corrections
+
+## Breach Notification
+
+If a breach occurs:
+- We notify affected users immediately
+- Provide information about the breach
+- Explain what we're doing
+- Give steps to protect yourself
+- Offer credit monitoring if applicable
+
+## Third-Party Services
+
+We use:
+- Email service (SendGrid) for notifications
+- Document storage for file management
+- All comply with privacy laws
+
+## Your Responsibilities
+
+Help us protect your data:
+- Use strong passwords
+- Don't share login credentials
+- Log out on shared computers
+- Report suspicious activity immediately
+- Keep contact info updated
+
+## Questions About Privacy?
+
+Contact us:
+- Message through the portal
+- Ask about our privacy policy
+- Request security documentation
+- We respond within 24 hours
+      `
+    },
+    {
+      id: "client-8",
+      title: "Signing Documents (E-Signatures)",
+      category: "Documents",
+      excerpt: "How to securely sign tax documents electronically.",
+      lastUpdated: "Dec 1, 2024",
+      audience: "client",
+      content: `
+# Signing Documents Electronically
+
+## What is Form 8879?
+
+Form 8879 is a required IRS form that authorizes us to e-file your tax return on your behalf. Without your signature, we cannot file electronically.
+
+## When You'll Be Asked to Sign
+
+When you're ready to file, we'll send:
+- Email notification
+- Link to sign Form 8879
+- Clear instructions
+- 7 days to complete
+
+## How to Sign Electronically
+
+### Step 1: Receive Email
+You'll get an email with:
+- Subject: "Please sign your tax return"
+- Direct link to signing page
+- Instructions and deadline
+
+### Step 2: Open Signing Page
+1. Click the link in email
+2. Log in if needed
+3. Review Form 8879
+4. Check all information is correct
+
+### Step 3: Review Form
+Before signing, verify:
+- Your name is correct
+- Tax year is correct
+- Filing status is correct
+- Any other relevant details
+
+### Step 4: Sign
+1. Click **Sign** button
+2. Review signature pad
+3. Sign with mouse or touchscreen
+4. Clear signature looks good
+5. Click **Confirm**
+6. Done!
+
+## Important Notes
+
+- Signature legally authorizes us to file
+- You can't file without signing
+- Signature is secure and timestamped
+- You receive copy for records
+
+## What if Something is Wrong?
+
+**Before signing:**
+- Contact us immediately
+- Don't sign if information is incorrect
+- We'll correct the form and resend
+
+**After signing:**
+- We'll file your return
+- Contact us if you spot errors
+- We can amend return if needed (additional fee may apply)
+
+## Signature Timeline
+
+1. We send signature request
+2. You have 7 days to sign
+3. After signing, we prepare to file
+4. Filing happens 1-2 business days later
+5. You get confirmation email when filed
+
+## Mobile Devices
+
+You can sign on:
+- Desktop computer (recommended)
+- Laptop
+- Tablet
+- Phone
+
+Best experience on larger screens, but any device works.
+
+## Technical Issues
+
+Can't sign?
+- Clear browser cache
+- Try different browser
+- Try different device
+- Contact support
+
+## Security
+
+Your signature:
+- Uses secure connection
+- Cannot be forged
+- Legally valid
+- Stored safely
+- Only you can sign your return
+
+## Questions About Signing?
+
+Contact support:
+- We walk you through process
+- Answer any questions
+- Resend link if needed
+- Help with technical issues
+      `
+    },
+    {
+      id: "client-9",
+      title: "Contacting Support and Getting Help",
+      category: "Support",
+      excerpt: "How to reach our support team and get answers to your questions.",
+      lastUpdated: "Dec 1, 2024",
+      audience: "client",
+      content: `
+# Getting Help from Support
+
+## Support Options
+
+### Option 1: Message Through Portal (Recommended)
+- Fastest response time
+- 24-hour turnaround
+- Keep history of conversations
+- Can attach documents
+
+Steps:
+1. Log into portal
+2. Click **Messages** or **Support**
+3. Type your question
+4. Attach documents if needed
+5. Click **Send**
+
+### Option 2: Email
+- Send to: support@ststaxrepair.com
+- Monitored business hours
+- Include your reference number
+- Keep copy of email
+
+### Option 3: Phone
+- Call during business hours
+- Monday-Friday: 9am-5pm EST
+- Saturday: 10am-2pm EST
+- Have reference number ready
+
+### Option 4: Check Knowledge Base
+- Search this knowledge base
+- Answers to common questions
+- Step-by-step guides
+- Available 24/7
+
+## What to Include When Contacting Us
+
+Help us help you faster:
+- Your full name
+- Your client reference number
+- Brief description of issue
+- What you've already tried
+- Any error messages
+
+**Don't include:**
+- Social Security Number (unless necessary)
+- Bank account details
+- Credit card information
+- Passwords
+
+## Response Times
+
+| Channel | Response Time | Hours |
+|---------|---|---|
+| Portal Message | 24 hours | Business hours |
+| Email | 24-48 hours | Monday-Friday |
+| Phone | Real-time | Business hours |
+| Weekend | 24-48 hours | Saturday only |
+
+## Common Issues We Can Help With
+
+- Login problems
+- Document upload issues
+- Status questions
+- Refund updates
+- Appointment scheduling
+- Payment questions
+- Technical problems
+- Account information
+
+## Escalation
+
+If not satisfied:
+1. Ask to escalate to manager
+2. Provide details of issue
+3. Manager reviews within 24 hours
+4. Get resolution or explanation
+
+## Feedback
+
+We want your feedback:
+1. Complete our survey
+2. Rate your experience
+3. Tell us what to improve
+4. Help us serve better
+
+## Hours of Operation
+
+**Monday-Friday:** 9:00 AM - 5:00 PM EST
+**Saturday:** 10:00 AM - 2:00 PM EST
+**Sunday:** Closed (messages answered Monday)
+
+## Emergency Support
+
+Urgent issues:
+1. Call during hours
+2. Press option for emergency
+3. Speak to senior staff
+4. Get immediate attention
+
+## Tips for Better Support
+
+- Be specific about issue
+- Include error messages
+- Describe what you tried
+- Include recent screenshots
+- Be patient and polite
+- Follow up if no response
+- Check spam folder for emails
+
+## Need Help Right Now?
+
+1. Check this knowledge base first
+2. Try the FAQ section
+3. Search your messages
+4. Message support immediately
+5. Call if truly urgent
+
+We're here to help!
+      `
+    },
+    {
+      id: "client-10",
+      title: "Tax Planning Tips and Deductions",
+      category: "Process",
+      excerpt: "Tips for planning your taxes and understanding common deductions.",
+      lastUpdated: "Dec 1, 2024",
+      audience: "client",
+      content: `
+# Tax Planning Tips and Deductions
+
+## Tax Planning Throughout the Year
+
+### Quarterly Check-In
+Review your situation quarterly:
+- Q1 (March): Tax withholding review
+- Q2 (June): Mid-year check
+- Q3 (September): Adjustment time
+- Q4 (December): Year-end planning
+
+### Withholding Adjustment
+If you'll owe or over-withhold:
+- Update W-4 form with employer
+- Adjust tax withholding amount
+- Can change anytime during year
+- Avoids surprises at tax time
+
+## Common Deductions
+
+### Standard Deduction vs Itemizing
+**Standard Deduction:**
+- Fixed amount by filing status
+- Easier - no paperwork
+- 2024: $14,600 (single), $29,200 (married)
+
+**Itemized Deductions:**
+- Track specific expenses
+- More work but potentially larger
+- Only if more than standard
+- Requires receipts and documentation
+
+### Common Itemized Deductions
+
+**Mortgage Interest**
+- Interest on home loans (not principal)
+- Keep loan statements
+- Limited to $750,000 loan balance
+
+**State Taxes**
+- State income tax or sales tax
+- Property taxes (limited to $10,000)
+- Keep receipts and statements
+
+**Charitable Donations**
+- Cash donations to qualified charities
+- Non-cash donations (clothes, etc.)
+- Must have receipts
+- Organizations must be IRS-approved
+
+**Medical Expenses**
+- Only if exceed 7.5% of income
+- Prescriptions, doctor visits, insurance
+- Keep all receipts
+- Dental and vision included
+
+### Business Deductions
+
+If self-employed:
+- Home office
+- Equipment and supplies
+- Vehicle mileage
+- Travel and meals (50% meals)
+- Professional development
+
+Keep detailed records:
+- Receipts for all expenses
+- Mileage log for vehicle
+- Business use percentage
+- Documentation for home office
+
+### Education Credits
+
+If paying for education:
+- American Opportunity Credit
+- Lifetime Learning Credit
+- Student loan interest deduction
+- Tuition and fees deduction
+
+## Records to Keep
+
+### During the Year
+- Receipts for deductions
+- Bank/credit statements
+- Donation receipts
+- Medical bills
+- Business invoices
+- Mileage log
+
+### At Tax Time
+- W-2 forms from employers
+- 1099 forms for other income
+- Business profit/loss summary
+- Deduction itemization
+- Tax payment records
+
+### Keep for 7 Years
+- All tax returns
+- Supporting documents
+- Receipts and statements
+- Correspondence with IRS
+
+## Tax-Advantaged Accounts
+
+### Retirement Accounts
+- Traditional IRA: Tax-deductible contributions
+- Roth IRA: Tax-free growth
+- 401(k): Employer-sponsored plans
+- SEP-IRA: Self-employed retirement
+
+### Health Savings
+- Health Savings Account (HSA)
+- Triple tax advantage
+- Medical expense deductions
+- Flexible Spending Account (FSA)
+
+## Estimated Taxes
+
+If you're self-employed or have investment income:
+- Pay quarterly estimated taxes
+- Due: April 15, June 15, Sept 15, Jan 15
+- Avoid penalties and interest
+- Calculate based on projected income
+
+## Life Changes
+
+Notify us if:
+- Got married or divorced
+- Had a child
+- Bought a home
+- Started a business
+- Changed jobs
+- Large investment gains/losses
+- Inheritance
+
+These can significantly affect your taxes.
+
+## Questions About Deductions?
+
+Contact our team:
+- Ask about your specific situation
+- We help identify deductions
+- Maximize your refund legally
+- Explain tax concepts
       `
     },
   ];
