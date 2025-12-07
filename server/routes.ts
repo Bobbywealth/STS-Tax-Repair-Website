@@ -944,7 +944,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin Test Email Endpoint - for verifying email configuration
-  app.post("/api/admin/test-email", isAuthenticated, requireRole(['admin']), async (req: any, res) => {
+  app.post("/api/admin/test-email", isAuthenticated, requireAdmin, async (req: any, res) => {
     try {
       const { email } = req.body;
       const userId = req.userId || req.user?.claims?.sub;
@@ -2022,7 +2022,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           try {
             const client = await storage.getUser(result.data.clientId);
             if (client?.email) {
-              const appointmentDate = new Date(result.data.scheduledAt);
+              const appointmentDate = new Date(result.data.appointmentDate);
               await sendAppointmentConfirmationEmail(
                 client.email,
                 client.firstName || 'Client',
@@ -2110,16 +2110,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const payment = await storage.createPayment(result.data);
         
         // Send email notification to client when payment is received
-        if (result.data.clientId && result.data.status === 'completed') {
+        if (result.data.clientId && result.data.paymentStatus === 'completed') {
           try {
             const client = await storage.getUser(result.data.clientId);
             if (client?.email) {
               await sendPaymentReceivedEmail(
                 client.email,
                 client.firstName || 'Client',
-                result.data.amount?.toString() || '0',
+                result.data.amountPaid?.toString() || '0',
                 new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
-                result.data.method || undefined,
+                result.data.paymentMethod || undefined,
                 payment.id
               );
               console.log(`[EMAIL] Payment received notification sent to ${client.email}`);
@@ -2371,7 +2371,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 filing.taxYear?.toString() || new Date().getFullYear().toString(),
                 status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' '),
                 statusMessages[status] || note || undefined,
-                filing.federalRefundAmount?.toString() || undefined
+                filing.estimatedRefund?.toString() || filing.actualRefund?.toString() || undefined
               );
               console.log(`[EMAIL] Tax filing status notification sent to ${client.email}`);
             }
@@ -2801,10 +2801,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           try {
             const client = await storage.getUser(result.data.clientId);
             if (client?.email) {
+              const formData = result.data.formData as { taxYear?: string } | undefined;
+              const taxYear = formData?.taxYear || new Date().getFullYear().toString();
               await sendSignatureRequestEmail(
                 client.email,
                 client.firstName || 'Client',
-                result.data.taxYear?.toString() || new Date().getFullYear().toString()
+                taxYear
               );
               console.log(`[EMAIL] E-signature request notification sent to ${client.email}`);
             }
@@ -2848,11 +2850,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           const client = await storage.getUser(signature.clientId);
           if (client?.email) {
+            const taxYear = signature.formData?.taxYear || new Date().getFullYear().toString();
             await sendSignatureCompletedEmail(
               client.email,
               client.firstName || 'Client',
               new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
-              signature.taxYear?.toString() || new Date().getFullYear().toString()
+              taxYear
             );
             console.log(`[EMAIL] E-signature completed notification sent to ${client.email}`);
           }
