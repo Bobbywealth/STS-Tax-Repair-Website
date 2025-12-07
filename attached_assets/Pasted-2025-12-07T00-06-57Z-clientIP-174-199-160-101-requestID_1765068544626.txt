@@ -1,0 +1,150 @@
+2025-12-07T00:06:57Z clientIP="174.199.160.101" requestID="1bb98117-2571-4236" responseTimeMS=84 responseBytes=321 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 26_1_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/142.0.3595.107 Version/26.0 Mobile/15E148 Safari/604.1"
+2025-12-07T00:06:57Z clientIP="174.199.160.101" requestID="bdf064c3-4b1b-4c8c" responseTimeMS=203 responseBytes=232 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 26_1_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/142.0.3595.107 Version/26.0 Mobile/15E148 Safari/604.1"
+2025-12-07T00:06:57Z clientIP="174.199.160.101" requestID="c8ed8d9c-3a0e-40e9" responseTimeMS=164 responseBytes=234 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 26_1_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/142.0.3595.107 Version/26.0 Mobile/15E148 Safari/604.1"
+2025-12-07T00:06:57Z clientIP="174.199.160.101" requestID="38099498-6b45-42cc" responseTimeMS=50 responseBytes=9845 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 26_1_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/142.0.3595.107 Version/26.0 Mobile/15E148 Safari/604.1"
+2025-12-07T00:06:57.05939818Z 12:06:57 AM [express] GET /api/auth/user 304 in 125ms :: {"id":"perfex-965","email":"samajefe@outlook…
+2025-12-07T00:06:57.452501749Z 12:06:57 AM [express] GET /api/signatures 304 in 199ms :: []
+2025-12-07T00:06:58Z clientIP="174.199.160.101" requestID="dd8183bd-ddcd-489c" responseTimeMS=81 responseBytes=321 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 26_1_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/142.0.3595.107 Version/26.0 Mobile/15E148 Safari/604.1"
+2025-12-07T00:17:47.521720239Z ==> Deploying...
+2025-12-07T00:18:11.156722682Z ==> Running 'yarn start'
+2025-12-07T00:18:11.585476075Z yarn run v1.22.22
+2025-12-07T00:18:11.660118239Z $ NODE_ENV=production node dist/index.js
+2025-12-07T00:18:15.754789117Z [EMAIL] APP_URL configured as: https://sts-tax-repair-website.onrender.com
+2025-12-07T00:18:16.518794578Z Not running on Replit - Replit Auth disabled, using email/password auth only
+2025-12-07T00:18:16.539469548Z 12:18:16 AM [express] serving on port 10000
+2025-12-07T00:18:18.613741446Z ==> Your service is live 🎉
+2025-12-07T00:18:18.741446595Z ==> 
+2025-12-07T00:18:18.774037133Z ==> ///////////////////////////////////////////////////////////
+2025-12-07T00:18:18.80687423Z ==> 
+2025-12-07T00:18:18.845437996Z ==> Available at your primary URL https://ststaxrepair.org + 2 more domains
+2025-12-07T00:18:18.880009274Z ==> 
+2025-12-07T00:18:18.911663131Z ==> ///////////////////////////////////////////////////////////
+2025-12-07T00:18:19Z clientIP="35.197.80.206" requestID="8df9e53a-20d0-4170" responseTimeMS=6 responseBytes=1499 userAgent="Go-http-client/2.0"
+2025-12-07T00:23:23.953619637Z ==> Detected service running on port 10000
+2025-12-07T00:23:24.022688336Z ==> Docs on specifying a port: https://render.com/docs/web-services#port-binding
+2025-12-07T00:36:24.035346796Z ==> Deploying...
+2025-12-07T00:36:47.669079111Z ==> Running 'yarn start'
+2025-12-07T00:36:48.154025035Z yarn run v1.22.22
+2025-12-07T00:36:48.230684177Z $ NODE_ENV=production node dist/index.js
+2025-12-07T00:36:52.224946954Z [EMAIL] APP_URL configured as: https://sts-tax-repair-website.onrender.com
+2025-12-07T00:36:52.987925633Z Not running on Replit - Replit Auth disabled, using email/password auth only
+2025-12-07T00:36:53.023785178Z 12:36:52 AM [express] serving on port 10000
+2025-12-07T00:36:55.571407962Z ==> Your service is live 🎉
+2025-12-07T00:36:55.627309487Z ==> 
+2025-12-07T00:36:55.656395225Z ==> ///////////////////////////////////////////////////////////
+2025-12-07T00:36:55.687251122Z ==> 
+2025-12-07T00:36:55.719153299Z ==> Available at your primary URL https://ststaxrepair.org + 2 more domains
+2025-12-07T00:36:55.748957227Z ==> 
+2025-12-07T00:36:55.778204085Z ==> ///////////////////////////////////////////////////////////
+2025-12-07T00:36:56Z clientIP="35.230.45.39" requestID="4a349ef2-fa32-45a2" responseTimeMS=9 responseBytes=1499 userAgent="Go-http-client/2.0"
+2025-12-07T00:39:37Z clientIP="189.84.181.21" requestID="ad56bd8b-7c43-4022" responseTimeMS=9 responseBytes=1499 userAgent="Mozilla/5.0 (Windows NT 10.0; x64) AppleWebKit/537.36 (KHTML, like Gecko) Opera/72.0.0.0 Safari/537.36"
+2025-12-07T00:42:15.539899614Z ==> Deploying...
+2025-12-07T00:42:41.889674848Z ==> Running 'yarn start'
+2025-12-07T00:42:42.381786824Z yarn run v1.22.22
+2025-12-07T00:42:42.460077265Z $ NODE_ENV=production node dist/index.js
+2025-12-07T00:42:46.266131754Z [EMAIL] ============================================
+2025-12-07T00:42:46.266764009Z [EMAIL] EMAIL SYSTEM STARTUP DIAGNOSTICS
+2025-12-07T00:42:46.266775699Z [EMAIL] ============================================
+2025-12-07T00:42:46.26679854Z [EMAIL] APP_URL: https://sts-tax-repair-website.onrender.com
+2025-12-07T00:42:46.266837251Z [EMAIL] FROM_EMAIL: ststaxrepair@gmail.com
+2025-12-07T00:42:46.266917192Z [EMAIL] SENDGRID_API_KEY configured: YES (key starts with: SG.nbIpm_Q...)
+2025-12-07T00:42:46.266921502Z [EMAIL] NODE_ENV: production
+2025-12-07T00:42:46.267058776Z [EMAIL] RENDER_EXTERNAL_URL: https://sts-tax-repair-website.onrender.com
+2025-12-07T00:42:46.267071566Z [EMAIL] ============================================
+2025-12-07T00:42:46.267531096Z [EMAIL] SendGrid API key has been set successfully
+2025-12-07T00:42:47.084599075Z Not running on Replit - Replit Auth disabled, using email/password auth only
+2025-12-07T00:42:47.102885075Z 12:42:47 AM [express] serving on port 10000
+2025-12-07T00:42:56.591319827Z ==> Your service is live 🎉
+2025-12-07T00:42:56.658410692Z ==> 
+2025-12-07T00:42:56.690070299Z ==> ///////////////////////////////////////////////////////////
+2025-12-07T00:42:56.722175387Z ==> 
+2025-12-07T00:42:56.751233234Z ==> Available at your primary URL https://ststaxrepair.org + 2 more domains
+2025-12-07T00:42:56.780449731Z ==> 
+2025-12-07T00:42:56.809846139Z ==> ///////////////////////////////////////////////////////////
+2025-12-07T00:45:30Z clientIP="73.56.226.28" requestID="20618460-393a-4391" responseTimeMS=7 responseBytes=1000 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/23B85 Instagram 408.1.0.45.70 (iPhone17,3; iOS 26_1; en_US; en; scale=3.00; 1179x2556; IABMV/1; 833451024) NW/3 Safari/604.1"
+2025-12-07T00:45:30Z clientIP="73.56.226.28" requestID="72d8eb37-1672-418d" responseTimeMS=87 responseBytes=429459 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/23B85 Instagram 408.1.0.45.70 (iPhone17,3; iOS 26_1; en_US; en; scale=3.00; 1179x2556; IABMV/1; 833451024) NW/3 Safari/604.1"
+2025-12-07T00:45:31Z clientIP="73.56.226.28" requestID="f169353c-ba8f-4c06" responseTimeMS=235 responseBytes=410 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/23B85 Instagram 408.1.0.45.70 (iPhone17,3; iOS 26_1; en_US; en; scale=3.00; 1179x2556; IABMV/1; 833451024) NW/3 Safari/604.1"
+2025-12-07T00:45:31.59977271Z 12:45:31 AM [express] GET /api/users/referrers 200 in 229ms :: [{"id":"45545974","firstName":"Bobby",…
+2025-12-07T00:45:49Z clientIP="73.56.226.28" requestID="d2964806-e1b0-4ca3" responseTimeMS=491 responseBytes=429459 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:45:49Z clientIP="73.56.226.28" requestID="643931b4-6ee5-4fd9" responseTimeMS=3 responseBytes=1000 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:45:49Z clientIP="73.56.226.28" requestID="b9d0fb03-978a-44c1" responseTimeMS=12 responseBytes=26464 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:45:49Z clientIP="73.56.226.28" requestID="648fcc8a-66ba-45a8" responseTimeMS=10 responseBytes=9845 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:45:49Z clientIP="73.56.226.28" requestID="e670e2db-3554-4170" responseTimeMS=7 responseBytes=1499 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:45:50Z clientIP="73.56.226.28" requestID="073c5863-aa11-43e0" responseTimeMS=4 responseBytes=1499 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:45:50Z clientIP="73.56.226.28" requestID="a0726856-07cb-4b87" responseTimeMS=1 responseBytes=1000 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:45:50Z clientIP="73.56.226.28" requestID="9e504ddd-6792-4df8" responseTimeMS=2 responseBytes=1512 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:45:50Z clientIP="73.56.226.28" requestID="a49a5af5-0a36-4c66" responseTimeMS=2 responseBytes=1512 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:45:50Z clientIP="73.56.226.28" requestID="0ddbd7e4-07a0-40da" responseTimeMS=3 responseBytes=1305 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:46:18Z clientIP="73.56.226.28" requestID="c883c59a-2929-407b" responseTimeMS=52 responseBytes=421 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:46:18.116462572Z 12:46:18 AM [express] POST /api/client-login 401 in 42ms :: {"message":"Invalid email or password"}
+2025-12-07T00:46:24.900039928Z [PASSWORD RESET] Attempting to send reset email to abbydonato@icloud.com for user perfex-740
+2025-12-07T00:46:24.900621591Z [EMAIL] Attempting to send email to: abbydonato@icloud.com, subject: Reset Your Password - STS Tax Repair
+2025-12-07T00:46:24.900631012Z [EMAIL] SendGrid API key configured: YES (length: 69)
+2025-12-07T00:46:24.900639182Z [EMAIL] From email: ststaxrepair@gmail.com
+2025-12-07T00:46:24.900763104Z [EMAIL] Sending via SendGrid...
+2025-12-07T00:46:25Z clientIP="73.56.226.28" requestID="94f7f8da-4d1f-4323" responseTimeMS=486 responseBytes=474 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:46:25.178209023Z [EMAIL] SUCCESS - Email sent to abbydonato@icloud.com: Reset Your Password - STS Tax Repair
+2025-12-07T00:46:25.178238114Z [EMAIL] Response status: 202
+2025-12-07T00:46:25.178251364Z [PASSWORD RESET] SUCCESS - Reset email sent to abbydonato@icloud.com, messageId: qwTr1tj2SDCeW2OHDQZNaw
+2025-12-07T00:46:25.26289531Z 12:46:25 AM [express] POST /api/auth/forgot-password 200 in 484ms :: {"success":true,"message":"If an…
+2025-12-07T00:46:43Z clientIP="73.56.226.28" requestID="4c907b1a-1d6a-480d" responseTimeMS=2 responseBytes=9845 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:46:43Z clientIP="73.56.226.28" requestID="3bd11e1c-3297-4a70" responseTimeMS=4 responseBytes=1499 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:46:43Z clientIP="73.56.226.28" requestID="c7f6be67-2f6a-487b" responseTimeMS=8 responseBytes=26483 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:46:43Z clientIP="73.56.226.28" requestID="2705d309-d614-4eab" responseTimeMS=5 responseBytes=1000 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:46:44Z clientIP="73.56.226.28" requestID="66af215d-0ca4-46e8" responseTimeMS=2 responseBytes=1305 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:46:44Z clientIP="73.56.226.28" requestID="1ed7040a-b78d-49aa" responseTimeMS=282 responseBytes=429478 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:46:44Z clientIP="73.56.226.28" requestID="b8b18cb2-b69b-46f8" responseTimeMS=44 responseBytes=342 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:46:44Z clientIP="73.56.226.28" requestID="6ef1b502-19ac-4df7" responseTimeMS=5 responseBytes=1499 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:46:44.74667446Z 12:46:44 AM [express] GET /api/auth/verify-reset-token 200 in 40ms :: {"valid":true}
+2025-12-07T00:46:45Z clientIP="73.56.226.28" requestID="02d974b4-7cde-41b3" responseTimeMS=4 responseBytes=1512 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:46:45Z clientIP="73.56.226.28" requestID="1a77e20d-03e5-4d99" responseTimeMS=14 responseBytes=1000 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:46:49Z clientIP="73.56.226.28" requestID="16d840e3-8db9-4e77" responseTimeMS=3 responseBytes=1499 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:46:49Z clientIP="73.56.226.28" requestID="3421f1ce-c9b2-4c78" responseTimeMS=4 responseBytes=9845 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:46:49Z clientIP="73.56.226.28" requestID="63f26e25-cd2a-4e0b" responseTimeMS=3 responseBytes=1000 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:46:49Z clientIP="73.56.226.28" requestID="9844f70c-f481-4b07" responseTimeMS=338 responseBytes=429478 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:46:49Z clientIP="73.56.226.28" requestID="3e8934aa-d74d-4a9f" responseTimeMS=8 responseBytes=26483 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:46:49Z clientIP="73.56.226.28" requestID="90fb7bd8-b399-43d3" responseTimeMS=41 responseBytes=342 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:46:49Z clientIP="73.56.226.28" requestID="448cbeae-db8e-425a" responseTimeMS=2 responseBytes=1305 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:46:49.966382149Z 12:46:49 AM [express] GET /api/auth/verify-reset-token 200 in 40ms :: {"valid":true}
+2025-12-07T00:46:50Z clientIP="73.56.226.28" requestID="f3507ff2-b527-4875" responseTimeMS=7 responseBytes=1499 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:46:50Z clientIP="73.56.226.28" requestID="7a93667b-d77c-4a21" responseTimeMS=8 responseBytes=1512 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:46:50Z clientIP="73.56.226.28" requestID="89362aeb-c3e3-47ff" responseTimeMS=4 responseBytes=1499 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:46:50Z clientIP="73.56.226.28" requestID="43e2ad71-0dd5-4976" responseTimeMS=8 responseBytes=1000 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:46:51Z clientIP="73.56.226.28" requestID="1db5d8ae-1e5f-45b1" responseTimeMS=278 responseBytes=429478 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:46:51Z clientIP="73.56.226.28" requestID="6b43fa18-5b08-40b2" responseTimeMS=3 responseBytes=1000 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:46:51Z clientIP="73.56.226.28" requestID="96081135-0941-40fa" responseTimeMS=11 responseBytes=26483 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:46:51Z clientIP="73.56.226.28" requestID="956499b2-55c8-4464" responseTimeMS=2 responseBytes=9845 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:46:52Z clientIP="73.56.226.28" requestID="88578113-f2cf-4831" responseTimeMS=2 responseBytes=1512 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:46:52Z clientIP="73.56.226.28" requestID="af5d4d04-c6df-4e99" responseTimeMS=1 responseBytes=320 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:46:52Z clientIP="73.56.226.28" requestID="cda01d5c-1fd3-4848" responseTimeMS=4 responseBytes=1499 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:46:52Z clientIP="73.56.226.28" requestID="58691509-4e91-4302" responseTimeMS=3 responseBytes=1305 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:46:52Z clientIP="73.56.226.28" requestID="25aaff5a-9e48-4fda" responseTimeMS=2 responseBytes=320 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:46:52Z clientIP="73.56.226.28" requestID="4aaf13bb-657d-431b" responseTimeMS=96 responseBytes=342 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:46:52.174528703Z 12:46:52 AM [express] GET /api/auth/verify-reset-token 200 in 96ms :: {"valid":true}
+2025-12-07T00:47:12Z clientIP="73.56.226.28" requestID="f34bbbe0-653b-44e8" responseTimeMS=274 responseBytes=491 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:47:12.133843204Z Password reset completed for user: abbydonato@icloud.com
+2025-12-07T00:47:12.134612422Z 12:47:12 AM [express] POST /api/auth/reset-password 200 in 273ms :: {"success":true,"message":"Your p…
+2025-12-07T00:47:15Z clientIP="73.56.226.28" requestID="77e4a07b-c13d-4c16" responseTimeMS=2 responseBytes=321 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:47:21Z clientIP="73.56.226.28" requestID="788a0860-d9ba-4a72" responseTimeMS=157 responseBytes=725 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:47:21Z clientIP="73.56.226.28" requestID="8d85f9d3-9c89-4a7c" responseTimeMS=44 responseBytes=1499 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:47:21.601366443Z 12:47:21 AM [express] POST /api/client-login 200 in 154ms :: {"message":"Login successful","user":{"i…
+2025-12-07T00:47:22Z clientIP="73.56.226.28" requestID="943d3d7a-b064-498f" responseTimeMS=80 responseBytes=321 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:47:22Z clientIP="73.56.226.28" requestID="23b4eaf1-5d26-4e00" responseTimeMS=498 responseBytes=429404 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:47:22Z clientIP="73.56.226.28" requestID="634a1260-2630-4fba" responseTimeMS=3 responseBytes=320 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:47:22Z clientIP="73.56.226.28" requestID="d190597f-7fff-49d1" responseTimeMS=167 responseBytes=26409 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:47:23Z clientIP="73.56.226.28" requestID="5e5ac59c-1070-49b3" responseTimeMS=161 responseBytes=632 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:47:23Z clientIP="73.56.226.28" requestID="c5d26013-c036-4f4a" responseTimeMS=203 responseBytes=330 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:47:23Z clientIP="73.56.226.28" requestID="03ef99eb-c8b9-4829" responseTimeMS=95 responseBytes=1379 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:47:23.100580288Z 12:47:23 AM [express] GET /api/auth/user 200 in 160ms :: {"id":"perfex-740","email":"abbydonato@iclou…
+2025-12-07T00:47:23.435465247Z 12:47:23 AM [express] GET /api/signatures 200 in 202ms :: []
+2025-12-07T00:47:55.257326439Z ==> Detected service running on port 10000
+2025-12-07T00:47:55.321037519Z ==> Docs on specifying a port: https://render.com/docs/web-services#port-binding
+2025-12-07T00:48:29Z clientIP="73.56.226.28" requestID="8c420660-9e40-4958" responseTimeMS=246 responseBytes=234 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:48:29Z clientIP="73.56.226.28" requestID="bd202642-fb67-4767" responseTimeMS=163 responseBytes=1499 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:48:29Z clientIP="73.56.226.28" requestID="84256465-074b-4069" responseTimeMS=3 responseBytes=320 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:48:29Z clientIP="73.56.226.28" requestID="8454dee4-04f2-4ac0" responseTimeMS=204 responseBytes=323 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:48:29Z clientIP="73.56.226.28" requestID="2e2dfe32-4f4a-4e7a" responseTimeMS=163 responseBytes=232 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:48:29Z clientIP="73.56.226.28" requestID="b8457e06-88e8-4ada" responseTimeMS=198 responseBytes=322 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
+2025-12-07T00:48:29.521300818Z 12:48:29 AM [express] GET /api/auth/user 304 in 244ms :: {"id":"perfex-740","email":"abbydonato@iclou…
+2025-12-07T00:48:29.830015345Z 12:48:29 AM [express] GET /api/signatures 304 in 162ms :: []
+2025-12-07T00:48:30Z clientIP="73.56.226.28" requestID="bcd29692-c6de-4c5a" responseTimeMS=42 responseBytes=1379 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1"
