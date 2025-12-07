@@ -102,8 +102,9 @@ export default function UserManagement() {
     queryKey: ['/api/staff-invites'],
   });
 
-  const { data: staffRequests, isLoading: loadingRequests } = useQuery<StaffRequest[]>({
+  const { data: staffRequests, isLoading: loadingRequests, error: staffRequestsError } = useQuery<StaffRequest[]>({
     queryKey: ['/api/staff-requests'],
+    retry: false,
   });
 
   const [reviewNotes, setReviewNotes] = useState("");
@@ -625,7 +626,11 @@ export default function UserManagement() {
               <CardDescription>Review and approve staff access requests from the public signup form</CardDescription>
             </CardHeader>
             <CardContent>
-              {loadingRequests ? (
+              {staffRequestsError ? (
+                <div className="text-center py-8 text-destructive">
+                  <p>Error loading staff requests. You may not have permission to view this.</p>
+                </div>
+              ) : loadingRequests ? (
                 <div className="text-center py-8 text-muted-foreground">Loading requests...</div>
               ) : staffRequests && staffRequests.length > 0 ? (
                 <Table>
