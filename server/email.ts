@@ -1075,4 +1075,101 @@ export async function sendAppointmentReminderEmail(
   });
 }
 
+export async function sendStaffRequestNotificationEmail(
+  adminEmail: string,
+  adminName: string,
+  firstName: string,
+  lastName: string,
+  requestEmail: string,
+  roleRequested: string,
+  reason: string,
+  branding?: OfficeBranding
+): Promise<EmailResult> {
+  const brand = branding || DEFAULT_BRANDING;
+  const logoUrl = brand.logoUrl || DEFAULT_BRANDING.logoUrl;
+  const primaryColor = brand.primaryColor || DEFAULT_BRANDING.primaryColor;
+  const secondaryColor = brand.secondaryColor || DEFAULT_BRANDING.secondaryColor;
+  const companyName = brand.companyName || DEFAULT_BRANDING.companyName;
+
+  const baseStyles = `
+    <style>
+      body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }
+      .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+      .header { background: linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+      .header img { max-width: 150px; }
+      .header h1 { color: #FDB913; margin: 10px 0 0 0; font-size: 24px; }
+      .content { background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; }
+      .button { display: inline-block; background: ${secondaryColor}; color: white !important; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 20px 0; }
+      .button:hover { background: ${primaryColor}; }
+      .footer { background: #f5f5f5; padding: 20px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 10px 10px; border: 1px solid #e0e0e0; border-top: none; }
+      .info-box { background: #e8f5e9; border: 1px solid ${secondaryColor}; padding: 15px; border-radius: 6px; margin: 15px 0; }
+      .request-details { background: #f5f5f5; border-left: 4px solid ${secondaryColor}; padding: 15px; margin: 15px 0; }
+      table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+      td { padding: 8px; border-bottom: 1px solid #e0e0e0; }
+      td:first-child { font-weight: bold; width: 30%; color: ${primaryColor}; }
+    </style>
+  `;
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>${baseStyles}</head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <img src="${logoUrl}" alt="${companyName} Logo" style="max-width: 120px; margin-bottom: 10px;" />
+          <h1>New Staff Request</h1>
+        </div>
+        <div class="content">
+          <p>Hello ${adminName},</p>
+          <p>A new staff member has requested access to the ${companyName} portal. Please review the details below and approve or reject the request in the User Management section.</p>
+          
+          <div class="request-details">
+            <table>
+              <tr>
+                <td>Name:</td>
+                <td>${firstName} ${lastName}</td>
+              </tr>
+              <tr>
+                <td>Email:</td>
+                <td>${requestEmail}</td>
+              </tr>
+              <tr>
+                <td>Role Requested:</td>
+                <td>${roleRequested.charAt(0).toUpperCase() + roleRequested.slice(1).replace('_', ' ')}</td>
+              </tr>
+              <tr>
+                <td>Reason:</td>
+                <td>${reason}</td>
+              </tr>
+            </table>
+          </div>
+
+          <div class="info-box">
+            <strong>Action Required:</strong> Log in to the admin dashboard to review and approve or reject this staff request.
+          </div>
+
+          <p style="text-align: center;">
+            <a href="${APP_URL}/dashboard" class="button">Review Staff Requests</a>
+          </p>
+
+          <p>This is an automated notification. Staff requests are reviewed in the User Management section under the "Staff Requests" tab.</p>
+        </div>
+        <div class="footer">
+          <p>${companyName} | Professional Tax Services</p>
+          <p>This is an automated message. Please do not reply directly to this email.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  return sendEmail({
+    to: adminEmail,
+    subject: `New Staff Request - ${firstName} ${lastName}`,
+    html,
+    branding: brand,
+  });
+}
+
 export { getEmailTemplate };

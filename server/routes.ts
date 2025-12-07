@@ -56,6 +56,7 @@ import {
   sendSignatureCompletedEmail,
   sendSupportTicketCreatedEmail,
   sendSupportTicketResponseEmail,
+  sendStaffRequestNotificationEmail,
   generateSecureToken,
   sendEmail
 } from "./email";
@@ -5149,6 +5150,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ipAddress: req.ip,
         userAgent: req.headers['user-agent']
       });
+
+      // Send notification emails to all admins
+      try {
+        const admins = await mysqlStorage.getUsersByRole('admin');
+        for (const admin of admins) {
+          if (admin.email && admin.isActive !== false) {
+            await sendStaffRequestNotificationEmail(
+              admin.email,
+              `${admin.firstName || ''} ${admin.lastName || ''}`.trim() || 'Admin',
+              firstName,
+              lastName,
+              email,
+              roleRequested,
+              reason || 'No reason provided'
+            );
+          }
+        }
+        console.log(`[EMAIL] Staff request notifications sent to ${admins.length} admin(s)`);
+      } catch (emailError) {
+        console.error('[EMAIL] Failed to send staff request notifications:', emailError);
+      }
       
       res.status(201).json({ 
         success: true,
