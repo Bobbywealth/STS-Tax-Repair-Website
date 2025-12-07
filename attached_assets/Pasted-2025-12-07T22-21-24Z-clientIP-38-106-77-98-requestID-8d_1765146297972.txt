@@ -1,0 +1,50 @@
+2025-12-07T22:21:24Z clientIP="38.106.77.98" requestID="8db0ead8-28dc-449e" responseTimeMS=41 responseBytes=738 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-07T22:23:25Z clientIP="40.77.167.255" requestID="63c3f59a-ecb1-4504" responseTimeMS=8 responseBytes=1499 userAgent="Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm) Chrome/116.0.1938.76 Safari/537.36"
+2025-12-07T22:23:50.664600326Z ==> Deploying...
+2025-12-07T22:24:07Z clientIP="38.106.77.98" requestID="486b0d6d-1869-4e50" responseTimeMS=213 responseBytes=447 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-07T22:24:07.920372616Z 10:24:07 PM [express] POST /api/objects/upload 200 in 205ms :: {"uploadURL":"/api/documents/upload-ft…
+2025-12-07T22:24:08Z clientIP="38.106.77.98" requestID="c6efb6c5-b027-4cab" responseTimeMS=197 responseBytes=451 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-07T22:24:08.232464281Z [FTP] Uploading file for client perfex-965: Screenshot 2025-12-07 at 5.21.16 PM.png (1009 bytes)
+2025-12-07T22:24:08.308125249Z [FTP] Upload error: Error: getaddrinfo ENOTFOUND ftp.ststaxrepair.net
+2025-12-07T22:24:08.30815091Z     at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26) {
+2025-12-07T22:24:08.30815461Z   errno: -3008,
+2025-12-07T22:24:08.30815854Z   code: 'ENOTFOUND',
+2025-12-07T22:24:08.30816212Z   syscall: 'getaddrinfo',
+2025-12-07T22:24:08.30816582Z   hostname: 'ftp.ststaxrepair.net'
+2025-12-07T22:24:08.308168661Z }
+2025-12-07T22:24:08.347639535Z 10:24:08 PM [express] POST /api/documents/upload-ftp 500 in 195ms :: {"error":"getaddrinfo ENOTFOUND …
+2025-12-07T22:24:16Z clientIP="38.106.77.98" requestID="34849254-7029-4751" responseTimeMS=83 responseBytes=447 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-07T22:24:16Z clientIP="38.106.77.98" requestID="f4d2cfb1-ee8e-4e81" responseTimeMS=127 responseBytes=451 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-07T22:24:16.295985014Z 10:24:16 PM [express] POST /api/objects/upload 200 in 80ms :: {"uploadURL":"/api/documents/upload-ftp…
+2025-12-07T22:24:16.352390508Z ==> Running 'yarn start'
+2025-12-07T22:24:16.475967178Z [FTP] Uploading file for client perfex-965: Screenshot 2025-12-07 at 5.21.16 PM.png (1009 bytes)
+2025-12-07T22:24:16.481459054Z [FTP] Upload error: Error: getaddrinfo ENOTFOUND ftp.ststaxrepair.net
+2025-12-07T22:24:16.481478094Z     at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26) {
+2025-12-07T22:24:16.481483624Z   errno: -3008,
+2025-12-07T22:24:16.481488544Z   code: 'ENOTFOUND',
+2025-12-07T22:24:16.481494014Z   syscall: 'getaddrinfo',
+2025-12-07T22:24:16.481499604Z   hostname: 'ftp.ststaxrepair.net'
+2025-12-07T22:24:16.481502784Z }
+2025-12-07T22:24:16.521469791Z 10:24:16 PM [express] POST /api/documents/upload-ftp 500 in 124ms :: {"error":"getaddrinfo ENOTFOUND …
+2025-12-07T22:24:17.543714648Z yarn run v1.22.22
+2025-12-07T22:24:17.624980742Z $ NODE_ENV=production node dist/index.js
+2025-12-07T22:24:21.82015744Z [EMAIL] ============================================
+2025-12-07T22:24:21.82067417Z [EMAIL] EMAIL SYSTEM STARTUP DIAGNOSTICS
+2025-12-07T22:24:21.820802322Z [EMAIL] ============================================
+2025-12-07T22:24:21.820814372Z [EMAIL] APP_URL: https://sts-tax-repair-website.onrender.com
+2025-12-07T22:24:21.820821883Z [EMAIL] FROM_EMAIL: ststaxrepair@gmail.com
+2025-12-07T22:24:21.820845973Z [EMAIL] SENDGRID_API_KEY configured: YES (key starts with: SG.nbIpm_Q...)
+2025-12-07T22:24:21.820897274Z [EMAIL] NODE_ENV: production
+2025-12-07T22:24:21.820960365Z [EMAIL] RENDER_EXTERNAL_URL: https://sts-tax-repair-website.onrender.com
+2025-12-07T22:24:21.821004346Z [EMAIL] ============================================
+2025-12-07T22:24:21.821311052Z [EMAIL] SendGrid API key has been set successfully
+2025-12-07T22:24:23.025660656Z Not running on Replit - Replit Auth disabled, using email/password auth only
+2025-12-07T22:24:23.425122627Z 10:24:23 PM [express] serving on port 10000
+2025-12-07T22:24:31.734093973Z ==> Your service is live 🎉
+2025-12-07T22:24:31.806537097Z ==> 
+2025-12-07T22:24:31.839485795Z ==> ///////////////////////////////////////////////////////////
+2025-12-07T22:24:31.873600442Z ==> 
+2025-12-07T22:24:31.907727219Z ==> Available at your primary URL https://ststaxrepair.org + 2 more domains
+2025-12-07T22:24:31.942958746Z ==> 
+2025-12-07T22:24:32Z clientIP="35.185.236.171" requestID="c612ba37-4a46-4139" responseTimeMS=5 responseBytes=1499 userAgent="Go-http-client/2.0"
+2025-12-07T22:24:32.125293101Z ==> ///////////////////////////////////////////////////////////

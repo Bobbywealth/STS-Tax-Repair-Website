@@ -367,6 +367,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
+        <Toaster />
         <NavigationProgress />
         <OfflineIndicator />
         <Suspense fallback={<PageLoader />}>
@@ -413,7 +414,6 @@ function App() {
           )}
         </Suspense>
         <PWAInstallPrompt />
-        <Toaster />
       </TooltipProvider>
     </QueryClientProvider>
   );
