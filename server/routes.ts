@@ -37,6 +37,15 @@ import {
   sendPasswordResetEmail, 
   sendWelcomeEmail, 
   sendEmailVerificationEmail,
+  sendTaskAssignmentEmail,
+  sendDocumentUploadConfirmationEmail,
+  sendAppointmentConfirmationEmail,
+  sendPaymentReceivedEmail,
+  sendTaxFilingStatusEmail,
+  sendSignatureRequestEmail,
+  sendSignatureCompletedEmail,
+  sendSupportTicketCreatedEmail,
+  sendSupportTicketResponseEmail,
   generateSecureToken 
 } from "./email";
 
@@ -1882,6 +1891,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ error: result.error.message });
         }
         const appointment = await storage.createAppointment(result.data);
+        
+        // Send email notification to client
+        if (result.data.clientId) {
+          try {
+            const client = await storage.getUser(result.data.clientId);
+            if (client?.email) {
+              const appointmentDate = new Date(result.data.scheduledAt);
+              await sendAppointmentConfirmationEmail(
+                client.email,
+                client.firstName || 'Client',
+                appointmentDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+                appointmentDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+                result.data.location || undefined,
+                undefined,
+                result.data.notes || undefined
+              );
+              console.log(`[EMAIL] Appointment confirmation sent to ${client.email}`);
+            }
+          } catch (emailError) {
+            console.error('[EMAIL] Failed to send appointment confirmation:', emailError);
+          }
+        }
+        
         res.status(201).json(appointment);
       } catch (error: any) {
         res.status(500).json({ error: error.message });
@@ -1951,6 +1983,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ error: result.error.message });
         }
         const payment = await storage.createPayment(result.data);
+        
+        // Send email notification to client when payment is received
+        if (result.data.clientId && result.data.status === 'completed') {
+          try {
+            const client = await storage.getUser(result.data.clientId);
+            if (client?.email) {
+              await sendPaymentReceivedEmail(
+                client.email,
+                client.firstName || 'Client',
+                result.data.amount?.toString() || '0',
+                new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+                result.data.method || undefined,
+                payment.id
+              );
+              console.log(`[EMAIL] Payment received notification sent to ${client.email}`);
+            }
+          } catch (emailError) {
+            console.error('[EMAIL] Failed to send payment notification:', emailError);
+          }
+        }
+        
         res.status(201).json(payment);
       } catch (error: any) {
         res.status(500).json({ error: error.message });
@@ -2171,6 +2224,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!filing) {
           return res.status(404).json({ error: "Tax filing not found" });
         }
+        
+        // Send email notification to client about status change
+        if (filing.clientId) {
+          try {
+            const client = await storage.getUser(filing.clientId);
+            if (client?.email) {
+              const statusMessages: Record<string, string> = {
+                'new': 'Your tax filing has been started.',
+                'documents_pending': 'We need additional documents to proceed with your tax filing.',
+                'review': 'Your tax return is now under review by our team.',
+                'filed': 'Great news! Your tax return has been filed with the IRS.',
+                'accepted': 'Your tax return has been accepted by the IRS!',
+                'approved': 'Your refund has been approved!',
+                'paid': 'Your refund has been paid! Please check your bank account.',
+              };
+              
+              await sendTaxFilingStatusEmail(
+                client.email,
+                client.firstName || 'Client',
+                filing.taxYear?.toString() || new Date().getFullYear().toString(),
+                status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' '),
+                statusMessages[status] || note || undefined,
+                filing.federalRefundAmount?.toString() || undefined
+              );
+              console.log(`[EMAIL] Tax filing status notification sent to ${client.email}`);
+            }
+          } catch (emailError) {
+            console.error('[EMAIL] Failed to send tax filing status notification:', emailError);
+          }
+        }
+        
         res.json(filing);
       } catch (error: any) {
         res.status(500).json({ error: error.message });
@@ -2250,6 +2334,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: status || "todo",
           category: category || null,
         });
+
+        // Send email notification to assigned user
+        if (assignedToId) {
+          try {
+            const assignedUser = await storage.getUser(assignedToId);
+            const creatorId = req.userId || req.user?.claims?.sub;
+            const creator = creatorId ? await storage.getUser(creatorId) : null;
+            
+            if (assignedUser?.email) {
+              await sendTaskAssignmentEmail(
+                assignedUser.email,
+                assignedUser.firstName || assignedTo,
+                title,
+                description || '',
+                dueDate ? new Date(dueDate).toLocaleDateString() : undefined,
+                priority || 'medium',
+                clientName || undefined,
+                creator ? `${creator.firstName} ${creator.lastName}` : undefined
+              );
+              console.log(`[EMAIL] Task assignment notification sent to ${assignedUser.email}`);
+            }
+          } catch (emailError) {
+            console.error('[EMAIL] Failed to send task assignment notification:', emailError);
+          }
+        }
 
         res.status(201).json(task);
       } catch (error: any) {
@@ -2561,6 +2670,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ error: result.error.message });
         }
         const signature = await storage.createESignature(result.data);
+        
+        // Send email notification to client for signature request
+        if (result.data.clientId) {
+          try {
+            const client = await storage.getUser(result.data.clientId);
+            if (client?.email) {
+              await sendSignatureRequestEmail(
+                client.email,
+                client.firstName || 'Client',
+                result.data.taxYear?.toString() || new Date().getFullYear().toString()
+              );
+              console.log(`[EMAIL] E-signature request notification sent to ${client.email}`);
+            }
+          } catch (emailError) {
+            console.error('[EMAIL] Failed to send e-signature request notification:', emailError);
+          }
+        }
+        
         res.status(201).json(signature);
       } catch (error: any) {
         res.status(500).json({ error: error.message });
@@ -2590,6 +2717,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!signature) {
         return res.status(404).json({ error: "Signature not found" });
       }
+      
+      // Send email notification when signature is completed
+      if (req.body.status === 'signed' && signature.clientId) {
+        try {
+          const client = await storage.getUser(signature.clientId);
+          if (client?.email) {
+            await sendSignatureCompletedEmail(
+              client.email,
+              client.firstName || 'Client',
+              new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+              signature.taxYear?.toString() || new Date().getFullYear().toString()
+            );
+            console.log(`[EMAIL] E-signature completed notification sent to ${client.email}`);
+          }
+        } catch (emailError) {
+          console.error('[EMAIL] Failed to send e-signature completed notification:', emailError);
+        }
+      }
+      
       res.json(signature);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -3792,6 +3938,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/documents", isAuthenticated, async (req: any, res) => {
     try {
       const doc = await storage.createDocumentVersion(req.body);
+      
+      // Send email notification to client about document upload
+      if (req.body.clientId) {
+        try {
+          const client = await storage.getUser(req.body.clientId);
+          const uploaderId = req.userId || req.user?.claims?.sub;
+          const uploader = uploaderId ? await storage.getUser(uploaderId) : null;
+          
+          if (client?.email) {
+            await sendDocumentUploadConfirmationEmail(
+              client.email,
+              client.firstName || 'Client',
+              req.body.fileName || req.body.name || 'Document',
+              req.body.documentType || undefined,
+              uploader && uploader.id !== client.id 
+                ? `${uploader.firstName} ${uploader.lastName}` 
+                : undefined
+            );
+            console.log(`[EMAIL] Document upload notification sent to ${client.email}`);
+          }
+        } catch (emailError) {
+          console.error('[EMAIL] Failed to send document upload notification:', emailError);
+        }
+      }
+      
       res.status(201).json(doc);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -3856,6 +4027,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       const ticket = await storage.createTicket(ticketData);
+      
+      // Send email notification to client about ticket creation
+      const clientId = ticketData.clientId;
+      if (clientId) {
+        try {
+          const client = await storage.getUser(clientId);
+          if (client?.email) {
+            await sendSupportTicketCreatedEmail(
+              client.email,
+              client.firstName || 'Client',
+              ticket.id,
+              ticketData.subject || 'Support Request',
+              ticketData.priority || 'normal'
+            );
+            console.log(`[EMAIL] Support ticket created notification sent to ${client.email}`);
+          }
+        } catch (emailError) {
+          console.error('[EMAIL] Failed to send support ticket notification:', emailError);
+        }
+      }
+      
       res.status(201).json(ticket);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -3869,6 +4061,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!ticket) {
         return res.status(404).json({ error: 'Ticket not found' });
       }
+      
+      // Send email notification when there's a new response
+      if (req.body.response && ticket.clientId) {
+        try {
+          const client = await storage.getUser(ticket.clientId);
+          const responderId = req.userId || req.user?.claims?.sub;
+          const responder = responderId ? await storage.getUser(responderId) : null;
+          
+          if (client?.email) {
+            await sendSupportTicketResponseEmail(
+              client.email,
+              client.firstName || 'Client',
+              ticket.id,
+              ticket.subject || 'Support Request',
+              req.body.response,
+              responder ? `${responder.firstName} ${responder.lastName}` : 'Support Team'
+            );
+            console.log(`[EMAIL] Support ticket response notification sent to ${client.email}`);
+          }
+        } catch (emailError) {
+          console.error('[EMAIL] Failed to send support ticket response notification:', emailError);
+        }
+      }
+      
       res.json(ticket);
     } catch (error: any) {
       res.status(500).json({ error: error.message });

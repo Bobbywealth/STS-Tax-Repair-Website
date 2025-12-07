@@ -808,4 +808,174 @@ export async function sendSupportTicketResponseEmail(
   });
 }
 
+export async function sendTaskAssignmentEmail(
+  email: string,
+  firstName: string,
+  taskTitle: string,
+  taskDescription: string,
+  dueDate?: string,
+  priority?: string,
+  clientName?: string,
+  assignedBy?: string
+): Promise<EmailResult> {
+  const baseStyles = `
+    <style>
+      body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }
+      .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+      .header { background: linear-gradient(135deg, #1a4d2e 0%, #4CAF50 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+      .header h1 { color: #FDB913; margin: 10px 0 0 0; font-size: 24px; }
+      .content { background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; }
+      .button { display: inline-block; background: #4CAF50; color: white !important; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 20px 0; }
+      .footer { background: #f5f5f5; padding: 20px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 10px 10px; border: 1px solid #e0e0e0; border-top: none; }
+      .highlight { background: #FDB913; color: #1a4d2e; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
+      .info { background: #e8f5e9; border: 1px solid #4CAF50; padding: 15px; border-radius: 6px; margin: 15px 0; }
+      .priority-high { color: #d32f2f; font-weight: bold; }
+      .priority-medium { color: #f57c00; font-weight: bold; }
+      .priority-low { color: #388e3c; font-weight: bold; }
+    </style>
+  `;
+
+  const APP_URL = process.env.APP_URL 
+    || process.env.RENDER_EXTERNAL_URL
+    || (process.env.NODE_ENV === 'production' ? 'https://ststaxrepair.org' : null)
+    || (process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : null)
+    || 'http://localhost:5000';
+
+  const priorityClass = priority === 'high' ? 'priority-high' : priority === 'low' ? 'priority-low' : 'priority-medium';
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>${baseStyles}</head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>STS Tax Repair</h1>
+          <p style="color: #ffffff; margin: 5px 0 0 0;">Professional Tax Services</p>
+        </div>
+        <div class="content">
+          <h2>New Task Assigned</h2>
+          <p>Hello ${firstName || 'there'},</p>
+          <p>A new task has been assigned to you${assignedBy ? ` by ${assignedBy}` : ''}.</p>
+          <div class="info">
+            <strong>Task Details:</strong><br>
+            Title: <strong>${taskTitle}</strong><br>
+            ${taskDescription ? `Description: ${taskDescription}<br>` : ''}
+            ${clientName ? `Client: ${clientName}<br>` : ''}
+            Priority: <span class="${priorityClass}">${priority || 'Medium'}</span><br>
+            ${dueDate ? `Due Date: ${dueDate}<br>` : ''}
+          </div>
+          <p style="text-align: center;">
+            <a href="${APP_URL}/tasks" class="button">View Task</a>
+          </p>
+        </div>
+        <div class="footer">
+          <p>STS Tax Repair | Professional Tax Services</p>
+          <p>This is an automated message. Please do not reply directly to this email.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  return sendEmail({
+    to: email,
+    subject: `New Task Assigned: ${taskTitle} - STS Tax Repair`,
+    html,
+  });
+}
+
+export async function sendDocumentUploadConfirmationEmail(
+  email: string,
+  firstName: string,
+  documentName: string,
+  documentType?: string,
+  uploadedBy?: string
+): Promise<EmailResult> {
+  const baseStyles = `
+    <style>
+      body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }
+      .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+      .header { background: linear-gradient(135deg, #1a4d2e 0%, #4CAF50 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+      .header h1 { color: #FDB913; margin: 10px 0 0 0; font-size: 24px; }
+      .content { background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; }
+      .button { display: inline-block; background: #4CAF50; color: white !important; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 20px 0; }
+      .footer { background: #f5f5f5; padding: 20px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 10px 10px; border: 1px solid #e0e0e0; border-top: none; }
+      .info { background: #e8f5e9; border: 1px solid #4CAF50; padding: 15px; border-radius: 6px; margin: 15px 0; }
+    </style>
+  `;
+
+  const APP_URL = process.env.APP_URL 
+    || process.env.RENDER_EXTERNAL_URL
+    || (process.env.NODE_ENV === 'production' ? 'https://ststaxrepair.org' : null)
+    || (process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : null)
+    || 'http://localhost:5000';
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>${baseStyles}</head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>STS Tax Repair</h1>
+          <p style="color: #ffffff; margin: 5px 0 0 0;">Professional Tax Services</p>
+        </div>
+        <div class="content">
+          <h2>Document Uploaded Successfully</h2>
+          <p>Hello ${firstName || 'there'},</p>
+          <p>A document has been uploaded to your account${uploadedBy ? ` by ${uploadedBy}` : ''}.</p>
+          <div class="info">
+            <strong>Document Details:</strong><br>
+            Name: <strong>${documentName}</strong><br>
+            ${documentType ? `Type: ${documentType}<br>` : ''}
+            Upload Date: ${new Date().toLocaleDateString('en-US', { 
+              weekday: 'long', 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            })}
+          </div>
+          <p>Your tax preparer will review this document and contact you if additional information is needed.</p>
+          <p style="text-align: center;">
+            <a href="${APP_URL}/portal/documents" class="button">View Documents</a>
+          </p>
+        </div>
+        <div class="footer">
+          <p>STS Tax Repair | Professional Tax Services</p>
+          <p>This is an automated message. Please do not reply directly to this email.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  return sendEmail({
+    to: email,
+    subject: `Document Uploaded: ${documentName} - STS Tax Repair`,
+    html,
+  });
+}
+
+export async function sendAppointmentReminderEmail(
+  email: string,
+  firstName: string,
+  date: string,
+  time: string,
+  location?: string,
+  timeUntil?: string
+): Promise<EmailResult> {
+  const template = getEmailTemplate('appointment_reminder', { 
+    firstName, date, time, location, timeUntil 
+  });
+  
+  return sendEmail({
+    to: email,
+    subject: template.subject,
+    html: template.html,
+  });
+}
+
 export { sendEmail, getEmailTemplate };
