@@ -142,6 +142,46 @@ function getEmailTemplate(type: EmailType, data: Record<string, any>): { subject
         `
       };
 
+    case 'email_verification':
+      return {
+        subject: 'Verify Your Email - STS Tax Repair',
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>${baseStyles}</head>
+          <body>
+            <div class="container">
+              ${header}
+              <div class="content">
+                <h2>Verify Your Email Address</h2>
+                <p>Hello ${data.firstName || 'there'},</p>
+                <p>Thank you for creating an account with STS Tax Repair! To ensure the security of your account and to receive important tax updates, please verify your email address.</p>
+                <p style="text-align: center;">
+                  <a href="${data.verifyLink}" class="button">Verify My Email</a>
+                </p>
+                <div class="info">
+                  <strong>Why verify?</strong><br>
+                  Verifying your email ensures you receive important notifications about:
+                  <ul style="margin: 10px 0 0 0; padding-left: 20px;">
+                    <li>Tax filing status updates</li>
+                    <li>Document requests from your preparer</li>
+                    <li>Appointment reminders</li>
+                    <li>Refund notifications</li>
+                    <li>E-signature requests (Form 8879)</li>
+                  </ul>
+                </div>
+                <div class="warning">
+                  <strong>Important:</strong> This verification link will expire in 24 hours.
+                </div>
+                <p>If you didn't create an account with us, you can safely ignore this email.</p>
+              </div>
+              ${footer}
+            </div>
+          </body>
+          </html>
+        `
+      };
+
     case 'welcome':
       return {
         subject: 'Welcome to STS Tax Repair!',
@@ -560,6 +600,21 @@ export async function sendPasswordResetEmail(
 ): Promise<EmailResult> {
   const resetLink = `${APP_URL}/reset-password?token=${resetToken}`;
   const template = getEmailTemplate('password_reset', { firstName, resetLink });
+  
+  return sendEmail({
+    to: email,
+    subject: template.subject,
+    html: template.html,
+  });
+}
+
+export async function sendEmailVerificationEmail(
+  email: string,
+  verificationToken: string,
+  firstName?: string
+): Promise<EmailResult> {
+  const verifyLink = `${APP_URL}/verify-email?token=${verificationToken}`;
+  const template = getEmailTemplate('email_verification', { firstName, verifyLink });
   
   return sendEmail({
     to: email,
