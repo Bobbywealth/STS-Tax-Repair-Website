@@ -74,8 +74,23 @@ Preferred communication style: Simple, everyday language.
 - For Render deployment: Uses email/password authentication only (Replit Auth skipped automatically)
 - Role-based access control: Admin, Staff/Manager, Client roles
 - Session-based auth with PostgreSQL session storage via connect-pg-simple
-- Email verification and password reset flows via SendGrid integration (planned)
+- Email verification required for all new users before system access
+- Password reset flows via SendGrid integration
 - Admin user invitation system for internal staff onboarding
+
+**Email Notification System (SendGrid)**
+- All transactional emails use branded templates with STS logo and green gradient headers (#1a4d2e to #4CAF50)
+- Email verification: Required for new registrations, 24-hour token expiration, resend throttling (max 5 resends)
+- Notification hooks implemented for all major CRUD operations:
+  - Task assignments (with priority color coding)
+  - Document uploads (confirmation to client)
+  - Appointment confirmations (with date/time/location details)
+  - Payment received notifications (with amount and receipt number)
+  - Tax filing status changes (status-specific messaging)
+  - E-signature requests and completions (Form 8879)
+  - Support ticket creation and staff responses
+- All email sends use async/await with try-catch error handling to prevent blocking API responses
+- Email templates include: welcome, password reset, verification, appointment, payment, tax status, signature request/completed, ticket creation/response, task assignment, document upload
 
 **Render Deployment Notes**
 - App automatically detects non-Replit environment and disables Replit Auth
