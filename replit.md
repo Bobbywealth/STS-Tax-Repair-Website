@@ -78,8 +78,17 @@ Preferred communication style: Simple, everyday language.
 - Password reset flows via SendGrid integration
 - Admin user invitation system for internal staff onboarding
 
+**White-Labeling / Multi-Tenant Branding**
+- Tax Offices can fully customize their branding: logo, company name, primary/secondary colors, reply-to email
+- Subdomain detection middleware extracts office slug from hostname (e.g., acmetax.ststaxrepair.org)
+- useBranding hook applies CSS custom properties dynamically (--brand-primary, --brand-secondary, etc.)
+- All email templates accept OfficeBranding parameter for per-office customization
+- STS branding used as default fallback when no office branding configured
+- Branding Settings page (/branding) for Tax Office administrators with BRANDING_MANAGE permission
+- Dynamic favicon and sidebar logo update based on active office branding
+
 **Email Notification System (SendGrid)**
-- All transactional emails use branded templates with STS logo and green gradient headers (#1a4d2e to #4CAF50)
+- All transactional emails support multi-tenant branding (logo, colors, company name, reply-to headers)
 - Email verification: Required for new registrations, 24-hour token expiration, resend throttling (max 5 resends)
 - Notification hooks implemented for all major CRUD operations:
   - Task assignments (with priority color coding)
