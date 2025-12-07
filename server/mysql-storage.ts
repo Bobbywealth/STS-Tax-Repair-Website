@@ -30,6 +30,10 @@ import {
   type InsertTaxFiling,
   type FilingStatus,
   type PasswordResetToken,
+  type Ticket,
+  type InsertTicket,
+  type KnowledgeBase,
+  type InsertKnowledgeBase,
   users as usersTable,
   taxDeadlines as taxDeadlinesTable,
   appointments as appointmentsTable,
@@ -47,10 +51,23 @@ import {
   taxFilings as taxFilingsTable,
   passwordResetTokens as passwordResetTokensTable
 } from "@shared/mysql-schema";
+import { mysqlPool } from "./mysql-db";
 import { randomUUID } from "crypto";
 import { mysqlDb } from "./mysql-db";
 import { eq, and, gte, lte, lt, desc, asc } from "drizzle-orm";
 import type { IStorage } from "./storage";
+
+// Helper function to extract affectedRows from MySQL2/Drizzle delete result
+// Handles both pooled connection (result[0].affectedRows) and direct connection (result.affectedRows) formats
+function getAffectedRows(result: any): number {
+  if (typeof result?.affectedRows === 'number') {
+    return result.affectedRows;
+  }
+  if (Array.isArray(result) && typeof result[0]?.affectedRows === 'number') {
+    return result[0].affectedRows;
+  }
+  return 0;
+}
 
 export class MySQLStorage implements IStorage {
   
@@ -145,7 +162,7 @@ export class MySQLStorage implements IStorage {
 
   async deleteTaxDeadline(id: string): Promise<boolean> {
     const result = await mysqlDb.delete(taxDeadlinesTable).where(eq(taxDeadlinesTable.id, id));
-    return (result as any).affectedRows > 0;
+    return getAffectedRows(result) > 0;
   }
 
   // Appointments
@@ -200,7 +217,7 @@ export class MySQLStorage implements IStorage {
 
   async deleteAppointment(id: string): Promise<boolean> {
     const result = await mysqlDb.delete(appointmentsTable).where(eq(appointmentsTable.id, id));
-    return (result as any).affectedRows > 0;
+    return getAffectedRows(result) > 0;
   }
 
   // Payments
@@ -244,7 +261,7 @@ export class MySQLStorage implements IStorage {
 
   async deletePayment(id: string): Promise<boolean> {
     const result = await mysqlDb.delete(paymentsTable).where(eq(paymentsTable.id, id));
-    return (result as any).affectedRows > 0;
+    return getAffectedRows(result) > 0;
   }
 
   // Document Versions
@@ -290,7 +307,7 @@ export class MySQLStorage implements IStorage {
 
   async deleteDocumentVersion(id: string): Promise<boolean> {
     const result = await mysqlDb.delete(documentVersionsTable).where(eq(documentVersionsTable.id, id));
-    return (result as any).affectedRows > 0;
+    return getAffectedRows(result) > 0;
   }
 
   // E-Signatures
@@ -347,7 +364,7 @@ export class MySQLStorage implements IStorage {
 
   async deleteESignature(id: string): Promise<boolean> {
     const result = await mysqlDb.delete(eSignaturesTable).where(eq(eSignaturesTable.id, id));
-    return (result as any).affectedRows > 0;
+    return getAffectedRows(result) > 0;
   }
 
   // Email Logs
@@ -416,7 +433,7 @@ export class MySQLStorage implements IStorage {
 
   async deleteDocumentRequestTemplate(id: string): Promise<boolean> {
     const result = await mysqlDb.delete(templatesTable).where(eq(templatesTable.id, id));
-    return (result as any).affectedRows > 0;
+    return getAffectedRows(result) > 0;
   }
 
   // Tasks
@@ -468,7 +485,7 @@ export class MySQLStorage implements IStorage {
 
   async deleteTask(id: string): Promise<boolean> {
     const result = await mysqlDb.delete(tasksTable).where(eq(tasksTable.id, id));
-    return (result as any).affectedRows > 0;
+    return getAffectedRows(result) > 0;
   }
 
   // Staff Members
@@ -511,7 +528,7 @@ export class MySQLStorage implements IStorage {
 
   async deleteStaffMember(id: string): Promise<boolean> {
     const result = await mysqlDb.delete(staffTable).where(eq(staffTable.id, id));
-    return (result as any).affectedRows > 0;
+    return getAffectedRows(result) > 0;
   }
 
   // User Role Management
@@ -671,7 +688,7 @@ export class MySQLStorage implements IStorage {
 
   async deleteStaffInvite(id: string): Promise<boolean> {
     const result = await mysqlDb.delete(staffInvitesTable).where(eq(staffInvitesTable.id, id));
-    return (result as any).affectedRows > 0;
+    return getAffectedRows(result) > 0;
   }
 
   // Permissions
@@ -1032,6 +1049,154 @@ export class MySQLStorage implements IStorage {
   async deleteExpiredPasswordResetTokens(): Promise<void> {
     await mysqlDb.delete(passwordResetTokensTable)
       .where(lt(passwordResetTokensTable.expiresAt, new Date()));
+  }
+
+  // Tickets
+  async getTickets(): Promise<Ticket[]> {
+    const [rows] = await mysqlPool.query(
+      `SELECT id, client_id as clientId, client_name as clientName, subject, description, 
+       category, priority, status, assigned_to_id as assignedToId, assigned_to as assignedTo,
+       resolved_at as resolvedAt, created_at as createdAt, updated_at as updatedAt
+       FROM tickets ORDER BY created_at DESC`
+    );
+    return rows as Ticket[];
+  }
+
+  async getTicketsByClient(clientId: string): Promise<Ticket[]> {
+    const [rows] = await mysqlPool.query(
+      `SELECT id, client_id as clientId, client_name as clientName, subject, description, 
+       category, priority, status, assigned_to_id as assignedToId, assigned_to as assignedTo,
+       resolved_at as resolvedAt, created_at as createdAt, updated_at as updatedAt
+       FROM tickets WHERE client_id = ? ORDER BY created_at DESC`,
+      [clientId]
+    );
+    return rows as Ticket[];
+  }
+
+  async getTicketsByAssignee(assignedToId: string): Promise<Ticket[]> {
+    const [rows] = await mysqlPool.query(
+      `SELECT id, client_id as clientId, client_name as clientName, subject, description, 
+       category, priority, status, assigned_to_id as assignedToId, assigned_to as assignedTo,
+       resolved_at as resolvedAt, created_at as createdAt, updated_at as updatedAt
+       FROM tickets WHERE assigned_to_id = ? ORDER BY created_at DESC`,
+      [assignedToId]
+    );
+    return rows as Ticket[];
+  }
+
+  async getTicket(id: string): Promise<Ticket | undefined> {
+    const [rows] = await mysqlPool.query(
+      `SELECT id, client_id as clientId, client_name as clientName, subject, description, 
+       category, priority, status, assigned_to_id as assignedToId, assigned_to as assignedTo,
+       resolved_at as resolvedAt, created_at as createdAt, updated_at as updatedAt
+       FROM tickets WHERE id = ?`,
+      [id]
+    );
+    const result = rows as Ticket[];
+    return result[0];
+  }
+
+  async createTicket(ticket: InsertTicket): Promise<Ticket> {
+    const id = randomUUID();
+    await mysqlPool.query(
+      `INSERT INTO tickets (id, client_id, client_name, subject, description, category, priority, status, assigned_to_id, assigned_to)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, ticket.clientId || null, ticket.clientName || null, ticket.subject, ticket.description || null,
+       ticket.category || 'general', ticket.priority || 'medium', ticket.status || 'open',
+       ticket.assignedToId || null, ticket.assignedTo || null]
+    );
+    const created = await this.getTicket(id);
+    return created!;
+  }
+
+  async updateTicket(id: string, ticket: Partial<InsertTicket>): Promise<Ticket | undefined> {
+    const updates: string[] = [];
+    const values: any[] = [];
+
+    if (ticket.subject !== undefined) { updates.push('subject = ?'); values.push(ticket.subject); }
+    if (ticket.description !== undefined) { updates.push('description = ?'); values.push(ticket.description); }
+    if (ticket.category !== undefined) { updates.push('category = ?'); values.push(ticket.category); }
+    if (ticket.priority !== undefined) { updates.push('priority = ?'); values.push(ticket.priority); }
+    if (ticket.status !== undefined) { updates.push('status = ?'); values.push(ticket.status); }
+    if (ticket.assignedToId !== undefined) { updates.push('assigned_to_id = ?'); values.push(ticket.assignedToId); }
+    if (ticket.assignedTo !== undefined) { updates.push('assigned_to = ?'); values.push(ticket.assignedTo); }
+    if (ticket.resolvedAt !== undefined) { updates.push('resolved_at = ?'); values.push(ticket.resolvedAt); }
+
+    if (updates.length === 0) return this.getTicket(id);
+
+    values.push(id);
+    await mysqlPool.query(`UPDATE tickets SET ${updates.join(', ')} WHERE id = ?`, values);
+    return this.getTicket(id);
+  }
+
+  async deleteTicket(id: string): Promise<boolean> {
+    await mysqlPool.query('DELETE FROM tickets WHERE id = ?', [id]);
+    return true;
+  }
+
+  // Knowledge Base
+  async getKnowledgeBaseArticles(): Promise<KnowledgeBase[]> {
+    const [rows] = await mysqlPool.query(
+      `SELECT id, title, content, category, tags, author_id as authorId, author_name as authorName,
+       is_published as isPublished, view_count as viewCount, created_at as createdAt, updated_at as updatedAt
+       FROM knowledge_base ORDER BY created_at DESC`
+    );
+    return rows as KnowledgeBase[];
+  }
+
+  async getKnowledgeBaseByCategory(category: string): Promise<KnowledgeBase[]> {
+    const [rows] = await mysqlPool.query(
+      `SELECT id, title, content, category, tags, author_id as authorId, author_name as authorName,
+       is_published as isPublished, view_count as viewCount, created_at as createdAt, updated_at as updatedAt
+       FROM knowledge_base WHERE category = ? ORDER BY created_at DESC`,
+      [category]
+    );
+    return rows as KnowledgeBase[];
+  }
+
+  async getKnowledgeBaseArticle(id: string): Promise<KnowledgeBase | undefined> {
+    const [rows] = await mysqlPool.query(
+      `SELECT id, title, content, category, tags, author_id as authorId, author_name as authorName,
+       is_published as isPublished, view_count as viewCount, created_at as createdAt, updated_at as updatedAt
+       FROM knowledge_base WHERE id = ?`,
+      [id]
+    );
+    const result = rows as KnowledgeBase[];
+    return result[0];
+  }
+
+  async createKnowledgeBaseArticle(article: InsertKnowledgeBase): Promise<KnowledgeBase> {
+    const id = randomUUID();
+    await mysqlPool.query(
+      `INSERT INTO knowledge_base (id, title, content, category, tags, author_id, author_name, is_published)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, article.title, article.content, article.category || null, article.tags || null,
+       article.authorId || null, article.authorName || null, article.isPublished !== false]
+    );
+    const created = await this.getKnowledgeBaseArticle(id);
+    return created!;
+  }
+
+  async updateKnowledgeBaseArticle(id: string, article: Partial<InsertKnowledgeBase>): Promise<KnowledgeBase | undefined> {
+    const updates: string[] = [];
+    const values: any[] = [];
+
+    if (article.title !== undefined) { updates.push('title = ?'); values.push(article.title); }
+    if (article.content !== undefined) { updates.push('content = ?'); values.push(article.content); }
+    if (article.category !== undefined) { updates.push('category = ?'); values.push(article.category); }
+    if (article.tags !== undefined) { updates.push('tags = ?'); values.push(article.tags); }
+    if (article.isPublished !== undefined) { updates.push('is_published = ?'); values.push(article.isPublished); }
+
+    if (updates.length === 0) return this.getKnowledgeBaseArticle(id);
+
+    values.push(id);
+    await mysqlPool.query(`UPDATE knowledge_base SET ${updates.join(', ')} WHERE id = ?`, values);
+    return this.getKnowledgeBaseArticle(id);
+  }
+
+  async deleteKnowledgeBaseArticle(id: string): Promise<boolean> {
+    await mysqlPool.query('DELETE FROM knowledge_base WHERE id = ?', [id]);
+    return true;
   }
 }
 

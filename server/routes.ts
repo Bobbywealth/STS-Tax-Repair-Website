@@ -3415,6 +3415,511 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
+  // ===========================================
+  // DASHBOARD ENDPOINTS
+  // ===========================================
+  app.get("/api/dashboard/stats", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId || req.user?.claims?.sub;
+      const currentUser = await storage.getUser(userId);
+      const userRole = currentUser?.role?.toLowerCase() || 'client';
+      const isStaffOrAdmin = userRole === 'admin' || userRole === 'tax_office' || userRole === 'staff' || userRole === 'manager';
+      
+      // Clients can only see limited dashboard stats - return early BEFORE any DB queries
+      if (!isStaffOrAdmin) {
+        return res.json({
+          totalClients: 0,
+          totalLeads: 0,
+          pendingTasks: 0,
+          upcomingAppointments: 0,
+          activeFilings: 0,
+          openTickets: 0,
+        });
+      }
+
+      // Staff/Admin dashboard only - get counts from various tables
+      let clientCount = 0;
+      try {
+        const [clientRows] = await mysqlPool.query(`SELECT COUNT(*) as count FROM users WHERE role = 'client'`);
+        clientCount = (clientRows as any)[0]?.count || 0;
+      } catch (e) {
+        console.error('Dashboard: Error counting clients', e);
+      }
+      
+      // Leads come from Perfex CRM, try to count or default to 0
+      let leadCount = 0;
+      try {
+        const leads = await queryPerfex(`SELECT COUNT(*) as count FROM tblleads`);
+        leadCount = leads[0]?.count || 0;
+      } catch (e) {
+        // Perfex might not be available - silently fail
+        console.error('Dashboard: Perfex leads query failed, defaulting to 0');
+        leadCount = 0;
+      }
+      
+      let taskCount = 0;
+      try {
+        const [taskRows] = await mysqlPool.query(
+          userRole === 'admin' || userRole === 'tax_office'
+            ? `SELECT COUNT(*) as count FROM tasks`
+            : `SELECT COUNT(*) as count FROM tasks WHERE assigned_to_id = ?`,
+          userRole === 'admin' || userRole === 'tax_office' ? [] : [userId]
+        );
+        taskCount = (taskRows as any)[0]?.count || 0;
+      } catch (e) {
+        console.error('Dashboard: Error counting tasks', e);
+      }
+      
+      let appointmentCount = 0;
+      try {
+        const [appointmentRows] = await mysqlPool.query(`SELECT COUNT(*) as count FROM appointments WHERE appointment_date >= NOW()`);
+        appointmentCount = (appointmentRows as any)[0]?.count || 0;
+      } catch (e) {
+        console.error('Dashboard: Error counting appointments', e);
+      }
+      
+      let filingCount = 0;
+      try {
+        const [filingRows] = await mysqlPool.query(`SELECT COUNT(*) as count FROM tax_filings WHERE tax_year = ?`, [new Date().getFullYear()]);
+        filingCount = (filingRows as any)[0]?.count || 0;
+      } catch (e) {
+        console.error('Dashboard: Error counting filings', e);
+      }
+      
+      let ticketCount = 0;
+      try {
+        const [ticketRows] = await mysqlPool.query(`SELECT COUNT(*) as count FROM tickets WHERE status = 'open'`);
+        ticketCount = (ticketRows as any)[0]?.count || 0;
+      } catch (e) {
+        console.error('Dashboard: Error counting tickets', e);
+      }
+
+      res.json({
+        totalClients: clientCount,
+        totalLeads: leadCount,
+        pendingTasks: taskCount,
+        upcomingAppointments: appointmentCount,
+        activeFilings: filingCount,
+        openTickets: ticketCount,
+      });
+    } catch (error: any) {
+      console.error('Dashboard stats error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ===========================================
+  // CLIENTS ENDPOINTS
+  // ===========================================
+  app.get("/api/clients", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId || req.user?.claims?.sub;
+      const currentUser = await storage.getUser(userId);
+      const userRole = currentUser?.role?.toLowerCase() || 'client';
+      const isAdmin = userRole === 'admin' || userRole === 'tax_office';
+      
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+      const search = req.query.search as string || '';
+
+      let query = `SELECT id, email, first_name as firstName, last_name as lastName, phone, 
+                   address, city, state, zip_code as zipCode, country, role, is_active as isActive,
+                   created_at as createdAt
+                   FROM users WHERE role = 'client'`;
+      const params: any[] = [];
+
+      if (search) {
+        query += ` AND (first_name LIKE ? OR last_name LIKE ? OR email LIKE ? OR phone LIKE ?)`;
+        const searchTerm = `%${search}%`;
+        params.push(searchTerm, searchTerm, searchTerm, searchTerm);
+      }
+
+      // Role-based filtering: agents only see their assigned clients via tax_filings
+      if (!isAdmin) {
+        query += ` AND id IN (SELECT DISTINCT client_id FROM tax_filings WHERE preparer_id = ?)`;
+        params.push(userId);
+      }
+
+      query += ` ORDER BY created_at DESC LIMIT ? OFFSET ?`;
+      params.push(limit, offset);
+
+      const [rows] = await mysqlPool.query(query, params);
+      res.json(rows);
+    } catch (error: any) {
+      console.error('Clients fetch error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/clients/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const [rows] = await mysqlPool.query(
+        `SELECT id, email, first_name as firstName, last_name as lastName, phone, 
+         address, city, state, zip_code as zipCode, country, role, is_active as isActive,
+         created_at as createdAt FROM users WHERE id = ?`,
+        [id]
+      );
+      const client = (rows as any[])[0];
+      if (!client) {
+        return res.status(404).json({ error: 'Client not found' });
+      }
+      res.json(client);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ===========================================
+  // TASKS ENDPOINTS
+  // ===========================================
+  app.get("/api/tasks", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId || req.user?.claims?.sub;
+      const currentUser = await storage.getUser(userId);
+      const userRole = currentUser?.role?.toLowerCase() || 'client';
+      const isAdmin = userRole === 'admin' || userRole === 'tax_office';
+
+      let query = `SELECT id, title, description, client_id as clientId, client_name as clientName,
+                   assigned_to_id as assignedToId, assigned_to as assignedTo, due_date as dueDate,
+                   priority, status, category, created_at as createdAt, updated_at as updatedAt
+                   FROM tasks`;
+      const params: any[] = [];
+
+      if (!isAdmin) {
+        query += ` WHERE assigned_to_id = ?`;
+        params.push(userId);
+      }
+
+      query += ` ORDER BY created_at DESC`;
+
+      const [rows] = await mysqlPool.query(query, params);
+      res.json(rows);
+    } catch (error: any) {
+      console.error('Tasks fetch error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Note: POST /api/tasks, PATCH /api/tasks/:id, DELETE /api/tasks/:id are defined earlier with proper permission checks
+
+  // ===========================================
+  // DOCUMENTS ENDPOINTS
+  // ===========================================
+  app.get("/api/documents", isAuthenticated, async (req: any, res) => {
+    try {
+      const clientId = req.query.clientId as string;
+      if (clientId) {
+        const docs = await storage.getDocumentVersions(clientId);
+        return res.json(docs);
+      }
+      const docs = await storage.getAllDocuments();
+      res.json(docs);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/documents", isAuthenticated, async (req: any, res) => {
+    try {
+      const doc = await storage.createDocumentVersion(req.body);
+      res.status(201).json(doc);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/documents/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteDocumentVersion(id);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ===========================================
+  // TICKETS ENDPOINTS
+  // ===========================================
+  app.get("/api/tickets", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId || req.user?.claims?.sub;
+      const currentUser = await storage.getUser(userId);
+      const userRole = currentUser?.role?.toLowerCase() || 'client';
+
+      let tickets;
+      if (userRole === 'client') {
+        tickets = await storage.getTicketsByClient(userId);
+      } else if (userRole === 'admin' || userRole === 'tax_office') {
+        tickets = await storage.getTickets();
+      } else {
+        tickets = await storage.getTicketsByAssignee(userId);
+      }
+      res.json(tickets);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/tickets/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const ticket = await storage.getTicket(id);
+      if (!ticket) {
+        return res.status(404).json({ error: 'Ticket not found' });
+      }
+      res.json(ticket);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/tickets", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId || req.user?.claims?.sub;
+      const currentUser = await storage.getUser(userId);
+      
+      const ticketData = {
+        ...req.body,
+        clientId: req.body.clientId || userId,
+        clientName: req.body.clientName || `${currentUser?.firstName || ''} ${currentUser?.lastName || ''}`.trim(),
+      };
+      
+      const ticket = await storage.createTicket(ticketData);
+      res.status(201).json(ticket);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/tickets/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const ticket = await storage.updateTicket(id, req.body);
+      if (!ticket) {
+        return res.status(404).json({ error: 'Ticket not found' });
+      }
+      res.json(ticket);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/tickets/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteTicket(id);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ===========================================
+  // KNOWLEDGE BASE ENDPOINTS
+  // ===========================================
+  app.get("/api/knowledge-base", async (req: any, res) => {
+    try {
+      const category = req.query.category as string;
+      let articles;
+      if (category) {
+        articles = await storage.getKnowledgeBaseByCategory(category);
+      } else {
+        articles = await storage.getKnowledgeBaseArticles();
+      }
+      res.json(articles);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/knowledge-base/:id", async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const article = await storage.getKnowledgeBaseArticle(id);
+      if (!article) {
+        return res.status(404).json({ error: 'Article not found' });
+      }
+      res.json(article);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/knowledge-base", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId || req.user?.claims?.sub;
+      const currentUser = await storage.getUser(userId);
+      
+      const articleData = {
+        ...req.body,
+        authorId: userId,
+        authorName: `${currentUser?.firstName || ''} ${currentUser?.lastName || ''}`.trim(),
+      };
+      
+      const article = await storage.createKnowledgeBaseArticle(articleData);
+      res.status(201).json(article);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/knowledge-base/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const article = await storage.updateKnowledgeBaseArticle(id, req.body);
+      if (!article) {
+        return res.status(404).json({ error: 'Article not found' });
+      }
+      res.json(article);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/knowledge-base/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteKnowledgeBaseArticle(id);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ===========================================
+  // E-SIGNATURES ENDPOINTS
+  // ===========================================
+  app.get("/api/e-signatures", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId || req.user?.claims?.sub;
+      const currentUser = await storage.getUser(userId);
+      const userRole = currentUser?.role?.toLowerCase() || 'client';
+
+      let signatures;
+      if (userRole === 'client') {
+        signatures = await storage.getESignaturesByClient(userId);
+      } else {
+        signatures = await storage.getESignatures();
+      }
+      res.json(signatures);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ===========================================
+  // TAX DEADLINES ENDPOINTS
+  // ===========================================
+  app.get("/api/tax-deadlines", isAuthenticated, async (req: any, res) => {
+    try {
+      const year = req.query.year ? parseInt(req.query.year as string) : new Date().getFullYear();
+      const deadlines = await storage.getTaxDeadlinesByYear(year);
+      res.json(deadlines);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/tax-deadlines", isAuthenticated, async (req: any, res) => {
+    try {
+      const deadline = await storage.createTaxDeadline(req.body);
+      res.status(201).json(deadline);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/tax-deadlines/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const deadline = await storage.updateTaxDeadline(id, req.body);
+      if (!deadline) {
+        return res.status(404).json({ error: 'Deadline not found' });
+      }
+      res.json(deadline);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/tax-deadlines/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteTaxDeadline(id);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ===========================================
+  // EMAIL LOGS ENDPOINTS
+  // ===========================================
+  app.get("/api/email-logs", isAuthenticated, async (req: any, res) => {
+    try {
+      const clientId = req.query.clientId as string;
+      let logs;
+      if (clientId) {
+        logs = await storage.getEmailLogsByClient(clientId);
+      } else {
+        logs = await storage.getEmailLogs();
+      }
+      res.json(logs);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ===========================================
+  // STAFF MEMBERS ENDPOINTS  
+  // ===========================================
+  app.get("/api/staff-members", isAuthenticated, async (req: any, res) => {
+    try {
+      const staff = await storage.getStaffMembers();
+      res.json(staff);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ===========================================
+  // ANALYTICS ENDPOINTS
+  // ===========================================
+  app.get("/api/analytics", isAuthenticated, async (req: any, res) => {
+    try {
+      const year = req.query.year ? parseInt(req.query.year as string) : new Date().getFullYear();
+      
+      // Get filing metrics
+      const filingMetrics = await storage.getTaxFilingMetrics(year);
+      
+      // Get monthly data
+      const [monthlyFilings] = await mysqlPool.query(
+        `SELECT MONTH(created_at) as month, COUNT(*) as count 
+         FROM tax_filings WHERE tax_year = ? 
+         GROUP BY MONTH(created_at) ORDER BY month`,
+        [year]
+      );
+
+      const [monthlyClients] = await mysqlPool.query(
+        `SELECT MONTH(created_at) as month, COUNT(*) as count 
+         FROM users WHERE role = 'client' AND YEAR(created_at) = ?
+         GROUP BY MONTH(created_at) ORDER BY month`,
+        [year]
+      );
+
+      res.json({
+        filingMetrics,
+        monthlyFilings,
+        monthlyClients,
+        year,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

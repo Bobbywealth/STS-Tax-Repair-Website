@@ -531,6 +531,56 @@ export const DefaultPermissions: Array<{
   { slug: 'admin.system', label: 'System Administration', description: 'Full system administration access', featureGroup: 'admin', defaultRoles: ['admin'] },
 ];
 
+// Tickets Table for support
+export const tickets = mysqlTable("tickets", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+  clientId: varchar("client_id", { length: 36 }),
+  clientName: text("client_name"),
+  subject: text("subject").notNull(),
+  description: text("description"),
+  category: varchar("category", { length: 50 }).default("general"),
+  priority: varchar("priority", { length: 20 }).default("medium"),
+  status: varchar("status", { length: 20 }).default("open"),
+  assignedToId: varchar("assigned_to_id", { length: 36 }),
+  assignedTo: text("assigned_to"),
+  resolvedAt: timestamp("resolved_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertTicketSchema = createInsertSchema(tickets).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertTicket = z.infer<typeof insertTicketSchema>;
+export type Ticket = typeof tickets.$inferSelect;
+
+// Knowledge Base Table
+export const knowledgeBase = mysqlTable("knowledge_base", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  category: varchar("category", { length: 100 }),
+  tags: text("tags"),
+  authorId: varchar("author_id", { length: 36 }),
+  authorName: text("author_name"),
+  isPublished: boolean("is_published").default(true),
+  viewCount: int("view_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertKnowledgeBaseSchema = createInsertSchema(knowledgeBase).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertKnowledgeBase = z.infer<typeof insertKnowledgeBaseSchema>;
+export type KnowledgeBase = typeof knowledgeBase.$inferSelect;
+
 // Password Reset Tokens Table
 export const passwordResetTokens = mysqlTable("password_reset_tokens", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),

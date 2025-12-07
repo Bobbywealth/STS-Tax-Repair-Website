@@ -257,6 +257,126 @@ export async function runMySQLMigrations(): Promise<void> {
       console.log('tax_filings table created successfully!');
     }
     
+    // Create tasks table
+    const [tasksTable] = await connection.query(
+      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'tasks'`,
+      [dbName]
+    );
+    
+    if (Array.isArray(tasksTable) && tasksTable.length === 0) {
+      console.log('Creating tasks table...');
+      await connection.query(`
+        CREATE TABLE tasks (
+          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+          title TEXT NOT NULL,
+          description TEXT,
+          client_id VARCHAR(36),
+          client_name TEXT,
+          assigned_to_id VARCHAR(36),
+          assigned_to TEXT NOT NULL,
+          due_date TIMESTAMP NULL,
+          priority VARCHAR(20) DEFAULT 'medium',
+          status VARCHAR(20) DEFAULT 'todo',
+          category VARCHAR(50),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_tasks_assigned (assigned_to_id),
+          INDEX idx_tasks_status (status),
+          INDEX idx_tasks_client (client_id)
+        )
+      `);
+      console.log('tasks table created successfully!');
+    }
+
+    // Create tickets table for support ticketing
+    const [ticketsTable] = await connection.query(
+      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'tickets'`,
+      [dbName]
+    );
+    
+    if (Array.isArray(ticketsTable) && ticketsTable.length === 0) {
+      console.log('Creating tickets table...');
+      await connection.query(`
+        CREATE TABLE tickets (
+          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+          client_id VARCHAR(36),
+          client_name TEXT,
+          subject TEXT NOT NULL,
+          description TEXT,
+          category VARCHAR(50) DEFAULT 'general',
+          priority VARCHAR(20) DEFAULT 'medium',
+          status VARCHAR(20) DEFAULT 'open',
+          assigned_to_id VARCHAR(36),
+          assigned_to TEXT,
+          resolved_at TIMESTAMP NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_tickets_client (client_id),
+          INDEX idx_tickets_status (status),
+          INDEX idx_tickets_assigned (assigned_to_id)
+        )
+      `);
+      console.log('tickets table created successfully!');
+    }
+
+    // Create knowledge_base table
+    const [knowledgeTable] = await connection.query(
+      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'knowledge_base'`,
+      [dbName]
+    );
+    
+    if (Array.isArray(knowledgeTable) && knowledgeTable.length === 0) {
+      console.log('Creating knowledge_base table...');
+      await connection.query(`
+        CREATE TABLE knowledge_base (
+          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+          title TEXT NOT NULL,
+          content TEXT NOT NULL,
+          category VARCHAR(100),
+          tags TEXT,
+          author_id VARCHAR(36),
+          author_name TEXT,
+          is_published BOOLEAN DEFAULT TRUE,
+          view_count INT DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_knowledge_category (category),
+          INDEX idx_knowledge_published (is_published)
+        )
+      `);
+      console.log('knowledge_base table created successfully!');
+    }
+
+    // Create staff_members table
+    const [staffMembersTable] = await connection.query(
+      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'staff_members'`,
+      [dbName]
+    );
+    
+    if (Array.isArray(staffMembersTable) && staffMembersTable.length === 0) {
+      console.log('Creating staff_members table...');
+      await connection.query(`
+        CREATE TABLE staff_members (
+          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+          user_id VARCHAR(36),
+          name TEXT NOT NULL,
+          email VARCHAR(255),
+          role VARCHAR(100) DEFAULT 'Tax Preparer',
+          department VARCHAR(100),
+          is_active BOOLEAN DEFAULT TRUE,
+          hire_date TIMESTAMP NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_staff_user (user_id),
+          INDEX idx_staff_active (is_active)
+        )
+      `);
+      console.log('staff_members table created successfully!');
+    }
+
     // Create password_reset_tokens table
     const [passwordResetTable] = await connection.query(
       `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 

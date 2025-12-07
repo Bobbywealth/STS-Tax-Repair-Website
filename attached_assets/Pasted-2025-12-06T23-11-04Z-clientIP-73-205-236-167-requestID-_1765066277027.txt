@@ -1,0 +1,239 @@
+2025-12-06T23:11:04Z clientIP="73.205.236.167" requestID="9e7e8f78-f598-4f87" responseTimeMS=169 responseBytes=544 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0"
+2025-12-06T23:11:04.99411285Z 11:11:04 PM [express] GET /api/logout 302 in 166ms
+2025-12-06T23:11:05Z clientIP="73.205.236.167" requestID="1110d8ea-49fa-4fc8" responseTimeMS=90 responseBytes=321 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0"
+2025-12-06T23:11:05Z clientIP="73.205.236.167" requestID="06e1ee79-a4b6-4409" responseTimeMS=84 responseBytes=378 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0"
+2025-12-06T23:11:05Z clientIP="73.205.236.167" requestID="e012f03f-3875-4774" responseTimeMS=82 responseBytes=321 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0"
+2025-12-06T23:11:05Z clientIP="73.205.236.167" requestID="766a8421-709f-41f0" responseTimeMS=43 responseBytes=1497 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0"
+2025-12-06T23:11:05Z clientIP="73.205.236.167" requestID="535fdd4c-57ae-4606" responseTimeMS=2 responseBytes=320 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0"
+2025-12-06T23:11:05Z clientIP="73.205.236.167" requestID="57f68eee-d6b2-4d89" responseTimeMS=79 responseBytes=377 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0"
+2025-12-06T23:11:07Z clientIP="73.205.236.167" requestID="ce560ff2-1121-4745" responseTimeMS=86 responseBytes=320 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0"
+2025-12-06T23:11:42Z clientIP="73.205.236.167" requestID="c86f4add-4495-4872" responseTimeMS=122 responseBytes=421 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0"
+2025-12-06T23:11:42.79637654Z 11:11:42 PM [express] POST /api/admin/login 401 in 118ms :: {"message":"Invalid email or password"}
+2025-12-06T23:12:05Z clientIP="73.205.236.167" requestID="29bc1ac0-4f3a-429a" responseTimeMS=41 responseBytes=474 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0"
+2025-12-06T23:12:05.657595732Z Password reset requested for non-existent email: isaacalexandra.ststaxrepair@gmail.com
+2025-12-06T23:12:05.658394952Z 11:12:05 PM [express] POST /api/auth/forgot-password 200 in 40ms :: {"success":true,"message":"If an …
+2025-12-06T23:15:52Z clientIP="134.209.166.48" requestID="c548f0a4-b878-4ee4" responseTimeMS=5 responseBytes=1497 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.85 Safari/537.36"
+2025-12-06T23:18:00Z clientIP="100.8.187.213" requestID="c870360a-faf7-4876" responseTimeMS=336 responseBytes=232 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:18:00Z clientIP="100.8.187.213" requestID="4887a948-629f-4054" responseTimeMS=320 responseBytes=664 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:18:00.068364816Z 11:18:00 PM [express] GET /api/staff-invites 200 in 317ms :: [{"id":"267e3b34-4853-46e0-bde8-f5342adc…
+2025-12-06T23:18:00.070137001Z 11:18:00 PM [express] GET /api/role-audit-logs 304 in 333ms :: []
+2025-12-06T23:18:12Z clientIP="100.8.187.213" requestID="ec6f410c-d854-4250" responseTimeMS=263 responseBytes=610 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:18:12Z clientIP="100.8.187.213" requestID="926be7a0-6fd4-448f" responseTimeMS=198 responseBytes=778 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:18:12.081761535Z 11:18:12 PM [express] POST /api/staff-invites 201 in 260ms :: {"id":"e5ef0646-2eb2-4d5c-9532-15ed2017…
+2025-12-06T23:18:12.455428211Z 11:18:12 PM [express] GET /api/staff-invites 200 in 197ms :: [{"id":"e5ef0646-2eb2-4d5c-9532-15ed2017…
+2025-12-06T23:19:37Z clientIP="100.8.187.213" requestID="fd420636-b745-4621" responseTimeMS=168 responseBytes=1497 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:19:38Z clientIP="100.8.187.213" requestID="777bff5d-797d-43b6" responseTimeMS=120 responseBytes=234 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:19:38Z clientIP="100.8.187.213" requestID="c8af4fd9-c66b-4add" responseTimeMS=171 responseBytes=234 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:19:38Z clientIP="100.8.187.213" requestID="848773f1-f167-40ba" responseTimeMS=314 responseBytes=232 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:19:38Z clientIP="100.8.187.213" requestID="c66df7d3-d638-43d4" responseTimeMS=196 responseBytes=234 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:19:38.171612067Z 11:19:38 PM [express] GET /api/auth/user 304 in 118ms :: {"id":"45545974","email":"bobbycraig1293@gma…
+2025-12-06T23:19:38.509765935Z 11:19:38 PM [express] GET /api/auth/permissions 304 in 161ms :: {"role":"admin","permissions":["dashb…
+2025-12-06T23:19:38.848900818Z 11:19:38 PM [express] GET /api/staff-invites 304 in 195ms :: [{"id":"e5ef0646-2eb2-4d5c-9532-15ed2017…
+2025-12-06T23:19:38.965344488Z 11:19:38 PM [express] GET /api/role-audit-logs 304 in 309ms :: []
+2025-12-06T23:19:39Z clientIP="100.8.187.213" requestID="8977b6dd-0251-4ff4" responseTimeMS=358 responseBytes=236 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:19:39Z clientIP="100.8.187.213" requestID="e83f60bb-cc3e-46b5" responseTimeMS=80 responseBytes=320 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:19:39Z clientIP="100.8.187.213" requestID="2e451d32-0531-431b" responseTimeMS=43 responseBytes=1497 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:19:39Z clientIP="100.8.187.213" requestID="ffb82b42-cff2-4cd5" responseTimeMS=79 responseBytes=377 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:19:39Z clientIP="100.8.187.213" requestID="5f943167-d14b-4f5c" responseTimeMS=195 responseBytes=378 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:19:39Z clientIP="100.8.187.213" requestID="153b5a78-d211-48db" responseTimeMS=82 responseBytes=321 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:19:39.026648546Z 11:19:39 PM [express] GET /api/users 304 in 330ms :: [{"id":"3fa875ce-e12e-4daf-bd36-04fb0c3ab390","e…
+2025-12-06T23:19:39Z clientIP="100.8.187.213" requestID="8778f239-ece0-4355" responseTimeMS=83 responseBytes=320 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:19:41Z clientIP="100.8.187.213" requestID="6e76bb48-2fbf-403b" responseTimeMS=83 responseBytes=320 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:19:42Z clientIP="100.8.187.213" requestID="03e017a1-ef40-4219" responseTimeMS=361 responseBytes=415 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:19:42.029644371Z 11:19:42 PM [express] POST /api/staff-invites/redeem 200 in 359ms :: {"success":true,"role":"agent"}
+2025-12-06T23:19:55Z clientIP="100.8.187.213" requestID="e4056426-01ce-4bf4" responseTimeMS=163 responseBytes=521 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:19:55Z clientIP="100.8.187.213" requestID="8bbf108a-873d-47b6" responseTimeMS=371 responseBytes=611 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:19:55Z clientIP="100.8.187.213" requestID="7af70efa-ae88-41ad" responseTimeMS=82 responseBytes=321 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:19:55Z clientIP="100.8.187.213" requestID="b0d77851-cc9b-48b9" responseTimeMS=80 responseBytes=378 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:19:55Z clientIP="100.8.187.213" requestID="70a8d2b1-7168-41da" responseTimeMS=78 responseBytes=320 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:19:55Z clientIP="100.8.187.213" requestID="5d6b08eb-8bdb-4412" responseTimeMS=89 responseBytes=321 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:19:55Z clientIP="100.8.187.213" requestID="2a2126ab-8121-4547" responseTimeMS=85 responseBytes=377 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:19:55.486738243Z 11:19:55 PM [express] GET /api/auth/user 200 in 369ms :: {"id":"45545974","email":"bobbycraig1293@gma…
+2025-12-06T23:19:55.800656179Z 11:19:55 PM [express] GET /api/auth/permissions 200 in 162ms :: {"role":"agent","permissions":["dashb…
+2025-12-06T23:19:56Z clientIP="100.8.187.213" requestID="062803d3-3432-4a5b" responseTimeMS=81 responseBytes=320 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:09Z clientIP="100.8.187.213" requestID="a25905d8-11cf-4378" responseTimeMS=99 responseBytes=378 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:09Z clientIP="100.8.187.213" requestID="13712f1d-7d82-4735" responseTimeMS=249 responseBytes=52327 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:09Z clientIP="100.8.187.213" requestID="e9f13a0b-6503-4167" responseTimeMS=121 responseBytes=234 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:09Z clientIP="100.8.187.213" requestID="04b1ded2-c5d1-4247" responseTimeMS=81 responseBytes=321 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:09Z clientIP="100.8.187.213" requestID="4d412d41-d996-43e4" responseTimeMS=163 responseBytes=234 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:09Z clientIP="100.8.187.213" requestID="90e3b696-d2d5-4524" responseTimeMS=85 responseBytes=321 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:09Z clientIP="100.8.187.213" requestID="bc342d01-ec10-4453" responseTimeMS=224 responseBytes=704 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:09Z clientIP="100.8.187.213" requestID="8d61cb09-05e5-475e" responseTimeMS=82 responseBytes=377 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:09.074720702Z 11:20:09 PM [express] POST /api/admin/login 200 in 222ms :: {"message":"Login successful","user":{"id…
+2025-12-06T23:20:09.376394989Z 11:20:09 PM [express] GET /api/auth/user 304 in 120ms :: {"id":"45545974","email":"bobbycraig1293@gma…
+2025-12-06T23:20:09.656723437Z 11:20:09 PM [express] GET /api/auth/permissions 304 in 163ms :: {"role":"agent","permissions":["dashb…
+2025-12-06T23:20:09.856739487Z 11:20:09 PM [express] GET /api/users 200 in 244ms :: [{"id":"3fa875ce-e12e-4daf-bd36-04fb0c3ab390","e…
+2025-12-06T23:20:10Z clientIP="100.8.187.213" requestID="c3f8d5bf-9da8-466f" responseTimeMS=581 responseBytes=234 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:10Z clientIP="100.8.187.213" requestID="99b19140-a84c-4913" responseTimeMS=518 responseBytes=237 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:10Z clientIP="100.8.187.213" requestID="85dfb226-5957-47af" responseTimeMS=500 responseBytes=234 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:10.014917891Z 11:20:10 PM [express] GET /api/documents/all 304 in 518ms :: [{"id":"e0f82315-ce41-11f0-bf63-fa163e57…
+2025-12-06T23:20:10.015380393Z 11:20:10 PM [express] GET /api/leads 304 in 499ms :: [{"id":3,"name":"bobby craigz","email":"bobbycra…
+2025-12-06T23:20:10.09766135Z 11:20:10 PM [express] GET /api/tasks 304 in 580ms :: [{"id":14,"title":"dukens clerge","description":…
+2025-12-06T23:20:12Z clientIP="100.8.187.213" requestID="909d1237-26d7-4438" responseTimeMS=85 responseBytes=320 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:20Z clientIP="100.8.187.213" requestID="de5722c2-95bc-4a48" responseTimeMS=96 responseBytes=320 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:23.887309104Z 11:20:23 PM [express] POST /api/admin/login 200 in 224ms :: {"message":"Login successful","user":{"id…
+2025-12-06T23:20:24Z clientIP="100.8.187.213" requestID="e4f4eccb-1c64-41c9" responseTimeMS=121 responseBytes=234 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:24Z clientIP="100.8.187.213" requestID="56304a07-3034-46a2" responseTimeMS=157 responseBytes=234 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:24Z clientIP="100.8.187.213" requestID="928675bc-6005-486d" responseTimeMS=83 responseBytes=378 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:24Z clientIP="100.8.187.213" requestID="77fe82b7-81f3-4e87" responseTimeMS=81 responseBytes=321 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:24Z clientIP="100.8.187.213" requestID="388e2fcc-f07e-41c2" responseTimeMS=215 responseBytes=237 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:24Z clientIP="100.8.187.213" requestID="5b1cdb65-589c-43d3" responseTimeMS=174 responseBytes=234 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:24Z clientIP="100.8.187.213" requestID="9e39eb94-a247-41b6" responseTimeMS=83 responseBytes=321 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:24Z clientIP="100.8.187.213" requestID="2afdb68a-85a3-4ba0" responseTimeMS=305 responseBytes=236 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:24Z clientIP="100.8.187.213" requestID="cdc910e1-9b94-4e16" responseTimeMS=90 responseBytes=377 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:24.179825359Z 11:20:24 PM [express] GET /api/auth/user 304 in 121ms :: {"id":"45545974","email":"bobbycraig1293@gma…
+2025-12-06T23:20:24.432891289Z 11:20:24 PM [express] GET /api/auth/permissions 304 in 156ms :: {"role":"agent","permissions":["dashb…
+2025-12-06T23:20:24.479071115Z 11:20:24 PM [express] GET /api/tasks 304 in 174ms :: [{"id":14,"title":"dukens clerge","description":…
+2025-12-06T23:20:24.479475615Z 11:20:24 PM [express] GET /api/leads 304 in 181ms :: [{"id":3,"name":"bobby craigz","email":"bobbycra…
+2025-12-06T23:20:24.524123222Z 11:20:24 PM [express] GET /api/documents/all 304 in 214ms :: [{"id":"e0f82315-ce41-11f0-bf63-fa163e57…
+2025-12-06T23:20:24.585216325Z 11:20:24 PM [express] GET /api/users 304 in 304ms :: [{"id":"3fa875ce-e12e-4daf-bd36-04fb0c3ab390","e…
+2025-12-06T23:20:23Z clientIP="100.8.187.213" requestID="ef103aa1-17d6-4d8e" responseTimeMS=227 responseBytes=516 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:24Z clientIP="100.8.187.213" requestID="dc05d83f-1977-4c46" responseTimeMS=182 responseBytes=234 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:26Z clientIP="100.8.187.213" requestID="3c008374-f83a-4afc" responseTimeMS=83 responseBytes=320 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:38Z clientIP="100.8.187.213" requestID="49206ef9-b754-4bf7" responseTimeMS=79 responseBytes=377 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:38Z clientIP="100.8.187.213" requestID="fba301a6-2d2e-4c4c" responseTimeMS=79 responseBytes=320 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:38Z clientIP="100.8.187.213" requestID="89cc146d-8337-4af0" responseTimeMS=82 responseBytes=321 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:38Z clientIP="100.8.187.213" requestID="58bcb6a7-20f6-409d" responseTimeMS=79 responseBytes=378 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:38Z clientIP="100.8.187.213" requestID="22577598-6977-4e1e" responseTimeMS=78 responseBytes=321 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:39Z clientIP="100.8.187.213" requestID="8ad51dbf-9b0a-4355" responseTimeMS=79 responseBytes=321 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:39Z clientIP="100.8.187.213" requestID="1082f13b-27f8-46bb" responseTimeMS=78 responseBytes=377 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:39Z clientIP="100.8.187.213" requestID="daabd604-7bf5-4e0e" responseTimeMS=80 responseBytes=321 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:39Z clientIP="100.8.187.213" requestID="324e9a28-56ae-412b" responseTimeMS=80 responseBytes=378 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:39Z clientIP="100.8.187.213" requestID="0872ae79-a862-42c5" responseTimeMS=82 responseBytes=377 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:39Z clientIP="100.8.187.213" requestID="941a0c41-1be6-4abf" responseTimeMS=81 responseBytes=320 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:39Z clientIP="100.8.187.213" requestID="353beb2f-ebb3-4269" responseTimeMS=83 responseBytes=378 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:39Z clientIP="100.8.187.213" requestID="45390687-2f10-436d" responseTimeMS=81 responseBytes=321 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:39Z clientIP="100.8.187.213" requestID="c4a15ba5-1197-4f77" responseTimeMS=79 responseBytes=320 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:39Z clientIP="100.8.187.213" requestID="6ff11dc2-daf0-4bf2" responseTimeMS=82 responseBytes=321 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:20:41Z clientIP="100.8.187.213" requestID="557d0010-ce28-4fc1" responseTimeMS=81 responseBytes=320 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:21:05Z clientIP="100.8.187.213" requestID="0eeeb856-0806-4b15" responseTimeMS=161 responseBytes=234 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:21:05Z clientIP="100.8.187.213" requestID="ea3810c1-a27a-406b" responseTimeMS=83 responseBytes=321 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:21:05Z clientIP="100.8.187.213" requestID="8966899f-1962-4fdf" responseTimeMS=79 responseBytes=378 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:21:05Z clientIP="100.8.187.213" requestID="10ae38ce-ea0d-4421" responseTimeMS=224 responseBytes=516 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:21:05Z clientIP="100.8.187.213" requestID="f67e2ba1-509d-44aa" responseTimeMS=118 responseBytes=234 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:21:05Z clientIP="100.8.187.213" requestID="8e8aa6b4-4321-45f0" responseTimeMS=175 responseBytes=234 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:21:05Z clientIP="100.8.187.213" requestID="2f5e571a-1785-4770" responseTimeMS=80 responseBytes=377 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:21:05Z clientIP="100.8.187.213" requestID="17acf84c-ba54-4475" responseTimeMS=81 responseBytes=321 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:21:05Z clientIP="100.8.187.213" requestID="61fa39ae-fceb-463f" responseTimeMS=201 responseBytes=236 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:21:05Z clientIP="100.8.187.213" requestID="4bc746d7-c8c6-40f9" responseTimeMS=169 responseBytes=234 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:21:05.169949261Z 11:21:05 PM [express] POST /api/admin/login 200 in 222ms :: {"message":"Login successful","user":{"id…
+2025-12-06T23:21:05.483924798Z 11:21:05 PM [express] GET /api/auth/user 304 in 118ms :: {"id":"45545974","email":"bobbycraig1293@gma…
+2025-12-06T23:21:05.762944812Z 11:21:05 PM [express] GET /api/leads 304 in 161ms :: [{"id":3,"name":"bobby craigz","email":"bobbycra…
+2025-12-06T23:21:05.766293867Z 11:21:05 PM [express] GET /api/auth/permissions 304 in 169ms :: {"role":"agent","permissions":["dashb…
+2025-12-06T23:21:05.777050639Z 11:21:05 PM [express] GET /api/tasks 304 in 174ms :: [{"id":14,"title":"dukens clerge","description":…
+2025-12-06T23:21:05.819728946Z 11:21:05 PM [express] GET /api/users 304 in 200ms :: [{"id":"3fa875ce-e12e-4daf-bd36-04fb0c3ab390","e…
+2025-12-06T23:21:06Z clientIP="100.8.187.213" requestID="572e3dbd-2089-4fd3" responseTimeMS=683 responseBytes=237 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:21:06.279562655Z 11:21:06 PM [express] GET /api/documents/all 304 in 682ms :: [{"id":"e0f82315-ce41-11f0-bf63-fa163e57…
+2025-12-06T23:21:07Z clientIP="100.8.187.213" requestID="ac5de6ad-9dbb-4dcc" responseTimeMS=85 responseBytes=320 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:21:11Z clientIP="100.8.187.213" requestID="e008aa0e-5844-4be4" responseTimeMS=170 responseBytes=234 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:21:11.112580101Z 11:21:11 PM [express] GET /api/tax-filings 304 in 169ms :: [{"id":"88f586ba-605e-4b1f-b4be-366a35fdd9…
+2025-12-06T23:21:17Z clientIP="100.8.187.213" requestID="820930d1-9f63-41d3" responseTimeMS=84 responseBytes=378 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:21:17Z clientIP="100.8.187.213" requestID="bbba83d4-67ec-4b93" responseTimeMS=84 responseBytes=321 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:21:17Z clientIP="100.8.187.213" requestID="2d14f82b-2451-4a36" responseTimeMS=77 responseBytes=377 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:21:17Z clientIP="100.8.187.213" requestID="1e6fd7b5-5131-4c05" responseTimeMS=168 responseBytes=544 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:21:17Z clientIP="100.8.187.213" requestID="5f9f5358-1e58-454f" responseTimeMS=79 responseBytes=321 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:21:17.008784666Z 11:21:17 PM [express] GET /api/logout 302 in 167ms
+2025-12-06T23:21:18Z clientIP="100.8.187.213" requestID="51cab64b-9b87-4b74" responseTimeMS=84 responseBytes=320 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-06T23:23:51.69122354Z ==> Deploying...
+2025-12-06T23:24:12.129712891Z ==> Running 'yarn start'
+2025-12-06T23:24:12.627279733Z yarn run v1.22.22
+2025-12-06T23:24:12.706871401Z $ NODE_ENV=production node dist/index.js
+2025-12-06T23:24:16.431739456Z [EMAIL] APP_URL configured as: https://sts-tax-repair-website.onrender.com
+2025-12-06T23:24:17.030460054Z Not running on Replit - Replit Auth disabled, using email/password auth only
+2025-12-06T23:24:17.048463655Z 11:24:17 PM [express] serving on port 10000
+2025-12-06T23:24:22.800571842Z ==> Your service is live 🎉
+2025-12-06T23:24:22.862180957Z ==> 
+2025-12-06T23:24:22.892464635Z ==> ///////////////////////////////////////////////////////////
+2025-12-06T23:24:22.927215682Z ==> 
+2025-12-06T23:24:22.958296939Z ==> Available at your primary URL https://ststaxrepair.org + 2 more domains
+2025-12-06T23:24:22.988328646Z ==> 
+2025-12-06T23:24:23.018562394Z ==> ///////////////////////////////////////////////////////////
+2025-12-06T23:25:13.410034947Z Password reset requested for non-existent email: isaacalexandra.ststaxrepair@gmail.com
+2025-12-06T23:25:13.411862872Z 11:25:13 PM [express] POST /api/auth/forgot-password 200 in 46ms :: {"success":true,"message":"If an …
+2025-12-06T23:25:29.546456142Z 11:25:29 PM [express] POST /api/admin/login 401 in 135ms :: {"message":"Invalid email or password"}
+2025-12-06T23:25:38.827123396Z 11:25:38 PM [express] POST /api/admin/login 401 in 120ms :: {"message":"Invalid email or password"}
+2025-12-06T23:26:13Z clientIP="73.205.236.167" requestID="463eb2ac-c960-4661" responseTimeMS=44 responseBytes=1554 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0"
+2025-12-06T23:26:13Z clientIP="73.205.236.167" requestID="dfeb3529-98e0-466b" responseTimeMS=45 responseBytes=1499 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0"
+2025-12-06T23:26:13Z clientIP="73.205.236.167" requestID="82dba9c9-da41-449a" responseTimeMS=179 responseBytes=540 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0"
+2025-12-06T23:26:13.564361686Z 11:26:13 PM [express] GET /api/logout 302 in 177ms
+2025-12-06T23:26:14Z clientIP="73.205.236.167" requestID="342a0d3b-b9ba-448a" responseTimeMS=173 responseBytes=1554 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0"
+2025-12-06T23:26:14Z clientIP="69.63.189.25" requestID="371d5a3f-999a-4617" responseTimeMS=5 responseBytes=1499 userAgent="facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)"
+2025-12-06T23:26:14Z clientIP="73.205.236.167" requestID="4769bd78-3687-46c0" responseTimeMS=41 responseBytes=9845 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0"
+2025-12-06T23:26:14Z clientIP="73.205.236.167" requestID="8b0fb0eb-b614-4a08" responseTimeMS=3 responseBytes=1000 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0"
+2025-12-06T23:26:14Z clientIP="73.205.236.167" requestID="5fd25867-0761-4f1f" responseTimeMS=163 responseBytes=9845 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0"
+2025-12-06T23:26:15Z clientIP="73.205.236.167" requestID="bba80630-1299-46c7" responseTimeMS=65 responseBytes=1305 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0"
+2025-12-06T23:29:24.70024195Z ==> Detected service running on port 10000
+2025-12-06T23:29:24.764589071Z ==> Docs on specifying a port: https://render.com/docs/web-services#port-binding
+2025-12-06T23:33:11Z clientIP="75.36.198.166" requestID="a50c2337-cc9b-4bf0" responseTimeMS=11 responseBytes=26464 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1"
+2025-12-06T23:33:11Z clientIP="75.36.198.166" requestID="49ab1e21-e893-45cf" responseTimeMS=5 responseBytes=1000 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1"
+2025-12-06T23:33:11Z clientIP="75.36.198.166" requestID="f3de798c-716d-42f7" responseTimeMS=226 responseBytes=429459 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1"
+2025-12-06T23:33:11Z clientIP="75.36.198.166" requestID="d0d287c3-c371-4258" responseTimeMS=7 responseBytes=9845 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1"
+2025-12-06T23:33:11Z clientIP="75.36.198.166" requestID="c106aef8-d09a-4c43" responseTimeMS=6 responseBytes=1499 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1"
+2025-12-06T23:33:12Z clientIP="75.36.198.166" requestID="7f331dbc-4538-4432" responseTimeMS=2 responseBytes=1305 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1"
+2025-12-06T23:33:12Z clientIP="75.36.198.166" requestID="797a016e-5afb-4136" responseTimeMS=2 responseBytes=360 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1"
+2025-12-06T23:33:12Z clientIP="75.36.198.166" requestID="d2e12ba4-fb32-4665" responseTimeMS=4 responseBytes=1512 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1"
+2025-12-06T23:33:12Z clientIP="75.36.198.166" requestID="980bfa86-932c-4911" responseTimeMS=3 responseBytes=1000 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1"
+2025-12-06T23:33:12Z clientIP="75.36.198.166" requestID="a522d126-fe3e-4880" responseTimeMS=4 responseBytes=1512 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1"
+2025-12-06T23:33:12Z clientIP="75.36.198.166" requestID="158aa8a5-28da-400e" responseTimeMS=8 responseBytes=1499 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1"
+2025-12-06T23:33:12.527845082Z 11:33:12 PM [express] GET /api/auth/user 401 in 1ms :: {"message":"Not authenticated"}
+2025-12-06T23:34:23.382945377Z ==> Deploying...
+2025-12-06T23:34:46.200271565Z ==> Running 'yarn start'
+2025-12-06T23:34:46.674114082Z yarn run v1.22.22
+2025-12-06T23:34:46.695937841Z $ NODE_ENV=production node dist/index.js
+2025-12-06T23:34:50.369005746Z [EMAIL] APP_URL configured as: https://sts-tax-repair-website.onrender.com
+2025-12-06T23:34:50.997121743Z Not running on Replit - Replit Auth disabled, using email/password auth only
+2025-12-06T23:34:51.012090249Z 11:34:50 PM [express] serving on port 10000
+2025-12-06T23:34:54.536135565Z ==> Your service is live 🎉
+2025-12-06T23:34:54.59906343Z ==> 
+2025-12-06T23:34:54.628360287Z ==> ///////////////////////////////////////////////////////////
+2025-12-06T23:34:54.729786409Z ==> 
+2025-12-06T23:34:54.758852206Z ==> Available at your primary URL https://ststaxrepair.org + 2 more domains
+2025-12-06T23:34:54.801268103Z ==> 
+2025-12-06T23:34:54.832591571Z ==> ///////////////////////////////////////////////////////////
+2025-12-06T23:39:58.547534879Z ==> Detected service running on port 10000
+2025-12-06T23:39:58.610476793Z ==> Docs on specifying a port: https://render.com/docs/web-services#port-binding
+2025-12-06T23:40:40Z clientIP="174.199.160.101" requestID="c0506a70-783a-4322" responseTimeMS=44 responseBytes=9845 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 26_1_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/142.0.3595.107 Version/26.0 Mobile/15E148 Safari/604.1"
+2025-12-06T23:40:40Z clientIP="174.199.160.101" requestID="fcead697-c073-466c" responseTimeMS=160 responseBytes=1360 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 26_1_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/142.0.3595.107 Version/26.0 Mobile/15E148 Safari/604.1"
+2025-12-06T23:40:40Z clientIP="174.199.160.101" requestID="4751d1d6-1f15-486a" responseTimeMS=247 responseBytes=234 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 26_1_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/142.0.3595.107 Version/26.0 Mobile/15E148 Safari/604.1"
+2025-12-06T23:40:40Z clientIP="174.199.160.101" requestID="6d40359d-aab6-4c19" responseTimeMS=79 responseBytes=321 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 26_1_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/142.0.3595.107 Version/26.0 Mobile/15E148 Safari/604.1"
+2025-12-06T23:40:40Z clientIP="174.199.160.101" requestID="0b426e63-7da9-4e08" responseTimeMS=218 responseBytes=232 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 26_1_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/142.0.3595.107 Version/26.0 Mobile/15E148 Safari/604.1"
+2025-12-06T23:40:40.0441713Z 11:40:40 PM [express] GET /api/auth/user 304 in 244ms :: {"id":"perfex-965","email":"samajefe@outlook…
+2025-12-06T23:40:40.59576708Z 11:40:40 PM [express] GET /api/signatures 304 in 199ms :: []
+2025-12-06T23:40:45Z clientIP="174.199.160.101" requestID="d8528c94-c00c-465e" responseTimeMS=87 responseBytes=321 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 26_1_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/142.0.3595.107 Version/26.0 Mobile/15E148 Safari/604.1"
+2025-12-06T23:40:45Z clientIP="174.199.160.101" requestID="9778ec28-3be1-4cd0" responseTimeMS=164 responseBytes=232 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 26_1_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/142.0.3595.107 Version/26.0 Mobile/15E148 Safari/604.1"
+2025-12-06T23:40:45Z clientIP="174.199.160.101" requestID="78e43fc4-869c-42c6" responseTimeMS=82 responseBytes=321 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 26_1_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/142.0.3595.107 Version/26.0 Mobile/15E148 Safari/604.1"
+2025-12-06T23:40:45Z clientIP="174.199.160.101" requestID="1c266d08-9625-4ff7" responseTimeMS=120 responseBytes=234 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 26_1_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/142.0.3595.107 Version/26.0 Mobile/15E148 Safari/604.1"
+2025-12-06T23:40:45Z clientIP="174.199.160.101" requestID="54da73ea-51fc-479a" responseTimeMS=52 responseBytes=1499 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 26_1_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/142.0.3595.107 Version/26.0 Mobile/15E148 Safari/604.1"
+2025-12-06T23:40:45Z clientIP="174.199.160.101" requestID="99856354-0da0-4807" responseTimeMS=83 responseBytes=321 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 26_1_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/142.0.3595.107 Version/26.0 Mobile/15E148 Safari/604.1"
+2025-12-06T23:40:45.369964951Z 11:40:45 PM [express] GET /api/auth/user 304 in 120ms :: {"id":"perfex-965","email":"samajefe@outlook…
+2025-12-06T23:40:45.682591686Z 11:40:45 PM [express] GET /api/signatures 304 in 164ms :: []
+2025-12-06T23:40:46Z clientIP="174.199.160.101" requestID="32fb33d9-6dd4-484d" responseTimeMS=41 responseBytes=1360 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 26_1_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/142.0.3595.107 Version/26.0 Mobile/15E148 Safari/604.1"
+2025-12-06T23:40:46Z clientIP="174.199.160.101" requestID="22d4ae8e-e09d-4137" responseTimeMS=80 responseBytes=321 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 26_1_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/142.0.3595.107 Version/26.0 Mobile/15E148 Safari/604.1"
+2025-12-06T23:52:47.442301507Z ==> Deploying...
+2025-12-06T23:53:10.111522012Z ==> Running 'yarn start'
+2025-12-06T23:53:10.527723524Z yarn run v1.22.22
+2025-12-06T23:53:10.602861929Z $ NODE_ENV=production node dist/index.js
+2025-12-06T23:53:14.291039238Z [EMAIL] APP_URL configured as: https://sts-tax-repair-website.onrender.com
+2025-12-06T23:53:15.027017521Z Not running on Replit - Replit Auth disabled, using email/password auth only
+2025-12-06T23:53:15.044780785Z 11:53:15 PM [express] serving on port 10000
+2025-12-06T23:53:18.947822377Z ==> Your service is live 🎉
+2025-12-06T23:53:19Z clientIP="34.82.41.62" requestID="289a9afb-762a-43d3" responseTimeMS=9 responseBytes=1499 userAgent="Go-http-client/2.0"
+2025-12-06T23:53:19.008452782Z ==> 
+2025-12-06T23:53:19.03761908Z ==> ///////////////////////////////////////////////////////////
+2025-12-06T23:53:19.069162747Z ==> 
+2025-12-06T23:53:19.099058155Z ==> Available at your primary URL https://ststaxrepair.org + 2 more domains
+2025-12-06T23:53:19.224042664Z ==> 
+2025-12-06T23:53:19.260736791Z ==> ///////////////////////////////////////////////////////////
+2025-12-06T23:58:23.26942078Z ==> Detected service running on port 10000
+2025-12-06T23:58:23.3455779Z ==> Docs on specifying a port: https://render.com/docs/web-services#port-binding
+2025-12-07T00:06:56Z clientIP="174.199.160.101" requestID="087baa7f-c950-4e4d" responseTimeMS=261 responseBytes=429404 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 26_1_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/142.0.3595.107 Version/26.0 Mobile/15E148 Safari/604.1"
+2025-12-07T00:06:56Z clientIP="174.199.160.101" requestID="e0ac8f47-440d-4c4b" responseTimeMS=192 responseBytes=26409 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 26_1_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/142.0.3595.107 Version/26.0 Mobile/15E148 Safari/604.1"
+2025-12-07T00:06:57Z clientIP="174.199.160.101" requestID="38099498-6b45-42cc" responseTimeMS=50 responseBytes=9845 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 26_1_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/142.0.3595.107 Version/26.0 Mobile/15E148 Safari/604.1"
+2025-12-07T00:06:57Z clientIP="174.199.160.101" requestID="211a2d98-9bf8-4680" responseTimeMS=43 responseBytes=1360 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 26_1_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/142.0.3595.107 Version/26.0 Mobile/15E148 Safari/604.1"
+2025-12-07T00:06:57Z clientIP="174.199.160.101" requestID="3ea3fd92-4f7f-43af" responseTimeMS=44 responseBytes=9845 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 26_1_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/142.0.3595.107 Version/26.0 Mobile/15E148 Safari/604.1"
+2025-12-07T00:06:57Z clientIP="174.199.160.101" requestID="c8ed8d9c-3a0e-40e9" responseTimeMS=164 responseBytes=234 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 26_1_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/142.0.3595.107 Version/26.0 Mobile/15E148 Safari/604.1"
+2025-12-07T00:06:57Z clientIP="174.199.160.101" requestID="bdf064c3-4b1b-4c8c" responseTimeMS=203 responseBytes=232 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 26_1_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/142.0.3595.107 Version/26.0 Mobile/15E148 Safari/604.1"
+2025-12-07T00:06:57Z clientIP="174.199.160.101" requestID="1bb98117-2571-4236" responseTimeMS=84 responseBytes=321 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 26_1_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/142.0.3595.107 Version/26.0 Mobile/15E148 Safari/604.1"
+2025-12-07T00:06:57.05939818Z 12:06:57 AM [express] GET /api/auth/user 304 in 125ms :: {"id":"perfex-965","email":"samajefe@outlook…
+2025-12-07T00:06:57.452501749Z 12:06:57 AM [express] GET /api/signatures 304 in 199ms :: []
+2025-12-07T00:06:58Z clientIP="174.199.160.101" requestID="dd8183bd-ddcd-489c" responseTimeMS=81 responseBytes=321 userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 26_1_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/142.0.3595.107 Version/26.0 Mobile/15E148 Safari/604.1"

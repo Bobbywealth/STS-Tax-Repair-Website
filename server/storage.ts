@@ -30,6 +30,10 @@ import {
   type FilingStatus,
   type PasswordResetToken,
   type InsertPasswordResetToken,
+  type Ticket,
+  type InsertTicket,
+  type KnowledgeBase,
+  type InsertKnowledgeBase,
 } from "@shared/mysql-schema";
 
 export interface IStorage {
@@ -151,6 +155,23 @@ export interface IStorage {
   getPasswordResetToken(token: string): Promise<PasswordResetToken | undefined>;
   markPasswordResetTokenUsed(token: string): Promise<void>;
   deleteExpiredPasswordResetTokens(): Promise<void>;
+
+  // Tickets
+  getTickets(): Promise<Ticket[]>;
+  getTicketsByClient(clientId: string): Promise<Ticket[]>;
+  getTicketsByAssignee(assignedToId: string): Promise<Ticket[]>;
+  getTicket(id: string): Promise<Ticket | undefined>;
+  createTicket(ticket: InsertTicket): Promise<Ticket>;
+  updateTicket(id: string, ticket: Partial<InsertTicket>): Promise<Ticket | undefined>;
+  deleteTicket(id: string): Promise<boolean>;
+
+  // Knowledge Base
+  getKnowledgeBaseArticles(): Promise<KnowledgeBase[]>;
+  getKnowledgeBaseByCategory(category: string): Promise<KnowledgeBase[]>;
+  getKnowledgeBaseArticle(id: string): Promise<KnowledgeBase | undefined>;
+  createKnowledgeBaseArticle(article: InsertKnowledgeBase): Promise<KnowledgeBase>;
+  updateKnowledgeBaseArticle(id: string, article: Partial<InsertKnowledgeBase>): Promise<KnowledgeBase | undefined>;
+  deleteKnowledgeBaseArticle(id: string): Promise<boolean>;
 }
 
 // MySQL storage connected to cPanel database
