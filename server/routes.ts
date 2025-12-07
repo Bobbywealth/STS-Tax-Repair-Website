@@ -2610,6 +2610,111 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
+  // Bulk assign clients to an agent/preparer
+  app.post(
+    "/api/clients/bulk-assign",
+    isAuthenticated,
+    requirePermission("clients.edit"),
+    async (req: any, res) => {
+      try {
+        const { clientIds, preparerId, preparerName, taxYear } = req.body;
+        
+        if (!clientIds || !Array.isArray(clientIds) || clientIds.length === 0) {
+          return res.status(400).json({ error: "Client IDs array is required" });
+        }
+        
+        if (!preparerId) {
+          return res.status(400).json({ error: "Preparer ID is required" });
+        }
+        
+        const year = taxYear || new Date().getFullYear();
+        const results = [];
+        const errors = [];
+        
+        for (const clientId of clientIds) {
+          try {
+            // Check if tax filing exists for this client/year
+            const existingFiling = await storage.getTaxFilingByClientYear(clientId, year);
+            
+            if (existingFiling) {
+              // Update existing filing
+              const updated = await storage.updateTaxFiling(existingFiling.id, {
+                preparerId,
+                preparerName: preparerName || null,
+              });
+              results.push({ clientId, status: 'updated', filing: updated });
+            } else {
+              // Create new filing with assignment
+              const newFiling = await storage.createTaxFiling({
+                clientId,
+                taxYear: year,
+                status: 'new',
+                preparerId,
+                preparerName: preparerName || null,
+              });
+              results.push({ clientId, status: 'created', filing: newFiling });
+            }
+          } catch (err: any) {
+            errors.push({ clientId, error: err.message });
+          }
+        }
+        
+        res.json({
+          success: true,
+          assigned: results.length,
+          failed: errors.length,
+          results,
+          errors,
+        });
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    },
+  );
+
+  // Single client assignment (quick assign from table)
+  app.post(
+    "/api/clients/:clientId/assign",
+    isAuthenticated,
+    requirePermission("clients.edit"),
+    async (req: any, res) => {
+      try {
+        const { clientId } = req.params;
+        const { preparerId, preparerName, taxYear } = req.body;
+        
+        if (!preparerId) {
+          return res.status(400).json({ error: "Preparer ID is required" });
+        }
+        
+        const year = taxYear || new Date().getFullYear();
+        
+        // Check if tax filing exists for this client/year
+        const existingFiling = await storage.getTaxFilingByClientYear(clientId, year);
+        
+        if (existingFiling) {
+          // Update existing filing
+          const updated = await storage.updateTaxFiling(existingFiling.id, {
+            preparerId,
+            preparerName: preparerName || null,
+          });
+          return res.json({ status: 'updated', filing: updated });
+        } else {
+          // Create new filing with assignment
+          const newFiling = await storage.createTaxFiling({
+            clientId,
+            taxYear: year,
+            status: 'new',
+            preparerId,
+            preparerName: preparerName || null,
+          });
+          return res.json({ status: 'created', filing: newFiling });
+        }
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    },
+  );
+
   // Tasks - Local task management with full CRUD
   // ALL users (including admins) only see:
   // 1. Tasks they created themselves (created_by_id = current user)

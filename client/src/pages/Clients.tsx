@@ -120,6 +120,17 @@ export default function Clients() {
     staleTime: 60000,
   });
 
+  // Get staff members for assignment dropdown
+  const staffMembers = useMemo(() => {
+    return (users || [])
+      .filter(user => user.role !== 'client')
+      .map(user => ({
+        id: user.id,
+        name: [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email || "Unknown",
+        role: user.role || 'agent',
+      }));
+  }, [users]);
+
   const addClientMutation = useMutation({
     mutationFn: async (data: NewClientForm) => {
       return apiRequest("POST", "/api/users", data);
@@ -141,6 +152,65 @@ export default function Clients() {
       });
     },
   });
+
+  // Single client assignment mutation
+  const assignClientMutation = useMutation({
+    mutationFn: async ({ clientId, preparerId, preparerName }: { clientId: string; preparerId: string; preparerName: string }) => {
+      return apiRequest("POST", `/api/clients/${clientId}/assign`, {
+        preparerId,
+        preparerName,
+        taxYear: selectedYear,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tax-filings", selectedYear] });
+      toast({
+        title: "Client Assigned",
+        description: "Client has been assigned to the selected agent.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Assignment Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Bulk assignment mutation
+  const bulkAssignMutation = useMutation({
+    mutationFn: async ({ clientIds, preparerId, preparerName }: { clientIds: string[]; preparerId: string; preparerName: string }) => {
+      return apiRequest("POST", "/api/clients/bulk-assign", {
+        clientIds,
+        preparerId,
+        preparerName,
+        taxYear: selectedYear,
+      });
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tax-filings", selectedYear] });
+      toast({
+        title: "Clients Assigned",
+        description: `Successfully assigned ${data.assigned} client(s) to the selected agent.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Bulk Assignment Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleAssignClient = (clientId: string, preparerId: string, preparerName: string) => {
+    assignClientMutation.mutate({ clientId, preparerId, preparerName });
+  };
+
+  const handleBulkAssign = (clientIds: string[], preparerId: string, preparerName: string) => {
+    bulkAssignMutation.mutate({ clientIds, preparerId, preparerName });
+  };
 
   const handleAddClient = (e: React.FormEvent) => {
     e.preventDefault();
@@ -328,9 +398,13 @@ export default function Clients() {
       ) : (
         <ClientsTable
           clients={clients}
+          staffMembers={staffMembers}
+          selectedYear={selectedYear}
           onViewClient={(id) => window.location.href = `/clients/${id}`}
           onEditClient={(id) => console.log('Edit client:', id)}
           onStatusChange={(id, newStatus) => console.log(`Client ${id} status changed to ${newStatus}`)}
+          onAssignClient={handleAssignClient}
+          onBulkAssign={handleBulkAssign}
         />
       )}
 
