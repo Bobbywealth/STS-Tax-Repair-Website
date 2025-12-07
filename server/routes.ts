@@ -8,7 +8,13 @@ import {
   requireAdmin,
   requireStaff,
   requirePermission,
+  loadScopeContext,
+  getScopeFilter,
+  requireClientScope,
+  clearAgentScopeCache,
+  type AuthenticatedRequest,
 } from "./authorization";
+import { mysqlStorage } from "./mysql-storage";
 import {
   insertTaxDeadlineSchema,
   insertAppointmentSchema,
@@ -4200,14 +4206,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ===========================================
-  // CLIENTS ENDPOINTS
+  // CLIENTS ENDPOINTS - WITH SCOPE ENFORCEMENT
   // ===========================================
   app.get("/api/clients", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.userId || req.user?.claims?.sub;
       const currentUser = await storage.getUser(userId);
       const userRole = currentUser?.role?.toLowerCase() || 'client';
-      const isAdmin = userRole === 'admin' || userRole === 'tax_office';
       
       const limit = parseInt(req.query.limit as string) || 50;
       const offset = parseInt(req.query.offset as string) || 0;
@@ -4215,7 +4220,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let query = `SELECT id, email, first_name as firstName, last_name as lastName, phone, 
                    address, city, state, zip_code as zipCode, country, role, is_active as isActive,
-                   created_at as createdAt
+                   created_at as createdAt, office_id as officeId
                    FROM users WHERE role = 'client'`;
       const params: any[] = [];
 
@@ -4225,9 +4230,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         params.push(searchTerm, searchTerm, searchTerm, searchTerm);
       }
 
-      // Role-based filtering: agents only see their assigned clients via tax_filings
-      if (!isAdmin) {
-        query += ` AND id IN (SELECT DISTINCT client_id FROM tax_filings WHERE preparer_id = ?)`;
+      // SCOPE ENFORCEMENT: Filter based on user role
+      if (userRole === 'admin') {
+        // Admin has global access - no filtering needed
+      } else if (userRole === 'tax_office') {
+        // Tax Office: only clients in their office
+        if (currentUser?.officeId) {
+          query += ` AND office_id = ?`;
+          params.push(currentUser.officeId);
+        } else {
+          return res.json([]); // No office assigned, return empty
+        }
+      } else if (userRole === 'agent') {
+        // Agent: ONLY clients explicitly assigned to them
+        const assignedClientIds = await mysqlStorage.getAgentAssignedClientIds(userId);
+        if (assignedClientIds.length === 0) {
+          return res.json([]); // No assigned clients, return empty
+        }
+        query += ` AND id IN (${assignedClientIds.map(() => '?').join(',')})`;
+        params.push(...assignedClientIds);
+      } else {
+        // Client can only see themselves
+        query += ` AND id = ?`;
         params.push(userId);
       }
 
