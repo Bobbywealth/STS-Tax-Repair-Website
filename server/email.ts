@@ -64,12 +64,15 @@ interface SendEmailParams {
   subject: string;
   html: string;
   text?: string;
+  branding?: OfficeBranding;
 }
 
 async function sendEmail(params: SendEmailParams): Promise<EmailResult> {
+  const fromName = params.branding?.replyToName || FROM_NAME;
+  
   console.log(`[EMAIL] Attempting to send email to: ${params.to}, subject: ${params.subject}`);
   console.log(`[EMAIL] SendGrid API key configured: ${SENDGRID_API_KEY ? 'YES (length: ' + SENDGRID_API_KEY.length + ')' : 'NO'}`);
-  console.log(`[EMAIL] From email: ${FROM_EMAIL}`);
+  console.log(`[EMAIL] From email: ${FROM_EMAIL}, From name: ${fromName}`);
   
   if (!SENDGRID_API_KEY) {
     console.warn('[EMAIL] SendGrid API key not configured. Email not sent:', params.subject);
@@ -77,16 +80,23 @@ async function sendEmail(params: SendEmailParams): Promise<EmailResult> {
   }
 
   try {
-    const msg = {
+    const msg: any = {
       to: params.to,
       from: {
         email: FROM_EMAIL,
-        name: FROM_NAME,
+        name: fromName,
       },
       subject: params.subject,
       html: params.html,
       text: params.text || params.html.replace(/<[^>]*>/g, ''),
     };
+    
+    if (params.branding?.replyToEmail) {
+      msg.replyTo = {
+        email: params.branding.replyToEmail,
+        name: params.branding.replyToName || params.branding.companyName,
+      };
+    }
 
     console.log(`[EMAIL] Sending via SendGrid...`);
     const [response] = await sgMail.send(msg);
@@ -166,7 +176,7 @@ function getEmailTemplate(type: EmailType, data: Record<string, any>, branding?:
               <div class="content">
                 <h2>Password Reset Request</h2>
                 <p>Hello ${data.firstName || 'there'},</p>
-                <p>We received a request to reset your password for your STS Tax Repair account.</p>
+                <p>We received a request to reset your password for your ${companyName} account.</p>
                 <p style="text-align: center;">
                   <a href="${data.resetLink}" class="button">Reset My Password</a>
                 </p>
@@ -196,7 +206,7 @@ function getEmailTemplate(type: EmailType, data: Record<string, any>, branding?:
               <div class="content">
                 <h2>Verify Your Email Address</h2>
                 <p>Hello ${data.firstName || 'there'},</p>
-                <p>Thank you for creating an account with STS Tax Repair! To ensure the security of your account and to receive important tax updates, please verify your email address.</p>
+                <p>Thank you for creating an account with ${companyName}! To ensure the security of your account and to receive important tax updates, please verify your email address.</p>
                 <p style="text-align: center;">
                   <a href="${data.verifyLink}" class="button">Verify My Email</a>
                 </p>
@@ -234,9 +244,9 @@ function getEmailTemplate(type: EmailType, data: Record<string, any>, branding?:
             <div class="container">
               ${header}
               <div class="content">
-                <h2>Welcome to STS Tax Repair!</h2>
+                <h2>Welcome to ${companyName}!</h2>
                 <p>Hello ${data.firstName || 'there'},</p>
-                <p>Thank you for joining STS Tax Repair! We're excited to help you with your tax needs.</p>
+                <p>Thank you for joining ${companyName}! We're excited to help you with your tax needs.</p>
                 <div class="info">
                   <strong>Your Account Details:</strong><br>
                   Email: ${data.email}<br>
@@ -526,7 +536,7 @@ function getEmailTemplate(type: EmailType, data: Record<string, any>, branding?:
               <div class="content">
                 <h2>Team Invitation</h2>
                 <p>Hello,</p>
-                <p>You have been invited to join the STS Tax Repair team as a <strong>${data.role}</strong>.</p>
+                <p>You have been invited to join the ${companyName} team as a <strong>${data.role}</strong>.</p>
                 <p>${data.invitedBy ? `Invited by: ${data.invitedBy}` : ''}</p>
                 <div class="warning">
                   <strong>Note:</strong> This invitation expires in 7 days.
@@ -620,7 +630,7 @@ function getEmailTemplate(type: EmailType, data: Record<string, any>, branding?:
               <div class="content">
                 <h2>Notification</h2>
                 <p>Hello,</p>
-                <p>${data.message || 'You have a new notification from STS Tax Repair.'}</p>
+                <p>${data.message || `You have a new notification from ${companyName}.`}</p>
                 <p style="text-align: center;">
                   <a href="${APP_URL}/portal" class="button">Visit Portal</a>
                 </p>
@@ -637,44 +647,50 @@ function getEmailTemplate(type: EmailType, data: Record<string, any>, branding?:
 export async function sendPasswordResetEmail(
   email: string, 
   resetToken: string,
-  firstName?: string
+  firstName?: string,
+  branding?: OfficeBranding
 ): Promise<EmailResult> {
   const resetLink = `${APP_URL}/reset-password?token=${resetToken}`;
-  const template = getEmailTemplate('password_reset', { firstName, resetLink });
+  const template = getEmailTemplate('password_reset', { firstName, resetLink }, branding);
   
   return sendEmail({
     to: email,
     subject: template.subject,
     html: template.html,
+    branding,
   });
 }
 
 export async function sendEmailVerificationEmail(
   email: string,
   verificationToken: string,
-  firstName?: string
+  firstName?: string,
+  branding?: OfficeBranding
 ): Promise<EmailResult> {
   const verifyLink = `${APP_URL}/verify-email?token=${verificationToken}`;
-  const template = getEmailTemplate('email_verification', { firstName, verifyLink });
+  const template = getEmailTemplate('email_verification', { firstName, verifyLink }, branding);
   
   return sendEmail({
     to: email,
     subject: template.subject,
     html: template.html,
+    branding,
   });
 }
 
 export async function sendWelcomeEmail(
   email: string,
   firstName: string,
-  role: string
+  role: string,
+  branding?: OfficeBranding
 ): Promise<EmailResult> {
-  const template = getEmailTemplate('welcome', { firstName, email, role });
+  const template = getEmailTemplate('welcome', { firstName, email, role }, branding);
   
   return sendEmail({
     to: email,
     subject: template.subject,
     html: template.html,
+    branding,
   });
 }
 
@@ -682,14 +698,16 @@ export async function sendDocumentRequestEmail(
   email: string,
   firstName: string,
   documents: string[],
-  notes?: string
+  notes?: string,
+  branding?: OfficeBranding
 ): Promise<EmailResult> {
-  const template = getEmailTemplate('document_request', { firstName, documents, notes });
+  const template = getEmailTemplate('document_request', { firstName, documents, notes }, branding);
   
   return sendEmail({
     to: email,
     subject: template.subject,
     html: template.html,
+    branding,
   });
 }
 
@@ -700,16 +718,18 @@ export async function sendAppointmentConfirmationEmail(
   time: string,
   location?: string,
   staffName?: string,
-  notes?: string
+  notes?: string,
+  branding?: OfficeBranding
 ): Promise<EmailResult> {
   const template = getEmailTemplate('appointment_confirmation', { 
     firstName, date, time, location, staffName, notes 
-  });
+  }, branding);
   
   return sendEmail({
     to: email,
     subject: template.subject,
     html: template.html,
+    branding,
   });
 }
 
@@ -718,14 +738,16 @@ export async function sendPaymentReminderEmail(
   firstName: string,
   amount: string,
   dueDate: string,
-  service?: string
+  service?: string,
+  branding?: OfficeBranding
 ): Promise<EmailResult> {
-  const template = getEmailTemplate('payment_reminder', { firstName, amount, dueDate, service });
+  const template = getEmailTemplate('payment_reminder', { firstName, amount, dueDate, service }, branding);
   
   return sendEmail({
     to: email,
     subject: template.subject,
     html: template.html,
+    branding,
   });
 }
 
@@ -735,16 +757,18 @@ export async function sendPaymentReceivedEmail(
   amount: string,
   date: string,
   method?: string,
-  reference?: string
+  reference?: string,
+  branding?: OfficeBranding
 ): Promise<EmailResult> {
   const template = getEmailTemplate('payment_received', { 
     firstName, amount, date, method, reference 
-  });
+  }, branding);
   
   return sendEmail({
     to: email,
     subject: template.subject,
     html: template.html,
+    branding,
   });
 }
 
@@ -754,30 +778,34 @@ export async function sendTaxFilingStatusEmail(
   taxYear: string,
   status: string,
   message?: string,
-  refundAmount?: string
+  refundAmount?: string,
+  branding?: OfficeBranding
 ): Promise<EmailResult> {
   const template = getEmailTemplate('tax_filing_status', { 
     firstName, taxYear, status, message, refundAmount 
-  });
+  }, branding);
   
   return sendEmail({
     to: email,
     subject: template.subject,
     html: template.html,
+    branding,
   });
 }
 
 export async function sendSignatureRequestEmail(
   email: string,
   firstName: string,
-  taxYear?: string
+  taxYear?: string,
+  branding?: OfficeBranding
 ): Promise<EmailResult> {
-  const template = getEmailTemplate('signature_request', { firstName, taxYear });
+  const template = getEmailTemplate('signature_request', { firstName, taxYear }, branding);
   
   return sendEmail({
     to: email,
     subject: template.subject,
     html: template.html,
+    branding,
   });
 }
 
@@ -785,14 +813,16 @@ export async function sendSignatureCompletedEmail(
   email: string,
   firstName: string,
   signedDate: string,
-  taxYear?: string
+  taxYear?: string,
+  branding?: OfficeBranding
 ): Promise<EmailResult> {
-  const template = getEmailTemplate('signature_completed', { firstName, signedDate, taxYear });
+  const template = getEmailTemplate('signature_completed', { firstName, signedDate, taxYear }, branding);
   
   return sendEmail({
     to: email,
     subject: template.subject,
     html: template.html,
+    branding,
   });
 }
 
@@ -800,15 +830,17 @@ export async function sendStaffInviteEmail(
   email: string,
   role: string,
   inviteCode: string,
-  invitedBy?: string
+  invitedBy?: string,
+  branding?: OfficeBranding
 ): Promise<EmailResult> {
   const inviteLink = `${APP_URL}/accept-invite?code=${inviteCode}`;
-  const template = getEmailTemplate('staff_invite', { role, inviteLink, invitedBy });
+  const template = getEmailTemplate('staff_invite', { role, inviteLink, invitedBy }, branding);
   
   return sendEmail({
     to: email,
     subject: template.subject,
     html: template.html,
+    branding,
   });
 }
 
@@ -817,16 +849,18 @@ export async function sendSupportTicketCreatedEmail(
   firstName: string,
   ticketId: string,
   subject: string,
-  priority?: string
+  priority?: string,
+  branding?: OfficeBranding
 ): Promise<EmailResult> {
   const template = getEmailTemplate('support_ticket_created', { 
     firstName, ticketId, subject, priority 
-  });
+  }, branding);
   
   return sendEmail({
     to: email,
     subject: template.subject,
     html: template.html,
+    branding,
   });
 }
 
@@ -836,16 +870,18 @@ export async function sendSupportTicketResponseEmail(
   ticketId: string,
   subject: string,
   message: string,
-  respondedBy?: string
+  respondedBy?: string,
+  branding?: OfficeBranding
 ): Promise<EmailResult> {
   const template = getEmailTemplate('support_ticket_response', { 
     firstName, ticketId, subject, message, respondedBy 
-  });
+  }, branding);
   
   return sendEmail({
     to: email,
     subject: template.subject,
     html: template.html,
+    branding,
   });
 }
 
@@ -857,19 +893,26 @@ export async function sendTaskAssignmentEmail(
   dueDate?: string,
   priority?: string,
   clientName?: string,
-  assignedBy?: string
+  assignedBy?: string,
+  branding?: OfficeBranding
 ): Promise<EmailResult> {
+  const brand = branding || DEFAULT_BRANDING;
+  const companyName = brand.companyName || DEFAULT_BRANDING.companyName;
+  const logoUrl = brand.logoUrl || DEFAULT_BRANDING.logoUrl;
+  const primaryColor = brand.primaryColor || DEFAULT_BRANDING.primaryColor;
+  const secondaryColor = brand.secondaryColor || DEFAULT_BRANDING.secondaryColor;
+  
   const baseStyles = `
     <style>
       body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }
       .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-      .header { background: linear-gradient(135deg, #1a4d2e 0%, #4CAF50 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+      .header { background: linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
       .header h1 { color: #FDB913; margin: 10px 0 0 0; font-size: 24px; }
       .content { background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; }
-      .button { display: inline-block; background: #4CAF50; color: white !important; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 20px 0; }
+      .button { display: inline-block; background: ${secondaryColor}; color: white !important; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 20px 0; }
       .footer { background: #f5f5f5; padding: 20px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 10px 10px; border: 1px solid #e0e0e0; border-top: none; }
-      .highlight { background: #FDB913; color: #1a4d2e; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
-      .info { background: #e8f5e9; border: 1px solid #4CAF50; padding: 15px; border-radius: 6px; margin: 15px 0; }
+      .highlight { background: #FDB913; color: ${primaryColor}; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
+      .info { background: #e8f5e9; border: 1px solid ${secondaryColor}; padding: 15px; border-radius: 6px; margin: 15px 0; }
       .priority-high { color: #d32f2f; font-weight: bold; }
       .priority-medium { color: #f57c00; font-weight: bold; }
       .priority-low { color: #388e3c; font-weight: bold; }
@@ -891,7 +934,8 @@ export async function sendTaskAssignmentEmail(
     <body>
       <div class="container">
         <div class="header">
-          <h1>STS Tax Repair</h1>
+          <img src="${logoUrl}" alt="${companyName} Logo" style="max-width: 120px; margin-bottom: 10px;" />
+          <h1>${companyName}</h1>
           <p style="color: #ffffff; margin: 5px 0 0 0;">Professional Tax Services</p>
         </div>
         <div class="content">
@@ -911,7 +955,7 @@ export async function sendTaskAssignmentEmail(
           </p>
         </div>
         <div class="footer">
-          <p>STS Tax Repair | Professional Tax Services</p>
+          <p>${companyName} | Professional Tax Services</p>
           <p>This is an automated message. Please do not reply directly to this email.</p>
         </div>
       </div>
@@ -921,8 +965,9 @@ export async function sendTaskAssignmentEmail(
 
   return sendEmail({
     to: email,
-    subject: `New Task Assigned: ${taskTitle} - STS Tax Repair`,
+    subject: `New Task Assigned: ${taskTitle} - ${companyName}`,
     html,
+    branding: brand,
   });
 }
 
@@ -931,18 +976,25 @@ export async function sendDocumentUploadConfirmationEmail(
   firstName: string,
   documentName: string,
   documentType?: string,
-  uploadedBy?: string
+  uploadedBy?: string,
+  branding?: OfficeBranding
 ): Promise<EmailResult> {
+  const brand = branding || DEFAULT_BRANDING;
+  const companyName = brand.companyName || DEFAULT_BRANDING.companyName;
+  const logoUrl = brand.logoUrl || DEFAULT_BRANDING.logoUrl;
+  const primaryColor = brand.primaryColor || DEFAULT_BRANDING.primaryColor;
+  const secondaryColor = brand.secondaryColor || DEFAULT_BRANDING.secondaryColor;
+  
   const baseStyles = `
     <style>
       body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }
       .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-      .header { background: linear-gradient(135deg, #1a4d2e 0%, #4CAF50 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+      .header { background: linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
       .header h1 { color: #FDB913; margin: 10px 0 0 0; font-size: 24px; }
       .content { background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; }
-      .button { display: inline-block; background: #4CAF50; color: white !important; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 20px 0; }
+      .button { display: inline-block; background: ${secondaryColor}; color: white !important; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 20px 0; }
       .footer { background: #f5f5f5; padding: 20px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 10px 10px; border: 1px solid #e0e0e0; border-top: none; }
-      .info { background: #e8f5e9; border: 1px solid #4CAF50; padding: 15px; border-radius: 6px; margin: 15px 0; }
+      .info { background: #e8f5e9; border: 1px solid ${secondaryColor}; padding: 15px; border-radius: 6px; margin: 15px 0; }
     </style>
   `;
 
@@ -959,7 +1011,8 @@ export async function sendDocumentUploadConfirmationEmail(
     <body>
       <div class="container">
         <div class="header">
-          <h1>STS Tax Repair</h1>
+          <img src="${logoUrl}" alt="${companyName} Logo" style="max-width: 120px; margin-bottom: 10px;" />
+          <h1>${companyName}</h1>
           <p style="color: #ffffff; margin: 5px 0 0 0;">Professional Tax Services</p>
         </div>
         <div class="content">
@@ -985,7 +1038,7 @@ export async function sendDocumentUploadConfirmationEmail(
           </p>
         </div>
         <div class="footer">
-          <p>STS Tax Repair | Professional Tax Services</p>
+          <p>${companyName} | Professional Tax Services</p>
           <p>This is an automated message. Please do not reply directly to this email.</p>
         </div>
       </div>
@@ -995,8 +1048,9 @@ export async function sendDocumentUploadConfirmationEmail(
 
   return sendEmail({
     to: email,
-    subject: `Document Uploaded: ${documentName} - STS Tax Repair`,
+    subject: `Document Uploaded: ${documentName} - ${companyName}`,
     html,
+    branding: brand,
   });
 }
 
@@ -1006,16 +1060,18 @@ export async function sendAppointmentReminderEmail(
   date: string,
   time: string,
   location?: string,
-  timeUntil?: string
+  timeUntil?: string,
+  branding?: OfficeBranding
 ): Promise<EmailResult> {
   const template = getEmailTemplate('appointment_reminder', { 
     firstName, date, time, location, timeUntil 
-  });
+  }, branding);
   
   return sendEmail({
     to: email,
     subject: template.subject,
     html: template.html,
+    branding,
   });
 }
 
