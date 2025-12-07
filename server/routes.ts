@@ -1055,6 +1055,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .json({ message: "Account is deactivated. Please contact support." });
       }
 
+      // SECURITY: Enforce email verification before allowing login
+      if (!user.emailVerifiedAt) {
+        return res.status(403).json({ 
+          message: "Please verify your email address before logging in. Check your inbox for the verification link.",
+          needsVerification: true,
+          email: user.email
+        });
+      }
+
       // Create session for the client
       req.session.userId = user.id;
       req.session.userRole = user.role;
@@ -2736,6 +2745,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ error: result.error.message });
         }
         const document = await storage.createDocumentVersion(result.data);
+        
+        // Send email confirmation to client about document upload
+        if (result.data.clientId) {
+          try {
+            const client = await storage.getUser(result.data.clientId);
+            if (client?.email) {
+              await sendDocumentUploadConfirmationEmail(
+                client.email,
+                client.firstName || 'Client',
+                result.data.documentName || 'Document',
+                result.data.documentType || 'General'
+              );
+              console.log(`[EMAIL] Document upload confirmation sent to ${client.email}`);
+            }
+          } catch (emailError) {
+            console.error('[EMAIL] Failed to send document upload confirmation:', emailError);
+          }
+        }
+        
         res.status(201).json(document);
       } catch (error: any) {
         res.status(500).json({ error: error.message });
