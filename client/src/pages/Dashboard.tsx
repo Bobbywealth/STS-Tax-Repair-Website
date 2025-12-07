@@ -1,16 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { 
   Users, FileText, UserPlus, ClipboardList, Loader2, 
   TrendingUp, CheckCircle2, AlertCircle, Calendar,
-  ArrowRight, Sparkles, Clock, Zap, Activity
+  ArrowRight, Sparkles, Clock, Zap, Activity, Timer
 } from "lucide-react";
 import { Link } from "wouter";
 import { cn } from "@/lib/utils";
 import type { User, DocumentVersion, AuditLog } from "@shared/mysql-schema";
-import { format, formatDistanceToNow } from "date-fns";
+import { format, formatDistanceToNow, differenceInDays } from "date-fns";
 
 function FloatingParticles() {
   return (
@@ -36,6 +37,98 @@ function GlowingOrbs() {
       <div className="orb orb-1" />
       <div className="orb orb-2" />
       <div className="orb orb-3" />
+    </div>
+  );
+}
+
+function LiveClockWidget() {
+  const [currentTime, setCurrentTime] = useState(new Date());
+  
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+  
+  const formattedTime = format(currentTime, 'h:mm:ss a');
+  const formattedDate = format(currentTime, 'EEEE, MMMM d, yyyy');
+  
+  return (
+    <div className="clock-widget flex flex-col items-end" data-testid="widget-clock">
+      <div className="flex items-center gap-2">
+        <Clock className="h-4 w-4 text-white/80" />
+        <span className="text-xl font-mono font-bold tracking-wider">{formattedTime}</span>
+      </div>
+      <div className="text-sm text-white/70 mt-0.5">
+        {formattedDate}
+      </div>
+    </div>
+  );
+}
+
+function TaxDeadlineCountdown() {
+  const [now, setNow] = useState(new Date());
+  
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(new Date());
+    }, 60000); // Update every minute
+    return () => clearInterval(timer);
+  }, []);
+  
+  // Calculate next tax deadline (April 15 of current or next year)
+  const currentYear = now.getFullYear();
+  let taxDeadline = new Date(currentYear, 3, 15); // April 15 (month is 0-indexed)
+  
+  // If we're past April 15 this year, show next year's deadline
+  if (now > taxDeadline) {
+    taxDeadline = new Date(currentYear + 1, 3, 15);
+  }
+  
+  const daysRemaining = differenceInDays(taxDeadline, now);
+  const isUrgent = daysRemaining <= 30;
+  const isCritical = daysRemaining <= 7;
+  
+  return (
+    <div 
+      className={cn(
+        "deadline-widget flex items-center gap-3 bg-white/15 backdrop-blur-sm rounded-lg px-4 py-2 border",
+        isCritical ? "border-red-400/50 bg-red-500/20" : 
+        isUrgent ? "border-amber-400/50 bg-amber-500/20" : 
+        "border-white/20"
+      )}
+      data-testid="widget-tax-deadline"
+    >
+      <div className={cn(
+        "h-10 w-10 rounded-full flex items-center justify-center",
+        isCritical ? "bg-red-500/30" : 
+        isUrgent ? "bg-amber-500/30" : 
+        "bg-white/20"
+      )}>
+        <Timer className={cn(
+          "h-5 w-5",
+          isCritical ? "text-red-200 animate-pulse" : 
+          isUrgent ? "text-amber-200" : 
+          "text-white"
+        )} />
+      </div>
+      <div className="flex flex-col">
+        <div className="flex items-baseline gap-1">
+          <span className={cn(
+            "text-2xl font-bold",
+            isCritical ? "text-red-200" : 
+            isUrgent ? "text-amber-200" : 
+            "text-white"
+          )}>
+            {daysRemaining}
+          </span>
+          <span className="text-sm text-white/80">days</span>
+        </div>
+        <span className="text-xs text-white/70">
+          Until {format(taxDeadline, 'MMM d, yyyy')} Tax Deadline
+        </span>
+      </div>
     </div>
   );
 }
@@ -425,27 +518,34 @@ export default function Dashboard() {
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-teal-400/20 rounded-full translate-y-1/2 -translate-x-1/2 blur-2xl" />
           
           <div className="relative z-10">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            {/* Top row with greeting and clock */}
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
               <div className="animate-fade-in">
-                <div className="flex items-center gap-3 mb-2">
+                <div className="flex items-center gap-3">
                   <Zap className="h-8 w-8 text-amber-400 animate-pulse" />
                   <h1 className="text-3xl lg:text-4xl font-bold tracking-tight">
                     {getGreeting()}!
                   </h1>
                 </div>
-                <p className="text-emerald-100 mt-2 text-lg">
+                <p className="text-emerald-100 mt-1 text-lg">
                   Welcome to your STS TaxRepair command center
                 </p>
-                <div className="flex flex-wrap items-center gap-4 mt-4">
-                  <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 hover:bg-white/30 transition-colors duration-300 border border-white/10">
-                    <CheckCircle2 className="h-4 w-4" />
-                    <span className="text-sm font-medium">{totalClients} Active Clients</span>
-                  </div>
-                  <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 hover:bg-white/30 transition-colors duration-300 border border-white/10">
-                    <FileText className="h-4 w-4" />
-                    <span className="text-sm font-medium">{totalDocuments.toLocaleString()} Documents</span>
-                  </div>
+              </div>
+              <LiveClockWidget />
+            </div>
+            
+            {/* Bottom row with stats and actions */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 hover:bg-white/30 transition-colors duration-300 border border-white/10">
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span className="text-sm font-medium">{totalClients} Active Clients</span>
                 </div>
+                <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 hover:bg-white/30 transition-colors duration-300 border border-white/10">
+                  <FileText className="h-4 w-4" />
+                  <span className="text-sm font-medium">{totalDocuments.toLocaleString()} Documents</span>
+                </div>
+                <TaxDeadlineCountdown />
               </div>
               <div className="flex items-center gap-3">
                 <Link href="/clients">
