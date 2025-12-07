@@ -443,17 +443,47 @@ export async function runMySQLMigrations(): Promise<void> {
       console.log('password_reset_tokens table created successfully!');
     }
     
-    // Add slug column to offices table for subdomain routing
-    const [officeSlugColumn] = await connection.query(
-      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'offices' AND COLUMN_NAME = 'slug'`,
+    // Create offices table for Tax Office tenant isolation
+    const [officesTable] = await connection.query(
+      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'offices'`,
       [dbName]
     );
     
-    if (Array.isArray(officeSlugColumn) && officeSlugColumn.length === 0) {
-      console.log('Adding slug column to offices table...');
-      await connection.query(`ALTER TABLE offices ADD COLUMN slug VARCHAR(100) UNIQUE`);
-      console.log('slug column added successfully!');
+    if (Array.isArray(officesTable) && officesTable.length === 0) {
+      console.log('Creating offices table...');
+      await connection.query(`
+        CREATE TABLE offices (
+          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+          name VARCHAR(255) NOT NULL,
+          slug VARCHAR(100) UNIQUE,
+          address TEXT,
+          city VARCHAR(100),
+          state VARCHAR(100),
+          zip_code VARCHAR(20),
+          phone VARCHAR(20),
+          email VARCHAR(255),
+          is_active BOOLEAN DEFAULT TRUE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_offices_slug (slug),
+          INDEX idx_offices_active (is_active)
+        )
+      `);
+      console.log('offices table created successfully!');
+    } else {
+      // Add slug column to offices table if missing (for existing installations)
+      const [officeSlugColumn] = await connection.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'offices' AND COLUMN_NAME = 'slug'`,
+        [dbName]
+      );
+      
+      if (Array.isArray(officeSlugColumn) && officeSlugColumn.length === 0) {
+        console.log('Adding slug column to offices table...');
+        await connection.query(`ALTER TABLE offices ADD COLUMN slug VARCHAR(100) UNIQUE`);
+        console.log('slug column added successfully!');
+      }
     }
     
     // Add theme_preference column to users table

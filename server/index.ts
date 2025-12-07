@@ -2,6 +2,19 @@ import express, { type Request, Response, NextFunction } from "express";
 import cors from "cors";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { storage } from "./storage";
+import type { Office, OfficeBranding } from "@shared/mysql-schema";
+
+// Extend Express Request to include office context
+declare global {
+  namespace Express {
+    interface Request {
+      officeSlug?: string;
+      officeId?: string;
+      officeBranding?: Partial<OfficeBranding>;
+    }
+  }
+}
 
 // Prevent crashes from unhandled promise rejections (e.g., MySQL connection errors)
 process.on('unhandledRejection', (reason, promise) => {
@@ -40,6 +53,81 @@ app.use(express.json({
   }
 }));
 app.use(express.urlencoded({ extended: false }));
+
+// Default STS branding for fallback
+const DEFAULT_BRANDING: Partial<OfficeBranding> = {
+  companyName: 'STS TaxRepair',
+  logoUrl: null,
+  primaryColor: '#1a4d2e',
+  secondaryColor: '#4CAF50',
+  accentColor: '#22c55e',
+  defaultTheme: 'light',
+  replyToEmail: 'support@ststaxrepair.org',
+  replyToName: 'STS TaxRepair Support'
+};
+
+// Subdomain detection middleware
+// Detects office from subdomain: acmetax.ststaxrepair.org -> "acmetax"
+app.use(async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const hostname = req.hostname || req.headers.host?.split(':')[0] || '';
+    
+    // Main domains that should use default STS branding
+    const mainDomains = [
+      'ststaxrepair.org',
+      'www.ststaxrepair.org',
+      'sts-tax-repair-website.onrender.com',
+      'localhost',
+      '0.0.0.0'
+    ];
+    
+    // Check if this is a Replit dev domain (ends with .replit.dev or .worf.replit.dev)
+    const isReplitDomain = hostname.includes('.replit.dev');
+    
+    // Extract subdomain slug
+    let slug: string | undefined;
+    
+    if (!isReplitDomain && !mainDomains.includes(hostname)) {
+      // For production: subdomain.ststaxrepair.org -> subdomain
+      const domainParts = hostname.split('.');
+      if (domainParts.length >= 3 && domainParts[domainParts.length - 2] === 'ststaxrepair') {
+        slug = domainParts[0];
+      }
+    }
+    
+    // Also check for slug in query param (useful for testing and development)
+    if (!slug && req.query._office) {
+      slug = req.query._office as string;
+    }
+    
+    if (slug && slug !== 'www') {
+      // Look up office by slug
+      const office = await storage.getOfficeBySlug(slug);
+      if (office) {
+        req.officeSlug = slug;
+        req.officeId = office.id;
+        
+        // Load office branding
+        const branding = await storage.getOfficeBranding(office.id);
+        req.officeBranding = {
+          ...DEFAULT_BRANDING,
+          ...(branding || {})
+        };
+      }
+    }
+    
+    // If no office detected, use default branding
+    if (!req.officeBranding) {
+      req.officeBranding = DEFAULT_BRANDING;
+    }
+    
+    next();
+  } catch (error) {
+    console.error('Subdomain detection error:', error);
+    req.officeBranding = DEFAULT_BRANDING;
+    next();
+  }
+});
 
 app.use((req, res, next) => {
   const start = Date.now();
