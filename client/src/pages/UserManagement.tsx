@@ -50,7 +50,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
-import type { User, UserRole, RoleAuditLog, StaffInvite } from "@shared/mysql-schema";
+import type { User, UserRole, RoleAuditLog, StaffInvite, StaffRequest, StaffRequestStatus } from "@shared/mysql-schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
@@ -100,6 +100,37 @@ export default function UserManagement() {
 
   const { data: invites, isLoading: loadingInvites } = useQuery<StaffInvite[]>({
     queryKey: ['/api/staff-invites'],
+  });
+
+  const { data: staffRequests, isLoading: loadingRequests } = useQuery<StaffRequest[]>({
+    queryKey: ['/api/staff-requests'],
+  });
+
+  const [reviewNotes, setReviewNotes] = useState("");
+  const [showReviewDialog, setShowReviewDialog] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<StaffRequest | null>(null);
+  const [reviewAction, setReviewAction] = useState<'approve' | 'reject'>('approve');
+
+  const reviewRequestMutation = useMutation({
+    mutationFn: async ({ id, status, reviewNotes }: { id: string; status: StaffRequestStatus; reviewNotes?: string }) => {
+      await apiRequest('PATCH', `/api/staff-requests/${id}`, { status, reviewNotes });
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/staff-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      toast({ 
+        title: variables.status === 'approved' ? "Request Approved" : "Request Rejected", 
+        description: variables.status === 'approved' 
+          ? "Staff account has been created and welcome email sent." 
+          : "The request has been rejected." 
+      });
+      setShowReviewDialog(false);
+      setSelectedRequest(null);
+      setReviewNotes("");
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
   });
 
   const updateRoleMutation = useMutation({
@@ -287,6 +318,10 @@ export default function UserManagement() {
           <TabsTrigger value="audit" data-testid="tab-audit">
             <History className="h-4 w-4 mr-2" />
             Audit Log
+          </TabsTrigger>
+          <TabsTrigger value="requests" data-testid="tab-staff-requests">
+            <AlertCircle className="h-4 w-4 mr-2" />
+            Staff Requests
           </TabsTrigger>
         </TabsList>
 
@@ -582,7 +617,201 @@ export default function UserManagement() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="requests" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Staff Access Requests</CardTitle>
+              <CardDescription>Review and approve staff access requests from the public signup form</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loadingRequests ? (
+                <div className="text-center py-8 text-muted-foreground">Loading requests...</div>
+              ) : staffRequests && staffRequests.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Role Requested</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Submitted</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {staffRequests.map((request) => {
+                      const statusConfig: Record<string, { color: string; label: string }> = {
+                        pending: { color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200", label: "Pending" },
+                        approved: { color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200", label: "Approved" },
+                        rejected: { color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200", label: "Rejected" },
+                      };
+                      const status = statusConfig[request.status || 'pending'];
+                      const roleLabel = request.roleRequested === 'agent' ? 'Tax Preparer' : 'Tax Office Manager';
+                      
+                      return (
+                        <TableRow key={request.id} data-testid={`row-request-${request.id}`}>
+                          <TableCell className="font-medium">
+                            {request.firstName} {request.lastName}
+                          </TableCell>
+                          <TableCell>{request.email}</TableCell>
+                          <TableCell>
+                            <Badge className={request.roleRequested === 'agent' 
+                              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                              : "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
+                            }>
+                              {roleLabel}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={status.color}>{status.label}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            {request.createdAt 
+                              ? format(new Date(request.createdAt), "MMM d, yyyy")
+                              : 'N/A'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {request.status === 'pending' ? (
+                              <div className="flex items-center justify-end gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20"
+                                  onClick={() => {
+                                    setSelectedRequest(request);
+                                    setReviewAction('approve');
+                                    setShowReviewDialog(true);
+                                  }}
+                                  data-testid={`button-approve-${request.id}`}
+                                >
+                                  <CheckCircle className="h-4 w-4 mr-1" />
+                                  Approve
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                  onClick={() => {
+                                    setSelectedRequest(request);
+                                    setReviewAction('reject');
+                                    setShowReviewDialog(true);
+                                  }}
+                                  data-testid={`button-reject-${request.id}`}
+                                >
+                                  <XCircle className="h-4 w-4 mr-1" />
+                                  Reject
+                                </Button>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">
+                                {request.reviewedAt 
+                                  ? `Reviewed ${format(new Date(request.reviewedAt), "MMM d")}`
+                                  : 'Processed'}
+                              </span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  No staff access requests. Requests from <a href="/staff-signup" className="text-primary hover:underline">/staff-signup</a> will appear here.
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
+
+      <Dialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {reviewAction === 'approve' ? 'Approve Staff Request' : 'Reject Staff Request'}
+            </DialogTitle>
+            <DialogDescription>
+              {reviewAction === 'approve' 
+                ? `This will create a staff account for ${selectedRequest?.firstName} ${selectedRequest?.lastName} as ${selectedRequest?.roleRequested === 'agent' ? 'Tax Preparer' : 'Tax Office Manager'}.`
+                : `Reject the staff access request from ${selectedRequest?.firstName} ${selectedRequest?.lastName}.`}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedRequest && (
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-muted-foreground">Name</p>
+                  <p className="font-medium">{selectedRequest.firstName} {selectedRequest.lastName}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Email</p>
+                  <p className="font-medium">{selectedRequest.email}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Phone</p>
+                  <p className="font-medium">{selectedRequest.phone || 'Not provided'}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Role Requested</p>
+                  <p className="font-medium">
+                    {selectedRequest.roleRequested === 'agent' ? 'Tax Preparer' : 'Tax Office Manager'}
+                  </p>
+                </div>
+              </div>
+              {selectedRequest.reason && (
+                <div>
+                  <p className="text-muted-foreground text-sm">Reason for Joining</p>
+                  <p className="text-sm bg-muted p-2 rounded mt-1">{selectedRequest.reason}</p>
+                </div>
+              )}
+              {selectedRequest.experience && (
+                <div>
+                  <p className="text-muted-foreground text-sm">Experience</p>
+                  <p className="text-sm bg-muted p-2 rounded mt-1">{selectedRequest.experience}</p>
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label>Review Notes (Optional)</Label>
+                <Textarea
+                  value={reviewNotes}
+                  onChange={(e) => setReviewNotes(e.target.value)}
+                  placeholder={reviewAction === 'reject' 
+                    ? "Provide a reason for rejection..."
+                    : "Add any notes about this approval..."}
+                  data-testid="input-review-notes"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowReviewDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              className={reviewAction === 'approve' 
+                ? "bg-green-600 hover:bg-green-700 text-white" 
+                : "bg-red-600 hover:bg-red-700 text-white"}
+              onClick={() => {
+                if (selectedRequest) {
+                  reviewRequestMutation.mutate({
+                    id: selectedRequest.id,
+                    status: reviewAction === 'approve' ? 'approved' : 'rejected',
+                    reviewNotes
+                  });
+                }
+              }}
+              disabled={reviewRequestMutation.isPending}
+              data-testid="button-confirm-review"
+            >
+              {reviewRequestMutation.isPending 
+                ? 'Processing...' 
+                : reviewAction === 'approve' ? 'Approve & Create Account' : 'Reject Request'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showRoleDialog} onOpenChange={setShowRoleDialog}>
         <DialogContent>
