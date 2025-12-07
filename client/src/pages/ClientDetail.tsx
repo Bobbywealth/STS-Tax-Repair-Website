@@ -73,6 +73,8 @@ export default function ClientDetail() {
   const clientId = params?.id;
   const [selectedFilingYear, setSelectedFilingYear] = useState<number | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [selectedFiling, setSelectedFiling] = useState<TaxFiling | null>(null);
+  const [showFilingDetails, setShowFilingDetails] = useState(false);
   const [editFormData, setEditFormData] = useState<EditFormData>({
     firstName: "",
     lastName: "",
@@ -430,7 +432,15 @@ export default function ClientDetail() {
                         <SelectItem value="paid">Paid</SelectItem>
                       </SelectContent>
                     </Select>
-                    <Button variant="ghost" size="icon" data-testid={`button-view-filing-${filing.taxYear}`}>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      data-testid={`button-view-filing-${filing.taxYear}`}
+                      onClick={() => {
+                        setSelectedFiling(filing);
+                        setShowFilingDetails(true);
+                      }}
+                    >
                       <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
@@ -610,6 +620,188 @@ export default function ClientDetail() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showFilingDetails} onOpenChange={setShowFilingDetails}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Tax Year {selectedFiling?.taxYear} Details
+            </DialogTitle>
+            <DialogDescription>
+              Complete details for this tax filing
+            </DialogDescription>
+          </DialogHeader>
+          {selectedFiling && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-4">
+                <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+                  <span className="font-bold text-2xl text-primary">{selectedFiling.taxYear.toString().slice(-2)}</span>
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold">Tax Year {selectedFiling.taxYear}</h3>
+                  <Badge className={statusColors[selectedFiling.status || 'new']}>
+                    {statusLabels[selectedFiling.status || 'new']}
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Estimated Refund</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Amount:</span>
+                      <span className="font-medium">
+                        {selectedFiling.estimatedRefund 
+                          ? `$${parseFloat(selectedFiling.estimatedRefund).toLocaleString()}` 
+                          : "Not set"}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Actual Refund</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Amount:</span>
+                      <span className="font-medium text-green-600">
+                        {selectedFiling.actualRefund 
+                          ? `$${parseFloat(selectedFiling.actualRefund).toLocaleString()}` 
+                          : "Pending"}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Service Fee</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Amount:</span>
+                      <span className="font-medium">
+                        {selectedFiling.serviceFee 
+                          ? `$${parseFloat(selectedFiling.serviceFee).toLocaleString()}` 
+                          : "Not set"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between mt-2">
+                      <span className="text-sm text-muted-foreground">Status:</span>
+                      <Badge variant={selectedFiling.feePaid ? "default" : "secondary"}>
+                        {selectedFiling.feePaid ? "Paid" : "Unpaid"}
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Filing Status</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Federal:</span>
+                      <span className="font-medium">{selectedFiling.federalStatus || "N/A"}</span>
+                    </div>
+                    <div className="flex justify-between mt-2">
+                      <span className="text-sm text-muted-foreground">State:</span>
+                      <span className="font-medium">{selectedFiling.stateStatus || "N/A"}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Key Dates</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">Created:</span>
+                      <span>{selectedFiling.createdAt 
+                        ? new Date(selectedFiling.createdAt).toLocaleDateString() 
+                        : "N/A"}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">Submitted:</span>
+                      <span>{selectedFiling.submittedAt 
+                        ? new Date(selectedFiling.submittedAt).toLocaleDateString() 
+                        : "Not yet filed"}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">Approved:</span>
+                      <span>{selectedFiling.approvedAt 
+                        ? new Date(selectedFiling.approvedAt).toLocaleDateString() 
+                        : "Pending"}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">Funded:</span>
+                      <span>{selectedFiling.fundedAt 
+                        ? new Date(selectedFiling.fundedAt).toLocaleDateString() 
+                        : "Pending"}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Assignment & Details</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">Preparer:</span>
+                      <span className="font-medium">{selectedFiling.preparerName || "Unassigned"}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Building className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">Office:</span>
+                      <span className="font-medium">{selectedFiling.officeLocation || "N/A"}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">Filing Type:</span>
+                      <span className="font-medium capitalize">{selectedFiling.filingType || "Individual"}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {selectedFiling.notes && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Notes</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm">{selectedFiling.notes}</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowFilingDetails(false)}>
+              Close
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
