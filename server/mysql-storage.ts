@@ -571,6 +571,37 @@ export class MySQLStorage implements IStorage {
     return updated;
   }
 
+  async updateUser(userId: string, data: Partial<{
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    address: string;
+    city: string;
+    state: string;
+    zipCode: string;
+  }>): Promise<User | undefined> {
+    const existing = await this.getUser(userId);
+    if (!existing) return undefined;
+    
+    const updateData: any = { updatedAt: new Date() };
+    if (data.firstName !== undefined) updateData.firstName = data.firstName;
+    if (data.lastName !== undefined) updateData.lastName = data.lastName;
+    if (data.email !== undefined) updateData.email = data.email;
+    if (data.phone !== undefined) updateData.phone = data.phone;
+    if (data.address !== undefined) updateData.address = data.address;
+    if (data.city !== undefined) updateData.city = data.city;
+    if (data.state !== undefined) updateData.state = data.state;
+    if (data.zipCode !== undefined) updateData.zipCode = data.zipCode;
+    
+    await mysqlDb.update(usersTable)
+      .set(updateData)
+      .where(eq(usersTable.id, userId));
+    
+    const [updated] = await mysqlDb.select().from(usersTable).where(eq(usersTable.id, userId));
+    return updated;
+  }
+
   async getUsersByRole(role: UserRole): Promise<User[]> {
     return await mysqlDb.select().from(usersTable)
       .where(eq(usersTable.role, role))

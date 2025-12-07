@@ -45,6 +45,16 @@ export interface IStorage {
   upsertUser(user: UpsertUser): Promise<User>;
   updateUserRole(userId: string, newRole: UserRole, changedById: string, changedByName: string, reason?: string): Promise<User | undefined>;
   updateUserStatus(userId: string, isActive: boolean): Promise<User | undefined>;
+  updateUser(userId: string, data: Partial<{
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    address: string;
+    city: string;
+    state: string;
+    zipCode: string;
+  }>): Promise<User | undefined>;
   getUsersByRole(role: UserRole): Promise<User[]>;
   getStaffUsers(): Promise<User[]>;
 
