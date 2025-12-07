@@ -2711,7 +2711,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     requirePermission("leads.create"),
     async (req: any, res) => {
       try {
-        const lead = await storage.createLead(req.body);
+        const { name, email, phone, company, address, city, state, zipCode, source, status, notes, assignedToId, assignedToName, estimatedValue } = req.body;
+        if (!name || typeof name !== 'string' || name.trim().length === 0) {
+          return res.status(400).json({ error: "Name is required" });
+        }
+        const leadData = {
+          name: name.trim(),
+          email: email && email.trim() ? email.trim() : null,
+          phone: phone && phone.trim() ? phone.trim() : null,
+          company: company && company.trim() ? company.trim() : null,
+          address: address && address.trim() ? address.trim() : null,
+          city: city && city.trim() ? city.trim() : null,
+          state: state && state.trim() ? state.trim() : null,
+          zipCode: zipCode && zipCode.trim() ? zipCode.trim() : null,
+          source: source && source.trim() ? source.trim() : null,
+          status: status || "new",
+          notes: notes && notes.trim() ? notes.trim() : null,
+          assignedToId: assignedToId || null,
+          assignedToName: assignedToName || null,
+          estimatedValue: estimatedValue ? parseFloat(String(estimatedValue)) : null,
+        };
+        const lead = await storage.createLead(leadData as any);
         res.status(201).json(lead);
       } catch (error: any) {
         console.error("Error creating lead:", error);
@@ -2726,7 +2746,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     requirePermission("leads.edit"),
     async (req: any, res) => {
       try {
-        const lead = await storage.updateLead(req.params.id, req.body);
+        const { name, email, phone, company, address, city, state, zipCode, source, status, notes, assignedToId, assignedToName, estimatedValue } = req.body;
+        const updateData: any = {};
+        if (name !== undefined) updateData.name = name.trim();
+        if (email !== undefined) updateData.email = email && email.trim() ? email.trim() : null;
+        if (phone !== undefined) updateData.phone = phone && phone.trim() ? phone.trim() : null;
+        if (company !== undefined) updateData.company = company && company.trim() ? company.trim() : null;
+        if (address !== undefined) updateData.address = address && address.trim() ? address.trim() : null;
+        if (city !== undefined) updateData.city = city && city.trim() ? city.trim() : null;
+        if (state !== undefined) updateData.state = state && state.trim() ? state.trim() : null;
+        if (zipCode !== undefined) updateData.zipCode = zipCode && zipCode.trim() ? zipCode.trim() : null;
+        if (source !== undefined) updateData.source = source && source.trim() ? source.trim() : null;
+        if (status !== undefined) updateData.status = status;
+        if (notes !== undefined) updateData.notes = notes && notes.trim() ? notes.trim() : null;
+        if (assignedToId !== undefined) updateData.assignedToId = assignedToId || null;
+        if (assignedToName !== undefined) updateData.assignedToName = assignedToName || null;
+        if (estimatedValue !== undefined) updateData.estimatedValue = estimatedValue ? parseFloat(String(estimatedValue)) : null;
+        const lead = await storage.updateLead(req.params.id, updateData);
         if (!lead) {
           return res.status(404).json({ error: "Lead not found" });
         }

@@ -377,6 +377,47 @@ export async function runMySQLMigrations(): Promise<void> {
       console.log('staff_members table created successfully!');
     }
 
+    // Create leads table
+    const [leadsTable] = await connection.query(
+      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'leads'`,
+      [dbName]
+    );
+    
+    if (Array.isArray(leadsTable) && leadsTable.length === 0) {
+      console.log('Creating leads table...');
+      await connection.query(`
+        CREATE TABLE leads (
+          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+          name VARCHAR(255) NOT NULL,
+          email VARCHAR(255),
+          phone VARCHAR(30),
+          company VARCHAR(255),
+          address TEXT,
+          city VARCHAR(100),
+          state VARCHAR(100),
+          zip_code VARCHAR(20),
+          country VARCHAR(100) DEFAULT 'United States',
+          source VARCHAR(100),
+          status ENUM('new', 'contacted', 'qualified', 'proposal', 'negotiation', 'converted', 'lost') DEFAULT 'new',
+          notes TEXT,
+          assigned_to_id VARCHAR(36),
+          assigned_to_name VARCHAR(255),
+          estimated_value DECIMAL(10,2),
+          last_contact_date TIMESTAMP NULL,
+          next_follow_up_date TIMESTAMP NULL,
+          converted_to_client_id VARCHAR(36),
+          converted_at TIMESTAMP NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_leads_status (status),
+          INDEX idx_leads_assigned (assigned_to_id),
+          INDEX idx_leads_email (email)
+        )
+      `);
+      console.log('leads table created successfully!');
+    }
+
     // Create password_reset_tokens table
     const [passwordResetTable] = await connection.query(
       `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
