@@ -50,6 +50,9 @@ import {
   type InsertTicketMessage,
   type AuditLog,
   type InsertAuditLog,
+  type StaffRequest,
+  type InsertStaffRequest,
+  type StaffRequestStatus,
   users as usersTable,
   taxDeadlines as taxDeadlinesTable,
   appointments as appointmentsTable,
@@ -72,7 +75,8 @@ import {
   officeBranding as officeBrandingTable,
   agentClientAssignments as agentAssignmentsTable,
   ticketMessages as ticketMessagesTable,
-  auditLogs as auditLogsTable
+  auditLogs as auditLogsTable,
+  staffRequests as staffRequestsTable
 } from "@shared/mysql-schema";
 import { mysqlPool } from "./mysql-db";
 import { randomUUID } from "crypto";
@@ -1885,6 +1889,115 @@ export class MySQLStorage implements IStorage {
     await mysqlDb.update(usersTable).set({ themePreference: theme }).where(eq(usersTable.id, userId));
     const [result] = await mysqlDb.select().from(usersTable).where(eq(usersTable.id, userId));
     return result;
+  }
+
+  // ============================================================================
+  // STAFF REQUESTS - Staff sign-up request management
+  // ============================================================================
+
+  async createStaffRequest(request: InsertStaffRequest): Promise<StaffRequest> {
+    const id = randomUUID();
+    await mysqlDb
+      .insert(staffRequestsTable)
+      .values({
+        id,
+        ...request,
+        status: 'pending',
+        createdAt: new Date()
+      });
+    const [result] = await mysqlDb
+      .select()
+      .from(staffRequestsTable)
+      .where(eq(staffRequestsTable.id, id));
+    return result;
+  }
+
+  async getStaffRequests(options: {
+    status?: StaffRequestStatus;
+    officeId?: string;
+    limit?: number;
+    offset?: number;
+  } = {}): Promise<StaffRequest[]> {
+    const conditions = [];
+    
+    if (options.status) {
+      conditions.push(eq(staffRequestsTable.status, options.status));
+    }
+    if (options.officeId) {
+      conditions.push(eq(staffRequestsTable.officeId, options.officeId));
+    }
+    
+    let query = mysqlDb
+      .select()
+      .from(staffRequestsTable)
+      .orderBy(desc(staffRequestsTable.createdAt));
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+    
+    if (options.limit) {
+      query = query.limit(options.limit) as any;
+    }
+    if (options.offset) {
+      query = query.offset(options.offset) as any;
+    }
+    
+    return await query;
+  }
+
+  async getStaffRequest(id: string): Promise<StaffRequest | undefined> {
+    const [result] = await mysqlDb
+      .select()
+      .from(staffRequestsTable)
+      .where(eq(staffRequestsTable.id, id));
+    return result;
+  }
+
+  async getStaffRequestByEmail(email: string): Promise<StaffRequest | undefined> {
+    const [result] = await mysqlDb
+      .select()
+      .from(staffRequestsTable)
+      .where(eq(staffRequestsTable.email, email));
+    return result;
+  }
+
+  async updateStaffRequestStatus(
+    id: string, 
+    status: StaffRequestStatus, 
+    reviewedBy: string, 
+    reviewNotes?: string
+  ): Promise<StaffRequest | undefined> {
+    await mysqlDb
+      .update(staffRequestsTable)
+      .set({
+        status,
+        reviewedBy,
+        reviewedAt: new Date(),
+        reviewNotes: reviewNotes || null
+      })
+      .where(eq(staffRequestsTable.id, id));
+    
+    const [result] = await mysqlDb
+      .select()
+      .from(staffRequestsTable)
+      .where(eq(staffRequestsTable.id, id));
+    return result;
+  }
+
+  async getStaffRequestsCount(status?: StaffRequestStatus): Promise<number> {
+    const conditions = [];
+    if (status) {
+      conditions.push(eq(staffRequestsTable.status, status));
+    }
+    
+    const [result] = await mysqlPool.query(
+      status 
+        ? `SELECT COUNT(*) as count FROM staff_requests WHERE status = ?`
+        : `SELECT COUNT(*) as count FROM staff_requests`,
+      status ? [status] : []
+    );
+    return (result as any)[0]?.count || 0;
   }
 }
 

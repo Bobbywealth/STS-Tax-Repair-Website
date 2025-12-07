@@ -842,6 +842,47 @@ export const insertTicketMessageSchema = createInsertSchema(ticketMessages).omit
 export type InsertTicketMessage = z.infer<typeof insertTicketMessageSchema>;
 export type TicketMessage = typeof ticketMessages.$inferSelect;
 
+// Staff Request Status Types
+export type StaffRequestStatus = 'pending' | 'approved' | 'rejected';
+
+// Staff Requests Table - tracks staff sign-up requests awaiting admin approval
+export const staffRequests = mysqlTable(
+  "staff_requests",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+    firstName: varchar("first_name", { length: 255 }).notNull(),
+    lastName: varchar("last_name", { length: 255 }).notNull(),
+    email: varchar("email", { length: 255 }).notNull(),
+    phone: varchar("phone", { length: 20 }),
+    roleRequested: varchar("role_requested", { length: 20 }).notNull().$type<UserRole>(),
+    officeId: varchar("office_id", { length: 36 }),
+    reason: text("reason"),
+    experience: text("experience"),
+    status: varchar("status", { length: 20 }).default("pending").$type<StaffRequestStatus>(),
+    reviewedBy: varchar("reviewed_by", { length: 36 }),
+    reviewedAt: timestamp("reviewed_at"),
+    reviewNotes: text("review_notes"),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => ({
+    emailIdx: index("idx_staff_requests_email").on(table.email),
+    statusIdx: index("idx_staff_requests_status").on(table.status),
+    officeIdx: index("idx_staff_requests_office").on(table.officeId),
+  }),
+);
+
+export const insertStaffRequestSchema = createInsertSchema(staffRequests).omit({
+  id: true,
+  status: true,
+  reviewedBy: true,
+  reviewedAt: true,
+  reviewNotes: true,
+  createdAt: true,
+});
+
+export type InsertStaffRequest = z.infer<typeof insertStaffRequestSchema>;
+export type StaffRequest = typeof staffRequests.$inferSelect;
+
 // Audit Log Action Types
 export const AuditActionTypes = [
   'payment.create',
@@ -863,6 +904,24 @@ export const AuditActionTypes = [
   'user.login',
   'user.logout',
   'permission.update',
+  'document.upload',
+  'document.delete',
+  'appointment.create',
+  'appointment.cancel',
+  'appointment.complete',
+  'task.create',
+  'task.complete',
+  'task.assign',
+  'lead.create',
+  'lead.convert',
+  'ticket.create',
+  'ticket.close',
+  'tax_filing.create',
+  'tax_filing.status_change',
+  'staff_request.submit',
+  'staff_request.approve',
+  'staff_request.reject',
+  'branding.update',
 ] as const;
 export type AuditAction = typeof AuditActionTypes[number];
 
