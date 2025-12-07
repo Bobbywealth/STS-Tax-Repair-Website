@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mail, ArrowLeft, CheckCircle, Loader2 } from "lucide-react";
+import { Mail, ArrowLeft, CheckCircle, Loader2, UserPlus, AlertCircle } from "lucide-react";
 import { Link } from "wouter";
 import logoUrl from "@/assets/sts-logo.png";
 
@@ -12,11 +12,13 @@ export default function ForgotPassword() {
   const [accountType, setAccountType] = useState<"client" | "admin">("client");
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [needsSignup, setNeedsSignup] = useState(false);
   const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setNeedsSignup(false);
     setIsLoading(true);
 
     try {
@@ -29,7 +31,12 @@ export default function ForgotPassword() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Something went wrong");
+        if (data.needsSignup) {
+          setNeedsSignup(true);
+        } else {
+          throw new Error(data.error || "Something went wrong");
+        }
+        return;
       }
 
       setIsSubmitted(true);
@@ -62,7 +69,46 @@ export default function ForgotPassword() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {isSubmitted ? (
+            {needsSignup ? (
+              <div className="text-center py-6">
+                <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <AlertCircle className="w-8 h-8 text-amber-600" />
+                </div>
+                <h3 className="font-semibold text-lg mb-2">Account Not Found</h3>
+                <p className="text-muted-foreground mb-2">
+                  We couldn't find an account with the email:
+                </p>
+                <p className="font-medium text-sm mb-4 break-all">{email}</p>
+                <p className="text-muted-foreground text-sm mb-6">
+                  If you're a new client, please sign up for an account. If you believe this is an error, please contact our office for assistance.
+                </p>
+                <div className="space-y-3">
+                  <Link href="/signup">
+                    <Button className="w-full bg-[#4CAF50] hover:bg-[#1a4d2e]" data-testid="button-signup">
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Sign Up for New Account
+                    </Button>
+                  </Link>
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => {
+                      setNeedsSignup(false);
+                      setEmail("");
+                    }}
+                    data-testid="button-try-different-email"
+                  >
+                    Try a Different Email
+                  </Button>
+                  <Link href={accountType === "admin" ? "/admin-login" : "/client-login"}>
+                    <Button variant="ghost" className="w-full" data-testid="link-back-to-login">
+                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      Back to Login
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            ) : isSubmitted ? (
               <div className="text-center py-6">
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <CheckCircle className="w-8 h-8 text-green-600" />

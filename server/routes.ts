@@ -157,12 +157,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Find user by email
       const user = await storage.getUserByEmail(email);
 
-      // Always return success to prevent email enumeration attacks
+      // If user doesn't exist, inform them to sign up
       if (!user) {
         console.log(`Password reset requested for non-existent email: ${email}`);
-        return res.json({ 
-          success: true, 
-          message: "If an account exists with this email, you will receive a password reset link shortly." 
+        return res.status(404).json({ 
+          success: false, 
+          error: "No account found with this email address. Please sign up for a new account or contact our office for assistance.",
+          needsSignup: true
         });
       }
 
