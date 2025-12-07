@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { Switch, Route, useLocation, Redirect, Link } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
@@ -15,39 +15,47 @@ import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { usePWA } from "@/hooks/usePWA";
 
-import Dashboard from "@/pages/Dashboard";
-import Clients from "@/pages/Clients";
-import ClientDetail from "@/pages/ClientDetail";
-import Leads from "@/pages/Leads";
-import TaxDeadlines from "@/pages/TaxDeadlines";
-import Appointments from "@/pages/Appointments";
-import Payments from "@/pages/Payments";
-import Documents from "@/pages/Documents";
-import ESignatures from "@/pages/ESignatures";
-import Tasks from "@/pages/Tasks";
-import Manager from "@/pages/Manager";
-import Tickets from "@/pages/Tickets";
-import Knowledge from "@/pages/Knowledge";
-import Reports from "@/pages/Reports";
-import Settings from "@/pages/Settings";
-import UserManagement from "@/pages/UserManagement";
-import Permissions from "@/pages/Permissions";
-import ClientLogin from "@/pages/ClientLogin";
-import AdminLogin from "@/pages/AdminLogin";
-import ClientPortal from "@/pages/ClientPortal";
-import RedeemInvite from "@/pages/RedeemInvite";
-import Register from "@/pages/Register";
-import ForgotPassword from "@/pages/ForgotPassword";
-import ResetPassword from "@/pages/ResetPassword";
-import HomePage from "@/pages/HomePage";
-import ServicesPage from "@/pages/ServicesPage";
-import AgentsPage from "@/pages/AgentsPage";
-import PricingPage from "@/pages/PricingPage";
-import AboutPage from "@/pages/AboutPage";
-import ContactPage from "@/pages/ContactPage";
-import FAQPage from "@/pages/FAQPage";
-import BookAppointmentPage from "@/pages/BookAppointmentPage";
-import NotFound from "@/pages/not-found";
+const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const Clients = lazy(() => import("@/pages/Clients"));
+const ClientDetail = lazy(() => import("@/pages/ClientDetail"));
+const Leads = lazy(() => import("@/pages/Leads"));
+const TaxDeadlines = lazy(() => import("@/pages/TaxDeadlines"));
+const Appointments = lazy(() => import("@/pages/Appointments"));
+const Payments = lazy(() => import("@/pages/Payments"));
+const Documents = lazy(() => import("@/pages/Documents"));
+const ESignatures = lazy(() => import("@/pages/ESignatures"));
+const Tasks = lazy(() => import("@/pages/Tasks"));
+const Manager = lazy(() => import("@/pages/Manager"));
+const Tickets = lazy(() => import("@/pages/Tickets"));
+const Knowledge = lazy(() => import("@/pages/Knowledge"));
+const Reports = lazy(() => import("@/pages/Reports"));
+const Settings = lazy(() => import("@/pages/Settings"));
+const UserManagement = lazy(() => import("@/pages/UserManagement"));
+const Permissions = lazy(() => import("@/pages/Permissions"));
+const ClientLogin = lazy(() => import("@/pages/ClientLogin"));
+const AdminLogin = lazy(() => import("@/pages/AdminLogin"));
+const ClientPortal = lazy(() => import("@/pages/ClientPortal"));
+const RedeemInvite = lazy(() => import("@/pages/RedeemInvite"));
+const Register = lazy(() => import("@/pages/Register"));
+const ForgotPassword = lazy(() => import("@/pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("@/pages/ResetPassword"));
+const HomePage = lazy(() => import("@/pages/HomePage"));
+const ServicesPage = lazy(() => import("@/pages/ServicesPage"));
+const AgentsPage = lazy(() => import("@/pages/AgentsPage"));
+const PricingPage = lazy(() => import("@/pages/PricingPage"));
+const AboutPage = lazy(() => import("@/pages/AboutPage"));
+const ContactPage = lazy(() => import("@/pages/ContactPage"));
+const FAQPage = lazy(() => import("@/pages/FAQPage"));
+const BookAppointmentPage = lazy(() => import("@/pages/BookAppointmentPage"));
+const NotFound = lazy(() => import("@/pages/not-found"));
+
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center h-64">
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    </div>
+  );
+}
 
 import { usePermissions, PERMISSIONS } from "@/hooks/usePermissions";
 
@@ -111,78 +119,80 @@ function PermissionRoute({ component: Component, permission, adminOnly }: Permis
 
 function AdminRouter() {
   return (
-    <Switch>
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/clients">
-        <PermissionRoute component={Clients} permission={PERMISSIONS.CLIENTS_VIEW} />
-      </Route>
-      <Route path="/clients/:id">
-        <PermissionRoute component={ClientDetail} permission={PERMISSIONS.CLIENTS_VIEW} />
-      </Route>
-      <Route path="/leads">
-        <PermissionRoute component={Leads} permission={PERMISSIONS.LEADS_VIEW} />
-      </Route>
-      {/* Tax Deadlines - both short and long URL formats */}
-      <Route path="/deadlines">
-        <PermissionRoute component={TaxDeadlines} permission={PERMISSIONS.DEADLINES_VIEW} />
-      </Route>
-      <Route path="/tax-deadlines">
-        <PermissionRoute component={TaxDeadlines} permission={PERMISSIONS.DEADLINES_VIEW} />
-      </Route>
-      <Route path="/appointments">
-        <PermissionRoute component={Appointments} permission={PERMISSIONS.APPOINTMENTS_VIEW} />
-      </Route>
-      <Route path="/payments">
-        <PermissionRoute component={Payments} permission={PERMISSIONS.PAYMENTS_VIEW} />
-      </Route>
-      <Route path="/documents">
-        <PermissionRoute component={Documents} permission={PERMISSIONS.DOCUMENTS_VIEW} />
-      </Route>
-      {/* E-Signatures - both short and long URL formats */}
-      <Route path="/signatures">
-        <PermissionRoute component={ESignatures} permission={PERMISSIONS.SIGNATURES_VIEW} />
-      </Route>
-      <Route path="/e-signatures">
-        <PermissionRoute component={ESignatures} permission={PERMISSIONS.SIGNATURES_VIEW} />
-      </Route>
-      <Route path="/tasks">
-        <PermissionRoute component={Tasks} permission={PERMISSIONS.TASKS_VIEW} />
-      </Route>
-      <Route path="/manager">
-        <PermissionRoute component={Manager} permission={PERMISSIONS.SETTINGS_VIEW} />
-      </Route>
-      {/* Support Tickets - both short and long URL formats */}
-      <Route path="/tickets">
-        <PermissionRoute component={Tickets} permission={PERMISSIONS.SUPPORT_VIEW} />
-      </Route>
-      <Route path="/support-tickets">
-        <PermissionRoute component={Tickets} permission={PERMISSIONS.SUPPORT_VIEW} />
-      </Route>
-      {/* Knowledge Base - both short and long URL formats */}
-      <Route path="/knowledge">
-        <PermissionRoute component={Knowledge} permission={PERMISSIONS.KNOWLEDGE_VIEW} />
-      </Route>
-      <Route path="/knowledge-base">
-        <PermissionRoute component={Knowledge} permission={PERMISSIONS.KNOWLEDGE_VIEW} />
-      </Route>
-      <Route path="/reports">
-        <PermissionRoute component={Reports} permission={PERMISSIONS.REPORTS_VIEW} />
-      </Route>
-      <Route path="/settings">
-        <PermissionRoute component={Settings} permission={PERMISSIONS.SETTINGS_VIEW} />
-      </Route>
-      {/* User Management - both short and long URL formats */}
-      <Route path="/users">
-        <PermissionRoute component={UserManagement} adminOnly />
-      </Route>
-      <Route path="/user-management">
-        <PermissionRoute component={UserManagement} adminOnly />
-      </Route>
-      <Route path="/permissions">
-        <PermissionRoute component={Permissions} adminOnly />
-      </Route>
-      <Route component={NotFound} />
-    </Switch>
+    <Suspense fallback={<PageLoader />}>
+      <Switch>
+        <Route path="/dashboard" component={Dashboard} />
+        <Route path="/clients">
+          <PermissionRoute component={Clients} permission={PERMISSIONS.CLIENTS_VIEW} />
+        </Route>
+        <Route path="/clients/:id">
+          <PermissionRoute component={ClientDetail} permission={PERMISSIONS.CLIENTS_VIEW} />
+        </Route>
+        <Route path="/leads">
+          <PermissionRoute component={Leads} permission={PERMISSIONS.LEADS_VIEW} />
+        </Route>
+        {/* Tax Deadlines - both short and long URL formats */}
+        <Route path="/deadlines">
+          <PermissionRoute component={TaxDeadlines} permission={PERMISSIONS.DEADLINES_VIEW} />
+        </Route>
+        <Route path="/tax-deadlines">
+          <PermissionRoute component={TaxDeadlines} permission={PERMISSIONS.DEADLINES_VIEW} />
+        </Route>
+        <Route path="/appointments">
+          <PermissionRoute component={Appointments} permission={PERMISSIONS.APPOINTMENTS_VIEW} />
+        </Route>
+        <Route path="/payments">
+          <PermissionRoute component={Payments} permission={PERMISSIONS.PAYMENTS_VIEW} />
+        </Route>
+        <Route path="/documents">
+          <PermissionRoute component={Documents} permission={PERMISSIONS.DOCUMENTS_VIEW} />
+        </Route>
+        {/* E-Signatures - both short and long URL formats */}
+        <Route path="/signatures">
+          <PermissionRoute component={ESignatures} permission={PERMISSIONS.SIGNATURES_VIEW} />
+        </Route>
+        <Route path="/e-signatures">
+          <PermissionRoute component={ESignatures} permission={PERMISSIONS.SIGNATURES_VIEW} />
+        </Route>
+        <Route path="/tasks">
+          <PermissionRoute component={Tasks} permission={PERMISSIONS.TASKS_VIEW} />
+        </Route>
+        <Route path="/manager">
+          <PermissionRoute component={Manager} permission={PERMISSIONS.SETTINGS_VIEW} />
+        </Route>
+        {/* Support Tickets - both short and long URL formats */}
+        <Route path="/tickets">
+          <PermissionRoute component={Tickets} permission={PERMISSIONS.SUPPORT_VIEW} />
+        </Route>
+        <Route path="/support-tickets">
+          <PermissionRoute component={Tickets} permission={PERMISSIONS.SUPPORT_VIEW} />
+        </Route>
+        {/* Knowledge Base - both short and long URL formats */}
+        <Route path="/knowledge">
+          <PermissionRoute component={Knowledge} permission={PERMISSIONS.KNOWLEDGE_VIEW} />
+        </Route>
+        <Route path="/knowledge-base">
+          <PermissionRoute component={Knowledge} permission={PERMISSIONS.KNOWLEDGE_VIEW} />
+        </Route>
+        <Route path="/reports">
+          <PermissionRoute component={Reports} permission={PERMISSIONS.REPORTS_VIEW} />
+        </Route>
+        <Route path="/settings">
+          <PermissionRoute component={Settings} permission={PERMISSIONS.SETTINGS_VIEW} />
+        </Route>
+        {/* User Management - both short and long URL formats */}
+        <Route path="/users">
+          <PermissionRoute component={UserManagement} adminOnly />
+        </Route>
+        <Route path="/user-management">
+          <PermissionRoute component={UserManagement} adminOnly />
+        </Route>
+        <Route path="/permissions">
+          <PermissionRoute component={Permissions} adminOnly />
+        </Route>
+        <Route component={NotFound} />
+      </Switch>
+    </Suspense>
   );
 }
 
@@ -349,46 +359,48 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <OfflineIndicator />
-        {isHomePage ? (
-          <HomePage />
-        ) : isPublicPage ? (
-          <Switch>
-            <Route path="/services" component={ServicesPage} />
-            <Route path="/agents" component={AgentsPage} />
-            <Route path="/pricing" component={PricingPage} />
-            <Route path="/about" component={AboutPage} />
-            <Route path="/contact" component={ContactPage} />
-            <Route path="/faq" component={FAQPage} />
-            <Route path="/book-appointment" component={BookAppointmentPage} />
-          </Switch>
-        ) : isAdminLoginRoute ? (
-          <Switch>
-            <Route path="/admin-login" component={AdminLogin} />
-            <Route path="/login" component={AdminLogin} />
-          </Switch>
-        ) : isClientRoute ? (
-          <Switch>
-            <Route path="/client-login" component={ClientLogin} />
-            <Route path="/client-portal" component={ClientPortal} />
-          </Switch>
-        ) : isPasswordResetRoute ? (
-          <Switch>
-            <Route path="/forgot-password" component={ForgotPassword} />
-            <Route path="/reset-password" component={ResetPassword} />
-          </Switch>
-        ) : isRedeemRoute ? (
-          <Switch>
-            <Route path="/redeem-invite" component={RedeemInvite} />
-          </Switch>
-        ) : isRegisterRoute ? (
-          <Switch>
-            <Route path="/register" component={Register} />
-          </Switch>
-        ) : isStaffRoute ? (
-          <AdminLayout />
-        ) : (
-          <AdminLayout />
-        )}
+        <Suspense fallback={<PageLoader />}>
+          {isHomePage ? (
+            <HomePage />
+          ) : isPublicPage ? (
+            <Switch>
+              <Route path="/services" component={ServicesPage} />
+              <Route path="/agents" component={AgentsPage} />
+              <Route path="/pricing" component={PricingPage} />
+              <Route path="/about" component={AboutPage} />
+              <Route path="/contact" component={ContactPage} />
+              <Route path="/faq" component={FAQPage} />
+              <Route path="/book-appointment" component={BookAppointmentPage} />
+            </Switch>
+          ) : isAdminLoginRoute ? (
+            <Switch>
+              <Route path="/admin-login" component={AdminLogin} />
+              <Route path="/login" component={AdminLogin} />
+            </Switch>
+          ) : isClientRoute ? (
+            <Switch>
+              <Route path="/client-login" component={ClientLogin} />
+              <Route path="/client-portal" component={ClientPortal} />
+            </Switch>
+          ) : isPasswordResetRoute ? (
+            <Switch>
+              <Route path="/forgot-password" component={ForgotPassword} />
+              <Route path="/reset-password" component={ResetPassword} />
+            </Switch>
+          ) : isRedeemRoute ? (
+            <Switch>
+              <Route path="/redeem-invite" component={RedeemInvite} />
+            </Switch>
+          ) : isRegisterRoute ? (
+            <Switch>
+              <Route path="/register" component={Register} />
+            </Switch>
+          ) : isStaffRoute ? (
+            <AdminLayout />
+          ) : (
+            <AdminLayout />
+          )}
+        </Suspense>
         <PWAInstallPrompt />
         <Toaster />
       </TooltipProvider>

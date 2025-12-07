@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { ClientsTable } from "@/components/ClientsTable";
 import { Button } from "@/components/ui/button";
@@ -92,11 +92,20 @@ export default function Clients() {
   const [activeFilter, setActiveFilter] = useState<StatusFilter>("all");
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [newClientForm, setNewClientForm] = useState<NewClientForm>(initialFormState);
   
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+  
   const { data: users, isLoading: usersLoading, error: usersError } = useQuery<User[]>({
     queryKey: ["/api/users"],
+    staleTime: 60000,
   });
 
   const { data: taxFilings, isLoading: filingsLoading } = useQuery<TaxFiling[]>({
@@ -108,6 +117,7 @@ export default function Clients() {
       if (!res.ok) return [];
       return res.json();
     },
+    staleTime: 60000,
   });
 
   const addClientMutation = useMutation({
@@ -180,9 +190,9 @@ export default function Clients() {
   }, [users, filingsByClientId, selectedYear]);
 
   const searchedClients = useMemo(() => {
-    if (!searchQuery.trim()) return allClients;
+    if (!debouncedSearch.trim()) return allClients;
     
-    const query = searchQuery.toLowerCase().trim();
+    const query = debouncedSearch.toLowerCase().trim();
     return allClients.filter(client => 
       client.name.toLowerCase().includes(query) ||
       client.email.toLowerCase().includes(query) ||
@@ -190,7 +200,7 @@ export default function Clients() {
       (client.city && client.city.toLowerCase().includes(query)) ||
       (client.state && client.state.toLowerCase().includes(query))
     );
-  }, [allClients, searchQuery]);
+  }, [allClients, debouncedSearch]);
 
   const clients = activeFilter === "all" 
     ? searchedClients 
