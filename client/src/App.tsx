@@ -14,6 +14,7 @@ import { Loader2, Mail } from "lucide-react";
 import { SplashScreen } from "@/components/SplashScreen";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
+import { NavigationProgress } from "@/components/NavigationProgress";
 import { usePWA } from "@/hooks/usePWA";
 
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
@@ -366,6 +367,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
+        <NavigationProgress />
         <OfflineIndicator />
         <Suspense fallback={<PageLoader />}>
           {isHomePage ? (
