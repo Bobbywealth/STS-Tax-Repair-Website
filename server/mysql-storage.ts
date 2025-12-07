@@ -2,6 +2,7 @@ import {
   type User, 
   type UpsertUser,
   type UserRole,
+  type ThemePreference,
   type TaxDeadline,
   type InsertTaxDeadline,
   type Appointment,
@@ -41,6 +42,8 @@ import {
   type InsertEmailVerificationToken,
   type Office,
   type InsertOffice,
+  type OfficeBranding,
+  type InsertOfficeBranding,
   type AgentClientAssignment,
   type InsertAgentClientAssignment,
   type TicketMessage,
@@ -66,6 +69,7 @@ import {
   passwordResetTokens as passwordResetTokensTable,
   emailVerificationTokens as emailVerificationTokensTable,
   offices as officesTable,
+  officeBranding as officeBrandingTable,
   agentClientAssignments as agentAssignmentsTable,
   ticketMessages as ticketMessagesTable,
   auditLogs as auditLogsTable
@@ -1803,6 +1807,68 @@ export class MySQLStorage implements IStorage {
       .select()
       .from(paymentsTable)
       .where(eq(paymentsTable.id, id));
+    return result;
+  }
+
+  // Office methods
+  async getOffice(id: string): Promise<Office | undefined> {
+    const [office] = await mysqlDb.select().from(officesTable).where(eq(officesTable.id, id));
+    return office;
+  }
+
+  async getOfficeBySlug(slug: string): Promise<Office | undefined> {
+    const [office] = await mysqlDb.select().from(officesTable).where(eq(officesTable.slug, slug));
+    return office;
+  }
+
+  async getOffices(): Promise<Office[]> {
+    return await mysqlDb.select().from(officesTable).orderBy(asc(officesTable.name));
+  }
+
+  async createOffice(office: InsertOffice): Promise<Office> {
+    const id = randomUUID();
+    await mysqlDb.insert(officesTable).values({ id, ...office });
+    const [result] = await mysqlDb.select().from(officesTable).where(eq(officesTable.id, id));
+    return result;
+  }
+
+  async updateOffice(id: string, office: Partial<InsertOffice>): Promise<Office | undefined> {
+    await mysqlDb.update(officesTable).set(office).where(eq(officesTable.id, id));
+    const [result] = await mysqlDb.select().from(officesTable).where(eq(officesTable.id, id));
+    return result;
+  }
+
+  // Office Branding methods (White-labeling)
+  async getOfficeBranding(officeId: string): Promise<OfficeBranding | undefined> {
+    const [branding] = await mysqlDb.select().from(officeBrandingTable).where(eq(officeBrandingTable.officeId, officeId));
+    return branding;
+  }
+
+  async createOfficeBranding(branding: InsertOfficeBranding): Promise<OfficeBranding> {
+    const id = randomUUID();
+    await mysqlDb.insert(officeBrandingTable).values({ id, ...branding });
+    const [result] = await mysqlDb.select().from(officeBrandingTable).where(eq(officeBrandingTable.id, id));
+    return result;
+  }
+
+  async updateOfficeBranding(officeId: string, branding: Partial<InsertOfficeBranding>): Promise<OfficeBranding | undefined> {
+    await mysqlDb.update(officeBrandingTable).set({
+      ...branding,
+      updatedAt: new Date()
+    }).where(eq(officeBrandingTable.officeId, officeId));
+    const [result] = await mysqlDb.select().from(officeBrandingTable).where(eq(officeBrandingTable.officeId, officeId));
+    return result;
+  }
+
+  async deleteOfficeBranding(officeId: string): Promise<boolean> {
+    const result = await mysqlDb.delete(officeBrandingTable).where(eq(officeBrandingTable.officeId, officeId));
+    return getAffectedRows(result) > 0;
+  }
+
+  // User theme preference
+  async updateUserThemePreference(userId: string, theme: ThemePreference): Promise<User | undefined> {
+    await mysqlDb.update(usersTable).set({ themePreference: theme }).where(eq(usersTable.id, userId));
+    const [result] = await mysqlDb.select().from(usersTable).where(eq(usersTable.id, userId));
     return result;
   }
 }

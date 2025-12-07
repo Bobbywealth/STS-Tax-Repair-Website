@@ -2,6 +2,7 @@ import {
   type User, 
   type UpsertUser,
   type UserRole,
+  type ThemePreference,
   type TaxDeadline,
   type InsertTaxDeadline,
   type Appointment,
@@ -38,6 +39,10 @@ import {
   type KnowledgeBase,
   type InsertKnowledgeBase,
   type EmailVerificationToken,
+  type Office,
+  type InsertOffice,
+  type OfficeBranding,
+  type InsertOfficeBranding,
 } from "@shared/mysql-schema";
 
 export interface IStorage {
@@ -206,6 +211,22 @@ export interface IStorage {
   createKnowledgeBaseArticle(article: InsertKnowledgeBase): Promise<KnowledgeBase>;
   updateKnowledgeBaseArticle(id: string, article: Partial<InsertKnowledgeBase>): Promise<KnowledgeBase | undefined>;
   deleteKnowledgeBaseArticle(id: string): Promise<boolean>;
+
+  // Offices
+  getOffice(id: string): Promise<Office | undefined>;
+  getOfficeBySlug(slug: string): Promise<Office | undefined>;
+  getOffices(): Promise<Office[]>;
+  createOffice(office: InsertOffice): Promise<Office>;
+  updateOffice(id: string, office: Partial<InsertOffice>): Promise<Office | undefined>;
+  
+  // Office Branding (White-labeling)
+  getOfficeBranding(officeId: string): Promise<OfficeBranding | undefined>;
+  createOfficeBranding(branding: InsertOfficeBranding): Promise<OfficeBranding>;
+  updateOfficeBranding(officeId: string, branding: Partial<InsertOfficeBranding>): Promise<OfficeBranding | undefined>;
+  deleteOfficeBranding(officeId: string): Promise<boolean>;
+  
+  // User theme preference
+  updateUserThemePreference(userId: string, theme: ThemePreference): Promise<User | undefined>;
 }
 
 // MySQL storage connected to cPanel database
