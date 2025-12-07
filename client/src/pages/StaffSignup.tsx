@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -67,6 +67,52 @@ export default function StaffSignup() {
   const { toast } = useToast();
   const [submitted, setSubmitted] = useState(false);
   const { branding } = useBranding();
+
+  // Set page title and meta tags for proper social media sharing
+  useEffect(() => {
+    const title = "Join Our Team - STS TaxRepair Staff Portal";
+    const description = "Become part of STS TaxRepair's expert team. Apply to join as a tax agent or request admin access to our staff portal.";
+    const imageUrl = "https://ststaxrepair.org/icons/icon-512x512.png";
+    const pageUrl = "https://ststaxrepair.org/staff-signup";
+
+    document.title = title;
+
+    // Update or create Open Graph meta tags
+    const updateMetaTag = (property: string, content: string) => {
+      let tag = document.querySelector(`meta[property="${property}"]`);
+      if (!tag) {
+        tag = document.createElement("meta");
+        tag.setAttribute("property", property);
+        document.head.appendChild(tag);
+      }
+      tag.setAttribute("content", content);
+    };
+
+    const updateNameMetaTag = (name: string, content: string) => {
+      let tag = document.querySelector(`meta[name="${name}"]`);
+      if (!tag) {
+        tag = document.createElement("meta");
+        tag.setAttribute("name", name);
+        document.head.appendChild(tag);
+      }
+      tag.setAttribute("content", content);
+    };
+
+    updateMetaTag("og:title", title);
+    updateMetaTag("og:description", description);
+    updateMetaTag("og:image", imageUrl);
+    updateMetaTag("og:url", pageUrl);
+    updateMetaTag("og:type", "website");
+    updateNameMetaTag("twitter:title", title);
+    updateNameMetaTag("twitter:description", description);
+    updateNameMetaTag("twitter:image", imageUrl);
+    updateNameMetaTag("description", description);
+
+    // Cleanup: restore default tags on unmount
+    return () => {
+      document.title = "STS TaxRepair - Expert Tax Refund Solutions | Maximum Refund Guaranteed";
+    };
+  }, []);
 
   const { data: offices = [] } = useQuery<Office[]>({
     queryKey: ["/api/offices"],
