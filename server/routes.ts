@@ -1289,6 +1289,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update user profile (admin/staff can update any client)
+  app.patch("/api/users/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const currentUserId = req.userId || req.user?.claims?.sub;
+      if (!currentUserId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const currentUser = await storage.getUser(currentUserId);
+      if (!currentUser) {
+        return res.status(401).json({ error: "User not found" });
+      }
+      
+      // Only admin, tax_office, or agent can update client profiles
+      // Or users can update their own profile
+      const targetUserId = req.params.id;
+      const isAdmin = currentUser.role === "admin";
+      const isStaff = currentUser.role === "tax_office" || currentUser.role === "agent";
+      const isSelf = currentUserId === targetUserId;
+      
+      if (!isAdmin && !isStaff && !isSelf) {
+        return res.status(403).json({ error: "Not authorized to update this profile" });
+      }
+      
+      const { firstName, lastName, email, phone, address, city, state, zipCode } = req.body;
+      
+      const user = await storage.updateUser(targetUserId, {
+        firstName,
+        lastName,
+        email,
+        phone,
+        address,
+        city,
+        state,
+        zipCode
+      });
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      res.json(user);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Get users by role - admin only
   app.get(
     "/api/users/role/:role",
