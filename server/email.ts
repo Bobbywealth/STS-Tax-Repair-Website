@@ -111,6 +111,7 @@ function getEmailTemplate(type: EmailType, data: Record<string, any>): { subject
 
   const header = `
     <div class="header">
+      <img src="https://ststaxrepair.org/assets/sts-logo.png" alt="STS Tax Repair Logo" style="max-width: 120px; margin-bottom: 10px;" />
       <h1>STS Tax Repair</h1>
       <p style="color: #ffffff; margin: 5px 0 0 0;">Professional Tax Services</p>
     </div>
@@ -121,6 +122,11 @@ function getEmailTemplate(type: EmailType, data: Record<string, any>): { subject
       <p>STS Tax Repair | Professional Tax Services</p>
       <p>Phone: (555) 123-4567 | Email: support@ststaxrepair.org</p>
       <p style="margin-top: 15px;">This is an automated message. Please do not reply directly to this email.</p>
+      <div style="margin-top: 15px; padding: 12px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; text-align: left;">
+        <p style="margin: 0; font-size: 12px; color: #856404;">
+          <strong>Can't find this email?</strong> Please check your Spam/Junk folder. To ensure you receive future emails from STS Tax Repair, add <strong>ststaxrepair@gmail.com</strong> to your contacts.
+        </p>
+      </div>
     </div>
   `;
 
