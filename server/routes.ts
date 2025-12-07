@@ -56,8 +56,10 @@ import {
   sendSignatureCompletedEmail,
   sendSupportTicketCreatedEmail,
   sendSupportTicketResponseEmail,
-  generateSecureToken 
+  generateSecureToken,
+  sendEmail
 } from "./email";
+import { randomUUID } from "crypto";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Password reset endpoint - works for both Replit and Render
@@ -4842,11 +4844,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Log branding change
       await mysqlStorage.createAuditLog({
         userId,
-        action: 'settings.update',
-        targetType: 'office_branding',
-        targetId: id,
-        previousValue: null,
-        newValue: JSON.stringify(brandingData),
+        action: 'branding.update',
+        resourceType: 'office_branding',
+        resourceId: id,
+        details: brandingData,
         ipAddress: req.ip,
         userAgent: req.headers['user-agent']
       });
@@ -4879,11 +4880,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Log branding reset
       await mysqlStorage.createAuditLog({
         userId,
-        action: 'settings.update',
-        targetType: 'office_branding',
-        targetId: id,
-        previousValue: 'custom',
-        newValue: 'reset_to_defaults',
+        action: 'branding.update',
+        resourceType: 'office_branding',
+        resourceId: id,
+        details: { action: 'reset_to_defaults' },
         ipAddress: req.ip,
         userAgent: req.headers['user-agent']
       });
@@ -5024,6 +5024,468 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(office);
     } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ===========================================
+  // STAFF REQUESTS ENDPOINTS
+  // ===========================================
+
+  // Public: Submit staff sign-up request (no auth required)
+  app.post("/api/staff-requests", async (req, res) => {
+    try {
+      const { firstName, lastName, email, phone, roleRequested, officeId, reason, experience } = req.body;
+      
+      // Validate required fields
+      if (!firstName || !lastName || !email || !roleRequested) {
+        return res.status(400).json({ 
+          error: 'First name, last name, email, and role are required' 
+        });
+      }
+      
+      // Validate role
+      const validRoles = ['agent', 'tax_office', 'admin'];
+      if (!validRoles.includes(roleRequested)) {
+        return res.status(400).json({ error: 'Invalid role requested' });
+      }
+      
+      // Check if email already exists as user
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ 
+          error: 'An account with this email already exists' 
+        });
+      }
+      
+      // Check for pending request with same email
+      const existingRequest = await mysqlStorage.getStaffRequestByEmail(email);
+      if (existingRequest && existingRequest.status === 'pending') {
+        return res.status(400).json({ 
+          error: 'A pending request with this email already exists' 
+        });
+      }
+      
+      // Create the request
+      const staffRequest = await mysqlStorage.createStaffRequest({
+        firstName,
+        lastName,
+        email,
+        phone: phone || null,
+        roleRequested,
+        officeId: officeId || null,
+        reason: reason || null,
+        experience: experience || null
+      });
+      
+      // Log the request submission
+      await mysqlStorage.createAuditLog({
+        action: 'staff_request.submit',
+        userId: 'system',
+        userName: `${firstName} ${lastName}`,
+        userRole: 'client',
+        officeId: officeId || null,
+        resourceType: 'staff_request',
+        resourceId: staffRequest.id,
+        details: { email, roleRequested },
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+      
+      res.status(201).json({ 
+        success: true,
+        message: 'Your request has been submitted. We will review it and contact you soon.',
+        id: staffRequest.id 
+      });
+    } catch (error: any) {
+      console.error('Error creating staff request:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get all staff requests (admin only)
+  app.get("/api/staff-requests", isAuthenticated, requireAdmin, async (req: any, res) => {
+    try {
+      const { status, officeId, limit, offset } = req.query;
+      
+      const requests = await mysqlStorage.getStaffRequests({
+        status: status as any,
+        officeId: officeId as string,
+        limit: limit ? parseInt(limit as string) : undefined,
+        offset: offset ? parseInt(offset as string) : undefined
+      });
+      
+      res.json(requests);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get staff request count (admin only)
+  app.get("/api/staff-requests/count", isAuthenticated, requireAdmin, async (req: any, res) => {
+    try {
+      const { status } = req.query;
+      const count = await mysqlStorage.getStaffRequestsCount(status as any);
+      res.json({ count });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get single staff request (admin only)
+  app.get("/api/staff-requests/:id", isAuthenticated, requireAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const request = await mysqlStorage.getStaffRequest(id);
+      
+      if (!request) {
+        return res.status(404).json({ error: 'Staff request not found' });
+      }
+      
+      res.json(request);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Approve or reject staff request (admin only)
+  app.patch("/api/staff-requests/:id", isAuthenticated, requireAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { status, reviewNotes } = req.body;
+      const adminId = req.userId || req.user?.claims?.sub;
+      
+      if (!status || !['approved', 'rejected'].includes(status)) {
+        return res.status(400).json({ error: 'Status must be approved or rejected' });
+      }
+      
+      const request = await mysqlStorage.getStaffRequest(id);
+      if (!request) {
+        return res.status(404).json({ error: 'Staff request not found' });
+      }
+      
+      if (request.status !== 'pending') {
+        return res.status(400).json({ error: 'This request has already been processed' });
+      }
+      
+      // Update the request status
+      const updatedRequest = await mysqlStorage.updateStaffRequestStatus(
+        id, 
+        status, 
+        adminId, 
+        reviewNotes
+      );
+      
+      // If approved, create user account with email invitation
+      if (status === 'approved') {
+        // Generate a random password (user will need to reset)
+        const tempPassword = randomUUID().substring(0, 12);
+        const hashedPassword = await bcrypt.hash(tempPassword, 10);
+        
+        // Create the user
+        await storage.upsertUser({
+          email: request.email,
+          firstName: request.firstName,
+          lastName: request.lastName,
+          phone: request.phone || undefined,
+          role: request.roleRequested,
+          officeId: request.officeId || undefined,
+          passwordHash: hashedPassword,
+          isActive: true
+        });
+        
+        // Send welcome email with password reset link
+        try {
+          const resetToken = randomUUID();
+          const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000); // 48 hours
+          await storage.createPasswordResetToken(request.email, resetToken, expiresAt);
+          
+          const baseUrl = req.headers.origin || 'https://ststaxrepair.org';
+          const resetLink = `${baseUrl}/reset-password?token=${resetToken}`;
+          
+          // Use the welcome email helper if available, or basic notification
+          const emailHtml = `
+            <h2>Welcome to STS TaxRepair!</h2>
+            <p>Hi ${request.firstName},</p>
+            <p>Your staff account request has been approved! You now have ${request.roleRequested} access to the system.</p>
+            <p>Please set your password by clicking the link below:</p>
+            <p><a href="${resetLink}" style="background-color:#1a4d2e;color:white;padding:10px 20px;text-decoration:none;border-radius:4px;">Set Password</a></p>
+            <p>This link expires in 48 hours.</p>
+            <p>Best regards,<br>STS TaxRepair Team</p>
+          `;
+          
+          await sendEmail({
+            to: request.email,
+            subject: 'Your STS TaxRepair Staff Account Has Been Approved',
+            html: emailHtml
+          });
+        } catch (emailError) {
+          console.error('Error sending approval email:', emailError);
+        }
+      } else {
+        // Send rejection email
+        try {
+          const emailHtml = `
+            <h2>STS TaxRepair Staff Request Update</h2>
+            <p>Hi ${request.firstName},</p>
+            <p>Thank you for your interest in joining our team.</p>
+            <p>After reviewing your application, we regret to inform you that we are unable to approve your staff account request at this time.</p>
+            ${reviewNotes ? `<p>Reviewer notes: ${reviewNotes}</p>` : ''}
+            <p>If you have any questions, please contact our support team.</p>
+            <p>Best regards,<br>STS TaxRepair Team</p>
+          `;
+          
+          await sendEmail({
+            to: request.email,
+            subject: 'STS TaxRepair Staff Request Update',
+            html: emailHtml
+          });
+        } catch (emailError) {
+          console.error('Error sending rejection email:', emailError);
+        }
+      }
+      
+      // Log the decision
+      await mysqlStorage.createAuditLog({
+        action: status === 'approved' ? 'staff_request.approve' : 'staff_request.reject',
+        userId: adminId,
+        userName: null,
+        userRole: 'admin',
+        officeId: request.officeId,
+        resourceType: 'staff_request',
+        resourceId: id,
+        details: { 
+          email: request.email, 
+          roleRequested: request.roleRequested,
+          reviewNotes 
+        },
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+      
+      res.json(updatedRequest);
+    } catch (error: any) {
+      console.error('Error processing staff request:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ===========================================
+  // AUDIT LOGS / ACTIVITY ENDPOINTS
+  // ===========================================
+
+  // Get audit logs (for activity feed)
+  app.get("/api/audit-logs", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId || req.user?.claims?.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(401).json({ error: 'User not found' });
+      }
+      
+      const { action, resourceType, clientId, limit, offset } = req.query;
+      
+      // Scope query based on user role
+      let options: any = {
+        action: action as string,
+        resourceType: resourceType as string,
+        clientId: clientId as string,
+        limit: limit ? parseInt(limit as string) : 50,
+        offset: offset ? parseInt(offset as string) : 0
+      };
+      
+      // Tax Office users can only see their office's logs
+      if (user.role === 'tax_office') {
+        options.officeId = user.officeId;
+      }
+      // Agents can only see logs for their assigned clients
+      else if (user.role === 'agent') {
+        const assignments = await mysqlStorage.getAgentAssignments(userId);
+        const clientIds = assignments.map((a: any) => a.clientId);
+        
+        if (clientIds.length === 0) {
+          return res.json([]);
+        }
+        
+        // Note: For agents, we filter client-related logs only
+        options.clientId = clientIds[0]; // Limited scope for agents
+      }
+      // Clients can only see their own logs
+      else if (user.role === 'client') {
+        options.clientId = userId;
+      }
+      // Admins can see all
+      
+      const logs = await mysqlStorage.getAuditLogs(options);
+      res.json(logs);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ===========================================
+  // REPORTS / METRICS ENDPOINTS
+  // ===========================================
+
+  // Get comprehensive CRM metrics (for reports page)
+  app.get("/api/reports/metrics", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId || req.user?.claims?.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(401).json({ error: 'User not found' });
+      }
+      
+      // Only staff can access reports
+      if (user.role === 'client') {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+      
+      // Build scope options based on role
+      let scopeOptions: any = { isGlobal: user.role === 'admin' };
+      
+      if (user.role === 'tax_office') {
+        scopeOptions.officeId = user.officeId;
+      } else if (user.role === 'agent') {
+        const assignments = await mysqlStorage.getAgentAssignments(userId);
+        scopeOptions.agentClientIds = assignments.map((a: any) => a.clientId);
+      }
+      
+      // Fetch all metrics data
+      const [
+        clients, 
+        payments, 
+        appointments, 
+        tasks, 
+        leads, 
+        taxFilings,
+        tickets
+      ] = await Promise.all([
+        mysqlStorage.getClientsByScope(scopeOptions),
+        mysqlStorage.getPaymentsByScope(scopeOptions),
+        storage.getAppointments(),
+        storage.getTasks(),
+        storage.getLeads(),
+        storage.getTaxFilings(),
+        mysqlStorage.getTicketsByScope(scopeOptions)
+      ]);
+      
+      // Calculate metrics
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const startOfYear = new Date(now.getFullYear(), 0, 1);
+      
+      // Client metrics
+      const totalClients = clients.length;
+      const newClientsThisMonth = clients.filter(c => 
+        c.createdAt && new Date(c.createdAt) >= startOfMonth
+      ).length;
+      const activeClients = clients.filter(c => c.isActive).length;
+      
+      // Payment metrics
+      const totalPayments = payments.reduce((sum, p) => sum + parseFloat(p.serviceFee?.toString() || '0'), 0);
+      const paymentsThisMonth = payments.filter(p => 
+        p.createdAt && new Date(p.createdAt) >= startOfMonth
+      );
+      const revenueThisMonth = paymentsThisMonth.reduce(
+        (sum, p) => sum + parseFloat(p.serviceFee?.toString() || '0'), 0
+      );
+      const paymentsThisYear = payments.filter(p => 
+        p.createdAt && new Date(p.createdAt) >= startOfYear
+      );
+      const revenueThisYear = paymentsThisYear.reduce(
+        (sum, p) => sum + parseFloat(p.serviceFee?.toString() || '0'), 0
+      );
+      
+      // Task metrics
+      const totalTasks = tasks.length;
+      const completedTasks = tasks.filter(t => t.status === 'completed').length;
+      const pendingTasks = tasks.filter(t => t.status === 'pending').length;
+      const overdueTasks = tasks.filter(t => 
+        t.status === 'pending' && t.dueDate && new Date(t.dueDate) < now
+      ).length;
+      
+      // Lead metrics
+      const totalLeads = leads.length;
+      const newLeads = leads.filter(l => l.status === 'new').length;
+      const convertedLeads = leads.filter(l => l.status === 'converted').length;
+      const conversionRate = totalLeads > 0 ? (convertedLeads / totalLeads * 100).toFixed(1) : 0;
+      
+      // Tax filing metrics
+      const totalFilings = taxFilings.length;
+      const filingsByStatus = {
+        new: taxFilings.filter(f => f.status === 'new').length,
+        documents_pending: taxFilings.filter(f => f.status === 'documents_pending').length,
+        review: taxFilings.filter(f => f.status === 'review').length,
+        filed: taxFilings.filter(f => f.status === 'filed').length,
+        accepted: taxFilings.filter(f => f.status === 'accepted').length,
+        approved: taxFilings.filter(f => f.status === 'approved').length,
+        paid: taxFilings.filter(f => f.status === 'paid').length
+      };
+      const totalRefunds = taxFilings.reduce((sum, f) => {
+        const estimated = parseFloat(f.estimatedRefund?.toString() || '0');
+        const actual = parseFloat(f.actualRefund?.toString() || '0');
+        return sum + (actual > 0 ? actual : estimated);
+      }, 0);
+      
+      // Ticket metrics
+      const totalTickets = tickets.length;
+      const openTickets = tickets.filter(t => t.status === 'open' || t.status === 'in_progress').length;
+      const resolvedTickets = tickets.filter(t => t.status === 'resolved' || t.status === 'closed').length;
+      
+      // Appointment metrics
+      const totalAppointments = appointments.length;
+      const upcomingAppointments = appointments.filter(a => 
+        a.appointmentDate && new Date(a.appointmentDate) >= now && a.status !== 'cancelled'
+      ).length;
+      const completedAppointments = appointments.filter(a => a.status === 'completed').length;
+      
+      res.json({
+        clients: {
+          total: totalClients,
+          newThisMonth: newClientsThisMonth,
+          active: activeClients
+        },
+        revenue: {
+          total: totalPayments,
+          thisMonth: revenueThisMonth,
+          thisYear: revenueThisYear,
+          paymentCount: payments.length
+        },
+        tasks: {
+          total: totalTasks,
+          completed: completedTasks,
+          pending: pendingTasks,
+          overdue: overdueTasks,
+          completionRate: totalTasks > 0 ? (completedTasks / totalTasks * 100).toFixed(1) : 0
+        },
+        leads: {
+          total: totalLeads,
+          new: newLeads,
+          converted: convertedLeads,
+          conversionRate
+        },
+        taxFilings: {
+          total: totalFilings,
+          byStatus: filingsByStatus,
+          totalRefunds
+        },
+        tickets: {
+          total: totalTickets,
+          open: openTickets,
+          resolved: resolvedTickets,
+          resolutionRate: totalTickets > 0 ? (resolvedTickets / totalTickets * 100).toFixed(1) : 0
+        },
+        appointments: {
+          total: totalAppointments,
+          upcoming: upcomingAppointments,
+          completed: completedAppointments
+        }
+      });
+    } catch (error: any) {
+      console.error('Error fetching report metrics:', error);
       res.status(500).json({ error: error.message });
     }
   });

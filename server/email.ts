@@ -67,7 +67,7 @@ interface SendEmailParams {
   branding?: OfficeBranding;
 }
 
-async function sendEmail(params: SendEmailParams): Promise<EmailResult> {
+export async function sendEmail(params: SendEmailParams): Promise<EmailResult> {
   const fromName = params.branding?.replyToName || FROM_NAME;
   
   console.log(`[EMAIL] Attempting to send email to: ${params.to}, subject: ${params.subject}`);
@@ -1075,4 +1075,4 @@ export async function sendAppointmentReminderEmail(
   });
 }
 
-export { sendEmail, getEmailTemplate };
+export { getEmailTemplate };
