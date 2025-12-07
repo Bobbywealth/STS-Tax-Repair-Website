@@ -2029,9 +2029,13 @@ export class MySQLStorage implements IStorage {
       .insert(notificationsTable)
       .values({
         id,
-        ...notification,
-        isRead: false,
-        createdAt: new Date()
+        userId: notification.userId,
+        type: notification.type,
+        title: notification.title,
+        message: notification.message,
+        resourceType: notification.resourceType || null,
+        resourceId: notification.resourceId || null,
+        link: notification.link || null
       });
     const [result] = await mysqlDb
       .select()

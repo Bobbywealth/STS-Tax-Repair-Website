@@ -5570,6 +5570,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ===========================================
+  // NOTIFICATIONS ENDPOINTS
+  // ===========================================
+
+  // Get notifications for the current user
+  app.get("/api/notifications", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId || req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const unreadOnly = req.query.unreadOnly === 'true';
+      const type = req.query.type;
+      const limit = parseInt(req.query.limit) || 50;
+      const offset = parseInt(req.query.offset) || 0;
+
+      const notifications = await mysqlStorage.getNotifications(userId, {
+        unreadOnly,
+        type,
+        limit,
+        offset
+      });
+
+      res.json(notifications);
+    } catch (error: any) {
+      console.error('Error fetching notifications:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get unread notification count for the current user
+  app.get("/api/notifications/count", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId || req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const count = await mysqlStorage.getUnreadNotificationCount(userId);
+      res.json({ count });
+    } catch (error: any) {
+      console.error('Error fetching notification count:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Mark a notification as read
+  app.patch("/api/notifications/:id/read", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId || req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const { id } = req.params;
+      const notification = await mysqlStorage.markNotificationAsRead(id);
+      
+      if (!notification) {
+        return res.status(404).json({ error: "Notification not found" });
+      }
+
+      res.json(notification);
+    } catch (error: any) {
+      console.error('Error marking notification as read:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Mark all notifications as read
+  app.patch("/api/notifications/read-all", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId || req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      await mysqlStorage.markAllNotificationsAsRead(userId);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error marking all notifications as read:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Delete a notification
+  app.delete("/api/notifications/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId || req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const { id } = req.params;
+      await mysqlStorage.deleteNotification(id);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error deleting notification:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
