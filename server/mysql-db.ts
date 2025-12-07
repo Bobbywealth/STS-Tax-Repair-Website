@@ -499,6 +499,127 @@ export async function runMySQLMigrations(): Promise<void> {
       console.log('theme_preference column added successfully!');
     }
     
+    // Add office_id column to users table for Tax Office tenant scoping
+    const [officeIdColumn] = await connection.query(
+      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'office_id'`,
+      [dbName]
+    );
+    
+    if (Array.isArray(officeIdColumn) && officeIdColumn.length === 0) {
+      console.log('Adding office_id column to users table...');
+      await connection.query(`ALTER TABLE users ADD COLUMN office_id VARCHAR(36) NULL`);
+      await connection.query(`ALTER TABLE users ADD INDEX idx_users_office (office_id)`);
+      console.log('office_id column added successfully!');
+    }
+    
+    // Create staff_requests table for staff signup workflow
+    const [staffRequestsTable] = await connection.query(
+      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'staff_requests'`,
+      [dbName]
+    );
+    
+    if (Array.isArray(staffRequestsTable) && staffRequestsTable.length === 0) {
+      console.log('Creating staff_requests table...');
+      await connection.query(`
+        CREATE TABLE staff_requests (
+          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+          first_name VARCHAR(100) NOT NULL,
+          last_name VARCHAR(100) NOT NULL,
+          email VARCHAR(255) NOT NULL,
+          phone VARCHAR(30),
+          role_requested VARCHAR(20) NOT NULL,
+          office_id VARCHAR(36),
+          reason TEXT,
+          experience TEXT,
+          status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+          reviewed_by VARCHAR(36),
+          reviewed_at TIMESTAMP NULL,
+          review_notes TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_staff_requests_email (email),
+          INDEX idx_staff_requests_status (status),
+          INDEX idx_staff_requests_office (office_id)
+        )
+      `);
+      console.log('staff_requests table created successfully!');
+    } else {
+      // Fix column name if it was created with wrong name
+      const [reviewedByColumn] = await connection.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'staff_requests' AND COLUMN_NAME = 'reviewed_by'`,
+        [dbName]
+      );
+      
+      if (Array.isArray(reviewedByColumn) && reviewedByColumn.length === 0) {
+        // Check if the old column name exists
+        const [oldColumn] = await connection.query(
+          `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+           WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'staff_requests' AND COLUMN_NAME = 'reviewed_by_user_id'`,
+          [dbName]
+        );
+        
+        if (Array.isArray(oldColumn) && oldColumn.length > 0) {
+          console.log('Renaming reviewed_by_user_id column to reviewed_by in staff_requests table...');
+          await connection.query(`ALTER TABLE staff_requests CHANGE reviewed_by_user_id reviewed_by VARCHAR(36)`);
+          console.log('Column renamed successfully!');
+        } else {
+          console.log('Adding reviewed_by column to staff_requests table...');
+          await connection.query(`ALTER TABLE staff_requests ADD COLUMN reviewed_by VARCHAR(36) NULL`);
+          console.log('reviewed_by column added successfully!');
+        }
+      }
+    }
+    
+    // Create audit_logs table for activity logging
+    const [auditLogsTable] = await connection.query(
+      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'audit_logs'`,
+      [dbName]
+    );
+    
+    if (Array.isArray(auditLogsTable) && auditLogsTable.length === 0) {
+      console.log('Creating audit_logs table...');
+      await connection.query(`
+        CREATE TABLE audit_logs (
+          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+          action VARCHAR(100) NOT NULL,
+          resource_type VARCHAR(50),
+          resource_id VARCHAR(36),
+          user_id VARCHAR(36) NOT NULL,
+          user_name VARCHAR(255),
+          user_role VARCHAR(20),
+          office_id VARCHAR(36),
+          client_id VARCHAR(36),
+          details JSON,
+          ip_address VARCHAR(45),
+          user_agent TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_audit_logs_action (action),
+          INDEX idx_audit_logs_resource (resource_type, resource_id),
+          INDEX idx_audit_logs_user (user_id),
+          INDEX idx_audit_logs_office (office_id),
+          INDEX idx_audit_logs_created (created_at)
+        )
+      `);
+      console.log('audit_logs table created successfully!');
+    } else {
+      // Add client_id column if missing
+      const [clientIdColumn] = await connection.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'audit_logs' AND COLUMN_NAME = 'client_id'`,
+        [dbName]
+      );
+      
+      if (Array.isArray(clientIdColumn) && clientIdColumn.length === 0) {
+        console.log('Adding client_id column to audit_logs table...');
+        await connection.query(`ALTER TABLE audit_logs ADD COLUMN client_id VARCHAR(36) NULL`);
+        console.log('client_id column added successfully!');
+      }
+    }
+    
     // Create office_branding table for Tax Office white-labeling
     const [officeBrandingTable] = await connection.query(
       `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 

@@ -5,11 +5,12 @@ import { Progress } from "@/components/ui/progress";
 import { 
   Users, FileText, UserPlus, ClipboardList, Loader2, 
   TrendingUp, CheckCircle2, AlertCircle, Calendar,
-  ArrowRight, Sparkles, Clock, Zap
+  ArrowRight, Sparkles, Clock, Zap, Activity
 } from "lucide-react";
 import { Link } from "wouter";
 import { cn } from "@/lib/utils";
-import type { User, DocumentVersion } from "@shared/mysql-schema";
+import type { User, DocumentVersion, AuditLog } from "@shared/mysql-schema";
+import { format, formatDistanceToNow } from "date-fns";
 
 function FloatingParticles() {
   return (
@@ -119,6 +120,10 @@ export default function Dashboard() {
 
   const { data: tasks, isLoading: tasksLoading } = useQuery<Task[]>({
     queryKey: ["/api/tasks"],
+  });
+
+  const { data: activityLogs } = useQuery<AuditLog[]>({
+    queryKey: ["/api/audit-logs", { limit: 10 }],
   });
 
   const totalClients = clients?.length || 0;
@@ -636,6 +641,73 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Activity Feed */}
+            <Card className="glass-card border-0 animate-slide-up" style={{ animationDelay: '600ms' }}>
+              <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-emerald-500" />
+                  Recent Activity
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {activityLogs && activityLogs.length > 0 ? (
+                    activityLogs.slice(0, 8).map((log, index) => {
+                      const actionLabels: Record<string, { label: string; color: string; icon: string }> = {
+                        'staff_request.submit': { label: 'Staff Request', color: 'text-blue-400', icon: 'bg-blue-500/20' },
+                        'staff_request.approve': { label: 'Request Approved', color: 'text-green-400', icon: 'bg-green-500/20' },
+                        'staff_request.reject': { label: 'Request Rejected', color: 'text-red-400', icon: 'bg-red-500/20' },
+                        'client.create': { label: 'Client Created', color: 'text-emerald-400', icon: 'bg-emerald-500/20' },
+                        'client.update': { label: 'Client Updated', color: 'text-cyan-400', icon: 'bg-cyan-500/20' },
+                        'document.upload': { label: 'Document Uploaded', color: 'text-violet-400', icon: 'bg-violet-500/20' },
+                        'task.create': { label: 'Task Created', color: 'text-amber-400', icon: 'bg-amber-500/20' },
+                        'task.complete': { label: 'Task Completed', color: 'text-green-400', icon: 'bg-green-500/20' },
+                        'payment.create': { label: 'Payment Received', color: 'text-green-400', icon: 'bg-green-500/20' },
+                        'lead.convert': { label: 'Lead Converted', color: 'text-purple-400', icon: 'bg-purple-500/20' },
+                        'login': { label: 'User Login', color: 'text-slate-400', icon: 'bg-slate-500/20' },
+                      };
+                      const actionConfig = actionLabels[log.action] || { 
+                        label: log.action.replace(/_/g, ' ').replace(/\./g, ' '), 
+                        color: 'text-slate-400', 
+                        icon: 'bg-slate-500/20' 
+                      };
+
+                      return (
+                        <div 
+                          key={log.id} 
+                          className="flex items-start gap-3 p-3 rounded-lg bg-white/5 border border-white/10 animate-fade-in hover:bg-white/10 transition-colors"
+                          style={{ animationDelay: `${700 + index * 50}ms` }}
+                          data-testid={`activity-item-${log.id}`}
+                        >
+                          <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center shrink-0", actionConfig.icon)}>
+                            <Activity className={cn("h-4 w-4", actionConfig.color)} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className={cn("text-sm font-medium", actionConfig.color)}>
+                              {actionConfig.label}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {log.userName || 'System'} 
+                              {log.resourceType && ` - ${log.resourceType}`}
+                            </p>
+                          </div>
+                          <div className="text-xs text-muted-foreground shrink-0">
+                            {log.createdAt && formatDistanceToNow(new Date(log.createdAt), { addSuffix: true })}
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No recent activity</p>
+                      <p className="text-xs mt-1">Activity will appear here as you use the system</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Quick Actions */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
