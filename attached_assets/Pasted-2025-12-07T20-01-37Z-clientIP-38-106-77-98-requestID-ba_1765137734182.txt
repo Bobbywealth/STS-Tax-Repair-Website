@@ -1,0 +1,50 @@
+2025-12-07T20:01:37Z clientIP="38.106.77.98" requestID="ba802abd-1c70-44b2" responseTimeMS=184 responseBytes=1500 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-07T20:01:38Z clientIP="38.106.77.98" requestID="80b9afa8-a99d-4ddd" responseTimeMS=204 responseBytes=383 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-07T20:01:38Z clientIP="38.106.77.98" requestID="6ca46115-0353-40fd" responseTimeMS=41 responseBytes=1555 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-07T20:01:39Z clientIP="38.106.77.98" requestID="02e276b1-eb5f-49a5" responseTimeMS=121 responseBytes=234 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-07T20:01:39Z clientIP="38.106.77.98" requestID="af75908a-a4a9-45f2" responseTimeMS=42 responseBytes=744 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-07T20:01:39Z clientIP="38.106.77.98" requestID="1dbf10b8-cb2a-4198" responseTimeMS=78 responseBytes=321 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-07T20:01:39Z clientIP="38.106.77.98" requestID="716fb09a-c310-43d3" responseTimeMS=40 responseBytes=720 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-07T20:01:39Z clientIP="38.106.77.98" requestID="cb2ce9c5-257a-4415" responseTimeMS=163 responseBytes=234 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-07T20:01:39Z clientIP="38.106.77.98" requestID="e95041c8-5b6d-42d6" responseTimeMS=42 responseBytes=746 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-07T20:01:39Z clientIP="38.106.77.98" requestID="bddf49bb-5594-402b" responseTimeMS=160 responseBytes=339 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-07T20:01:39Z clientIP="38.106.77.98" requestID="4c89753d-3db3-415b" responseTimeMS=44 responseBytes=832 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-07T20:01:39Z clientIP="38.106.77.98" requestID="a6d8772e-0f33-43ed" responseTimeMS=52 responseBytes=732 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-07T20:01:39Z clientIP="38.106.77.98" requestID="dc491083-9a61-4d73" responseTimeMS=85 responseBytes=322 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-07T20:01:39Z clientIP="38.106.77.98" requestID="64ac050e-e023-4b7f" responseTimeMS=41 responseBytes=739 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-07T20:01:39Z clientIP="38.106.77.98" requestID="c2991b7e-ea17-42e8" responseTimeMS=78 responseBytes=321 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-07T20:01:39Z clientIP="38.106.77.98" requestID="b14adbc0-3332-4741" responseTimeMS=83 responseBytes=167687 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-07T20:01:39Z clientIP="38.106.77.98" requestID="0e3d69b9-705e-4e6b" responseTimeMS=81 responseBytes=233 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-07T20:01:39Z clientIP="38.106.77.98" requestID="cf282936-e628-4a5d" responseTimeMS=43 responseBytes=6812 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-07T20:01:39Z clientIP="38.106.77.98" requestID="121dd7ee-51c9-4484" responseTimeMS=41 responseBytes=865 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-07T20:01:39Z clientIP="38.106.77.98" requestID="9564e24b-46ea-4154" responseTimeMS=47 responseBytes=25474 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-07T20:01:39Z clientIP="38.106.77.98" requestID="9c8892a9-3f06-4368" responseTimeMS=82 responseBytes=321 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-07T20:01:39Z clientIP="38.106.77.98" requestID="43923d53-6163-42de" responseTimeMS=42 responseBytes=3950 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-07T20:01:39.509804662Z 8:01:39 PM [express] GET /api/auth/user 304 in 121ms :: {"id":"45545974","email":"bobbycraig1293@gma…
+2025-12-07T20:01:39.730423451Z 8:01:39 PM [express] GET /api/branding 304 in 80ms :: {"companyName":"STS TaxRepair","logoUrl":null,…
+2025-12-07T20:01:39.776129354Z 8:01:39 PM [express] GET /api/auth/permissions 304 in 161ms :: {"role":"admin","permissions":["dashb…
+2025-12-07T20:01:39.801854646Z 8:01:39 PM [express] GET /api/notifications/count 200 in 159ms :: {"count":0}
+2025-12-07T20:01:39.987814861Z 8:01:39 PM [express] GET /api/audit-logs/[object%20Object] 304 in 78ms
+2025-12-07T20:01:40Z clientIP="38.106.77.98" requestID="591e8768-7cc6-4e89" responseTimeMS=157 responseBytes=383 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-07T20:01:40Z clientIP="38.106.77.98" requestID="6299d227-1fb5-4a98" responseTimeMS=371 responseBytes=237 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-07T20:01:40Z clientIP="38.106.77.98" requestID="bc8e8995-e2bf-418d" responseTimeMS=298 responseBytes=236 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-07T20:01:40Z clientIP="38.106.77.98" requestID="b442a20d-4a1c-4b34" responseTimeMS=155 responseBytes=232 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-07T20:01:40.057835225Z Error fetching tasks: Error: Unknown column 'created_by_id' in 'SELECT'
+2025-12-07T20:01:40.057857845Z     at PromisePool.query (/opt/render/project/src/node_modules/mysql2/lib/promise/pool.js:36:22)
+2025-12-07T20:01:40.057863015Z     at MySql2PreparedQuery.execute (file:///opt/render/project/src/node_modules/drizzle-orm/mysql2/session.js:75:33)
+2025-12-07T20:01:40.057868086Z     at MySqlSelectBase.execute (file:///opt/render/project/src/node_modules/drizzle-orm/mysql-core/query-builders/select.js:746:27)
+2025-12-07T20:01:40.057872866Z     at MySqlSelectBase.then (file:///opt/render/project/src/node_modules/drizzle-orm/query-promise.js:21:17)
+2025-12-07T20:01:40.057876756Z     at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+2025-12-07T20:01:40.057894066Z   code: 'ER_BAD_FIELD_ERROR',
+2025-12-07T20:01:40.057897186Z   errno: 1054,
+2025-12-07T20:01:40.057900776Z   sql: 'select `id`, `title`, `description`, `client_id`, `client_name`, `assigned_to_id`, `assigned_to`, `created_by_id`, `created_by_name`, `due_date`, `priority`, `status`, `category`, `created_at`, `updated_at` from `tasks` order by `tasks`.`created_at` desc',
+2025-12-07T20:01:40.057903936Z   sqlState: '42S22',
+2025-12-07T20:01:40.057907207Z   sqlMessage: "Unknown column 'created_by_id' in 'SELECT'"
+2025-12-07T20:01:40.057909656Z }
+2025-12-07T20:01:40.064077466Z 8:01:40 PM [express] GET /api/leads 304 in 154ms :: []
+2025-12-07T20:01:40.097392549Z 8:01:40 PM [express] GET /api/tasks 500 in 155ms :: {"error":"Unknown column 'created_by_id' in 'SEL…
+2025-12-07T20:01:40.212085213Z 8:01:40 PM [express] GET /api/users 304 in 298ms :: [{"id":"3fa875ce-e12e-4daf-bd36-04fb0c3ab390","e…
+2025-12-07T20:01:40.310789625Z 8:01:40 PM [express] GET /api/documents/all 304 in 372ms :: [{"id":"e0f82315-ce41-11f0-bf63-fa163e57…
+2025-12-07T20:01:41Z clientIP="38.106.77.98" requestID="afc38a4b-edb4-49f2" responseTimeMS=168 responseBytes=330 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-07T20:01:41Z clientIP="38.106.77.98" requestID="9659b122-ba19-4207" responseTimeMS=50 responseBytes=1305 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-07T20:01:41.762063263Z 8:01:41 PM [express] GET /api/notifications 200 in 167ms :: []

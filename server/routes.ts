@@ -5112,8 +5112,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if email already exists as user
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
+        // Check if the user is verified
+        if (!existingUser.emailVerifiedAt) {
+          return res.status(400).json({ 
+            error: 'An account with this email already exists but is not verified. Please check your email for the verification link, or go to the login page and request a new verification email.',
+            code: 'UNVERIFIED_ACCOUNT',
+            email: email
+          });
+        }
         return res.status(400).json({ 
-          error: 'An account with this email already exists' 
+          error: 'An account with this email already exists. Please log in instead.',
+          code: 'ACCOUNT_EXISTS',
+          email: email
         });
       }
       

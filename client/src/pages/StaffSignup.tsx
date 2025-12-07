@@ -66,6 +66,8 @@ export default function StaffSignup() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [submitted, setSubmitted] = useState(false);
+  const [accountExistsError, setAccountExistsError] = useState<{ code: string; email: string } | null>(null);
+  const [resendingVerification, setResendingVerification] = useState(false);
   const { branding } = useBranding();
 
   // Set page title and meta tags for proper social media sharing
@@ -138,19 +140,63 @@ export default function StaffSignup() {
     },
     onSuccess: () => {
       setSubmitted(true);
+      setAccountExistsError(null);
       toast({
         title: "Request Submitted",
         description: "Your staff access request has been submitted for review. We'll notify you by email once it's processed.",
       });
     },
     onError: (error: any) => {
-      toast({
-        title: "Submission Failed",
-        description: error.message || "There was an error submitting your request. Please try again.",
-        variant: "destructive",
-      });
+      // Check for account exists error codes
+      if (error.code === 'UNVERIFIED_ACCOUNT' || error.code === 'ACCOUNT_EXISTS') {
+        setAccountExistsError({ code: error.code, email: error.email || form.getValues("email") });
+      } else {
+        setAccountExistsError(null);
+        toast({
+          title: "Submission Failed",
+          description: error.message || "There was an error submitting your request. Please try again.",
+          variant: "destructive",
+        });
+      }
     },
   });
+
+  const handleResendVerification = async () => {
+    if (!accountExistsError?.email) return;
+    
+    setResendingVerification(true);
+    try {
+      const response = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: accountExistsError.email }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        toast({
+          title: "Verification Email Sent",
+          description: "Please check your inbox for the verification link.",
+        });
+        setAccountExistsError(null);
+      } else {
+        toast({
+          title: "Failed to Send",
+          description: data.message || "Could not send verification email. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An error occurred. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setResendingVerification(false);
+    }
+  };
 
   const onSubmit = (data: StaffSignupForm) => {
     submitMutation.mutate(data);
@@ -220,6 +266,66 @@ export default function StaffSignup() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Account exists error with action buttons */}
+          {accountExistsError && (
+            <div className="mb-6 p-4 rounded-lg border border-amber-500/50 bg-amber-500/10">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                <div className="flex-1 space-y-3">
+                  <p className="text-sm font-medium text-amber-600 dark:text-amber-400">
+                    {accountExistsError.code === 'UNVERIFIED_ACCOUNT' 
+                      ? 'Account Needs Verification'
+                      : 'Account Already Exists'}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {accountExistsError.code === 'UNVERIFIED_ACCOUNT'
+                      ? `An account with ${accountExistsError.email} exists but hasn't been verified. Check your email for the verification link or resend it.`
+                      : `An account with ${accountExistsError.email} already exists. Please log in instead.`}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {accountExistsError.code === 'UNVERIFIED_ACCOUNT' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleResendVerification}
+                        disabled={resendingVerification}
+                        data-testid="button-resend-verification"
+                      >
+                        {resendingVerification ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Sending...
+                          </>
+                        ) : (
+                          <>
+                            <Mail className="h-4 w-4 mr-2" />
+                            Resend Verification
+                          </>
+                        )}
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="default"
+                      onClick={() => navigate('/admin-login')}
+                      data-testid="button-go-to-login"
+                    >
+                      Go to Login
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setAccountExistsError(null)}
+                      data-testid="button-try-different-email"
+                    >
+                      Use Different Email
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
