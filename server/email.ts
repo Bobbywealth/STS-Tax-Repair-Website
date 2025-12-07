@@ -14,10 +14,23 @@ const APP_URL = process.env.APP_URL
   || (process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : null)
   || 'http://localhost:5000';
 
-console.log(`[EMAIL] APP_URL configured as: ${APP_URL}`);
+// Startup diagnostics for email configuration
+console.log(`[EMAIL] ============================================`);
+console.log(`[EMAIL] EMAIL SYSTEM STARTUP DIAGNOSTICS`);
+console.log(`[EMAIL] ============================================`);
+console.log(`[EMAIL] APP_URL: ${APP_URL}`);
+console.log(`[EMAIL] FROM_EMAIL: ${FROM_EMAIL}`);
+console.log(`[EMAIL] SENDGRID_API_KEY configured: ${SENDGRID_API_KEY ? 'YES (key starts with: ' + SENDGRID_API_KEY.substring(0, 10) + '...)' : 'NO - EMAILS WILL NOT BE SENT!'}`);
+console.log(`[EMAIL] NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
+console.log(`[EMAIL] RENDER_EXTERNAL_URL: ${process.env.RENDER_EXTERNAL_URL || 'not set'}`);
+console.log(`[EMAIL] ============================================`);
 
 if (SENDGRID_API_KEY) {
   sgMail.setApiKey(SENDGRID_API_KEY);
+  console.log(`[EMAIL] SendGrid API key has been set successfully`);
+} else {
+  console.error(`[EMAIL] WARNING: No SendGrid API key found! Password reset and notification emails will NOT work.`);
+  console.error(`[EMAIL] Please set the SENDGRID_API_KEY environment variable.`);
 }
 
 export function generateSecureToken(length: number = 32): string {

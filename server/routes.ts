@@ -174,14 +174,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.createPasswordResetToken(user.id, token, expiresAt);
 
       // Send password reset email
+      console.log(`[PASSWORD RESET] Attempting to send reset email to ${email} for user ${user.id}`);
       const emailResult = await sendPasswordResetEmail(
         email,
         token,
         user.firstName || undefined
       );
 
-      if (!emailResult.success) {
-        console.error(`Failed to send password reset email to ${email}:`, emailResult.error);
+      if (emailResult.success) {
+        console.log(`[PASSWORD RESET] SUCCESS - Reset email sent to ${email}, messageId: ${emailResult.messageId}`);
+      } else {
+        console.error(`[PASSWORD RESET] FAILED - Could not send reset email to ${email}: ${emailResult.error}`);
       }
 
       // Log the email for tracking
@@ -936,6 +939,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .status(500)
         .json({ message: "Login failed. Please try again." });
     }
+  });
+
+  // Admin Test Email Endpoint - for verifying email configuration
+  app.post("/api/admin/test-email", isAuthenticated, requireRole(['admin']), async (req: any, res) => {
+    try {
+      const { email } = req.body;
+      const userId = req.userId || req.user?.claims?.sub;
+      
+      if (!email) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Email address is required" 
+        });
+      }
+
+      console.log(`[EMAIL TEST] Admin ${userId} requested test email to: ${email}`);
+      
+      // Check if SendGrid is configured
+      const sendGridConfigured = !!process.env.SENDGRID_API_KEY;
+      if (!sendGridConfigured) {
+        return res.json({
+          success: false,
+          message: "SendGrid API key is not configured. Please add SENDGRID_API_KEY to your environment variables.",
+          diagnostics: {
+            sendGridConfigured: false,
+            appUrl: process.env.APP_URL || process.env.RENDER_EXTERNAL_URL || 'not set',
+            nodeEnv: process.env.NODE_ENV || 'not set'
+          }
+        });
+      }
+      
+      // Send a test email using the password reset template
+      const result = await sendPasswordResetEmail(email, 'TEST-TOKEN-DO-NOT-USE', 'Admin');
+      
+      return res.json({
+        success: result.success,
+        message: result.success 
+          ? `Test email sent successfully to ${email}. Please check your inbox (and spam folder).`
+          : `Failed to send test email: ${result.error}`,
+        diagnostics: {
+          sendGridConfigured: true,
+          appUrl: process.env.APP_URL || process.env.RENDER_EXTERNAL_URL || 'not set',
+          nodeEnv: process.env.NODE_ENV || 'not set',
+          messageId: result.messageId
+        }
+      });
+    } catch (error: any) {
+      console.error("[EMAIL TEST] Error:", error);
+      return res.status(500).json({ 
+        success: false, 
+        message: `Email test failed: ${error.message}` 
+      });
+    }
+  });
+
+  // Email System Diagnostics (public endpoint for quick check)
+  app.get("/api/email-status", (req, res) => {
+    const sendGridConfigured = !!process.env.SENDGRID_API_KEY;
+    res.json({
+      sendGridConfigured,
+      fromEmail: 'ststaxrepair@gmail.com',
+      appUrl: process.env.APP_URL || process.env.RENDER_EXTERNAL_URL || (process.env.NODE_ENV === 'production' ? 'https://ststaxrepair.org' : 'development'),
+      nodeEnv: process.env.NODE_ENV || 'not set',
+      message: sendGridConfigured 
+        ? 'Email system is configured and ready' 
+        : 'WARNING: SENDGRID_API_KEY is not set. Emails will NOT be sent!'
+    });
   });
 
   // Client Login (email/password) - public endpoint
