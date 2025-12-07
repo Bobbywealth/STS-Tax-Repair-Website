@@ -541,7 +541,7 @@ export class MySQLStorage implements IStorage {
       zipCode: lead.zipCode ?? null,
       country: lead.country ?? "United States",
       source: lead.source ?? null,
-      status: lead.status ?? "new",
+      status: (lead.status ?? "new") as LeadStatus,
       notes: lead.notes ?? null,
       assignedToId: lead.assignedToId ?? null,
       assignedToName: lead.assignedToName ?? null,
@@ -553,7 +553,7 @@ export class MySQLStorage implements IStorage {
       createdAt: new Date(),
       updatedAt: new Date()
     };
-    await mysqlDb.insert(leadsTable).values(leadData);
+    await mysqlDb.insert(leadsTable).values([leadData]);
     const [inserted] = await mysqlDb.select().from(leadsTable).where(eq(leadsTable.id, id));
     return inserted;
   }
@@ -561,7 +561,25 @@ export class MySQLStorage implements IStorage {
   async updateLead(id: string, lead: Partial<InsertLead>): Promise<Lead | undefined> {
     const existing = await mysqlDb.select().from(leadsTable).where(eq(leadsTable.id, id));
     if (existing.length === 0) return undefined;
-    await mysqlDb.update(leadsTable).set({ ...lead, updatedAt: new Date() }).where(eq(leadsTable.id, id));
+    const updateData: Record<string, any> = { updatedAt: new Date() };
+    if (lead.name !== undefined) updateData.name = lead.name;
+    if (lead.email !== undefined) updateData.email = lead.email;
+    if (lead.phone !== undefined) updateData.phone = lead.phone;
+    if (lead.company !== undefined) updateData.company = lead.company;
+    if (lead.address !== undefined) updateData.address = lead.address;
+    if (lead.city !== undefined) updateData.city = lead.city;
+    if (lead.state !== undefined) updateData.state = lead.state;
+    if (lead.zipCode !== undefined) updateData.zipCode = lead.zipCode;
+    if (lead.country !== undefined) updateData.country = lead.country;
+    if (lead.source !== undefined) updateData.source = lead.source;
+    if (lead.status !== undefined) updateData.status = lead.status as LeadStatus;
+    if (lead.notes !== undefined) updateData.notes = lead.notes;
+    if (lead.assignedToId !== undefined) updateData.assignedToId = lead.assignedToId;
+    if (lead.assignedToName !== undefined) updateData.assignedToName = lead.assignedToName;
+    if (lead.estimatedValue !== undefined) updateData.estimatedValue = lead.estimatedValue;
+    if (lead.lastContactDate !== undefined) updateData.lastContactDate = lead.lastContactDate;
+    if (lead.nextFollowUpDate !== undefined) updateData.nextFollowUpDate = lead.nextFollowUpDate;
+    await mysqlDb.update(leadsTable).set(updateData).where(eq(leadsTable.id, id));
     const [updated] = await mysqlDb.select().from(leadsTable).where(eq(leadsTable.id, id));
     return updated;
   }

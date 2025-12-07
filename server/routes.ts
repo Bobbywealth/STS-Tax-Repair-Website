@@ -2663,41 +2663,117 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
-  // Leads - Pull from Perfex CRM tblleads table - requires leads.view permission
+  // Leads CRUD - CRM Native Leads Management
   app.get(
     "/api/leads",
     isAuthenticated,
     requirePermission("leads.view"),
     async (req, res) => {
       try {
-        const leads = await queryPerfex(`
-        SELECT 
-          l.id,
-          l.name,
-          l.email,
-          l.phonenumber as phone,
-          l.company,
-          l.city,
-          l.state,
-          l.country,
-          l.source as sourceId,
-          COALESCE(ls.name, 'Unknown') as source,
-          l.status as statusId,
-          COALESCE(lst.name, 'New') as stage,
-          CONCAT(s.firstname, ' ', s.lastname) as assignedTo,
-          l.dateadded as created,
-          l.lastcontact as lastContact
-        FROM tblleads l
-        LEFT JOIN tblleads_sources ls ON l.source = ls.id
-        LEFT JOIN tblleads_status lst ON l.status = lst.id
-        LEFT JOIN tblstaff s ON l.assigned = s.staffid
-        ORDER BY l.dateadded DESC
-        LIMIT 100
-      `);
+        const { status, assignedToId } = req.query;
+        let leads;
+        if (status) {
+          leads = await storage.getLeadsByStatus(status as any);
+        } else if (assignedToId) {
+          leads = await storage.getLeadsByAssignee(assignedToId as string);
+        } else {
+          leads = await storage.getLeads();
+        }
         res.json(leads);
       } catch (error: any) {
-        console.error("Error fetching Perfex leads:", error);
-        res.json([]);
+        console.error("Error fetching leads:", error);
+        res.status(500).json({ error: error.message });
+      }
+    },
+  );
+
+  app.get(
+    "/api/leads/:id",
+    isAuthenticated,
+    requirePermission("leads.view"),
+    async (req, res) => {
+      try {
+        const lead = await storage.getLead(req.params.id);
+        if (!lead) {
+          return res.status(404).json({ error: "Lead not found" });
+        }
+        res.json(lead);
+      } catch (error: any) {
+        console.error("Error fetching lead:", error);
+        res.status(500).json({ error: error.message });
+      }
+    },
+  );
+
+  app.post(
+    "/api/leads",
+    isAuthenticated,
+    requirePermission("leads.create"),
+    async (req: any, res) => {
+      try {
+        const lead = await storage.createLead(req.body);
+        res.status(201).json(lead);
+      } catch (error: any) {
+        console.error("Error creating lead:", error);
+        res.status(500).json({ error: error.message });
+      }
+    },
+  );
+
+  app.put(
+    "/api/leads/:id",
+    isAuthenticated,
+    requirePermission("leads.edit"),
+    async (req: any, res) => {
+      try {
+        const lead = await storage.updateLead(req.params.id, req.body);
+        if (!lead) {
+          return res.status(404).json({ error: "Lead not found" });
+        }
+        res.json(lead);
+      } catch (error: any) {
+        console.error("Error updating lead:", error);
+        res.status(500).json({ error: error.message });
+      }
+    },
+  );
+
+  app.delete(
+    "/api/leads/:id",
+    isAuthenticated,
+    requirePermission("leads.edit"),
+    async (req: any, res) => {
+      try {
+        const success = await storage.deleteLead(req.params.id);
+        if (!success) {
+          return res.status(404).json({ error: "Lead not found" });
+        }
+        res.status(204).send();
+      } catch (error: any) {
+        console.error("Error deleting lead:", error);
+        res.status(500).json({ error: error.message });
+      }
+    },
+  );
+
+  app.post(
+    "/api/leads/:id/convert",
+    isAuthenticated,
+    requirePermission("leads.convert"),
+    async (req: any, res) => {
+      try {
+        const { clientId } = req.body;
+        if (!clientId) {
+          return res.status(400).json({ error: "clientId is required" });
+        }
+        const lead = await storage.convertLeadToClient(req.params.id, clientId);
+        if (!lead) {
+          return res.status(404).json({ error: "Lead not found" });
+        }
+        res.json(lead);
+      } catch (error: any) {
+        console.error("Error converting lead:", error);
+        res.status(500).json({ error: error.message });
       }
     },
   );
