@@ -1208,40 +1208,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.userId || req.user?.claims?.sub;
         const currentUser = await storage.getUser(userId);
         const allUsers = await storage.getUsers();
-        
-        // Admins see all users
         const userRole = currentUser?.role?.toLowerCase();
-        if (userRole === 'admin') {
-          return res.json(allUsers);
-        }
         
-        // Agents and tax_office see only clients assigned to them
+        // All staff (including admins) only see clients assigned to them
         // Assignment can be via: 1) users.assigned_to field, 2) tax_filings.preparerId
         // Staff members (non-clients) are always visible for assignee dropdowns
-        if (userRole === 'agent' || userRole === 'tax_office' || userRole === 'staff' || userRole === 'manager') {
-          const taxFilings = await storage.getTaxFilings();
-          const filingAssignedClientIds = new Set(
-            taxFilings
-              .filter(f => f.preparerId === userId)
-              .map(f => f.clientId)
-          );
-          
-          const filteredUsers = allUsers.filter(user => {
-            const role = user.role?.toLowerCase();
-            // Staff members (non-clients) are always visible for assignment dropdowns
-            if (role !== 'client') return true;
-            // Check if client is assigned to this staff member via assigned_to field
-            if ((user as any).assignedTo === userId) return true;
-            // Check if client is assigned via tax_filings preparer
-            if (filingAssignedClientIds.has(user.id)) return true;
-            return false;
-          });
-          
-          return res.json(filteredUsers);
-        }
+        const taxFilings = await storage.getTaxFilings();
+        const filingAssignedClientIds = new Set(
+          taxFilings
+            .filter(f => f.preparerId === userId)
+            .map(f => f.clientId)
+        );
         
-        // Default: return all users
-        res.json(allUsers);
+        const filteredUsers = allUsers.filter(user => {
+          const role = user.role?.toLowerCase();
+          // Staff members (non-clients) are always visible for assignment dropdowns
+          if (role !== 'client') return true;
+          // Check if client is assigned to this staff member via assigned_to field
+          if ((user as any).assignedTo === userId) return true;
+          // Check if client is assigned via tax_filings preparer
+          if (filingAssignedClientIds.has(user.id)) return true;
+          return false;
+        });
+        
+        res.json(filteredUsers);
       } catch (error: any) {
         console.error("Error fetching users:", error);
         res.status(500).json({ error: error.message });
