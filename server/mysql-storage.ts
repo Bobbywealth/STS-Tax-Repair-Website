@@ -144,6 +144,21 @@ export class MySQLStorage implements IStorage {
       userValues.emailVerifiedAt = userData.emailVerifiedAt;
     }
 
+    // Handle officeId if provided
+    if (userData.officeId !== undefined) {
+      userValues.officeId = userData.officeId;
+    }
+
+    // Handle assignedTo if provided (for client assignment to staff)
+    if ((userData as any).assignedTo !== undefined) {
+      userValues.assignedTo = (userData as any).assignedTo;
+    }
+
+    // Handle referralSource if provided
+    if ((userData as any).referralSource !== undefined) {
+      userValues.referralSource = (userData as any).referralSource;
+    }
+
     if (existing) {
       await mysqlDb
         .update(usersTable)

@@ -667,6 +667,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? encrypt(bankAccountNumber)
         : null;
 
+      // If client selected a referrer, get the referrer's office and assign the client
+      let clientOfficeId: string | null = null;
+      let assignedTo: string | null = null;
+      let referralSourceText: string | null = null;
+      
+      if (referredById && referredById !== 'none') {
+        const referrer = await storage.getUser(referredById);
+        if (referrer) {
+          // Assign client to referrer's office
+          clientOfficeId = referrer.officeId || null;
+          // Set referrer as the client's assigned agent
+          assignedTo = referrer.id;
+          // Store referral source text
+          referralSourceText = `${referrer.firstName || ''} ${referrer.lastName || ''}`.trim();
+        }
+      }
+
       // Create user with basic profile fields (extended fields stored separately if needed)
       const user = await storage.upsertUser({
         id: crypto.randomUUID(),
@@ -682,6 +699,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         role: "client",
         isActive: true,
         passwordHash,
+        officeId: clientOfficeId,
+        assignedTo: assignedTo,
+        referralSource: referralSourceText,
       });
 
       // Create email verification token (expires in 24 hours)
@@ -1195,11 +1215,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.json(allUsers);
         }
         
-        // Agents and tax_office see only clients assigned to them (via tax_filings.preparerId)
+        // Agents and tax_office see only clients assigned to them
+        // Assignment can be via: 1) users.assigned_to field, 2) tax_filings.preparerId
         // Staff members (non-clients) are always visible for assignee dropdowns
-        if (userRole === 'agent' || userRole === 'tax_office') {
+        if (userRole === 'agent' || userRole === 'tax_office' || userRole === 'staff' || userRole === 'manager') {
           const taxFilings = await storage.getTaxFilings();
-          const assignedClientIds = new Set(
+          const filingAssignedClientIds = new Set(
             taxFilings
               .filter(f => f.preparerId === userId)
               .map(f => f.clientId)
@@ -1209,8 +1230,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const role = user.role?.toLowerCase();
             // Staff members (non-clients) are always visible for assignment dropdowns
             if (role !== 'client') return true;
-            // Clients are only visible if assigned to this preparer
-            return assignedClientIds.has(user.id);
+            // Check if client is assigned to this staff member via assigned_to field
+            if ((user as any).assignedTo === userId) return true;
+            // Check if client is assigned via tax_filings preparer
+            if (filingAssignedClientIds.has(user.id)) return true;
+            return false;
           });
           
           return res.json(filteredUsers);
