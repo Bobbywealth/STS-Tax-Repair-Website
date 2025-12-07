@@ -443,6 +443,63 @@ export async function runMySQLMigrations(): Promise<void> {
       console.log('password_reset_tokens table created successfully!');
     }
     
+    // Add slug column to offices table for subdomain routing
+    const [officeSlugColumn] = await connection.query(
+      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'offices' AND COLUMN_NAME = 'slug'`,
+      [dbName]
+    );
+    
+    if (Array.isArray(officeSlugColumn) && officeSlugColumn.length === 0) {
+      console.log('Adding slug column to offices table...');
+      await connection.query(`ALTER TABLE offices ADD COLUMN slug VARCHAR(100) UNIQUE`);
+      console.log('slug column added successfully!');
+    }
+    
+    // Add theme_preference column to users table
+    const [themePreferenceColumn] = await connection.query(
+      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'theme_preference'`,
+      [dbName]
+    );
+    
+    if (Array.isArray(themePreferenceColumn) && themePreferenceColumn.length === 0) {
+      console.log('Adding theme_preference column to users table...');
+      await connection.query(`ALTER TABLE users ADD COLUMN theme_preference VARCHAR(10) DEFAULT 'system'`);
+      console.log('theme_preference column added successfully!');
+    }
+    
+    // Create office_branding table for Tax Office white-labeling
+    const [officeBrandingTable] = await connection.query(
+      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'office_branding'`,
+      [dbName]
+    );
+    
+    if (Array.isArray(officeBrandingTable) && officeBrandingTable.length === 0) {
+      console.log('Creating office_branding table...');
+      await connection.query(`
+        CREATE TABLE office_branding (
+          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+          office_id VARCHAR(36) NOT NULL UNIQUE,
+          company_name VARCHAR(255) NULL,
+          logo_url VARCHAR(500) NULL,
+          logo_object_key VARCHAR(255) NULL,
+          primary_color VARCHAR(20) DEFAULT '#1a4d2e',
+          secondary_color VARCHAR(20) DEFAULT '#4CAF50',
+          accent_color VARCHAR(20) DEFAULT '#22c55e',
+          default_theme VARCHAR(10) DEFAULT 'light',
+          reply_to_email VARCHAR(255) NULL,
+          reply_to_name VARCHAR(255) NULL,
+          updated_by_user_id VARCHAR(36) NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_office_branding_office (office_id)
+        )
+      `);
+      console.log('office_branding table created successfully!');
+    }
+    
     connection.release();
   } catch (error) {
     console.error('MySQL migration error:', error);

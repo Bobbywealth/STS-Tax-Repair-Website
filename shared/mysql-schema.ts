@@ -24,6 +24,7 @@ export type UserRole = 'client' | 'agent' | 'tax_office' | 'admin';
 export const offices = mysqlTable("offices", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
   name: varchar("name", { length: 255 }).notNull(),
+  slug: varchar("slug", { length: 100 }).unique(), // Subdomain routing: acmetax.ststaxrepair.org
   address: text("address"),
   city: varchar("city", { length: 100 }),
   state: varchar("state", { length: 100 }),
@@ -44,6 +45,37 @@ export const insertOfficeSchema = createInsertSchema(offices).omit({
 export type InsertOffice = z.infer<typeof insertOfficeSchema>;
 export type Office = typeof offices.$inferSelect;
 
+// Office Branding Table - Custom branding per Tax Office
+// Enables white-labeling: custom logo, colors, company name, reply-to email
+export const officeBranding = mysqlTable("office_branding", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+  officeId: varchar("office_id", { length: 36 }).notNull().unique(),
+  companyName: varchar("company_name", { length: 255 }),
+  logoUrl: varchar("logo_url", { length: 500 }),
+  logoObjectKey: varchar("logo_object_key", { length: 255 }), // Object storage key
+  primaryColor: varchar("primary_color", { length: 20 }).default('#1a4d2e'),
+  secondaryColor: varchar("secondary_color", { length: 20 }).default('#4CAF50'),
+  accentColor: varchar("accent_color", { length: 20 }).default('#22c55e'),
+  defaultTheme: varchar("default_theme", { length: 10 }).default('light').$type<'light' | 'dark'>(),
+  replyToEmail: varchar("reply_to_email", { length: 255 }),
+  replyToName: varchar("reply_to_name", { length: 255 }),
+  updatedByUserId: varchar("updated_by_user_id", { length: 36 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertOfficeBrandingSchema = createInsertSchema(officeBranding).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertOfficeBranding = z.infer<typeof insertOfficeBrandingSchema>;
+export type OfficeBranding = typeof officeBranding.$inferSelect;
+
+// Theme preference type for users
+export type ThemePreference = 'system' | 'light' | 'dark';
+
 // User storage table for Replit Auth + Client Data
 // Note: Schema matches actual MySQL database columns from Perfex CRM migration
 // office_id enables Tax Office tenant scoping - all users belong to an office
@@ -61,6 +93,7 @@ export const users = mysqlTable("users", {
   country: varchar("country", { length: 100 }).default("United States"),
   role: varchar("role", { length: 20 }).default("client").$type<UserRole>(),
   officeId: varchar("office_id", { length: 36 }),
+  themePreference: varchar("theme_preference", { length: 10 }).default("system").$type<ThemePreference>(),
   isActive: boolean("is_active").default(true),
   passwordHash: varchar("password_hash", { length: 255 }),
   emailVerifiedAt: timestamp("email_verified_at"),
@@ -559,6 +592,7 @@ export const PermissionGroups = {
   REPORTS: 'reports',
   SETTINGS: 'settings',
   AGENTS: 'agents',
+  BRANDING: 'branding',
   ADMIN: 'admin',
 } as const;
 
@@ -653,6 +687,11 @@ export const DefaultPermissions: Array<{
   { slug: 'agents.create', label: 'Create Agent', description: 'Create new agent accounts', featureGroup: 'agents', defaultRoles: ['tax_office', 'admin'] },
   { slug: 'agents.edit', label: 'Edit Agent', description: 'Modify agent information', featureGroup: 'agents', defaultRoles: ['tax_office', 'admin'] },
   { slug: 'agents.disable', label: 'Disable Agent', description: 'Disable or deactivate agent accounts', featureGroup: 'agents', defaultRoles: ['tax_office', 'admin'] },
+  
+  // Branding (Tax Office can customize their office branding)
+  { slug: 'branding.view', label: 'View Branding', description: 'View office branding settings', featureGroup: 'branding', defaultRoles: ['tax_office', 'admin'] },
+  { slug: 'branding.manage', label: 'Manage Office Branding', description: 'Customize office logo, colors, and theme', featureGroup: 'branding', defaultRoles: ['tax_office', 'admin'] },
+  { slug: 'branding.personal_theme', label: 'Personal Theme', description: 'Set personal light/dark theme preference', featureGroup: 'branding', defaultRoles: ['client', 'agent', 'tax_office', 'admin'] },
   
   // Admin (Tax Office has office-scoped access to audit and invites)
   { slug: 'admin.users', label: 'Manage Users', description: 'Manage user accounts and roles', featureGroup: 'admin', defaultRoles: ['admin'] },
