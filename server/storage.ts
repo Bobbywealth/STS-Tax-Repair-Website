@@ -18,6 +18,9 @@ import {
   type InsertDocumentRequestTemplate,
   type Task,
   type InsertTask,
+  type Lead,
+  type InsertLead,
+  type LeadStatus,
   type StaffMember,
   type InsertStaffMember,
   type RoleAuditLog,
@@ -113,6 +116,16 @@ export interface IStorage {
   createTask(task: InsertTask): Promise<Task>;
   updateTask(id: string, task: Partial<InsertTask>): Promise<Task | undefined>;
   deleteTask(id: string): Promise<boolean>;
+
+  // Leads
+  getLeads(): Promise<Lead[]>;
+  getLeadsByStatus(status: LeadStatus): Promise<Lead[]>;
+  getLeadsByAssignee(assignedToId: string): Promise<Lead[]>;
+  getLead(id: string): Promise<Lead | undefined>;
+  createLead(lead: InsertLead): Promise<Lead>;
+  updateLead(id: string, lead: Partial<InsertLead>): Promise<Lead | undefined>;
+  deleteLead(id: string): Promise<boolean>;
+  convertLeadToClient(leadId: string, clientId: string): Promise<Lead | undefined>;
 
   // Staff Members
   getStaffMembers(): Promise<StaffMember[]>;

@@ -18,6 +18,9 @@ import {
   type InsertDocumentRequestTemplate,
   type Task,
   type InsertTask,
+  type Lead,
+  type InsertLead,
+  type LeadStatus,
   type StaffMember,
   type InsertStaffMember,
   type RoleAuditLog,
@@ -45,6 +48,7 @@ import {
   emailLogs as emailLogsTable,
   documentRequestTemplates as templatesTable,
   tasks as tasksTable,
+  leads as leadsTable,
   staffMembers as staffTable,
   roleAuditLog as roleAuditLogTable,
   staffInvites as staffInvitesTable,
@@ -499,6 +503,85 @@ export class MySQLStorage implements IStorage {
   async deleteTask(id: string): Promise<boolean> {
     const result = await mysqlDb.delete(tasksTable).where(eq(tasksTable.id, id));
     return getAffectedRows(result) > 0;
+  }
+
+  // Leads
+  async getLeads(): Promise<Lead[]> {
+    return await mysqlDb.select().from(leadsTable).orderBy(desc(leadsTable.createdAt));
+  }
+
+  async getLeadsByStatus(status: LeadStatus): Promise<Lead[]> {
+    return await mysqlDb.select().from(leadsTable)
+      .where(eq(leadsTable.status, status))
+      .orderBy(desc(leadsTable.createdAt));
+  }
+
+  async getLeadsByAssignee(assignedToId: string): Promise<Lead[]> {
+    return await mysqlDb.select().from(leadsTable)
+      .where(eq(leadsTable.assignedToId, assignedToId))
+      .orderBy(desc(leadsTable.createdAt));
+  }
+
+  async getLead(id: string): Promise<Lead | undefined> {
+    const [lead] = await mysqlDb.select().from(leadsTable).where(eq(leadsTable.id, id));
+    return lead;
+  }
+
+  async createLead(lead: InsertLead): Promise<Lead> {
+    const id = randomUUID();
+    const leadData = {
+      id,
+      name: lead.name,
+      email: lead.email ?? null,
+      phone: lead.phone ?? null,
+      company: lead.company ?? null,
+      address: lead.address ?? null,
+      city: lead.city ?? null,
+      state: lead.state ?? null,
+      zipCode: lead.zipCode ?? null,
+      country: lead.country ?? "United States",
+      source: lead.source ?? null,
+      status: lead.status ?? "new",
+      notes: lead.notes ?? null,
+      assignedToId: lead.assignedToId ?? null,
+      assignedToName: lead.assignedToName ?? null,
+      estimatedValue: lead.estimatedValue ?? null,
+      lastContactDate: lead.lastContactDate ?? null,
+      nextFollowUpDate: lead.nextFollowUpDate ?? null,
+      convertedToClientId: lead.convertedToClientId ?? null,
+      convertedAt: lead.convertedAt ?? null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    await mysqlDb.insert(leadsTable).values(leadData);
+    const [inserted] = await mysqlDb.select().from(leadsTable).where(eq(leadsTable.id, id));
+    return inserted;
+  }
+
+  async updateLead(id: string, lead: Partial<InsertLead>): Promise<Lead | undefined> {
+    const existing = await mysqlDb.select().from(leadsTable).where(eq(leadsTable.id, id));
+    if (existing.length === 0) return undefined;
+    await mysqlDb.update(leadsTable).set({ ...lead, updatedAt: new Date() }).where(eq(leadsTable.id, id));
+    const [updated] = await mysqlDb.select().from(leadsTable).where(eq(leadsTable.id, id));
+    return updated;
+  }
+
+  async deleteLead(id: string): Promise<boolean> {
+    const result = await mysqlDb.delete(leadsTable).where(eq(leadsTable.id, id));
+    return getAffectedRows(result) > 0;
+  }
+
+  async convertLeadToClient(leadId: string, clientId: string): Promise<Lead | undefined> {
+    const existing = await mysqlDb.select().from(leadsTable).where(eq(leadsTable.id, leadId));
+    if (existing.length === 0) return undefined;
+    await mysqlDb.update(leadsTable).set({ 
+      status: "converted" as LeadStatus,
+      convertedToClientId: clientId,
+      convertedAt: new Date(),
+      updatedAt: new Date()
+    }).where(eq(leadsTable.id, leadId));
+    const [updated] = await mysqlDb.select().from(leadsTable).where(eq(leadsTable.id, leadId));
+    return updated;
   }
 
   // Staff Members
