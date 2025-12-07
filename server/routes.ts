@@ -37,6 +37,7 @@ import {
   sendPasswordResetEmail, 
   sendWelcomeEmail, 
   sendEmailVerificationEmail,
+  sendStaffInviteEmail,
   sendTaskAssignmentEmail,
   sendDocumentUploadConfirmationEmail,
   sendAppointmentConfirmationEmail,
@@ -1593,6 +1594,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         invitedByName: adminName,
         expiresAt,
       });
+
+      // Send invitation email (non-blocking)
+      sendStaffInviteEmail(email, role, inviteCode, adminName)
+        .catch((err) => {
+          console.warn(`Failed to send staff invite email to ${email}:`, err);
+        });
+
       res.status(201).json(invite);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
