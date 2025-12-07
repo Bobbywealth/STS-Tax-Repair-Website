@@ -1210,7 +1210,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const allUsers = await storage.getUsers();
         const userRole = currentUser?.role?.toLowerCase();
         
-        // All staff (including admins) only see clients assigned to them
+        // CRITICAL: Admins see ALL users, agents only see assigned clients
+        // Admins have full system visibility
+        if (userRole === 'admin' || userRole === 'owner') {
+          return res.json(allUsers);
+        }
+        
+        // Agents/staff only see clients assigned to them
         // Assignment can be via: 1) users.assigned_to field, 2) tax_filings.preparerId
         // Staff members (non-clients) are always visible for assignee dropdowns
         const taxFilings = await storage.getTaxFilings();
