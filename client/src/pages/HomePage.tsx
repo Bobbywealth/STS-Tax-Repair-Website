@@ -629,7 +629,7 @@ export default function HomePage() {
                   <Button 
                     size="lg"
                     className="bg-white hover:bg-gray-100 text-sts-dark font-bold px-8 h-14 text-lg shadow-xl"
-                    onClick={() => navigate("/client-login")}
+                    onClick={() => navigate("/register")}
                     data-testid="button-register-hero"
                   >
                     REGISTER <ArrowRight className="ml-2 w-5 h-5" />
@@ -747,7 +747,7 @@ export default function HomePage() {
                     <Button 
                       size="lg"
                       className="w-full bg-white hover:bg-gray-100 text-sts-dark font-bold h-14 text-base shadow-xl rounded-xl"
-                      onClick={() => navigate("/client-login")}
+                      onClick={() => navigate("/register")}
                       data-testid="button-register-mobile"
                     >
                       REGISTER
