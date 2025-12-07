@@ -34,6 +34,8 @@ import {
   type InsertTicket,
   type KnowledgeBase,
   type InsertKnowledgeBase,
+  type EmailVerificationToken,
+  type InsertEmailVerificationToken,
   users as usersTable,
   taxDeadlines as taxDeadlinesTable,
   appointments as appointmentsTable,
@@ -49,7 +51,8 @@ import {
   permissions as permissionsTable,
   rolePermissions as rolePermissionsTable,
   taxFilings as taxFilingsTable,
-  passwordResetTokens as passwordResetTokensTable
+  passwordResetTokens as passwordResetTokensTable,
+  emailVerificationTokens as emailVerificationTokensTable
 } from "@shared/mysql-schema";
 import { mysqlPool } from "./mysql-db";
 import { randomUUID } from "crypto";
@@ -1049,6 +1052,64 @@ export class MySQLStorage implements IStorage {
   async deleteExpiredPasswordResetTokens(): Promise<void> {
     await mysqlDb.delete(passwordResetTokensTable)
       .where(lt(passwordResetTokensTable.expiresAt, new Date()));
+  }
+
+  // Email Verification Tokens
+  async createEmailVerificationToken(userId: string, email: string, token: string, expiresAt: Date): Promise<EmailVerificationToken> {
+    const id = randomUUID();
+    await mysqlDb.insert(emailVerificationTokensTable).values({
+      id,
+      userId,
+      email,
+      token,
+      expiresAt,
+      createdAt: new Date(),
+    });
+    const [created] = await mysqlDb.select().from(emailVerificationTokensTable).where(eq(emailVerificationTokensTable.id, id));
+    return created;
+  }
+
+  async getEmailVerificationToken(token: string): Promise<EmailVerificationToken | undefined> {
+    const [verificationToken] = await mysqlDb.select()
+      .from(emailVerificationTokensTable)
+      .where(eq(emailVerificationTokensTable.token, token));
+    return verificationToken;
+  }
+
+  async getEmailVerificationTokenByUserId(userId: string): Promise<EmailVerificationToken | undefined> {
+    const [verificationToken] = await mysqlDb.select()
+      .from(emailVerificationTokensTable)
+      .where(and(
+        eq(emailVerificationTokensTable.userId, userId),
+        gte(emailVerificationTokensTable.expiresAt, new Date())
+      ));
+    return verificationToken;
+  }
+
+  async markEmailVerificationTokenUsed(token: string): Promise<void> {
+    await mysqlDb.update(emailVerificationTokensTable)
+      .set({ usedAt: new Date() })
+      .where(eq(emailVerificationTokensTable.token, token));
+  }
+
+  async incrementEmailVerificationResendCount(token: string): Promise<void> {
+    const existing = await this.getEmailVerificationToken(token);
+    if (existing) {
+      await mysqlDb.update(emailVerificationTokensTable)
+        .set({ resendCount: (existing.resendCount || 0) + 1 })
+        .where(eq(emailVerificationTokensTable.token, token));
+    }
+  }
+
+  async deleteExpiredEmailVerificationTokens(): Promise<void> {
+    await mysqlDb.delete(emailVerificationTokensTable)
+      .where(lt(emailVerificationTokensTable.expiresAt, new Date()));
+  }
+
+  async markUserEmailVerified(userId: string): Promise<void> {
+    await mysqlDb.update(usersTable)
+      .set({ emailVerifiedAt: new Date() })
+      .where(eq(usersTable.id, userId));
   }
 
   // Tickets

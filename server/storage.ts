@@ -34,6 +34,7 @@ import {
   type InsertTicket,
   type KnowledgeBase,
   type InsertKnowledgeBase,
+  type EmailVerificationToken,
 } from "@shared/mysql-schema";
 
 export interface IStorage {
@@ -155,6 +156,15 @@ export interface IStorage {
   getPasswordResetToken(token: string): Promise<PasswordResetToken | undefined>;
   markPasswordResetTokenUsed(token: string): Promise<void>;
   deleteExpiredPasswordResetTokens(): Promise<void>;
+
+  // Email Verification Tokens
+  createEmailVerificationToken(userId: string, email: string, token: string, expiresAt: Date): Promise<EmailVerificationToken>;
+  getEmailVerificationToken(token: string): Promise<EmailVerificationToken | undefined>;
+  getEmailVerificationTokenByUserId(userId: string): Promise<EmailVerificationToken | undefined>;
+  markEmailVerificationTokenUsed(token: string): Promise<void>;
+  incrementEmailVerificationResendCount(token: string): Promise<void>;
+  deleteExpiredEmailVerificationTokens(): Promise<void>;
+  markUserEmailVerified(userId: string): Promise<void>;
 
   // Tickets
   getTickets(): Promise<Ticket[]>;

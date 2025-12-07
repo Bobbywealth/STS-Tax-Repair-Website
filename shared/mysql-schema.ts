@@ -36,6 +36,7 @@ export const users = mysqlTable("users", {
   role: varchar("role", { length: 20 }).default("client").$type<UserRole>(),
   isActive: boolean("is_active").default(true),
   passwordHash: varchar("password_hash", { length: 255 }),
+  emailVerifiedAt: timestamp("email_verified_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -599,6 +600,28 @@ export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTo
 
 export type InsertPasswordResetToken = z.infer<typeof insertPasswordResetTokenSchema>;
 export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+
+// Email Verification Tokens Table
+export const emailVerificationTokens = mysqlTable("email_verification_tokens", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+  userId: varchar("user_id", { length: 36 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  token: varchar("token", { length: 64 }).notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  usedAt: timestamp("used_at"),
+  resendCount: int("resend_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertEmailVerificationTokenSchema = createInsertSchema(emailVerificationTokens).omit({
+  id: true,
+  createdAt: true,
+  usedAt: true,
+  resendCount: true,
+});
+
+export type InsertEmailVerificationToken = z.infer<typeof insertEmailVerificationTokenSchema>;
+export type EmailVerificationToken = typeof emailVerificationTokens.$inferSelect;
 
 // Email Types for the system
 export type EmailType = 
