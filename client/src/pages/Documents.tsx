@@ -189,12 +189,12 @@ export default function Documents() {
                         <Button
                           size="icon"
                           variant="ghost"
-                          asChild
+                          onClick={() => {
+                            window.open(`/api/documents/${doc.id}/download`, '_blank');
+                          }}
                           data-testid={`button-view-${doc.id}`}
                         >
-                          <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer">
-                            <ExternalLink className="h-4 w-4" />
-                          </a>
+                          <ExternalLink className="h-4 w-4" />
                         </Button>
                       )}
                     </div>

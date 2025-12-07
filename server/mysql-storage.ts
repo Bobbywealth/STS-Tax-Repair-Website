@@ -327,6 +327,12 @@ export class MySQLStorage implements IStorage {
       .orderBy(desc(documentVersionsTable.uploadedAt));
   }
 
+  async getDocumentVersion(id: string): Promise<DocumentVersion | undefined> {
+    const [document] = await mysqlDb.select().from(documentVersionsTable)
+      .where(eq(documentVersionsTable.id, id));
+    return document;
+  }
+
   async getDocumentVersionsByType(clientId: string, documentType: string): Promise<DocumentVersion[]> {
     return await mysqlDb.select().from(documentVersionsTable)
       .where(and(

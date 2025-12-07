@@ -3964,7 +3964,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Serve uploaded files
+  // Download/view a document
+  app.get("/api/documents/:id/download", isAuthenticated, async (req, res) => {
+    try {
+      const documentId = req.params.id;
+      const document = await storage.getDocumentVersion(documentId);
+      
+      if (!document) {
+        return res.status(404).json({ error: "Document not found" });
+      }
+
+      const fileUrl = document.fileUrl;
+      if (!fileUrl) {
+        return res.status(404).json({ error: "Document has no file URL" });
+      }
+
+      // For Perfex CRM legacy documents, redirect to the external URL
+      if (fileUrl.startsWith('/perfex-uploads/')) {
+        const externalUrl = `https://ststaxrepair.org${fileUrl}`;
+        return res.redirect(externalUrl);
+      }
+
+      // For object storage files, get the file and stream it
+      if (fileUrl.startsWith('/objects/')) {
+        const objectStorageService = new ObjectStorageService();
+        const objectFile = await objectStorageService.getObjectEntityFile(fileUrl);
+        console.log(`[OBJECTS] Serving file: ${fileUrl} for document ${documentId}`);
+        return objectStorageService.downloadObject(objectFile, res);
+      }
+
+      // For other URLs (like external https links), redirect to them
+      if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
+        return res.redirect(fileUrl);
+      }
+
+      // Unknown URL format
+      return res.status(404).json({ error: "Unknown file URL format" });
+    } catch (error) {
+      console.error("Error serving document:", error);
+      if (error instanceof ObjectNotFoundError) {
+        return res.status(404).json({ error: "File not found in storage" });
+      }
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Serve uploaded files (keep for backward compatibility)
   app.get("/objects/*", isAuthenticated, async (req, res) => {
     try {
       const objectStorageService = new ObjectStorageService();

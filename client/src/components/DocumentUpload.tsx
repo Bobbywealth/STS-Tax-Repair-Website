@@ -220,12 +220,12 @@ export function DocumentUpload({ clientId, onUpload }: DocumentUploadProps) {
                           <Button
                             size="icon"
                             variant="ghost"
-                            asChild
+                            onClick={() => {
+                              window.open(`/api/documents/${doc.id}/download`, '_blank');
+                            }}
                             data-testid={`button-view-${doc.id}`}
                           >
-                            <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer">
-                              <Eye className="h-4 w-4" />
-                            </a>
+                            <Eye className="h-4 w-4" />
                           </Button>
                         )}
                         <Button
