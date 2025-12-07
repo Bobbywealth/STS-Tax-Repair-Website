@@ -963,3 +963,52 @@ export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({
 
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 export type AuditLog = typeof auditLogs.$inferSelect;
+
+// Notification Types
+export type NotificationType = 
+  | 'staff_request'
+  | 'new_client'
+  | 'new_ticket'
+  | 'ticket_response'
+  | 'task_assigned'
+  | 'task_completed'
+  | 'payment_received'
+  | 'document_uploaded'
+  | 'appointment_scheduled'
+  | 'signature_completed'
+  | 'lead_created'
+  | 'tax_filing_status';
+
+// In-App Notifications Table - tracks notifications for users
+export const notifications = mysqlTable(
+  "notifications",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+    userId: varchar("user_id", { length: 36 }).notNull(), // Who should see this notification
+    type: varchar("type", { length: 50 }).notNull().$type<NotificationType>(),
+    title: varchar("title", { length: 255 }).notNull(),
+    message: text("message").notNull(),
+    resourceType: varchar("resource_type", { length: 50 }), // e.g., 'staff_request', 'ticket', 'payment'
+    resourceId: varchar("resource_id", { length: 36 }), // ID of the related resource
+    link: varchar("link", { length: 255 }), // URL to navigate to when clicked
+    isRead: boolean("is_read").default(false),
+    readAt: timestamp("read_at"),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => ({
+    userIdx: index("idx_notifications_user").on(table.userId),
+    readIdx: index("idx_notifications_read").on(table.isRead),
+    typeIdx: index("idx_notifications_type").on(table.type),
+    createdIdx: index("idx_notifications_created").on(table.createdAt),
+  }),
+);
+
+export const insertNotificationSchema = createInsertSchema(notifications).omit({
+  id: true,
+  isRead: true,
+  readAt: true,
+  createdAt: true,
+});
+
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type Notification = typeof notifications.$inferSelect;

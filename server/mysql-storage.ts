@@ -53,6 +53,9 @@ import {
   type StaffRequest,
   type InsertStaffRequest,
   type StaffRequestStatus,
+  type Notification,
+  type InsertNotification,
+  type NotificationType,
   users as usersTable,
   taxDeadlines as taxDeadlinesTable,
   appointments as appointmentsTable,
@@ -76,7 +79,8 @@ import {
   agentClientAssignments as agentAssignmentsTable,
   ticketMessages as ticketMessagesTable,
   auditLogs as auditLogsTable,
-  staffRequests as staffRequestsTable
+  staffRequests as staffRequestsTable,
+  notifications as notificationsTable
 } from "@shared/mysql-schema";
 import { mysqlPool } from "./mysql-db";
 import { randomUUID } from "crypto";
@@ -2013,6 +2017,122 @@ export class MySQLStorage implements IStorage {
       status ? [status] : []
     );
     return (result as any)[0]?.count || 0;
+  }
+
+  // ============================================================================
+  // NOTIFICATIONS - In-app notification center
+  // ============================================================================
+
+  async createNotification(notification: InsertNotification): Promise<Notification> {
+    const id = randomUUID();
+    await mysqlDb
+      .insert(notificationsTable)
+      .values({
+        id,
+        ...notification,
+        isRead: false,
+        createdAt: new Date()
+      });
+    const [result] = await mysqlDb
+      .select()
+      .from(notificationsTable)
+      .where(eq(notificationsTable.id, id));
+    return result;
+  }
+
+  async createNotificationsForAdmins(notification: Omit<InsertNotification, 'userId'>): Promise<void> {
+    const admins = await this.getUsersByRole('admin');
+    for (const admin of admins) {
+      await this.createNotification({
+        ...notification,
+        userId: admin.id
+      });
+    }
+  }
+
+  async getNotifications(userId: string, options: {
+    unreadOnly?: boolean;
+    type?: NotificationType;
+    limit?: number;
+    offset?: number;
+  } = {}): Promise<Notification[]> {
+    const conditions = [eq(notificationsTable.userId, userId)];
+    
+    if (options.unreadOnly) {
+      conditions.push(eq(notificationsTable.isRead, false));
+    }
+    if (options.type) {
+      conditions.push(eq(notificationsTable.type, options.type));
+    }
+    
+    let query = mysqlDb
+      .select()
+      .from(notificationsTable)
+      .where(and(...conditions))
+      .orderBy(desc(notificationsTable.createdAt));
+    
+    if (options.limit) {
+      query = query.limit(options.limit) as any;
+    }
+    if (options.offset) {
+      query = query.offset(options.offset) as any;
+    }
+    
+    return await query;
+  }
+
+  async getUnreadNotificationCount(userId: string): Promise<number> {
+    const [result] = await mysqlPool.query(
+      `SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND is_read = false`,
+      [userId]
+    );
+    return (result as any)[0]?.count || 0;
+  }
+
+  async markNotificationAsRead(id: string): Promise<Notification | undefined> {
+    await mysqlDb
+      .update(notificationsTable)
+      .set({
+        isRead: true,
+        readAt: new Date()
+      })
+      .where(eq(notificationsTable.id, id));
+    
+    const [result] = await mysqlDb
+      .select()
+      .from(notificationsTable)
+      .where(eq(notificationsTable.id, id));
+    return result;
+  }
+
+  async markAllNotificationsAsRead(userId: string): Promise<void> {
+    await mysqlDb
+      .update(notificationsTable)
+      .set({
+        isRead: true,
+        readAt: new Date()
+      })
+      .where(and(
+        eq(notificationsTable.userId, userId),
+        eq(notificationsTable.isRead, false)
+      ));
+  }
+
+  async deleteNotification(id: string): Promise<void> {
+    await mysqlDb
+      .delete(notificationsTable)
+      .where(eq(notificationsTable.id, id));
+  }
+
+  async deleteOldNotifications(daysOld: number = 30): Promise<number> {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysOld);
+    
+    const [result] = await mysqlPool.query(
+      `DELETE FROM notifications WHERE created_at < ? AND is_read = true`,
+      [cutoffDate]
+    );
+    return (result as any).affectedRows || 0;
   }
 }
 
