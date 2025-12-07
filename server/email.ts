@@ -6,6 +6,22 @@ const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 const FROM_EMAIL = 'ststaxrepair@gmail.com';
 const FROM_NAME = 'STS Tax Repair';
 
+export interface OfficeBranding {
+  companyName: string;
+  logoUrl?: string;
+  primaryColor: string;
+  secondaryColor: string;
+  replyToEmail?: string;
+  replyToName?: string;
+}
+
+const DEFAULT_BRANDING: OfficeBranding = {
+  companyName: 'STS Tax Repair',
+  logoUrl: 'https://ststaxrepair.org/assets/sts-logo.png',
+  primaryColor: '#1a4d2e',
+  secondaryColor: '#4CAF50',
+};
+
 // Determine the app URL based on environment
 // Priority: APP_URL env var > Render URL > production domain > Replit dev domain > localhost
 const APP_URL = process.env.APP_URL 
@@ -91,40 +107,46 @@ async function sendEmail(params: SendEmailParams): Promise<EmailResult> {
   }
 }
 
-function getEmailTemplate(type: EmailType, data: Record<string, any>): { subject: string; html: string } {
+function getEmailTemplate(type: EmailType, data: Record<string, any>, branding?: OfficeBranding): { subject: string; html: string } {
+  const brand = branding || DEFAULT_BRANDING;
+  const logoUrl = brand.logoUrl || DEFAULT_BRANDING.logoUrl;
+  const primaryColor = brand.primaryColor || DEFAULT_BRANDING.primaryColor;
+  const secondaryColor = brand.secondaryColor || DEFAULT_BRANDING.secondaryColor;
+  const companyName = brand.companyName || DEFAULT_BRANDING.companyName;
+  
   const baseStyles = `
     <style>
       body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }
       .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-      .header { background: linear-gradient(135deg, #1a4d2e 0%, #4CAF50 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+      .header { background: linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
       .header img { max-width: 150px; }
       .header h1 { color: #FDB913; margin: 10px 0 0 0; font-size: 24px; }
       .content { background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; }
-      .button { display: inline-block; background: #4CAF50; color: white !important; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 20px 0; }
-      .button:hover { background: #1a4d2e; }
+      .button { display: inline-block; background: ${secondaryColor}; color: white !important; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 20px 0; }
+      .button:hover { background: ${primaryColor}; }
       .footer { background: #f5f5f5; padding: 20px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 10px 10px; border: 1px solid #e0e0e0; border-top: none; }
-      .highlight { background: #FDB913; color: #1a4d2e; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
+      .highlight { background: #FDB913; color: ${primaryColor}; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
       .warning { background: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 6px; margin: 15px 0; }
-      .info { background: #e8f5e9; border: 1px solid #4CAF50; padding: 15px; border-radius: 6px; margin: 15px 0; }
+      .info { background: #e8f5e9; border: 1px solid ${secondaryColor}; padding: 15px; border-radius: 6px; margin: 15px 0; }
     </style>
   `;
 
   const header = `
     <div class="header">
-      <img src="https://ststaxrepair.org/assets/sts-logo.png" alt="STS Tax Repair Logo" style="max-width: 120px; margin-bottom: 10px;" />
-      <h1>STS Tax Repair</h1>
+      <img src="${logoUrl}" alt="${companyName} Logo" style="max-width: 120px; margin-bottom: 10px;" />
+      <h1>${companyName}</h1>
       <p style="color: #ffffff; margin: 5px 0 0 0;">Professional Tax Services</p>
     </div>
   `;
 
   const footer = `
     <div class="footer">
-      <p>STS Tax Repair | Professional Tax Services</p>
-      <p>Phone: (555) 123-4567 | Email: support@ststaxrepair.org</p>
+      <p>${companyName} | Professional Tax Services</p>
+      <p>Phone: (555) 123-4567 | Email: ${brand.replyToEmail || 'support@ststaxrepair.org'}</p>
       <p style="margin-top: 15px;">This is an automated message. Please do not reply directly to this email.</p>
       <div style="margin-top: 15px; padding: 12px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; text-align: left;">
         <p style="margin: 0; font-size: 12px; color: #856404;">
-          <strong>Can't find this email?</strong> Please check your Spam/Junk folder. To ensure you receive future emails from STS Tax Repair, add <strong>ststaxrepair@gmail.com</strong> to your contacts.
+          <strong>Can't find this email?</strong> Please check your Spam/Junk folder. To ensure you receive future emails from ${companyName}, add <strong>ststaxrepair@gmail.com</strong> to your contacts.
         </p>
       </div>
     </div>
@@ -133,7 +155,7 @@ function getEmailTemplate(type: EmailType, data: Record<string, any>): { subject
   switch (type) {
     case 'password_reset':
       return {
-        subject: 'Reset Your Password - STS Tax Repair',
+        subject: `Reset Your Password - ${companyName}`,
         html: `
           <!DOCTYPE html>
           <html>
@@ -163,7 +185,7 @@ function getEmailTemplate(type: EmailType, data: Record<string, any>): { subject
 
     case 'email_verification':
       return {
-        subject: 'Verify Your Email - STS Tax Repair',
+        subject: `Verify Your Email - ${companyName}`,
         html: `
           <!DOCTYPE html>
           <html>
@@ -203,7 +225,7 @@ function getEmailTemplate(type: EmailType, data: Record<string, any>): { subject
 
     case 'welcome':
       return {
-        subject: 'Welcome to STS Tax Repair!',
+        subject: `Welcome to ${companyName}!`,
         html: `
           <!DOCTYPE html>
           <html>
@@ -242,7 +264,7 @@ function getEmailTemplate(type: EmailType, data: Record<string, any>): { subject
 
     case 'document_request':
       return {
-        subject: 'Document Request - STS Tax Repair',
+        subject: `Document Request - ${companyName}`,
         html: `
           <!DOCTYPE html>
           <html>
@@ -272,7 +294,7 @@ function getEmailTemplate(type: EmailType, data: Record<string, any>): { subject
 
     case 'appointment_confirmation':
       return {
-        subject: 'Appointment Confirmed - STS Tax Repair',
+        subject: `Appointment Confirmed - ${companyName}`,
         html: `
           <!DOCTYPE html>
           <html>
@@ -306,7 +328,7 @@ function getEmailTemplate(type: EmailType, data: Record<string, any>): { subject
 
     case 'appointment_reminder':
       return {
-        subject: 'Appointment Reminder - STS Tax Repair',
+        subject: `Appointment Reminder - ${companyName}`,
         html: `
           <!DOCTYPE html>
           <html>
@@ -337,7 +359,7 @@ function getEmailTemplate(type: EmailType, data: Record<string, any>): { subject
 
     case 'payment_reminder':
       return {
-        subject: 'Payment Reminder - STS Tax Repair',
+        subject: `Payment Reminder - ${companyName}`,
         html: `
           <!DOCTYPE html>
           <html>
@@ -369,7 +391,7 @@ function getEmailTemplate(type: EmailType, data: Record<string, any>): { subject
 
     case 'payment_received':
       return {
-        subject: 'Payment Received - STS Tax Repair',
+        subject: `Payment Received - ${companyName}`,
         html: `
           <!DOCTYPE html>
           <html>
@@ -399,7 +421,7 @@ function getEmailTemplate(type: EmailType, data: Record<string, any>): { subject
 
     case 'tax_filing_status':
       return {
-        subject: `Tax Filing Update: ${data.status} - STS Tax Repair`,
+        subject: `Tax Filing Update: ${data.status} - ${companyName}`,
         html: `
           <!DOCTYPE html>
           <html>
@@ -430,7 +452,7 @@ function getEmailTemplate(type: EmailType, data: Record<string, any>): { subject
 
     case 'signature_request':
       return {
-        subject: 'Signature Required - Form 8879 - STS Tax Repair',
+        subject: `Signature Required - Form 8879 - ${companyName}`,
         html: `
           <!DOCTYPE html>
           <html>
@@ -463,7 +485,7 @@ function getEmailTemplate(type: EmailType, data: Record<string, any>): { subject
 
     case 'signature_completed':
       return {
-        subject: 'Form 8879 Signed Successfully - STS Tax Repair',
+        subject: `Form 8879 Signed Successfully - ${companyName}`,
         html: `
           <!DOCTYPE html>
           <html>
@@ -493,7 +515,7 @@ function getEmailTemplate(type: EmailType, data: Record<string, any>): { subject
 
     case 'staff_invite':
       return {
-        subject: "You're Invited to Join STS Tax Repair",
+        subject: `You're Invited to Join ${companyName}`,
         html: `
           <!DOCTYPE html>
           <html>
@@ -523,7 +545,7 @@ function getEmailTemplate(type: EmailType, data: Record<string, any>): { subject
 
     case 'support_ticket_created':
       return {
-        subject: `Support Ticket #${data.ticketId} Created - STS Tax Repair`,
+        subject: `Support Ticket #${data.ticketId} Created - ${companyName}`,
         html: `
           <!DOCTYPE html>
           <html>
@@ -555,7 +577,7 @@ function getEmailTemplate(type: EmailType, data: Record<string, any>): { subject
 
     case 'support_ticket_response':
       return {
-        subject: `Response to Support Ticket #${data.ticketId} - STS Tax Repair`,
+        subject: `Response to Support Ticket #${data.ticketId} - ${companyName}`,
         html: `
           <!DOCTYPE html>
           <html>
@@ -587,7 +609,7 @@ function getEmailTemplate(type: EmailType, data: Record<string, any>): { subject
 
     default:
       return {
-        subject: 'Notification from STS Tax Repair',
+        subject: `Notification from ${companyName}`,
         html: `
           <!DOCTYPE html>
           <html>
