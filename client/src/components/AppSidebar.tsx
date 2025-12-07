@@ -1,6 +1,6 @@
-import { Home, Users, UserPlus, CheckSquare, Crown, Ticket, BookOpen, BarChart3, Settings, LogOut, Calendar, CalendarClock, DollarSign, FileText, FileSignature, Shield, Lock } from "lucide-react";
+import { Home, Users, UserPlus, CheckSquare, Crown, Ticket, BookOpen, BarChart3, Settings, LogOut, Calendar, CalendarClock, DollarSign, FileText, FileSignature, Shield, Lock, Palette } from "lucide-react";
 import { Link, useLocation } from "wouter";
-import logoUrl from "@/assets/sts-logo.png";
+import defaultLogoUrl from "@/assets/sts-logo.png";
 import {
   Sidebar,
   SidebarContent,
@@ -16,6 +16,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { usePermissions, PERMISSIONS } from "@/hooks/usePermissions";
+import { useBranding } from "@/hooks/useBranding";
 
 type UserRole = 'client' | 'agent' | 'tax_office' | 'admin';
 
@@ -42,6 +43,7 @@ const menuItems: MenuItem[] = [
   { title: "Support Tickets", url: "/tickets", icon: Ticket, permission: PERMISSIONS.SUPPORT_VIEW },
   { title: "Knowledge Base", url: "/knowledge", icon: BookOpen, permission: PERMISSIONS.KNOWLEDGE_VIEW },
   { title: "Reports", url: "/reports", icon: BarChart3, permission: PERMISSIONS.REPORTS_VIEW },
+  { title: "Branding", url: "/branding", icon: Palette, permission: PERMISSIONS.BRANDING_MANAGE },
   { title: "User Management", url: "/users", icon: Shield, adminOnly: true },
   { title: "Permissions", url: "/permissions", icon: Lock, adminOnly: true },
   { title: "Settings", url: "/settings", icon: Settings, permission: PERMISSIONS.SETTINGS_VIEW },
@@ -59,6 +61,9 @@ interface AppSidebarProps {
 export function AppSidebar({ user }: AppSidebarProps) {
   const [location] = useLocation();
   const { hasPermission, role: permissionRole, isLoading } = usePermissions();
+  const { branding } = useBranding();
+  const logoUrl = branding?.logoUrl || defaultLogoUrl;
+  const companyName = branding?.companyName || 'STS TaxRepair';
   const userRole = (user?.role?.toLowerCase() || 'client') as UserRole;
 
   const getProfileImageUrl = () => {
@@ -115,7 +120,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
         <div className="sidebar-logo-container flex items-center justify-center flex-shrink-0">
           <img 
             src={logoUrl} 
-            alt="STS TaxRepair Logo" 
+            alt={`${companyName} Logo`}
             className="h-20 w-auto object-contain flex-shrink-0 drop-shadow-[0_0_10px_rgba(16,185,129,0.3)]"
           />
         </div>

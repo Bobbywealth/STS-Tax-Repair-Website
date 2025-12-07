@@ -24,8 +24,9 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
-import logoUrl from "@/assets/sts-logo.png";
+import defaultLogoUrl from "@/assets/sts-logo.png";
 import { PWALoginScreen } from "@/components/PWALoginScreen";
+import { useBranding } from "@/hooks/useBranding";
 
 function FloatingParticles() {
   return (
@@ -69,6 +70,11 @@ export default function ClientLogin() {
   const [staffPassword, setStaffPassword] = useState("");
   const [isStaffLoading, setIsStaffLoading] = useState(false);
   const [showStaffForm, setShowStaffForm] = useState(false);
+  
+  // Office branding for white-label customization
+  const { branding, isCustomBranding } = useBranding();
+  const logoUrl = branding?.logoUrl || defaultLogoUrl;
+  const companyName = branding?.companyName || 'STS TaxRepair';
 
   useEffect(() => {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
@@ -474,7 +480,7 @@ export default function ClientLogin() {
             <Link href="/" className="flex items-center gap-3">
               <img
                 src={logoUrl}
-                alt="STS TaxRepair"
+                alt={companyName}
                 className="h-14 w-auto object-contain"
               />
             </Link>
@@ -551,7 +557,7 @@ export default function ClientLogin() {
           <div className="text-center space-y-4">
             <img
               src={logoUrl}
-              alt="STS TaxRepair Logo"
+              alt={`${companyName} Logo`}
               className="h-24 w-auto object-contain mx-auto logo-glow"
             />
             <h1

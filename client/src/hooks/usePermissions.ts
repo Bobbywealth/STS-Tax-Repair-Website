@@ -119,6 +119,10 @@ export const PERMISSIONS = {
   SETTINGS_VIEW: 'settings.view',
   SETTINGS_EDIT: 'settings.edit',
   
+  // Branding (Tax Office: white-label customization)
+  BRANDING_MANAGE: 'branding.manage',
+  BRANDING_PERSONAL_THEME: 'branding.personal_theme',
+  
   // Agent Management (Tax Office: office-scoped)
   AGENTS_VIEW: 'agents.view',
   AGENTS_CREATE: 'agents.create',

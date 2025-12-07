@@ -30,6 +30,7 @@ const Tickets = lazy(() => import("@/pages/Tickets"));
 const Knowledge = lazy(() => import("@/pages/Knowledge"));
 const Reports = lazy(() => import("@/pages/Reports"));
 const Settings = lazy(() => import("@/pages/Settings"));
+const Branding = lazy(() => import("@/pages/Branding"));
 const UserManagement = lazy(() => import("@/pages/UserManagement"));
 const Permissions = lazy(() => import("@/pages/Permissions"));
 const ClientLogin = lazy(() => import("@/pages/ClientLogin"));
@@ -179,6 +180,10 @@ function AdminRouter() {
         </Route>
         <Route path="/settings">
           <PermissionRoute component={Settings} permission={PERMISSIONS.SETTINGS_VIEW} />
+        </Route>
+        {/* Branding - Tax Office white-label customization */}
+        <Route path="/branding">
+          <PermissionRoute component={Branding} permission={PERMISSIONS.BRANDING_MANAGE} />
         </Route>
         {/* User Management - both short and long URL formats */}
         <Route path="/users">
