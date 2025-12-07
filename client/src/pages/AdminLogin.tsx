@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Shield, Mail, Lock, AlertCircle } from "lucide-react";
+import { Shield, Mail, Lock, AlertCircle, UserPlus, FileQuestion } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
 import logoUrl from "@/assets/sts-logo.png";
@@ -148,11 +148,38 @@ export default function AdminLogin() {
               Forgot Password?
             </Link>
           </div>
+
+          {/* Staff Signup / Request Access Options */}
+          <div className="mt-6 pt-6 border-t border-slate-700">
+            <p className="text-center text-sm text-slate-400 mb-4">
+              Need access to the staff portal?
+            </p>
+            <div className="flex flex-col gap-3">
+              <Link href="/staff-signup" data-testid="link-staff-signup">
+                <Button 
+                  variant="outline" 
+                  className="w-full border-emerald-600/50 text-emerald-400 hover:bg-emerald-600/20 hover:border-emerald-500"
+                >
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Sign Up as Staff / Agent
+                </Button>
+              </Link>
+              <Link href="/staff-signup?request=true" data-testid="link-request-access">
+                <Button 
+                  variant="outline" 
+                  className="w-full border-amber-600/50 text-amber-400 hover:bg-amber-600/20 hover:border-amber-500"
+                >
+                  <FileQuestion className="h-4 w-4 mr-2" />
+                  Request Admin Access
+                </Button>
+              </Link>
+            </div>
+          </div>
           
           <div className="mt-6 pt-6 border-t border-slate-700">
             <p className="text-center text-sm text-slate-500">
               Client looking for your portal?{" "}
-              <Link href="/login" className="text-emerald-400 hover:text-emerald-300 font-medium">
+              <Link href="/client-login" className="text-emerald-400 hover:text-emerald-300 font-medium" data-testid="link-client-login">
                 Client Login
               </Link>
             </p>
