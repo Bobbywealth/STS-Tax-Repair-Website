@@ -318,6 +318,52 @@ export const insertTaskSchema = createInsertSchema(tasks).omit({
 export type InsertTask = z.infer<typeof insertTaskSchema>;
 export type Task = typeof tasks.$inferSelect;
 
+// Lead Status Type
+export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'proposal' | 'negotiation' | 'converted' | 'lost';
+
+// Leads Table - CRM native leads management
+export const leads = mysqlTable(
+  "leads",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+    name: varchar("name", { length: 255 }).notNull(),
+    email: varchar("email", { length: 255 }),
+    phone: varchar("phone", { length: 30 }),
+    company: varchar("company", { length: 255 }),
+    address: text("address"),
+    city: varchar("city", { length: 100 }),
+    state: varchar("state", { length: 100 }),
+    zipCode: varchar("zip_code", { length: 20 }),
+    country: varchar("country", { length: 100 }).default("United States"),
+    source: varchar("source", { length: 100 }),
+    status: varchar("status", { length: 30 }).default("new").$type<LeadStatus>(),
+    notes: text("notes"),
+    assignedToId: varchar("assigned_to_id", { length: 36 }),
+    assignedToName: varchar("assigned_to_name", { length: 255 }),
+    estimatedValue: decimal("estimated_value", { precision: 10, scale: 2 }),
+    lastContactDate: timestamp("last_contact_date"),
+    nextFollowUpDate: timestamp("next_follow_up_date"),
+    convertedToClientId: varchar("converted_to_client_id", { length: 36 }),
+    convertedAt: timestamp("converted_at"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => ({
+    statusIdx: index("lead_status_idx").on(table.status),
+    assignedIdx: index("lead_assigned_idx").on(table.assignedToId),
+    emailIdx: index("lead_email_idx").on(table.email),
+  }),
+);
+
+export const insertLeadSchema = createInsertSchema(leads).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertLead = z.infer<typeof insertLeadSchema>;
+export type Lead = typeof leads.$inferSelect;
+
 // Staff Members Table
 export const staffMembers = mysqlTable("staff_members", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
