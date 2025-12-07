@@ -25,7 +25,7 @@ export default function Knowledge() {
       title: "Dashboard Overview for Admins",
       category: "Getting Started",
       excerpt: "Learn how to navigate the admin dashboard and access key features.",
-      lastUpdated: "Dec 1, 2024",
+      lastUpdated: "Dec 7, 2025",
       audience: "admin",
       content: `
 # Dashboard Overview for Admins
@@ -73,7 +73,7 @@ The left sidebar contains all main features:
       title: "Client Management for Admins",
       category: "Client Management",
       excerpt: "Complete guide to adding, editing, and managing client profiles and tax filings.",
-      lastUpdated: "Dec 1, 2024",
+      lastUpdated: "Dec 7, 2025",
       audience: "admin",
       content: `
 # Client Management for Admins
@@ -147,7 +147,7 @@ Edit any of these fields:
       title: "Task Management for Staff",
       category: "Tasks",
       excerpt: "Create, assign, and track tasks for your team to keep workflows organized.",
-      lastUpdated: "Dec 1, 2024",
+      lastUpdated: "Dec 7, 2025",
       audience: "admin",
       content: `
 # Task Management for Staff
@@ -194,7 +194,7 @@ Tasks move through these states:
       title: "Document Management",
       category: "Documents",
       excerpt: "Upload, organize, and track tax documents for clients.",
-      lastUpdated: "Dec 1, 2024",
+      lastUpdated: "Dec 7, 2025",
       audience: "admin",
       content: `
 # Document Management
@@ -247,7 +247,7 @@ Legacy documents from Perfex CRM are automatically available in the system with:
       title: "Support Tickets and Client Communication",
       category: "Support",
       excerpt: "Handle client support requests and maintain communication records.",
-      lastUpdated: "Dec 1, 2024",
+      lastUpdated: "Dec 7, 2025",
       audience: "admin",
       content: `
 # Support Tickets and Client Communication
@@ -298,7 +298,7 @@ The Messages tab shows:
       title: "User Roles and Permissions",
       category: "Administration",
       excerpt: "Understand admin and staff roles and their permissions.",
-      lastUpdated: "Dec 1, 2024",
+      lastUpdated: "Dec 7, 2025",
       audience: "admin",
       content: `
 # User Roles and Permissions
@@ -360,7 +360,7 @@ Admins can:
       title: "E-Signatures and Form 8879",
       category: "Documents",
       excerpt: "Guide clients through the e-signature process for IRS Form 8879.",
-      lastUpdated: "Dec 1, 2024",
+      lastUpdated: "Dec 7, 2025",
       audience: "admin",
       content: `
 # E-Signatures and IRS Form 8879
@@ -432,7 +432,7 @@ Signed forms are:
       title: "Appointments and Scheduling",
       category: "Appointments",
       excerpt: "Schedule and manage client meetings and consultations.",
-      lastUpdated: "Dec 1, 2024",
+      lastUpdated: "Dec 7, 2025",
       audience: "admin",
       content: `
 # Appointments and Scheduling
@@ -514,7 +514,7 @@ You can:
       title: "Payment Tracking and Financial Management",
       category: "Financial",
       excerpt: "Manage client payments, service fees, and financial records.",
-      lastUpdated: "Dec 1, 2024",
+      lastUpdated: "Dec 7, 2025",
       audience: "admin",
       content: `
 # Payment Tracking and Financial Management
@@ -613,7 +613,7 @@ View:
       title: "Analytics and Reporting",
       category: "Reports",
       excerpt: "Generate reports and analyze business metrics and performance.",
-      lastUpdated: "Dec 1, 2024",
+      lastUpdated: "Dec 7, 2025",
       audience: "admin",
       content: `
 # Analytics and Reporting
@@ -726,7 +726,7 @@ Look for:
       title: "Lead Management and Prospecting",
       category: "Leads",
       excerpt: "Manage leads, track prospects, and convert them to clients.",
-      lastUpdated: "Dec 1, 2024",
+      lastUpdated: "Dec 7, 2025",
       audience: "admin",
       content: `
 # Lead Management and Prospecting
@@ -838,7 +838,7 @@ Track:
       title: "Tax Deadlines and Compliance",
       category: "Tax Deadlines",
       excerpt: "Track important tax deadlines and ensure compliance.",
-      lastUpdated: "Dec 1, 2024",
+      lastUpdated: "Dec 7, 2025",
       audience: "admin",
       content: `
 # Tax Deadlines and Compliance
@@ -949,7 +949,7 @@ Penalties:
       title: "Getting Started as a Client",
       category: "Getting Started",
       excerpt: "Welcome to STS TaxRepair! Learn how to get started with your tax refund.",
-      lastUpdated: "Dec 1, 2024",
+      lastUpdated: "Dec 7, 2025",
       audience: "client",
       content: `
 # Getting Started with STS TaxRepair
@@ -1002,7 +1002,7 @@ Gather these documents:
       title: "How to Upload Your Documents",
       category: "Documents",
       excerpt: "Step-by-step instructions for securely uploading your tax documents.",
-      lastUpdated: "Dec 1, 2024",
+      lastUpdated: "Dec 7, 2025",
       audience: "client",
       content: `
 # How to Upload Your Documents
@@ -1067,7 +1067,7 @@ Your documents are:
       title: "Understanding Your Refund Status",
       category: "Process",
       excerpt: "Learn what each refund status means and what to expect.",
-      lastUpdated: "Dec 1, 2024",
+      lastUpdated: "Dec 7, 2025",
       audience: "client",
       content: `
 # Understanding Your Refund Status
@@ -1142,7 +1142,7 @@ Contact our support team:
       title: "Account Management",
       category: "Account",
       excerpt: "Update your profile information and manage your account settings.",
-      lastUpdated: "Dec 1, 2024",
+      lastUpdated: "Dec 7, 2025",
       audience: "client",
       content: `
 # Managing Your Account
@@ -1218,7 +1218,7 @@ If you no longer need your account:
       title: "Common Questions and Troubleshooting",
       category: "FAQ",
       excerpt: "Answers to frequently asked questions and solutions to common issues.",
-      lastUpdated: "Dec 1, 2024",
+      lastUpdated: "Dec 7, 2025",
       audience: "client",
       content: `
 # Common Questions & Troubleshooting
@@ -1301,7 +1301,7 @@ Contact us during business hours:
       title: "What Happens If I Owe Taxes?",
       category: "Process",
       excerpt: "Information about what to do if you owe taxes instead of receiving a refund.",
-      lastUpdated: "Dec 1, 2024",
+      lastUpdated: "Dec 7, 2025",
       audience: "client",
       content: `
 # What If I Owe Taxes?
@@ -1369,7 +1369,7 @@ Message our support team:
       title: "Data Privacy and Security",
       category: "Security",
       excerpt: "Learn how we protect your personal and financial information.",
-      lastUpdated: "Dec 1, 2024",
+      lastUpdated: "Dec 7, 2025",
       audience: "client",
       content: `
 # Data Privacy and Security
@@ -1480,7 +1480,7 @@ Contact us:
       title: "Signing Documents (E-Signatures)",
       category: "Documents",
       excerpt: "How to securely sign tax documents electronically.",
-      lastUpdated: "Dec 1, 2024",
+      lastUpdated: "Dec 7, 2025",
       audience: "client",
       content: `
 # Signing Documents Electronically
@@ -1594,7 +1594,7 @@ Contact support:
       title: "Contacting Support and Getting Help",
       category: "Support",
       excerpt: "How to reach our support team and get answers to your questions.",
-      lastUpdated: "Dec 1, 2024",
+      lastUpdated: "Dec 7, 2025",
       audience: "client",
       content: `
 # Getting Help from Support
@@ -1723,7 +1723,7 @@ We're here to help!
       title: "Tax Planning Tips and Deductions",
       category: "Process",
       excerpt: "Tips for planning your taxes and understanding common deductions.",
-      lastUpdated: "Dec 1, 2024",
+      lastUpdated: "Dec 7, 2025",
       audience: "client",
       content: `
 # Tax Planning Tips and Deductions
