@@ -131,6 +131,7 @@ export interface IStorage {
   getStaffInviteByCode(inviteCode: string): Promise<StaffInvite | undefined>;
   createStaffInvite(invite: InsertStaffInvite): Promise<StaffInvite>;
   useStaffInvite(inviteCode: string, userId: string, userEmail: string): Promise<StaffInvite | undefined>;
+  markStaffInviteUsed(inviteCode: string, userId: string): Promise<boolean>;
   deleteStaffInvite(id: string): Promise<boolean>;
 
   // Permissions

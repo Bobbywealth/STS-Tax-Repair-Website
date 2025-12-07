@@ -1616,42 +1616,150 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Redeem staff invite
-  // CRITICAL: Verifies the logged-in user's email matches the invitation email
-  app.post(
-    "/api/staff-invites/redeem",
-    isAuthenticated,
-    async (req: any, res) => {
-      try {
-        const userId = req.userId || req.user?.claims?.sub;
-        if (!userId) {
-          return res.status(401).json({ error: "Not authenticated" });
-        }
-        
-        // Get the current user's email to verify against the invitation
-        const currentUser = await storage.getUser(userId);
-        if (!currentUser || !currentUser.email) {
-          return res.status(401).json({ error: "User not found or no email associated" });
-        }
-        
-        const { inviteCode } = req.body;
-        if (!inviteCode) {
-          return res.status(400).json({ error: "Invite code required" });
-        }
-
-        // Pass the user's email so storage can verify it matches the invitation
-        const invite = await storage.useStaffInvite(inviteCode, userId, currentUser.email);
-        if (!invite) {
-          return res
-            .status(404)
-            .json({ error: "Invalid or expired invite code" });
-        }
-        res.json({ success: true, role: invite.role });
-      } catch (error: any) {
-        res.status(400).json({ error: error.message });
+  // Validate staff invite (public - check if invite is valid before showing form)
+  app.get("/api/staff-invites/validate/:code", async (req, res) => {
+    try {
+      const { code } = req.params;
+      if (!code) {
+        return res.status(400).json({ valid: false, error: "Invite code required" });
       }
-    },
-  );
+
+      const invite = await storage.getStaffInviteByCode(code);
+      if (!invite) {
+        return res.status(404).json({ valid: false, error: "Invalid invite code" });
+      }
+
+      if (invite.usedAt) {
+        return res.status(400).json({ valid: false, error: "This invitation has already been used" });
+      }
+
+      if (new Date(invite.expiresAt) < new Date()) {
+        return res.status(400).json({ valid: false, error: "This invitation has expired" });
+      }
+
+      res.json({ 
+        valid: true, 
+        email: invite.email,
+        role: invite.role,
+        invitedBy: invite.invitedByName
+      });
+    } catch (error: any) {
+      res.status(500).json({ valid: false, error: error.message });
+    }
+  });
+
+  // Redeem staff invite (PUBLIC - allows new staff to create their account)
+  app.post("/api/staff-invites/redeem", async (req: any, res) => {
+    try {
+      const { inviteCode, firstName, lastName, password } = req.body;
+      
+      if (!inviteCode) {
+        return res.status(400).json({ error: "Invite code required" });
+      }
+      if (!firstName || !lastName) {
+        return res.status(400).json({ error: "First name and last name are required" });
+      }
+      if (!password || password.length < 8) {
+        return res.status(400).json({ error: "Password must be at least 8 characters" });
+      }
+
+      // Get and validate the invite
+      const invite = await storage.getStaffInviteByCode(inviteCode);
+      if (!invite) {
+        return res.status(404).json({ error: "Invalid invite code" });
+      }
+
+      if (invite.usedAt) {
+        return res.status(400).json({ error: "This invitation has already been used" });
+      }
+
+      if (new Date(invite.expiresAt) < new Date()) {
+        return res.status(400).json({ error: "This invitation has expired" });
+      }
+
+      // Check if user already exists with this email
+      let user = await storage.getUserByEmail(invite.email);
+      const passwordHash = await bcrypt.hash(password, 10);
+      
+      if (user) {
+        // User exists - update their role (upgrade from client to staff)
+        // Use updateUserRole for role change with proper audit logging
+        await storage.updateUserRole(
+          user.id, 
+          invite.role, 
+          invite.invitedById, 
+          invite.invitedByName || 'System',
+          `Staff invite redeemed`
+        );
+        
+        // Update name if provided
+        await storage.updateUser(user.id, { 
+          firstName: firstName || user.firstName,
+          lastName: lastName || user.lastName
+        });
+        
+        // If they don't have a password set, update via upsertUser
+        if (!user.passwordHash) {
+          await storage.upsertUser({
+            id: user.id,
+            email: user.email,
+            firstName: firstName || user.firstName,
+            lastName: lastName || user.lastName,
+            passwordHash,
+            emailVerifiedAt: new Date()
+          });
+        }
+        
+        user = await storage.getUser(user.id);
+      } else {
+        // Create new user account using upsertUser
+        const userId = `staff-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+        
+        user = await storage.upsertUser({
+          id: userId,
+          email: invite.email,
+          firstName,
+          lastName,
+          role: invite.role,
+          passwordHash,
+          isActive: true,
+          emailVerifiedAt: new Date(), // Auto-verify since they came from email invite
+        });
+      }
+
+      // Mark invite as used
+      await storage.markStaffInviteUsed(inviteCode, user!.id);
+
+      // Create session for the new staff member
+      req.session.userId = user!.id;
+      req.session.userRole = user!.role;
+      req.session.isAdminLogin = true;
+      req.session.isClientLogin = false;
+
+      await new Promise<void>((resolve, reject) => {
+        req.session.save((err: any) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+
+      res.json({ 
+        success: true, 
+        role: invite.role,
+        user: {
+          id: user!.id,
+          email: user!.email,
+          firstName: user!.firstName,
+          lastName: user!.lastName,
+          role: user!.role
+        },
+        redirectUrl: "/dashboard"
+      });
+    } catch (error: any) {
+      console.error("Staff invite redemption error:", error);
+      res.status(400).json({ error: error.message });
+    }
+  });
 
   // Delete staff invite (admin only)
   app.delete(

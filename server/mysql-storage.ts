@@ -110,6 +110,16 @@ export class MySQLStorage implements IStorage {
       updatedAt: new Date(),
     };
 
+    // Handle passwordHash if provided
+    if (userData.passwordHash !== undefined) {
+      userValues.passwordHash = userData.passwordHash;
+    }
+
+    // Handle emailVerifiedAt if provided
+    if (userData.emailVerifiedAt !== undefined) {
+      userValues.emailVerifiedAt = userData.emailVerifiedAt;
+    }
+
     if (existing) {
       await mysqlDb
         .update(usersTable)
@@ -718,6 +728,13 @@ export class MySQLStorage implements IStorage {
 
     const [updated] = await mysqlDb.select().from(staffInvitesTable).where(eq(staffInvitesTable.inviteCode, inviteCode));
     return updated;
+  }
+
+  async markStaffInviteUsed(inviteCode: string, userId: string): Promise<boolean> {
+    const result = await mysqlDb.update(staffInvitesTable)
+      .set({ usedAt: new Date(), usedById: userId })
+      .where(eq(staffInvitesTable.inviteCode, inviteCode));
+    return getAffectedRows(result) > 0;
   }
 
   async deleteStaffInvite(id: string): Promise<boolean> {
