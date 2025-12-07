@@ -15,6 +15,7 @@ import {
   type AuthenticatedRequest,
 } from "./authorization";
 import { mysqlStorage } from "./mysql-storage";
+import { setObjectAclPolicy } from "./objectAcl";
 import {
   insertTaxDeadlineSchema,
   insertAppointmentSchema,
@@ -3893,7 +3894,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Save document metadata after upload
-  app.post("/api/objects/confirm", async (req, res) => {
+  app.post("/api/objects/confirm", isAuthenticated, async (req, res) => {
     try {
       const { clientId, objectPath, fileName, fileType, fileSize, category } =
         req.body;
@@ -3928,6 +3929,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       const newVersion = existingDocs.length + 1;
 
+      // Set ACL policy for the uploaded file to allow admin access
+      try {
+        const objectStorageService = new ObjectStorageService();
+        const objectFile = await objectStorageService.getObjectEntityFile(objectPath);
+        // Set as private file so only authenticated users can access
+        await setObjectAclPolicy(objectFile, {
+          owner: clientId,
+          visibility: "private",
+        });
+        console.log(`[OBJECTS] ACL policy set for ${objectPath}`);
+      } catch (aclError) {
+        console.warn(`[OBJECTS] Could not set ACL policy for ${objectPath}:`, aclError);
+        // Don't fail the upload if ACL setting fails, but log it
+      }
+
       // Save document metadata to database
       const document = await storage.createDocumentVersion({
         clientId,
@@ -3949,16 +3965,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Serve uploaded files
-  app.get("/objects/*", async (req, res) => {
+  app.get("/objects/*", isAuthenticated, async (req, res) => {
     try {
       const objectStorageService = new ObjectStorageService();
       const objectFile = await objectStorageService.getObjectEntityFile(
         req.path,
       );
+      console.log(`[OBJECTS] Serving file: ${req.path} for user ${(req as any).userId}`);
       objectStorageService.downloadObject(objectFile, res);
     } catch (error) {
       console.error("Error serving object:", error);
       if (error instanceof ObjectNotFoundError) {
+        console.error(`[OBJECTS] File not found: ${req.path}`);
         return res.status(404).json({ error: "File not found" });
       }
       return res.status(500).json({ error: "Internal server error" });
