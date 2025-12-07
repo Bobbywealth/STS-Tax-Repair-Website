@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { Bell, Check, CheckCheck, Trash2, User, FileText, CreditCard, Calendar, MessageSquare, AlertCircle, Users, ClipboardList } from "lucide-react";
+import { Bell, Check, CheckCheck, Trash2, User, FileText, CreditCard, Calendar, MessageSquare, AlertCircle, Users, ClipboardList, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -14,6 +14,11 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatDistanceToNow } from "date-fns";
 import { useLocation } from "wouter";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type NotificationType = 
   | 'staff_request'
@@ -73,9 +78,77 @@ const notificationColors: Record<NotificationType, string> = {
   tax_filing_status: 'text-amber-500',
 };
 
+// Create notification sound using Web Audio API
+function createNotificationSound(): () => void {
+  return () => {
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      
+      // Create a pleasant chime sound
+      const oscillator1 = audioContext.createOscillator();
+      const oscillator2 = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator1.connect(gainNode);
+      oscillator2.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // Pleasant bell-like frequencies
+      oscillator1.frequency.setValueAtTime(830, audioContext.currentTime); // G#5
+      oscillator1.type = 'sine';
+      
+      oscillator2.frequency.setValueAtTime(1245, audioContext.currentTime); // D#6
+      oscillator2.type = 'sine';
+      
+      // Envelope for the sound
+      gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.02);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      
+      oscillator1.start(audioContext.currentTime);
+      oscillator2.start(audioContext.currentTime);
+      oscillator1.stop(audioContext.currentTime + 0.5);
+      oscillator2.stop(audioContext.currentTime + 0.5);
+      
+      // Second chime (higher)
+      setTimeout(() => {
+        const osc1 = audioContext.createOscillator();
+        const osc2 = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(audioContext.destination);
+        
+        osc1.frequency.setValueAtTime(1046, audioContext.currentTime); // C6
+        osc1.type = 'sine';
+        osc2.frequency.setValueAtTime(1568, audioContext.currentTime); // G6
+        osc2.type = 'sine';
+        
+        gain.gain.setValueAtTime(0, audioContext.currentTime);
+        gain.gain.linearRampToValueAtTime(0.25, audioContext.currentTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+        
+        osc1.start(audioContext.currentTime);
+        osc2.start(audioContext.currentTime);
+        osc1.stop(audioContext.currentTime + 0.4);
+        osc2.stop(audioContext.currentTime + 0.4);
+      }, 150);
+    } catch (e) {
+      console.log('Audio not supported');
+    }
+  };
+}
+
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [, setLocation] = useLocation();
+  const [soundEnabled, setSoundEnabled] = useState(() => {
+    const stored = localStorage.getItem('notification-sound');
+    return stored !== 'false';
+  });
+  const previousCountRef = useRef<number | null>(null);
+  const playSound = useRef(createNotificationSound());
 
   const { data: countData, refetch: refetchCount } = useQuery<{ count: number }>({
     queryKey: ['/api/notifications/count'],
@@ -86,6 +159,22 @@ export function NotificationBell() {
     queryKey: ['/api/notifications'],
     enabled: open,
   });
+
+  // Play sound when new notifications arrive
+  useEffect(() => {
+    const currentCount = countData?.count || 0;
+    
+    if (previousCountRef.current !== null && currentCount > previousCountRef.current && soundEnabled) {
+      playSound.current();
+    }
+    
+    previousCountRef.current = currentCount;
+  }, [countData?.count, soundEnabled]);
+
+  // Save sound preference
+  useEffect(() => {
+    localStorage.setItem('notification-sound', String(soundEnabled));
+  }, [soundEnabled]);
 
   const markAsReadMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -128,6 +217,7 @@ export function NotificationBell() {
   }, [markAsReadMutation, setLocation]);
 
   const unreadCount = countData?.count || 0;
+  const hasUnread = unreadCount > 0;
 
   useEffect(() => {
     if (open) {
@@ -143,24 +233,39 @@ export function NotificationBell() {
     }
   };
 
+  const toggleSound = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSoundEnabled(!soundEnabled);
+  };
+
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button 
           variant="ghost" 
           size="icon" 
-          className="relative"
+          className={`relative group ${hasUnread ? 'text-primary' : ''}`}
           data-testid="button-notifications"
         >
-          <Bell className="h-5 w-5" />
-          {unreadCount > 0 && (
-            <Badge 
-              variant="destructive" 
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-              data-testid="badge-notification-count"
-            >
-              {unreadCount > 99 ? '99+' : unreadCount}
-            </Badge>
+          <Bell 
+            className={`h-5 w-5 transition-all duration-300 ${
+              hasUnread 
+                ? 'animate-[wiggle_1s_ease-in-out_infinite] text-primary' 
+                : 'group-hover:scale-110'
+            }`} 
+          />
+          {hasUnread && (
+            <>
+              {/* Pulsing glow effect behind badge */}
+              <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive/50 animate-ping" />
+              <Badge 
+                variant="destructive" 
+                className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs font-bold shadow-lg shadow-destructive/50 animate-[bounce_1s_ease-in-out_2]"
+                data-testid="badge-notification-count"
+              >
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </Badge>
+            </>
           )}
         </Button>
       </DropdownMenuTrigger>
@@ -171,19 +276,41 @@ export function NotificationBell() {
       >
         <div className="flex items-center justify-between px-3 py-2 border-b">
           <span className="font-semibold text-sm">Notifications</span>
-          {unreadCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs"
-              onClick={() => markAllAsReadMutation.mutate()}
-              disabled={markAllAsReadMutation.isPending}
-              data-testid="button-mark-all-read"
-            >
-              <CheckCheck className="h-3 w-3 mr-1" />
-              Mark all read
-            </Button>
-          )}
+          <div className="flex items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={toggleSound}
+                  data-testid="button-toggle-sound"
+                >
+                  {soundEnabled ? (
+                    <Volume2 className="h-3.5 w-3.5 text-primary" />
+                  ) : (
+                    <VolumeX className="h-3.5 w-3.5 text-muted-foreground" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {soundEnabled ? 'Mute notifications' : 'Enable notification sounds'}
+              </TooltipContent>
+            </Tooltip>
+            {unreadCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => markAllAsReadMutation.mutate()}
+                disabled={markAllAsReadMutation.isPending}
+                data-testid="button-mark-all-read"
+              >
+                <CheckCheck className="h-3 w-3 mr-1" />
+                Mark all read
+              </Button>
+            )}
+          </div>
         </div>
         
         <ScrollArea className="h-[300px]">
@@ -216,7 +343,7 @@ export function NotificationBell() {
                           {notification.title}
                         </p>
                         {!notification.isRead && (
-                          <div className="flex-shrink-0 w-2 h-2 rounded-full bg-primary mt-1.5" />
+                          <div className="flex-shrink-0 w-2 h-2 rounded-full bg-primary mt-1.5 animate-pulse" />
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
