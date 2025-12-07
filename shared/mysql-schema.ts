@@ -405,6 +405,8 @@ export const tasks = mysqlTable("tasks", {
   clientName: text("client_name"),
   assignedToId: varchar("assigned_to_id", { length: 36 }),
   assignedTo: text("assigned_to").notNull(),
+  createdById: varchar("created_by_id", { length: 36 }), // Who created this task
+  createdByName: text("created_by_name"), // Name of creator for display
   dueDate: timestamp("due_date"),
   priority: varchar("priority", { length: 20 }).default("medium"),
   status: varchar("status", { length: 20 }).default("todo"),

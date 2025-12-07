@@ -2610,7 +2610,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // Tasks - Local task management with full CRUD
-  // Role-based filtering: Only admins see all tasks, everyone else sees only assigned tasks
+  // ALL users (including admins) only see:
+  // 1. Tasks they created themselves (created_by_id = current user)
+  // 2. Tasks assigned to them (assigned_to_id = current user)
   app.get(
     "/api/tasks",
     isAuthenticated,
@@ -2618,19 +2620,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req: any, res) => {
       try {
         const userId = req.userId || req.user?.claims?.sub;
-        const currentUser = await storage.getUser(userId);
         const allTasks = await storage.getTasks();
         
-        const userRole = currentUser?.role?.toLowerCase();
-        
-        // ONLY admins see all tasks - explicit check
-        if (userRole === 'admin') {
-          return res.json(allTasks);
-        }
-        
-        // ALL other users (agent, tax_office, or unknown) only see tasks assigned to them
-        // This ensures role-based security even for users with undefined roles
-        const filteredTasks = allTasks.filter(task => task.assignedToId === userId);
+        // ALL users (including admins) only see their own tasks or tasks assigned to them
+        const filteredTasks = allTasks.filter(task => 
+          task.createdById === userId || // Tasks they created
+          task.assignedToId === userId   // Tasks assigned to them
+        );
         return res.json(filteredTasks);
       } catch (error: any) {
         console.error("Error fetching tasks:", error);
@@ -2656,6 +2652,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ error: "Task must be assigned to someone" });
         }
 
+        // Get the creator's info to track who created this task
+        const creatorId = req.userId || req.user?.claims?.sub;
+        const creator = creatorId ? await storage.getUser(creatorId) : null;
+        const creatorName = creator ? `${creator.firstName || ''} ${creator.lastName || ''}`.trim() || creator.email : null;
+
         const task = await storage.createTask({
           title,
           description: description || null,
@@ -2663,6 +2664,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           clientName: clientName || null,
           assignedToId: assignedToId || null,
           assignedTo,
+          createdById: creatorId || null,
+          createdByName: creatorName || null,
           dueDate: dueDate ? new Date(dueDate) : null,
           priority: priority || "medium",
           status: status || "todo",
@@ -4373,36 +4376,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ===========================================
   // TASKS ENDPOINTS
+  // Note: Primary tasks endpoints are defined earlier with proper permission checks
+  // This is a fallback endpoint that uses the same filtering logic
   // ===========================================
-  app.get("/api/tasks", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.userId || req.user?.claims?.sub;
-      const currentUser = await storage.getUser(userId);
-      const userRole = currentUser?.role?.toLowerCase() || 'client';
-      const isAdmin = userRole === 'admin' || userRole === 'tax_office';
-
-      let query = `SELECT id, title, description, client_id as clientId, client_name as clientName,
-                   assigned_to_id as assignedToId, assigned_to as assignedTo, due_date as dueDate,
-                   priority, status, category, created_at as createdAt, updated_at as updatedAt
-                   FROM tasks`;
-      const params: any[] = [];
-
-      if (!isAdmin) {
-        query += ` WHERE assigned_to_id = ?`;
-        params.push(userId);
-      }
-
-      query += ` ORDER BY created_at DESC`;
-
-      const [rows] = await mysqlPool.query(query, params);
-      res.json(rows);
-    } catch (error: any) {
-      console.error('Tasks fetch error:', error);
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  // Note: POST /api/tasks, PATCH /api/tasks/:id, DELETE /api/tasks/:id are defined earlier with proper permission checks
+  // Removed duplicate - tasks endpoints are defined earlier with proper permission checks
 
   // ===========================================
   // DOCUMENTS ENDPOINTS
