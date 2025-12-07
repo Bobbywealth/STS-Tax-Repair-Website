@@ -3874,7 +3874,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Check if Replit Object Storage is available
   const isReplitEnvironment = (): boolean => {
-    return !!(process.env.REPL_ID && process.env.PRIVATE_OBJECT_DIR);
+    // Check for REPL_ID (primary indicator of Replit)
+    return !!process.env.REPL_ID;
   };
 
   // Object Storage - File Upload (returns presigned URL for Replit, or indicates FTP mode)
