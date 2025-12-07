@@ -481,6 +481,7 @@ export const PermissionGroups = {
   CLIENTS: 'clients',
   LEADS: 'leads',
   DOCUMENTS: 'documents',
+  SIGNATURES: 'signatures',
   PAYMENTS: 'payments',
   APPOINTMENTS: 'appointments',
   DEADLINES: 'deadlines',
@@ -488,10 +489,12 @@ export const PermissionGroups = {
   SUPPORT: 'support',
   REPORTS: 'reports',
   SETTINGS: 'settings',
+  AGENTS: 'agents',
   ADMIN: 'admin',
 } as const;
 
 // Default permission definitions with role assignments
+// IMPORTANT: Agent permissions are SCOPED to assigned clients only (enforced at API level)
 export const DefaultPermissions: Array<{
   slug: string;
   label: string;
@@ -503,34 +506,39 @@ export const DefaultPermissions: Array<{
   { slug: 'dashboard.view', label: 'View Dashboard', description: 'Access the main dashboard', featureGroup: 'dashboard', defaultRoles: ['client', 'agent', 'tax_office', 'admin'] },
   { slug: 'dashboard.stats', label: 'View Statistics', description: 'View dashboard statistics and charts', featureGroup: 'dashboard', defaultRoles: ['agent', 'tax_office', 'admin'] },
   
-  // Clients
-  { slug: 'clients.view', label: 'View Clients', description: 'View client list and details', featureGroup: 'clients', defaultRoles: ['agent', 'tax_office', 'admin'] },
+  // Clients (Agent: scoped to assigned clients only)
+  { slug: 'clients.view', label: 'View Clients', description: 'View client list and details (Agent: assigned clients only)', featureGroup: 'clients', defaultRoles: ['agent', 'tax_office', 'admin'] },
+  { slug: 'clients.view_all', label: 'View All Clients', description: 'View complete client list (global access)', featureGroup: 'clients', defaultRoles: ['tax_office', 'admin'] },
   { slug: 'clients.create', label: 'Create Clients', description: 'Add new clients', featureGroup: 'clients', defaultRoles: ['agent', 'tax_office', 'admin'] },
-  { slug: 'clients.edit', label: 'Edit Clients', description: 'Modify client information', featureGroup: 'clients', defaultRoles: ['agent', 'tax_office', 'admin'] },
+  { slug: 'clients.edit', label: 'Edit Clients', description: 'Modify client information (Agent: assigned clients only)', featureGroup: 'clients', defaultRoles: ['agent', 'tax_office', 'admin'] },
   { slug: 'clients.delete', label: 'Delete Clients', description: 'Remove clients from system', featureGroup: 'clients', defaultRoles: ['tax_office', 'admin'] },
+  { slug: 'clients.assign', label: 'Assign Clients to Agent', description: 'Assign or reassign clients to agents', featureGroup: 'clients', defaultRoles: ['tax_office', 'admin'] },
   
-  // Leads
-  { slug: 'leads.view', label: 'View Leads', description: 'View lead list and details', featureGroup: 'leads', defaultRoles: ['agent', 'tax_office', 'admin'] },
+  // Leads (Agent: scoped to assigned leads only)
+  { slug: 'leads.view', label: 'View Leads', description: 'View lead list and details (Agent: assigned leads only)', featureGroup: 'leads', defaultRoles: ['agent', 'tax_office', 'admin'] },
   { slug: 'leads.create', label: 'Create Leads', description: 'Add new leads', featureGroup: 'leads', defaultRoles: ['agent', 'tax_office', 'admin'] },
-  { slug: 'leads.edit', label: 'Edit Leads', description: 'Modify lead information', featureGroup: 'leads', defaultRoles: ['agent', 'tax_office', 'admin'] },
+  { slug: 'leads.edit', label: 'Edit Leads', description: 'Modify lead information (Agent: assigned leads only)', featureGroup: 'leads', defaultRoles: ['agent', 'tax_office', 'admin'] },
   { slug: 'leads.convert', label: 'Convert Leads', description: 'Convert leads to clients', featureGroup: 'leads', defaultRoles: ['agent', 'tax_office', 'admin'] },
   
-  // Documents
-  { slug: 'documents.view', label: 'View Documents', description: 'View uploaded documents', featureGroup: 'documents', defaultRoles: ['client', 'agent', 'tax_office', 'admin'] },
+  // Documents (Agent: scoped to assigned clients only)
+  { slug: 'documents.view', label: 'View Documents', description: 'View uploaded documents (Agent: assigned clients only)', featureGroup: 'documents', defaultRoles: ['client', 'agent', 'tax_office', 'admin'] },
   { slug: 'documents.upload', label: 'Upload Documents', description: 'Upload new documents', featureGroup: 'documents', defaultRoles: ['client', 'agent', 'tax_office', 'admin'] },
   { slug: 'documents.download', label: 'Download Documents', description: 'Download documents', featureGroup: 'documents', defaultRoles: ['client', 'agent', 'tax_office', 'admin'] },
   { slug: 'documents.delete', label: 'Delete Documents', description: 'Remove documents', featureGroup: 'documents', defaultRoles: ['tax_office', 'admin'] },
   { slug: 'documents.request', label: 'Request Documents', description: 'Request documents from clients', featureGroup: 'documents', defaultRoles: ['agent', 'tax_office', 'admin'] },
   
-  // E-Signatures
-  { slug: 'signatures.view', label: 'View E-Signatures', description: 'View e-signature requests', featureGroup: 'documents', defaultRoles: ['client', 'agent', 'tax_office', 'admin'] },
-  { slug: 'signatures.create', label: 'Create E-Signature Requests', description: 'Send Form 8879 for signature', featureGroup: 'documents', defaultRoles: ['agent', 'tax_office', 'admin'] },
-  { slug: 'signatures.sign', label: 'Sign Documents', description: 'Sign e-signature requests', featureGroup: 'documents', defaultRoles: ['client', 'agent', 'tax_office', 'admin'] },
-  { slug: 'signatures.download_pdf', label: 'Download Signed PDFs', description: 'Download completed Form 8879 PDFs', featureGroup: 'documents', defaultRoles: ['agent', 'tax_office', 'admin'] },
+  // E-Signatures (Split permissions: Client signs as client, Staff signs as preparer)
+  { slug: 'signatures.view', label: 'View E-Signatures', description: 'View e-signature requests', featureGroup: 'signatures', defaultRoles: ['client', 'agent', 'tax_office', 'admin'] },
+  { slug: 'signatures.create', label: 'Create E-Signature Requests', description: 'Send Form 8879 for signature', featureGroup: 'signatures', defaultRoles: ['agent', 'tax_office', 'admin'] },
+  { slug: 'signatures.sign_as_client', label: 'Sign as Client', description: 'Sign e-signature requests as the taxpayer', featureGroup: 'signatures', defaultRoles: ['client'] },
+  { slug: 'signatures.sign_as_preparer', label: 'Sign as Preparer', description: 'Sign e-signature requests as the tax preparer', featureGroup: 'signatures', defaultRoles: ['agent', 'tax_office', 'admin'] },
+  { slug: 'signatures.download_pdf', label: 'Download Signed PDFs', description: 'Download completed Form 8879 PDFs', featureGroup: 'signatures', defaultRoles: ['agent', 'tax_office', 'admin'] },
   
-  // Payments
-  { slug: 'payments.view', label: 'View Payments', description: 'View payment records', featureGroup: 'payments', defaultRoles: ['tax_office', 'admin'] },
-  { slug: 'payments.create', label: 'Create Payments', description: 'Add payment records', featureGroup: 'payments', defaultRoles: ['tax_office', 'admin'] },
+  // Payments (Agent: READ-ONLY for assigned clients, request only - no create/approve)
+  { slug: 'payments.view', label: 'View Payments', description: 'View payment records (Agent: assigned clients only, read-only)', featureGroup: 'payments', defaultRoles: ['agent', 'tax_office', 'admin'] },
+  { slug: 'payments.request', label: 'Request Payment', description: 'Request payment from client (creates pending request)', featureGroup: 'payments', defaultRoles: ['agent', 'tax_office', 'admin'] },
+  { slug: 'payments.create', label: 'Create Payments', description: 'Add and record payment records', featureGroup: 'payments', defaultRoles: ['tax_office', 'admin'] },
+  { slug: 'payments.approve', label: 'Approve Payments', description: 'Approve pending payment requests', featureGroup: 'payments', defaultRoles: ['tax_office', 'admin'] },
   { slug: 'payments.edit', label: 'Edit Payments', description: 'Modify payment information', featureGroup: 'payments', defaultRoles: ['tax_office', 'admin'] },
   { slug: 'payments.delete', label: 'Delete Payments', description: 'Remove payment records', featureGroup: 'payments', defaultRoles: ['admin'] },
   
@@ -545,36 +553,43 @@ export const DefaultPermissions: Array<{
   { slug: 'deadlines.create', label: 'Create Deadlines', description: 'Add new tax deadlines', featureGroup: 'deadlines', defaultRoles: ['tax_office', 'admin'] },
   { slug: 'deadlines.edit', label: 'Edit Deadlines', description: 'Modify deadline information', featureGroup: 'deadlines', defaultRoles: ['tax_office', 'admin'] },
   
-  // Tasks
-  { slug: 'tasks.view', label: 'View Tasks', description: 'View task board', featureGroup: 'tasks', defaultRoles: ['agent', 'tax_office', 'admin'] },
+  // Tasks (Agent: scoped to assigned tasks and clients)
+  { slug: 'tasks.view', label: 'View Tasks', description: 'View task board (Agent: assigned tasks only)', featureGroup: 'tasks', defaultRoles: ['agent', 'tax_office', 'admin'] },
   { slug: 'tasks.create', label: 'Create Tasks', description: 'Add new tasks', featureGroup: 'tasks', defaultRoles: ['agent', 'tax_office', 'admin'] },
   { slug: 'tasks.edit', label: 'Edit Tasks', description: 'Modify task details', featureGroup: 'tasks', defaultRoles: ['agent', 'tax_office', 'admin'] },
   { slug: 'tasks.assign', label: 'Assign Tasks', description: 'Assign tasks to team members', featureGroup: 'tasks', defaultRoles: ['tax_office', 'admin'] },
   
-  // Support
+  // Support (Agent: scoped to assigned clients' tickets)
   { slug: 'support.view', label: 'View Support Tickets', description: 'View support tickets', featureGroup: 'support', defaultRoles: ['client', 'agent', 'tax_office', 'admin'] },
   { slug: 'support.create', label: 'Create Support Tickets', description: 'Submit support requests', featureGroup: 'support', defaultRoles: ['client', 'agent', 'tax_office', 'admin'] },
   { slug: 'support.respond', label: 'Respond to Tickets', description: 'Reply to support tickets', featureGroup: 'support', defaultRoles: ['agent', 'tax_office', 'admin'] },
   { slug: 'support.close', label: 'Close Tickets', description: 'Close support tickets', featureGroup: 'support', defaultRoles: ['agent', 'tax_office', 'admin'] },
+  { slug: 'support.internal_notes', label: 'Internal Notes', description: 'Add and view internal notes on tickets (hidden from clients)', featureGroup: 'support', defaultRoles: ['agent', 'tax_office', 'admin'] },
   
   // Knowledge Base
   { slug: 'knowledge.view', label: 'View Knowledge Base', description: 'Access knowledge base articles', featureGroup: 'knowledge', defaultRoles: ['client', 'agent', 'tax_office', 'admin'] },
   { slug: 'knowledge.create', label: 'Create Articles', description: 'Create knowledge base articles', featureGroup: 'knowledge', defaultRoles: ['agent', 'tax_office', 'admin'] },
   { slug: 'knowledge.edit', label: 'Edit Articles', description: 'Edit knowledge base articles', featureGroup: 'knowledge', defaultRoles: ['agent', 'tax_office', 'admin'] },
   
-  // Reports
-  { slug: 'reports.view', label: 'View Reports', description: 'Access reports and analytics', featureGroup: 'reports', defaultRoles: ['tax_office', 'admin'] },
+  // Reports (Agent: scoped to assigned clients only, no export)
+  { slug: 'reports.view', label: 'View Reports', description: 'Access reports and analytics (Agent: assigned clients only)', featureGroup: 'reports', defaultRoles: ['agent', 'tax_office', 'admin'] },
   { slug: 'reports.export', label: 'Export Reports', description: 'Export report data', featureGroup: 'reports', defaultRoles: ['tax_office', 'admin'] },
   
   // Settings
   { slug: 'settings.view', label: 'View Settings', description: 'View system settings', featureGroup: 'settings', defaultRoles: ['tax_office', 'admin'] },
   { slug: 'settings.edit', label: 'Edit Settings', description: 'Modify system settings', featureGroup: 'settings', defaultRoles: ['admin'] },
   
-  // Admin
+  // Agent Management (Tax Office can manage agents within their office scope)
+  { slug: 'agents.view', label: 'View Agents', description: 'View agent list and details', featureGroup: 'agents', defaultRoles: ['tax_office', 'admin'] },
+  { slug: 'agents.create', label: 'Create Agent', description: 'Create new agent accounts', featureGroup: 'agents', defaultRoles: ['tax_office', 'admin'] },
+  { slug: 'agents.edit', label: 'Edit Agent', description: 'Modify agent information', featureGroup: 'agents', defaultRoles: ['tax_office', 'admin'] },
+  { slug: 'agents.disable', label: 'Disable Agent', description: 'Disable or deactivate agent accounts', featureGroup: 'agents', defaultRoles: ['tax_office', 'admin'] },
+  
+  // Admin (Tax Office has office-scoped access to audit and invites)
   { slug: 'admin.users', label: 'Manage Users', description: 'Manage user accounts and roles', featureGroup: 'admin', defaultRoles: ['admin'] },
   { slug: 'admin.permissions', label: 'Manage Permissions', description: 'Configure role permissions', featureGroup: 'admin', defaultRoles: ['admin'] },
-  { slug: 'admin.audit', label: 'View Audit Logs', description: 'View system audit logs', featureGroup: 'admin', defaultRoles: ['admin'] },
-  { slug: 'admin.invites', label: 'Manage Invites', description: 'Create and manage staff invites', featureGroup: 'admin', defaultRoles: ['admin'] },
+  { slug: 'admin.audit', label: 'View Audit Logs', description: 'View system audit logs (Tax Office: office-scoped)', featureGroup: 'admin', defaultRoles: ['tax_office', 'admin'] },
+  { slug: 'admin.invites', label: 'Manage Invites', description: 'Create and manage staff invites (Tax Office: office-scoped)', featureGroup: 'admin', defaultRoles: ['tax_office', 'admin'] },
   { slug: 'admin.system', label: 'System Administration', description: 'Full system administration access', featureGroup: 'admin', defaultRoles: ['admin'] },
 ];
 
