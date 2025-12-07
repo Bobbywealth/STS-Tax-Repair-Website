@@ -5151,11 +5151,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userAgent: req.headers['user-agent']
       });
 
-      // Send notification emails to all admins
+      // Send notification emails and in-app notifications to all admins
       try {
         const admins = await mysqlStorage.getUsersByRole('admin');
         for (const admin of admins) {
           if (admin.email && admin.isActive !== false) {
+            // Send email notification
             await sendStaffRequestNotificationEmail(
               admin.email,
               `${admin.firstName || ''} ${admin.lastName || ''}`.trim() || 'Admin',
@@ -5165,6 +5166,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
               roleRequested,
               reason || 'No reason provided'
             );
+            
+            // Create in-app notification
+            await mysqlStorage.createNotification({
+              userId: admin.id,
+              type: 'staff_request',
+              title: 'New Staff Request',
+              message: `${firstName} ${lastName} has requested to join as ${roleRequested}`,
+              link: '/manager?tab=requests',
+              resourceType: 'staff_request',
+              resourceId: staffRequest.id
+            });
           }
         }
         console.log(`[EMAIL] Staff request notifications sent to ${admins.length} admin(s)`);
