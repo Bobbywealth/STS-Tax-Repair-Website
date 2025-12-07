@@ -651,6 +651,37 @@ export async function runMySQLMigrations(): Promise<void> {
       console.log('office_branding table created successfully!');
     }
     
+    // Create notifications table for in-app notification center
+    const [notificationsTable] = await connection.query(
+      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'notifications'`,
+      [dbName]
+    );
+    
+    if (Array.isArray(notificationsTable) && notificationsTable.length === 0) {
+      console.log('Creating notifications table...');
+      await connection.query(`
+        CREATE TABLE notifications (
+          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+          user_id VARCHAR(36) NOT NULL,
+          type VARCHAR(50) NOT NULL,
+          title VARCHAR(255) NOT NULL,
+          message TEXT NOT NULL,
+          resource_type VARCHAR(50),
+          resource_id VARCHAR(36),
+          link VARCHAR(255),
+          is_read BOOLEAN DEFAULT FALSE,
+          read_at TIMESTAMP NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_notifications_user (user_id),
+          INDEX idx_notifications_read (is_read),
+          INDEX idx_notifications_type (type),
+          INDEX idx_notifications_created (created_at)
+        )
+      `);
+      console.log('notifications table created successfully!');
+    }
+    
     connection.release();
   } catch (error) {
     console.error('MySQL migration error:', error);
