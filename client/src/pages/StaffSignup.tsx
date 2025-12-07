@@ -148,7 +148,7 @@ export default function StaffSignup() {
     },
     onError: (error: any) => {
       // Check for account exists error codes
-      if (error.code === 'UNVERIFIED_ACCOUNT' || error.code === 'ACCOUNT_EXISTS') {
+      if (error.code === 'ACCOUNT_EXISTS_VERIFIED' || error.code === 'ACCOUNT_EXISTS_UNVERIFIED') {
         setAccountExistsError({ code: error.code, email: error.email || form.getValues("email") });
       } else {
         setAccountExistsError(null);
@@ -271,7 +271,7 @@ export default function StaffSignup() {
             <div className="mb-6 p-4 rounded-lg border border-amber-500/50 bg-amber-500/10">
               <div className="flex items-start gap-3">
                 <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
-                <div className="flex-1 space-y-3">
+                <div className="flex-1 space-y-3 w-full">
                   <p className="text-sm font-medium text-amber-600 dark:text-amber-400">
                     {accountExistsError.code === 'UNVERIFIED_ACCOUNT' 
                       ? 'Account Needs Verification'
@@ -302,6 +302,17 @@ export default function StaffSignup() {
                             Resend Verification
                           </>
                         )}
+                      </Button>
+                    )}
+                    {accountExistsError.code === 'ACCOUNT_EXISTS_VERIFIED' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => navigate(`/forgot-password?email=${encodeURIComponent(accountExistsError.email)}`)}
+                        data-testid="button-reset-password"
+                      >
+                        <Mail className="h-4 w-4 mr-2" />
+                        Reset Password
                       </Button>
                     )}
                     <Button

@@ -24,7 +24,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Eye, 
@@ -43,7 +43,9 @@ import {
   Mail,
   Calendar,
   Briefcase,
-  Users
+  Users,
+  AlertCircle,
+  Lock
 } from "lucide-react";
 import logoUrl from "@/assets/sts-logo.png";
 
@@ -101,6 +103,7 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [accountExistsEmail, setAccountExistsEmail] = useState<string | null>(null);
 
   // Referrer type with office and role info
   interface Referrer {
@@ -168,7 +171,13 @@ export default function Register() {
       });
       navigate("/client-login");
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
+      // Handle account exists error
+      if (error.code === 'ACCOUNT_EXISTS_VERIFIED' || error.code === 'ACCOUNT_EXISTS_UNVERIFIED') {
+        setAccountExistsEmail(error.email || form.getValues("email"));
+        return;
+      }
+      
       toast({
         title: "Registration Failed",
         description: error.message || "Please check your information and try again.",
@@ -196,6 +205,51 @@ export default function Register() {
     }
     return true;
   };
+
+  // If account exists, redirect to forgot password
+  if (accountExistsEmail) {
+    return (
+      <div className="min-h-screen bg-animated-mesh flex items-center justify-center px-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
+              <AlertCircle className="h-8 w-8 text-amber-600 dark:text-amber-400" />
+            </div>
+            <CardTitle className="text-2xl">Account Already Exists</CardTitle>
+            <CardDescription>
+              We found an account with this email address.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              An account is already registered with <span className="font-medium text-foreground">{accountExistsEmail}</span>.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              You can reset your password or log in if you remember your credentials.
+            </p>
+          </CardContent>
+          <CardFooter className="flex flex-col gap-2">
+            <Button 
+              className="w-full"
+              onClick={() => navigate(`/forgot-password?email=${encodeURIComponent(accountExistsEmail)}`)}
+              data-testid="button-reset-password"
+            >
+              <Lock className="mr-2 h-4 w-4" />
+              Reset Password
+            </Button>
+            <Button 
+              variant="outline" 
+              className="w-full"
+              onClick={() => navigate("/client-login")}
+              data-testid="button-login"
+            >
+              Back to Login
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-animated-mesh py-8 px-4">
