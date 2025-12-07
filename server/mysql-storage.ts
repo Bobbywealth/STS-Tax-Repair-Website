@@ -525,6 +525,8 @@ export class MySQLStorage implements IStorage {
       clientName: task.clientName ?? null,
       assignedToId: task.assignedToId ?? null,
       assignedTo: task.assignedTo,
+      createdById: task.createdById ?? null,
+      createdByName: task.createdByName ?? null,
       dueDate: task.dueDate ?? null,
       priority: task.priority ?? "medium",
       status: task.status ?? "todo",
