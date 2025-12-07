@@ -19,8 +19,34 @@ export const sessions = mysqlTable(
 // User Roles - defines access levels in the system
 export type UserRole = 'client' | 'agent' | 'tax_office' | 'admin';
 
+// Offices Table - Tax Office tenant isolation
+// Each Tax Office belongs to an office, and all their clients/agents are scoped to that office
+export const offices = mysqlTable("offices", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+  name: varchar("name", { length: 255 }).notNull(),
+  address: text("address"),
+  city: varchar("city", { length: 100 }),
+  state: varchar("state", { length: 100 }),
+  zipCode: varchar("zip_code", { length: 20 }),
+  phone: varchar("phone", { length: 20 }),
+  email: varchar("email", { length: 255 }),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertOfficeSchema = createInsertSchema(offices).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertOffice = z.infer<typeof insertOfficeSchema>;
+export type Office = typeof offices.$inferSelect;
+
 // User storage table for Replit Auth + Client Data
 // Note: Schema matches actual MySQL database columns from Perfex CRM migration
+// office_id enables Tax Office tenant scoping - all users belong to an office
 export const users = mysqlTable("users", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
   email: varchar("email", { length: 255 }).unique(),
@@ -34,6 +60,7 @@ export const users = mysqlTable("users", {
   zipCode: varchar("zip_code", { length: 20 }),
   country: varchar("country", { length: 100 }).default("United States"),
   role: varchar("role", { length: 20 }).default("client").$type<UserRole>(),
+  officeId: varchar("office_id", { length: 36 }),
   isActive: boolean("is_active").default(true),
   passwordHash: varchar("password_hash", { length: 255 }),
   emailVerifiedAt: timestamp("email_verified_at"),
@@ -123,17 +150,33 @@ export type InsertAppointment = z.infer<typeof insertAppointmentSchema>;
 export type Appointment = typeof appointments.$inferSelect;
 
 // Payments Table
+// Payment Status Flow:
+// - 'pending_approval': Created by Agent, awaiting Tax Office/Admin approval
+// - 'pending': Approved, awaiting client payment
+// - 'partial': Partially paid
+// - 'paid': Fully paid
+// - 'overdue': Past due date
+// - 'cancelled': Cancelled/voided
+export const PaymentStatusType = ['pending_approval', 'pending', 'partial', 'paid', 'overdue', 'cancelled'] as const;
+export type PaymentStatus = typeof PaymentStatusType[number];
+
 export const payments = mysqlTable("payments", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
   clientId: varchar("client_id", { length: 36 }).notNull(),
   clientName: text("client_name").notNull(),
+  officeId: varchar("office_id", { length: 36 }),
   serviceFee: decimal("service_fee", { precision: 10, scale: 2 }).notNull(),
   amountPaid: decimal("amount_paid", { precision: 10, scale: 2 }).default('0.00'),
-  paymentStatus: varchar("payment_status", { length: 50 }).default("pending"),
+  paymentStatus: varchar("payment_status", { length: 50 }).default("pending").$type<PaymentStatus>(),
   dueDate: timestamp("due_date"),
   paidDate: timestamp("paid_date"),
   paymentMethod: varchar("payment_method", { length: 50 }),
   notes: text("notes"),
+  requestedById: varchar("requested_by_id", { length: 36 }),
+  requestedByName: text("requested_by_name"),
+  approvedById: varchar("approved_by_id", { length: 36 }),
+  approvedByName: text("approved_by_name"),
+  approvedAt: timestamp("approved_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -620,10 +663,12 @@ export const DefaultPermissions: Array<{
 ];
 
 // Tickets Table for support
+// Note: internalNotes is deprecated, use ticket_messages with is_internal=true instead
 export const tickets = mysqlTable("tickets", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
   clientId: varchar("client_id", { length: 36 }),
   clientName: text("client_name"),
+  officeId: varchar("office_id", { length: 36 }),
   subject: text("subject").notNull(),
   description: text("description"),
   category: varchar("category", { length: 50 }).default("general"),
@@ -728,3 +773,91 @@ export type EmailType =
   | 'staff_invite'
   | 'support_ticket_created'
   | 'support_ticket_response';
+
+// Ticket Messages Table - supports both public messages and internal notes
+// is_internal: true = visible only to Agent/Tax Office/Admin (never returned to clients)
+// is_internal: false = visible to client and staff (public response)
+export const ticketMessages = mysqlTable(
+  "ticket_messages",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+    ticketId: varchar("ticket_id", { length: 36 }).notNull(),
+    authorId: varchar("author_id", { length: 36 }).notNull(),
+    authorName: text("author_name"),
+    authorRole: varchar("author_role", { length: 20 }).$type<UserRole>(),
+    message: text("message").notNull(),
+    isInternal: boolean("is_internal").default(false),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => ({
+    ticketIdx: index("idx_ticket_messages_ticket").on(table.ticketId),
+    internalIdx: index("idx_ticket_messages_internal").on(table.isInternal),
+  }),
+);
+
+export const insertTicketMessageSchema = createInsertSchema(ticketMessages).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertTicketMessage = z.infer<typeof insertTicketMessageSchema>;
+export type TicketMessage = typeof ticketMessages.$inferSelect;
+
+// Audit Log Action Types
+export const AuditActionTypes = [
+  'payment.create',
+  'payment.request',
+  'payment.approve',
+  'payment.edit',
+  'payment.delete',
+  'signature.create',
+  'signature.sign_client',
+  'signature.sign_preparer',
+  'client.create',
+  'client.edit',
+  'client.delete',
+  'agent.create',
+  'agent.disable',
+  'agent.enable',
+  'client_assignment.create',
+  'client_assignment.remove',
+  'user.login',
+  'user.logout',
+  'permission.update',
+] as const;
+export type AuditAction = typeof AuditActionTypes[number];
+
+// Audit Logs Table - tracks critical actions for compliance and security
+// Tax Office users can only view logs for their office_id; Admin can view all
+export const auditLogs = mysqlTable(
+  "audit_logs",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+    action: varchar("action", { length: 50 }).notNull().$type<AuditAction>(),
+    userId: varchar("user_id", { length: 36 }).notNull(),
+    userName: text("user_name"),
+    userRole: varchar("user_role", { length: 20 }).$type<UserRole>(),
+    officeId: varchar("office_id", { length: 36 }),
+    resourceType: varchar("resource_type", { length: 50 }),
+    resourceId: varchar("resource_id", { length: 36 }),
+    clientId: varchar("client_id", { length: 36 }),
+    details: json("details"),
+    ipAddress: varchar("ip_address", { length: 45 }),
+    userAgent: text("user_agent"),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => ({
+    userIdx: index("idx_audit_logs_user").on(table.userId),
+    officeIdx: index("idx_audit_logs_office").on(table.officeId),
+    actionIdx: index("idx_audit_logs_action").on(table.action),
+    resourceIdx: index("idx_audit_logs_resource").on(table.resourceType, table.resourceId),
+  }),
+);
+
+export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
+export type AuditLog = typeof auditLogs.$inferSelect;
