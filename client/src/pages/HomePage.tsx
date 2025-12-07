@@ -1862,7 +1862,7 @@ export default function HomePage() {
 
           <div className="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-gray-500 text-sm">
-              ©Copyright 2024 Ststaxrepair.com. All Rights Reserved
+              ©Copyright 2025 Ststaxrepair.com. All Rights Reserved
             </p>
             <div className="flex items-center gap-6 text-sm text-gray-500">
               <a href="#" className="hover:text-white transition-colors">Terms of Service</a>

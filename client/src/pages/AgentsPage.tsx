@@ -304,7 +304,7 @@ export default function AgentsPage() {
       <footer className="py-12 bg-gray-900 text-white">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <img src={logoUrl} alt="STS TaxRepair" className="h-12 mx-auto mb-4" />
-          <p className="text-gray-400">© 2024 STS Tax Repair. All rights reserved.</p>
+          <p className="text-gray-400">© 2025 STS Tax Repair. All rights reserved.</p>
         </div>
       </footer>
     </div>
