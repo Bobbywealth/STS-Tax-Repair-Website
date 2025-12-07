@@ -39,6 +39,14 @@ import {
   type InsertKnowledgeBase,
   type EmailVerificationToken,
   type InsertEmailVerificationToken,
+  type Office,
+  type InsertOffice,
+  type AgentClientAssignment,
+  type InsertAgentClientAssignment,
+  type TicketMessage,
+  type InsertTicketMessage,
+  type AuditLog,
+  type InsertAuditLog,
   users as usersTable,
   taxDeadlines as taxDeadlinesTable,
   appointments as appointmentsTable,
@@ -56,7 +64,11 @@ import {
   rolePermissions as rolePermissionsTable,
   taxFilings as taxFilingsTable,
   passwordResetTokens as passwordResetTokensTable,
-  emailVerificationTokens as emailVerificationTokensTable
+  emailVerificationTokens as emailVerificationTokensTable,
+  offices as officesTable,
+  agentClientAssignments as agentAssignmentsTable,
+  ticketMessages as ticketMessagesTable,
+  auditLogs as auditLogsTable
 } from "@shared/mysql-schema";
 import { mysqlPool } from "./mysql-db";
 import { randomUUID } from "crypto";
@@ -1407,6 +1419,391 @@ export class MySQLStorage implements IStorage {
   async deleteKnowledgeBaseArticle(id: string): Promise<boolean> {
     await mysqlPool.query('DELETE FROM knowledge_base WHERE id = ?', [id]);
     return true;
+  }
+
+  // ============================================================================
+  // AGENT-CLIENT ASSIGNMENTS - Critical for scope enforcement
+  // ============================================================================
+  
+  async getAgentAssignedClientIds(agentId: string): Promise<string[]> {
+    const results = await mysqlDb
+      .select({ clientId: agentAssignmentsTable.clientId })
+      .from(agentAssignmentsTable)
+      .where(and(
+        eq(agentAssignmentsTable.agentId, agentId),
+        eq(agentAssignmentsTable.isActive, true)
+      ));
+    return results.map(r => r.clientId);
+  }
+
+  async getAgentAssignments(agentId: string): Promise<AgentClientAssignment[]> {
+    return await mysqlDb
+      .select()
+      .from(agentAssignmentsTable)
+      .where(eq(agentAssignmentsTable.agentId, agentId));
+  }
+
+  async getClientAssignedAgents(clientId: string): Promise<AgentClientAssignment[]> {
+    return await mysqlDb
+      .select()
+      .from(agentAssignmentsTable)
+      .where(and(
+        eq(agentAssignmentsTable.clientId, clientId),
+        eq(agentAssignmentsTable.isActive, true)
+      ));
+  }
+
+  async assignClientToAgent(agentId: string, clientId: string, assignedBy: string): Promise<AgentClientAssignment> {
+    const id = randomUUID();
+    await mysqlDb
+      .insert(agentAssignmentsTable)
+      .values({
+        id,
+        agentId,
+        clientId,
+        assignedBy,
+        isActive: true,
+        assignedAt: new Date()
+      });
+    const [result] = await mysqlDb
+      .select()
+      .from(agentAssignmentsTable)
+      .where(eq(agentAssignmentsTable.id, id));
+    return result;
+  }
+
+  async unassignClientFromAgent(agentId: string, clientId: string): Promise<boolean> {
+    await mysqlDb
+      .update(agentAssignmentsTable)
+      .set({ isActive: false })
+      .where(and(
+        eq(agentAssignmentsTable.agentId, agentId),
+        eq(agentAssignmentsTable.clientId, clientId)
+      ));
+    return true;
+  }
+
+  async reassignClient(clientId: string, fromAgentId: string, toAgentId: string, assignedBy: string): Promise<AgentClientAssignment> {
+    await this.unassignClientFromAgent(fromAgentId, clientId);
+    return await this.assignClientToAgent(toAgentId, clientId, assignedBy);
+  }
+
+  // ============================================================================
+  // OFFICES - Tax Office tenant management
+  // ============================================================================
+
+  async getOffice(id: string): Promise<Office | undefined> {
+    const [office] = await mysqlDb
+      .select()
+      .from(officesTable)
+      .where(eq(officesTable.id, id));
+    return office;
+  }
+
+  async getOffices(): Promise<Office[]> {
+    return await mysqlDb
+      .select()
+      .from(officesTable)
+      .orderBy(officesTable.name);
+  }
+
+  async createOffice(office: InsertOffice): Promise<Office> {
+    const id = randomUUID();
+    await mysqlDb
+      .insert(officesTable)
+      .values({
+        id,
+        ...office,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+    const [result] = await mysqlDb
+      .select()
+      .from(officesTable)
+      .where(eq(officesTable.id, id));
+    return result;
+  }
+
+  async updateOffice(id: string, office: Partial<InsertOffice>): Promise<Office | undefined> {
+    await mysqlDb
+      .update(officesTable)
+      .set({ ...office, updatedAt: new Date() })
+      .where(eq(officesTable.id, id));
+    return this.getOffice(id);
+  }
+
+  async getOfficeUsers(officeId: string): Promise<User[]> {
+    return await mysqlDb
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.officeId, officeId));
+  }
+
+  async getOfficeClients(officeId: string): Promise<User[]> {
+    return await mysqlDb
+      .select()
+      .from(usersTable)
+      .where(and(
+        eq(usersTable.officeId, officeId),
+        eq(usersTable.role, 'client')
+      ));
+  }
+
+  async getOfficeAgents(officeId: string): Promise<User[]> {
+    return await mysqlDb
+      .select()
+      .from(usersTable)
+      .where(and(
+        eq(usersTable.officeId, officeId),
+        eq(usersTable.role, 'agent')
+      ));
+  }
+
+  // ============================================================================
+  // TICKET MESSAGES - Supports public and internal notes
+  // ============================================================================
+
+  async getTicketMessages(ticketId: string, includeInternal: boolean = false): Promise<TicketMessage[]> {
+    if (includeInternal) {
+      return await mysqlDb
+        .select()
+        .from(ticketMessagesTable)
+        .where(eq(ticketMessagesTable.ticketId, ticketId))
+        .orderBy(asc(ticketMessagesTable.createdAt));
+    }
+    return await mysqlDb
+      .select()
+      .from(ticketMessagesTable)
+      .where(and(
+        eq(ticketMessagesTable.ticketId, ticketId),
+        eq(ticketMessagesTable.isInternal, false)
+      ))
+      .orderBy(asc(ticketMessagesTable.createdAt));
+  }
+
+  async createTicketMessage(message: InsertTicketMessage): Promise<TicketMessage> {
+    const id = randomUUID();
+    await mysqlDb
+      .insert(ticketMessagesTable)
+      .values({
+        id,
+        ...message,
+        createdAt: new Date()
+      });
+    const [result] = await mysqlDb
+      .select()
+      .from(ticketMessagesTable)
+      .where(eq(ticketMessagesTable.id, id));
+    return result;
+  }
+
+  // ============================================================================
+  // AUDIT LOGS - Critical action tracking
+  // ============================================================================
+
+  async createAuditLog(log: InsertAuditLog): Promise<AuditLog> {
+    const id = randomUUID();
+    await mysqlDb
+      .insert(auditLogsTable)
+      .values({
+        id,
+        ...log,
+        createdAt: new Date()
+      });
+    const [result] = await mysqlDb
+      .select()
+      .from(auditLogsTable)
+      .where(eq(auditLogsTable.id, id));
+    return result;
+  }
+
+  async getAuditLogs(options: {
+    officeId?: string;
+    userId?: string;
+    action?: string;
+    resourceType?: string;
+    clientId?: string;
+    limit?: number;
+    offset?: number;
+  } = {}): Promise<AuditLog[]> {
+    const conditions = [];
+    
+    if (options.officeId) {
+      conditions.push(eq(auditLogsTable.officeId, options.officeId));
+    }
+    if (options.userId) {
+      conditions.push(eq(auditLogsTable.userId, options.userId));
+    }
+    if (options.action) {
+      conditions.push(eq(auditLogsTable.action, options.action as any));
+    }
+    if (options.resourceType) {
+      conditions.push(eq(auditLogsTable.resourceType, options.resourceType));
+    }
+    if (options.clientId) {
+      conditions.push(eq(auditLogsTable.clientId, options.clientId));
+    }
+    
+    let query = mysqlDb
+      .select()
+      .from(auditLogsTable)
+      .orderBy(desc(auditLogsTable.createdAt));
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+    
+    if (options.limit) {
+      query = query.limit(options.limit) as any;
+    }
+    if (options.offset) {
+      query = query.offset(options.offset) as any;
+    }
+    
+    return await query;
+  }
+
+  // ============================================================================
+  // SCOPED QUERY HELPERS - Filter by agent assignments or office
+  // ============================================================================
+
+  async getClientsByScope(options: {
+    agentClientIds?: string[];
+    officeId?: string;
+    isGlobal?: boolean;
+  }): Promise<User[]> {
+    if (options.isGlobal) {
+      return await mysqlDb
+        .select()
+        .from(usersTable)
+        .where(eq(usersTable.role, 'client'));
+    }
+    
+    if (options.agentClientIds && options.agentClientIds.length > 0) {
+      const [rows] = await mysqlPool.query(
+        `SELECT * FROM users WHERE role = 'client' AND id IN (?)`,
+        [options.agentClientIds]
+      );
+      return rows as User[];
+    }
+    
+    if (options.officeId) {
+      return await mysqlDb
+        .select()
+        .from(usersTable)
+        .where(and(
+          eq(usersTable.role, 'client'),
+          eq(usersTable.officeId, options.officeId)
+        ));
+    }
+    
+    return [];
+  }
+
+  async getPaymentsByScope(options: {
+    agentClientIds?: string[];
+    officeId?: string;
+    isGlobal?: boolean;
+  }): Promise<Payment[]> {
+    if (options.isGlobal) {
+      return await mysqlDb
+        .select()
+        .from(paymentsTable)
+        .orderBy(desc(paymentsTable.createdAt));
+    }
+    
+    if (options.agentClientIds && options.agentClientIds.length > 0) {
+      const [rows] = await mysqlPool.query(
+        `SELECT * FROM payments WHERE client_id IN (?) ORDER BY created_at DESC`,
+        [options.agentClientIds]
+      );
+      return rows as Payment[];
+    }
+    
+    if (options.officeId) {
+      return await mysqlDb
+        .select()
+        .from(paymentsTable)
+        .where(eq(paymentsTable.officeId, options.officeId))
+        .orderBy(desc(paymentsTable.createdAt));
+    }
+    
+    return [];
+  }
+
+  async getTicketsByScope(options: {
+    agentClientIds?: string[];
+    officeId?: string;
+    isGlobal?: boolean;
+    clientId?: string;
+  }): Promise<Ticket[]> {
+    const [rows] = await mysqlPool.query(
+      `SELECT id, client_id as clientId, client_name as clientName, office_id as officeId,
+       subject, description, category, priority, status, 
+       assigned_to_id as assignedToId, assigned_to as assignedTo,
+       internal_notes as internalNotes, resolved_at as resolvedAt,
+       created_at as createdAt, updated_at as updatedAt
+       FROM tickets ORDER BY created_at DESC`
+    );
+    let tickets = rows as Ticket[];
+    
+    if (options.clientId) {
+      tickets = tickets.filter(t => t.clientId === options.clientId);
+    }
+    
+    if (options.isGlobal) {
+      return tickets;
+    }
+    
+    if (options.agentClientIds && options.agentClientIds.length > 0) {
+      return tickets.filter(t => t.clientId && options.agentClientIds!.includes(t.clientId));
+    }
+    
+    if (options.officeId) {
+      return tickets.filter(t => t.officeId === options.officeId);
+    }
+    
+    return [];
+  }
+
+  // Approve payment (for Tax Office/Admin only)
+  async approvePayment(paymentId: string, approvedById: string, approvedByName: string): Promise<Payment | undefined> {
+    await mysqlDb
+      .update(paymentsTable)
+      .set({
+        paymentStatus: 'pending',
+        approvedById,
+        approvedByName,
+        approvedAt: new Date()
+      })
+      .where(eq(paymentsTable.id, paymentId));
+    
+    const [result] = await mysqlDb
+      .select()
+      .from(paymentsTable)
+      .where(eq(paymentsTable.id, paymentId));
+    return result;
+  }
+
+  // Create payment request (for Agents - creates pending_approval status)
+  async createPaymentRequest(payment: InsertPayment, requestedById: string, requestedByName: string): Promise<Payment> {
+    const id = randomUUID();
+    await mysqlDb
+      .insert(paymentsTable)
+      .values({
+        id,
+        ...payment,
+        paymentStatus: 'pending_approval',
+        requestedById,
+        requestedByName,
+        createdAt: new Date()
+      });
+    
+    const [result] = await mysqlDb
+      .select()
+      .from(paymentsTable)
+      .where(eq(paymentsTable.id, id));
+    return result;
   }
 }
 
