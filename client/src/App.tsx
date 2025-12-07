@@ -8,6 +8,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { MobileNav } from "@/components/MobileNav";
+import { NotificationBell } from "@/components/NotificationBell";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, Mail } from "lucide-react";
 import { SplashScreen } from "@/components/SplashScreen";
@@ -313,6 +314,7 @@ function AdminLayout() {
           <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-10">
             <SidebarTrigger data-testid="button-sidebar-toggle" />
             <div className="flex items-center gap-3">
+              <NotificationBell />
               <Link href="/settings" className="flex items-center gap-2 hover-elevate rounded-full p-1 pr-3 transition-colors" data-testid="link-user-profile">
                 <Avatar className="h-8 w-8 border-2 border-primary/20">
                   <AvatarImage src={getProfileImageUrl()} alt={displayName} />
