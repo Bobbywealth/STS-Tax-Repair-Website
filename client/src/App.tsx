@@ -48,6 +48,7 @@ const AboutPage = lazy(() => import("@/pages/AboutPage"));
 const ContactPage = lazy(() => import("@/pages/ContactPage"));
 const FAQPage = lazy(() => import("@/pages/FAQPage"));
 const BookAppointmentPage = lazy(() => import("@/pages/BookAppointmentPage"));
+const StaffSignup = lazy(() => import("@/pages/StaffSignup"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
 function PageLoader() {
@@ -342,7 +343,7 @@ function App() {
   const { isPWA } = usePWA();
   
   const isHomePage = location === '/';
-  const isPublicPage = location === '/services' || location === '/agents' || location === '/pricing' || location === '/about' || location === '/contact' || location === '/faq' || location === '/book-appointment';
+  const isPublicPage = location === '/services' || location === '/agents' || location === '/pricing' || location === '/about' || location === '/contact' || location === '/faq' || location === '/book-appointment' || location === '/staff-signup';
   const isClientRoute = location.startsWith('/client-login') || location.startsWith('/client-portal');
   const isPasswordResetRoute = location === '/forgot-password' || location.startsWith('/reset-password');
   const isAdminLoginRoute = location === '/admin-login' || location === '/login';
@@ -376,6 +377,7 @@ function App() {
               <Route path="/contact" component={ContactPage} />
               <Route path="/faq" component={FAQPage} />
               <Route path="/book-appointment" component={BookAppointmentPage} />
+              <Route path="/staff-signup" component={StaffSignup} />
             </Switch>
           ) : isAdminLoginRoute ? (
             <Switch>
