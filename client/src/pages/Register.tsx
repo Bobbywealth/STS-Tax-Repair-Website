@@ -10,7 +10,9 @@ import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -100,9 +102,31 @@ export default function Register() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
 
-  const { data: referrers = [] } = useQuery<Array<{ id: string; firstName: string; lastName: string }>>({
+  // Referrer type with office and role info
+  interface Referrer {
+    id: string;
+    firstName: string;
+    lastName: string;
+    fullName: string;
+    role: string;
+    roleLabel: string;
+    officeId: string | null;
+    officeName: string;
+  }
+
+  const { data: referrers = [] } = useQuery<Referrer[]>({
     queryKey: ["/api/users/referrers"],
   });
+
+  // Group referrers by office for display
+  const referrersByOffice = referrers.reduce((acc, referrer) => {
+    const office = referrer.officeName || 'STS TaxRepair';
+    if (!acc[office]) {
+      acc[office] = [];
+    }
+    acc[office].push(referrer);
+    return acc;
+  }, {} as Record<string, Referrer[]>);
 
   const form = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
@@ -644,12 +668,27 @@ export default function Register() {
                                   <SelectValue placeholder="Select a referrer" />
                                 </SelectTrigger>
                               </FormControl>
-                              <SelectContent>
+                              <SelectContent className="max-h-[300px]">
                                 <SelectItem value="none">No referral</SelectItem>
-                                {referrers.map((referrer) => (
-                                  <SelectItem key={referrer.id} value={referrer.id}>
-                                    {referrer.firstName} {referrer.lastName}
-                                  </SelectItem>
+                                {Object.entries(referrersByOffice).map(([officeName, officeReferrers]) => (
+                                  <SelectGroup key={officeName}>
+                                    <SelectLabel className="font-semibold text-primary flex items-center gap-2 py-2">
+                                      <Building2 className="h-3 w-3" />
+                                      {officeName}
+                                    </SelectLabel>
+                                    {officeReferrers.map((referrer) => (
+                                      <SelectItem 
+                                        key={referrer.id} 
+                                        value={referrer.id}
+                                        data-testid={`referrer-option-${referrer.id}`}
+                                      >
+                                        <span className="flex items-center gap-2">
+                                          <span>{referrer.fullName}</span>
+                                          <span className="text-xs text-muted-foreground">({referrer.roleLabel})</span>
+                                        </span>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectGroup>
                                 ))}
                               </SelectContent>
                             </Select>

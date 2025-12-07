@@ -1109,17 +1109,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get referrers list for registration (public endpoint)
+  // Returns staff grouped by Tax Office with role information
   app.get("/api/users/referrers", async (req, res) => {
     try {
       // Get all active users who could be referrers (staff members)
       const users = await storage.getUsers();
-      const referrers = users
-        .filter((u) => u.role !== "client" && u.isActive)
-        .map((u) => ({
+      const offices = await storage.getOffices ? await storage.getOffices() : [];
+      
+      // Create office lookup map
+      const officeMap = new Map(offices.map((o: any) => [o.id, o.name]));
+      
+      // Filter to only staff members (not clients)
+      const staffMembers = users.filter((u) => 
+        u.role !== "client" && u.isActive !== false
+      );
+      
+      // Map staff with office and role info
+      const referrers = staffMembers.map((u) => {
+        // Get office name or default to STS TaxRepair
+        const officeName = u.officeId ? officeMap.get(u.officeId) || 'STS TaxRepair' : 'STS TaxRepair';
+        
+        // Format role for display
+        const roleLabels: Record<string, string> = {
+          'admin': 'Admin',
+          'manager': 'Manager',
+          'staff': 'Staff',
+          'agent': 'Tax Preparer',
+          'tax_office_admin': 'Office Admin',
+          'owner': 'Owner'
+        };
+        const roleLabel = roleLabels[u.role?.toLowerCase() || ''] || u.role || 'Staff';
+        
+        return {
           id: u.id,
           firstName: u.firstName,
           lastName: u.lastName,
-        }));
+          fullName: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email,
+          role: u.role,
+          roleLabel,
+          officeId: u.officeId,
+          officeName,
+        };
+      });
+      
+      // Sort by office name, then by role (admins first), then by name
+      referrers.sort((a, b) => {
+        // First by office name
+        if (a.officeName !== b.officeName) {
+          return a.officeName.localeCompare(b.officeName);
+        }
+        // Then by role priority (admin/owner first)
+        const rolePriority: Record<string, number> = { 'admin': 1, 'owner': 2, 'tax_office_admin': 3, 'manager': 4, 'staff': 5, 'agent': 6 };
+        const aPriority = rolePriority[a.role?.toLowerCase() || ''] || 10;
+        const bPriority = rolePriority[b.role?.toLowerCase() || ''] || 10;
+        if (aPriority !== bPriority) {
+          return aPriority - bPriority;
+        }
+        // Then by name
+        return a.fullName.localeCompare(b.fullName);
+      });
+      
       res.json(referrers);
     } catch (error: any) {
       console.error("Error fetching referrers:", error);
