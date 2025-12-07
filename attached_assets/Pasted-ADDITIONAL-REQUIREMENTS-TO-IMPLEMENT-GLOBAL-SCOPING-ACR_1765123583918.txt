@@ -1,0 +1,121 @@
+ADDITIONAL REQUIREMENTS TO IMPLEMENT:
+
+GLOBAL SCOPING ACROSS ALL MODULES (NOT JUST PAYMENTS & REPORTS)
+For the AGENT role, all of the following must be restricted to assigned clients only at the API/database level (not just UI):
+
+Clients
+
+Leads
+
+Documents
+
+E-Signatures
+
+Payments
+
+Appointments
+
+Tasks
+
+Support Tickets
+
+Reports
+
+Dashboard statistics
+
+Implementation rule (for Agents):
+
+Any query that touches client-related data must include:
+WHERE client_id IN (agent_assigned_client_ids)
+
+If the object doesn’t have client_id directly (e.g. a task or ticket), scope it via the related client or office.
+
+TAX OFFICE SCOPING (TENANT LEVEL)
+
+Tax Office users must only see and manage:
+
+Clients that belong to their office
+
+Agents that belong to their office
+
+Payments, appointments, documents, reports, tickets, etc. scoped to their office
+
+Technically, this means using a condition like:
+WHERE office_id = tax_office_user.office_id
+
+Even for “View Audit Logs” and “Manage Invites”, it should be office-scoped for Tax Office, but global for Admin.
+
+NO EXTRA POWER FOR TAX OFFICE IN SYSTEM-WIDE SETTINGS
+
+Confirm that only Admin can:
+
+Edit global system settings
+
+Manage global permissions / roles
+
+Change system-wide configuration (e.g. integrations, products, modules)
+
+Tax Office should only manage:
+
+Their own office branding
+
+Their own office-specific settings (e.g. email templates, welcome text, etc. if you support that)
+
+Their own agents and client assignments
+
+AGENT “REQUEST PAYMENT” FLOW (BUSINESS LOGIC)
+
+When an Agent “requests payment”, it should:
+
+Create a payment record in a “pending_approval” or similar status
+
+NOT mark it as completed/approved
+
+Be visible to Tax Office/Admin for final approval
+
+Only Tax Office/Admin can change status from “pending” → “approved / completed”.
+
+AUDIT LOG REQUIREMENTS
+
+The following actions must be logged with user + timestamp + IP/metadata:
+
+Payments: create, approve, edit, delete
+
+E-Signature: create request, sign as preparer, sign as client
+
+Client create/edit/delete
+
+Agent create/disable
+
+Client–Agent assignment changes
+
+Tax Office users can view only logs related to their office; Admin can view all logs.
+
+SUPPORT TICKET INTERNAL NOTES BEHAVIOR
+
+“Internal Notes” on tickets must:
+
+Be visible only to Agent, Tax Office, Admin
+
+Never be returned in any API response when the requester is a Client
+
+Regular public messages on a ticket are visible to the client.
+
+Internal notes should be stored distinctly (e.g. is_internal = true).
+
+DATA MODEL EXPECTATION (FOR CLARITY)
+Please make sure the data model supports this:
+
+clients table has office_id
+
+agents table has office_id
+
+A junction/pivot table like agent_client_assignments with:
+
+agent_id
+
+client_id
+
+Tax Office scoping is based on office_id
+
+Agent scoping is based on this assignment table

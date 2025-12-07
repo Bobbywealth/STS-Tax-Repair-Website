@@ -50,6 +50,32 @@ export type UpsertUser = typeof users.$inferInsert;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
+// Agent-Client Assignments Table - tracks which agents are assigned to which clients
+// CRITICAL: Agents can ONLY see data for clients explicitly assigned to them
+export const agentClientAssignments = mysqlTable(
+  "agent_client_assignments",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+    agentId: varchar("agent_id", { length: 36 }).notNull(),
+    clientId: varchar("client_id", { length: 36 }).notNull(),
+    assignedBy: varchar("assigned_by", { length: 36 }),
+    assignedAt: timestamp("assigned_at").defaultNow(),
+    isActive: boolean("is_active").default(true),
+  },
+  (table) => ({
+    agentIdx: index("idx_agent_assignments_agent").on(table.agentId),
+    clientIdx: index("idx_agent_assignments_client").on(table.clientId),
+  }),
+);
+
+export const insertAgentClientAssignmentSchema = createInsertSchema(agentClientAssignments).omit({
+  id: true,
+  assignedAt: true,
+});
+
+export type InsertAgentClientAssignment = z.infer<typeof insertAgentClientAssignmentSchema>;
+export type AgentClientAssignment = typeof agentClientAssignments.$inferSelect;
+
 // Tax Deadlines Table
 export const taxDeadlines = mysqlTable("tax_deadlines", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
@@ -605,6 +631,7 @@ export const tickets = mysqlTable("tickets", {
   status: varchar("status", { length: 20 }).default("open"),
   assignedToId: varchar("assigned_to_id", { length: 36 }),
   assignedTo: text("assigned_to"),
+  internalNotes: text("internal_notes"),
   resolvedAt: timestamp("resolved_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

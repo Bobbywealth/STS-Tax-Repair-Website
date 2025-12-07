@@ -21,6 +21,7 @@ export interface AuthenticatedRequest extends Request {
   userRole?: UserRole;
   userId?: string;
   userPermissions?: Set<string>;
+  assignedClientIds?: Set<string>;
 }
 
 const ROLE_HIERARCHY: Record<UserRole, number> = {
