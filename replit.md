@@ -175,11 +175,23 @@ Preferred communication style: Simple, everyday language.
 **Email Services** (Planned)
 - SendGrid for transactional emails (verification, password reset, notifications)
 
-**File Storage**
+**File Storage (Dual Environment Support)**
 - Document upload system for tax forms (W-2, 1099, ID scans)
-- File type validation and size limits (max 5MB for images)
-- New uploads: Replit Object Storage (bucket: replit-objstore-793ab189-6e24-48a6-80da-c5b02a536f27)
-- Legacy documents: Served from Perfex CRM at https://ststaxrepair.org via redirect
+- File type validation and size limits (max 10MB)
+- Environment-aware storage backend:
+  - **Replit Development**: Uses Replit Object Storage (bucket: replit-objstore-793ab189-6e24-48a6-80da-c5b02a536f27)
+  - **Render Production**: Uses FTP upload to GoDaddy server
+- FTP Storage Configuration:
+  - Host: ftp.ststaxrepair.net (port 21)
+  - Base path: `/home/i28qwzd7d2dt/public_html/ststaxrepair.org/uploads/clients/{client_id}/`
+  - Public URL format: `https://ststaxrepair.org/download/preview_image?path=uploads/clients/{client_id}/{filename}`
+  - Credentials stored as secrets: FTP_HOST, FTP_USER, FTP_PASSWORD
+- Storage detection: Checks for `REPL_ID` and `PRIVATE_OBJECT_DIR` env vars to determine environment
+- File URL prefixes in database:
+  - `/objects/...` - Replit Object Storage files
+  - `/ftp/...` - FTP-uploaded files to GoDaddy
+  - `/perfex-uploads/...` - Legacy Perfex CRM documents
+- Download route (`/api/documents/:id/download`) handles all three file URL formats with appropriate redirects
 
 ### Perfex CRM Integration
 

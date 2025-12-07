@@ -33,6 +33,7 @@ import {
   type ThemePreference,
 } from "@shared/mysql-schema";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
+import { ftpStorageService } from "./ftp-storage";
 import {
   testPerfexConnection,
   getPerfexTables,
@@ -3871,7 +3872,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(204).send();
   });
 
-  // Object Storage - File Upload
+  // Check if Replit Object Storage is available
+  const isReplitEnvironment = (): boolean => {
+    return !!(process.env.REPL_ID && process.env.PRIVATE_OBJECT_DIR);
+  };
+
+  // Object Storage - File Upload (returns presigned URL for Replit, or indicates FTP mode)
   app.post("/api/objects/upload", async (req, res) => {
     try {
       const { clientId, fileName, fileType, fileSize } = req.body;
@@ -3882,13 +3888,118 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .json({ error: "clientId and fileName are required" });
       }
 
-      const objectStorageService = new ObjectStorageService();
-      const { uploadURL, objectPath } =
-        await objectStorageService.getObjectEntityUploadURL(clientId, fileName);
-
-      res.json({ uploadURL, objectPath });
+      // Check if we're on Replit with Object Storage available
+      if (isReplitEnvironment()) {
+        const objectStorageService = new ObjectStorageService();
+        const { uploadURL, objectPath } =
+          await objectStorageService.getObjectEntityUploadURL(clientId, fileName);
+        res.json({ uploadURL, objectPath, mode: 'object-storage' });
+      } else {
+        // On Render/other environments, tell frontend to use FTP upload endpoint
+        res.json({ 
+          uploadURL: '/api/documents/upload-ftp',
+          objectPath: null,
+          mode: 'ftp'
+        });
+      }
     } catch (error: any) {
       console.error("Error getting upload URL:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // FTP-based file upload for non-Replit environments (Render deployment)
+  app.post("/api/documents/upload-ftp", isAuthenticated, async (req, res) => {
+    try {
+      const contentType = req.headers['content-type'] || '';
+      
+      // Check content type to determine how to handle the upload
+      if (!contentType.includes('multipart/form-data') && !contentType.includes('application/octet-stream')) {
+        return res.status(400).json({ 
+          error: "Invalid content type. Use multipart/form-data or application/octet-stream" 
+        });
+      }
+
+      // For raw binary uploads
+      const chunks: Buffer[] = [];
+      
+      req.on('data', (chunk: Buffer) => {
+        chunks.push(chunk);
+      });
+
+      req.on('end', async () => {
+        try {
+          const fileBuffer = Buffer.concat(chunks);
+          const clientId = req.headers['x-client-id'] as string;
+          const rawFileName = req.headers['x-file-name'] as string;
+          const fileName = rawFileName ? decodeURIComponent(rawFileName) : '';
+          const fileType = req.headers['x-file-type'] as string || 'application/octet-stream';
+          const category = req.headers['x-category'] as string;
+
+          if (!clientId || !fileName) {
+            return res.status(400).json({ error: "x-client-id and x-file-name headers are required" });
+          }
+
+          console.log(`[FTP] Uploading file for client ${clientId}: ${fileName} (${fileBuffer.length} bytes)`);
+
+          // Upload to GoDaddy via FTP
+          const { filePath, fileUrl } = await ftpStorageService.uploadFile(
+            clientId,
+            fileName,
+            fileBuffer,
+            fileType
+          );
+
+          // Determine document type
+          let documentType = category || "Other";
+          if (!category) {
+            const lowerName = fileName.toLowerCase();
+            if (lowerName.includes("w2") || lowerName.includes("w-2")) {
+              documentType = "W-2";
+            } else if (lowerName.includes("1099")) {
+              documentType = "1099";
+            } else if (
+              lowerName.includes("id") ||
+              lowerName.includes("license") ||
+              lowerName.includes("passport")
+            ) {
+              documentType = "ID";
+            }
+          }
+
+          // Get latest version number
+          const existingDocs = await storage.getDocumentVersionsByType(clientId, documentType);
+          const newVersion = existingDocs.length + 1;
+
+          // Save document metadata to database
+          const document = await storage.createDocumentVersion({
+            clientId,
+            documentName: fileName,
+            documentType,
+            fileUrl: fileUrl, // Store the /ftp/... path
+            version: newVersion,
+            uploadedBy: "staff",
+            fileSize: fileBuffer.length,
+            mimeType: fileType,
+            notes: null,
+          });
+
+          console.log(`[FTP] Upload complete. Document ID: ${document.id}, Path: ${filePath}`);
+
+          res.status(201).json(document);
+        } catch (uploadError: any) {
+          console.error("[FTP] Upload error:", uploadError);
+          res.status(500).json({ error: uploadError.message });
+        }
+      });
+
+      req.on('error', (error: any) => {
+        console.error("[FTP] Request error:", error);
+        res.status(500).json({ error: error.message });
+      });
+
+    } catch (error: any) {
+      console.error("Error in FTP upload:", error);
       res.status(500).json({ error: error.message });
     }
   });
@@ -3982,6 +4093,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // For Perfex CRM legacy documents, redirect to the external URL
       if (fileUrl.startsWith('/perfex-uploads/')) {
         const externalUrl = `https://ststaxrepair.org${fileUrl}`;
+        return res.redirect(externalUrl);
+      }
+
+      // For FTP-uploaded files, redirect to GoDaddy server
+      if (fileUrl.startsWith('/ftp/')) {
+        // Remove /ftp/ prefix to get the actual path
+        const relativePath = fileUrl.replace('/ftp/', '');
+        const externalUrl = ftpStorageService.getPublicUrl(relativePath);
+        console.log(`[FTP] Redirecting to: ${externalUrl} for document ${documentId}`);
         return res.redirect(externalUrl);
       }
 

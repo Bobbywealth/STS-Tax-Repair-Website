@@ -38,7 +38,7 @@ export function DocumentUpload({ clientId, onUpload }: DocumentUploadProps) {
 
     try {
       for (const file of Array.from(selectedFiles)) {
-        // Step 1: Get presigned upload URL
+        // Step 1: Get upload mode and URL
         const uploadResponse = await fetch('/api/objects/upload', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -55,37 +55,58 @@ export function DocumentUpload({ clientId, onUpload }: DocumentUploadProps) {
           throw new Error('Failed to get upload URL');
         }
 
-        const { uploadURL, objectPath } = await uploadResponse.json();
+        const { uploadURL, objectPath, mode } = await uploadResponse.json();
 
-        // Step 2: Upload file directly to storage
-        const uploadResult = await fetch(uploadURL, {
-          method: 'PUT',
-          body: file,
-          headers: {
-            'Content-Type': file.type || 'application/octet-stream',
-          },
-        });
+        if (mode === 'ftp') {
+          // FTP mode: Send file directly to our server which handles FTP upload
+          const fileBuffer = await file.arrayBuffer();
+          const ftpResponse = await fetch('/api/documents/upload-ftp', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/octet-stream',
+              'x-client-id': clientId,
+              'x-file-name': encodeURIComponent(file.name),
+              'x-file-type': file.type || 'application/octet-stream',
+            },
+            credentials: 'include',
+            body: fileBuffer,
+          });
 
-        if (!uploadResult.ok) {
-          throw new Error('Failed to upload file');
-        }
+          if (!ftpResponse.ok) {
+            const errorData = await ftpResponse.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Failed to upload file via FTP');
+          }
+        } else {
+          // Object Storage mode (Replit): Upload directly to presigned URL
+          const uploadResult = await fetch(uploadURL, {
+            method: 'PUT',
+            body: file,
+            headers: {
+              'Content-Type': file.type || 'application/octet-stream',
+            },
+          });
 
-        // Step 3: Confirm upload and save metadata
-        const confirmResponse = await fetch('/api/objects/confirm', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            clientId,
-            objectPath,
-            fileName: file.name,
-            fileType: file.type,
-            fileSize: file.size,
-          }),
-        });
+          if (!uploadResult.ok) {
+            throw new Error('Failed to upload file');
+          }
 
-        if (!confirmResponse.ok) {
-          throw new Error('Failed to save document metadata');
+          // Confirm upload and save metadata
+          const confirmResponse = await fetch('/api/objects/confirm', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+              clientId,
+              objectPath,
+              fileName: file.name,
+              fileType: file.type,
+              fileSize: file.size,
+            }),
+          });
+
+          if (!confirmResponse.ok) {
+            throw new Error('Failed to save document metadata');
+          }
         }
       }
 
