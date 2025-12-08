@@ -12,7 +12,7 @@ import {
 import { Calendar, Clock, AlertCircle, Plus } from "lucide-react";
 import { useState } from "react";
 import { format, differenceInDays } from "date-fns";
-import type { TaxDeadline } from "@shared/schema";
+import type { TaxDeadline } from "@shared/mysql-schema";
 
 export default function TaxDeadlines() {
   const currentYear = new Date().getFullYear();

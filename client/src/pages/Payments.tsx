@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DollarSign, User, Calendar, CreditCard, Plus } from "lucide-react";
 import { format } from "date-fns";
-import type { Payment } from "@shared/schema";
+import type { Payment } from "@shared/mysql-schema";
 
 export default function Payments() {
   const { data: payments, isLoading } = useQuery<Payment[]>({
