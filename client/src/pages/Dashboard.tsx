@@ -586,6 +586,58 @@ export default function Dashboard() {
           </div>
         ) : (
           <>
+            {/* Quick Actions - Prominent CTA Section */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-slide-up" style={{ animationDelay: '350ms' }}>
+              <Link href="/clients">
+                <Card className="quick-action-card glass-card border-0 cursor-pointer group hover:shadow-xl transition-all">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-4">
+                      <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-600/20 flex items-center justify-center group-hover:scale-110 transition-transform border border-blue-500/30">
+                        <Users className="h-7 w-7 text-blue-400" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-lg">Manage Clients</p>
+                        <p className="text-sm text-muted-foreground">View & edit clients</p>
+                      </div>
+                      <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-blue-400 group-hover:translate-x-1 transition-all flex-shrink-0" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+              <Link href="/documents">
+                <Card className="quick-action-card glass-card border-0 cursor-pointer group hover:shadow-xl transition-all">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-4">
+                      <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/20 flex items-center justify-center group-hover:scale-110 transition-transform border border-emerald-500/30">
+                        <FileText className="h-7 w-7 text-emerald-400" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-lg">Documents</p>
+                        <p className="text-sm text-muted-foreground">Upload & organize</p>
+                      </div>
+                      <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-emerald-400 group-hover:translate-x-1 transition-all flex-shrink-0" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+              <Link href="/tasks">
+                <Card className="quick-action-card glass-card border-0 cursor-pointer group hover:shadow-xl transition-all">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-4">
+                      <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-600/20 flex items-center justify-center group-hover:scale-110 transition-transform border border-violet-500/30">
+                        <ClipboardList className="h-7 w-7 text-violet-400" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-lg">Tasks</p>
+                        <p className="text-sm text-muted-foreground">Manage to-dos</p>
+                      </div>
+                      <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-violet-400 group-hover:translate-x-1 transition-all flex-shrink-0" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            </div>
+
             {/* Stats Grid - horizontal scroll on mobile, grid on desktop */}
             <div className="flex overflow-x-auto snap-x snap-mandatory md:grid md:grid-cols-2 lg:grid-cols-4 gap-4 pb-2 md:pb-0 -mx-3 px-3 md:mx-0 md:px-0 md:overflow-visible scrollbar-hide">
               <StatCard
@@ -626,9 +678,9 @@ export default function Dashboard() {
               />
             </div>
 
-            {/* Main Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Card className="lg:col-span-2 glass-card border-0 animate-slide-up" style={{ animationDelay: '400ms' }}>
+            {/* Main Content Grid - 2 Column Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="glass-card border-0 animate-slide-up" style={{ animationDelay: '400ms' }}>
                 <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
                   <CardTitle className="text-lg font-semibold flex items-center gap-2">
                     <Sparkles className="h-5 w-5 text-emerald-500" />
@@ -809,48 +861,32 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            {/* Quick Actions */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Additional Quick Actions */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Link href="/appointments">
-                <Card className="quick-action-card glass-card border-0 cursor-pointer group">
+                <Card className="quick-action-card glass-card border-0 cursor-pointer group hover:shadow-xl transition-all">
                   <CardContent className="p-6">
                     <div className="flex items-center gap-4">
                       <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-600/20 flex items-center justify-center group-hover:scale-110 transition-transform border border-blue-500/30">
                         <Calendar className="h-7 w-7 text-blue-400" />
                       </div>
-                      <div>
+                      <div className="flex-1">
                         <p className="font-semibold text-lg">Appointments</p>
                         <p className="text-sm text-muted-foreground">Schedule meetings</p>
                       </div>
-                      <ArrowRight className="h-5 w-5 text-muted-foreground ml-auto group-hover:text-blue-400 group-hover:translate-x-1 transition-all" />
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-              <Link href="/tasks">
-                <Card className="quick-action-card glass-card border-0 cursor-pointer group">
-                  <CardContent className="p-6">
-                    <div className="flex items-center gap-4">
-                      <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center group-hover:scale-110 transition-transform border border-amber-500/30">
-                        <AlertCircle className="h-7 w-7 text-amber-400" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-lg">Tasks</p>
-                        <p className="text-sm text-muted-foreground">Manage your to-dos</p>
-                      </div>
-                      <ArrowRight className="h-5 w-5 text-muted-foreground ml-auto group-hover:text-amber-400 group-hover:translate-x-1 transition-all" />
+                      <ArrowRight className="h-5 w-5 text-muted-foreground ml-auto group-hover:text-blue-400 group-hover:translate-x-1 transition-all flex-shrink-0" />
                     </div>
                   </CardContent>
                 </Card>
               </Link>
               <Link href="/deadlines">
-                <Card className="quick-action-card glass-card border-0 cursor-pointer group">
+                <Card className="quick-action-card glass-card border-0 cursor-pointer group hover:shadow-xl transition-all">
                   <CardContent className="p-6">
                     <div className="flex items-center gap-4">
                       <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-red-500/20 to-rose-500/20 flex items-center justify-center group-hover:scale-110 transition-transform border border-red-500/30">
                         <Clock className="h-7 w-7 text-red-400" />
                       </div>
-                      <div>
+                      <div className="flex-1">
                         <p className="font-semibold text-lg">Tax Deadlines</p>
                         <p className="text-sm text-muted-foreground">Important dates</p>
                       </div>
