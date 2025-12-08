@@ -238,12 +238,8 @@ export class FTPStorageService {
       res.setHeader('Content-Type', contentType);
       res.setHeader('Content-Length', foundFile.size);
       
-      // Inline viewing for PDFs and images
-      if (['pdf', 'jpg', 'jpeg', 'png', 'gif'].includes(ext)) {
-        res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(documentName)}"`);
-      } else {
-        res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(documentName)}"`);
-      }
+      // All files are downloaded (not viewed online)
+      res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(documentName)}"`);
       
       // Stream directly from FTP to HTTP response using PassThrough
       const { PassThrough } = require('stream');
