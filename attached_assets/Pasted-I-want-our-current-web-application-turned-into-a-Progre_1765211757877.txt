@@ -1,0 +1,133 @@
+I want our current web application turned into a Progressive Web App (PWA) that behaves as close as possible to a native mobile app on both iOS and Android. Runs full screen (no browser bar)
+
+Has a splash screen & loading states
+
+Has smooth navigation & transitions
+
+Uses our existing backend & features
+
+Feels like an actual mobile app, not just a website in a browser
+
+Please use the current app as the source of truth for all features and flows, and add/adjust what’s needed to make it a proper PWA.
+
+1. PWA Setup (Technical Requirements)
+
+Please implement all core PWA pieces:
+
+Web App Manifest (manifest.json)
+
+Name & short_name for the app
+
+Description
+
+Icons in all required sizes (for Android & iOS)
+
+"display": "standalone" (or "fullscreen" if appropriate)
+
+"start_url" set correctly (e.g. our main dashboard or landing page)
+
+"background_color" and "theme_color" matching our brand
+
+Service Worker
+
+Register a service worker for:
+
+Basic offline support (cache shell + assets where it makes sense)
+
+Caching strategy for static assets (logo, CSS, JS, fonts)
+
+Make sure it doesn’t break dynamic features (forms, API calls, auth).
+
+HTTPS
+
+Ensure everything is served over HTTPS (required for PWA install).
+
+Lighthouse
+
+Optimize so we pass the PWA checklist in Lighthouse (installable, manifest, service worker, etc.).
+
+2. Mobile-App-Like UX & Navigation
+
+I want the UX to feel like a real app, not just a shrunk website:
+
+Make sure all main screens are mobile responsive and optimized for small screens.
+
+Use app-like navigation patterns:
+
+Bottom tab bar or clear menu for key sections (Dashboard, Profile, Settings, etc.).
+
+Smooth page transitions (no janky reloads).
+
+Handle back navigation properly:
+
+Pressing back on mobile should behave like a normal app (no weird jumps).
+
+If you need to refactor any pages or components to feel more “app-like,” please do it and let me know what you changed.
+
+3. Loading States & Splash Experience
+
+I want proper loading and not blank screens:
+
+Splash Screen / Launch
+
+Use the manifest + meta tags so that when the app launches from the home screen, it shows a splash screen with:
+
+Our logo
+
+Our brand colors
+
+In-App Loading States
+
+For all key data-fetching screens (dashboard, lists, etc.):
+
+Add skeleton loaders or spinners instead of empty or flashing content.
+
+Make sure loading states are consistent across the app.
+
+4. Auth, Offline & Session Handling
+
+Keep using the same login / signup / auth logic, but make it smooth on mobile:
+
+Keep the user logged in where possible (respecting security best practices).
+
+Define a clear behavior for offline:
+
+If offline, show a friendly message like “You’re offline – some features may not work” rather than breaking.
+
+If possible, cache basic UI shell so the app still opens.
+
+5. Install Experience
+
+Make sure the app:
+
+Shows as “Installable” in Chrome DevTools.
+
+Triggers the “Add to Home Screen” prompt where possible (Android).
+
+For iOS (Safari), please:
+
+Make sure the app works when added to home screen (no broken links).
+
+Set any necessary iOS meta tags for full-screen mode and status bar styling.
+
+6. Optional (If Feasible Now or Later)
+
+If it’s not too complex, plan/prepare for:
+
+Push Notifications (for later):
+
+Structure the app so we can add push notifications down the line (for reminders, updates, etc.).
+
+Deep links / URL handling:
+
+If a user opens a specific URL from a notification, it should open the correct screen inside the PWA.
+
+7. Delivery
+
+When you’re done, please send me:
+
+A short summary of:
+
+What was added for the PWA (manifest, service worker, routing changes, etc.)
+
+Any limitations (especially on iOS)

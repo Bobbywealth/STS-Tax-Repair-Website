@@ -11,6 +11,8 @@ export function usePWA() {
   const [isInstalled, setIsInstalled] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isPWA, setIsPWA] = useState(false);
+  const [hasUpdate, setHasUpdate] = useState(false);
+  const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null);
 
   useEffect(() => {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
@@ -66,12 +68,48 @@ export function usePWA() {
     }
   }, [deferredPrompt]);
 
+  const updateApp = useCallback(() => {
+    if (waitingWorker) {
+      waitingWorker.postMessage({ type: 'SKIP_WAITING' });
+      setHasUpdate(false);
+      window.location.reload();
+    }
+  }, [waitingWorker]);
+
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then((registration) => {
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          if (newWorker) {
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                setHasUpdate(true);
+                setWaitingWorker(newWorker);
+              }
+            });
+          }
+        });
+      });
+
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+          refreshing = true;
+          window.location.reload();
+        }
+      });
+    }
+  }, []);
+
   return {
     isInstallable,
     isInstalled,
     isOnline,
     isPWA,
+    hasUpdate,
     installApp,
+    updateApp,
   };
 }
 

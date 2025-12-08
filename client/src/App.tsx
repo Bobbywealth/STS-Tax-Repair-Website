@@ -15,6 +15,7 @@ import { SplashScreen } from "@/components/SplashScreen";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { NavigationProgress } from "@/components/NavigationProgress";
+import { UpdateNotification } from "@/components/UpdateNotification";
 import { usePWA } from "@/hooks/usePWA";
 
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
@@ -414,6 +415,7 @@ function App() {
           )}
         </Suspense>
         <PWAInstallPrompt />
+        <UpdateNotification />
       </TooltipProvider>
     </QueryClientProvider>
   );

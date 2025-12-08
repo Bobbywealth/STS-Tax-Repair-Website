@@ -2,6 +2,7 @@ import { Home, Users, CheckSquare, FileText, Menu } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/ui/sidebar";
+import { triggerHaptic } from "@/lib/haptics";
 
 const navItems = [
   { title: "Home", url: "/", icon: Home },
@@ -22,6 +23,7 @@ export function MobileNav() {
           return (
             <Link key={item.title} href={item.url}>
               <button
+                onClick={() => triggerHaptic('light')}
                 className={cn(
                   "flex flex-col items-center justify-center gap-1 w-16 h-14 rounded-xl transition-all duration-200",
                   isActive 
@@ -43,7 +45,7 @@ export function MobileNav() {
           );
         })}
         <button
-          onClick={toggleSidebar}
+          onClick={() => { triggerHaptic('light'); toggleSidebar(); }}
           className="flex flex-col items-center justify-center gap-1 w-16 h-14 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all duration-200"
           data-testid="mobile-nav-menu"
         >

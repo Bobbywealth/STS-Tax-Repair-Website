@@ -1,13 +1,17 @@
 {
+  "id": "/sts-taxrepair-pwa",
   "name": "STS TaxRepair",
   "short_name": "STS Tax",
   "description": "Expert Tax Refund Solutions - Maximum Refund Guaranteed",
-  "start_url": "/",
+  "start_url": "/dashboard",
   "display": "standalone",
   "background_color": "#0a0a0a",
   "theme_color": "#4CAF50",
   "orientation": "portrait-primary",
   "scope": "/",
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
   "icons": [
     {
       "src": "/icons/icon-72x72.png",
