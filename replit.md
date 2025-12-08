@@ -209,3 +209,39 @@ Preferred communication style: Simple, everyday language.
 - Primary CRM: MySQL database `tax_7648995` on cPanel server
 - Perfex read-only: MySQL database `perfexcrm` on same server (for future sync if needed)
 - Connection module: `server/perfex-db.ts`
+
+### Progressive Web App (PWA)
+
+**Service Worker** (`client/public/sw.js`)
+- Cache versioning with automatic cleanup of old caches
+- Multiple caching strategies: Network First (API), Cache First (fonts), Stale While Revalidate (assets)
+- Offline fallback for navigation requests
+- Push notification support with action buttons
+- Message handler for SKIP_WAITING during updates
+
+**Key PWA Components**
+- `SplashScreen.tsx` - Animated logo with loading spinner on app start
+- `PWAInstallPrompt.tsx` - Smart install prompt for Add to Home Screen
+- `OfflineIndicator.tsx` - Visual indicator when app is offline
+- `UpdateNotification.tsx` - Prompts user when new version available
+- `MobileNav.tsx` - Bottom navigation bar for mobile with haptic feedback
+- `PullToRefresh.tsx` - Native pull-to-refresh gesture for list refreshes
+
+**PWA Hooks**
+- `usePWA.tsx` - Manages install prompt, online/offline status, and update detection
+
+**Haptic Feedback** (`client/src/lib/haptics.ts`)
+- Wrapper for navigator.vibrate API with multiple feedback patterns
+- Patterns: light, medium, heavy, selection, success, warning, error
+- Integrated into MobileNav for tactile navigation feedback
+
+**iOS Optimization**
+- Apple touch icons for all iOS device sizes
+- Splash screen meta tags (using 512x512 icon as fallback - proper device-specific splash images recommended for production)
+- Status bar style set to black-translucent for edge-to-edge display
+
+**Manifest Configuration** (`client/public/manifest.json`)
+- PWA ID for consistent app identity
+- Launch handler for navigate-existing mode
+- Multiple icon sizes with maskable versions
+- Standalone display mode with portrait orientation
