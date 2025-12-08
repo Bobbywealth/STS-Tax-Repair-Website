@@ -582,6 +582,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return res.redirect(fullUrl);
   });
 
+  // Serve documents from GoDaddy FTP storage
+  // This endpoint handles document preview/download requests
+  app.get("/download/preview_image", async (req, res) => {
+    try {
+      const path = req.query.path as string;
+
+      if (!path) {
+        console.error('[DOWNLOAD] No path provided');
+        return res.status(400).send('Path parameter is required');
+      }
+
+      console.log(`[DOWNLOAD] Fetching file from GoDaddy: ${path}`);
+
+      // Construct the full URL to the file on GoDaddy
+      const fileUrl = `https://ststaxrepair.org/${path}`;
+
+      // Fetch the file from GoDaddy
+      const response = await fetch(fileUrl);
+
+      if (!response.ok) {
+        console.error(`[DOWNLOAD] File not found on GoDaddy: ${fileUrl} (Status: ${response.status})`);
+        return res.status(404).send('File not found');
+      }
+
+      // Get the content type from the response
+      const contentType = response.headers.get('content-type') || 'application/octet-stream';
+
+      // Set appropriate headers
+      res.setHeader('Content-Type', contentType);
+
+      // Stream the file to the client
+      const buffer = await response.arrayBuffer();
+      res.send(Buffer.from(buffer));
+
+      console.log(`[DOWNLOAD] Successfully streamed file: ${path}`);
+    } catch (error) {
+      console.error('[DOWNLOAD] Error fetching file:', error);
+      res.status(500).send('Error fetching file');
+    }
+  });
+
   // Auth routes - supports both Replit Auth and client/admin session login
   app.get("/api/auth/user", async (req: any, res) => {
     try {
