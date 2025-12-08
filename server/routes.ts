@@ -4117,7 +4117,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Download/view a document
+  // Download/view a document - uses FTP to fetch from GoDaddy
   app.get("/api/documents/:id/download", isAuthenticated, async (req, res) => {
     try {
       const documentId = req.params.id;
