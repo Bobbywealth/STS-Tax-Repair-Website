@@ -250,7 +250,7 @@ export default function Dashboard() {
   });
 
   const { data: activityLogs } = useQuery<AuditLog[]>({
-    queryKey: ["/api/audit-logs", { limit: 10 }],
+    queryKey: ["/api/audit-logs?limit=10"],
   });
 
   const totalClients = clients?.length || 0;
