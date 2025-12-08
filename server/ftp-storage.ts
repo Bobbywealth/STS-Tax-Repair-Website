@@ -6,6 +6,9 @@ const FTP_USER = process.env.FTP_USER || '';
 const FTP_PASSWORD = process.env.FTP_PASSWORD || '';
 const FTP_PORT = parseInt(process.env.FTP_PORT || '21');
 
+// Debug: Log FTP config at startup
+console.log(`[FTP-CONFIG] FTP_HOST="${FTP_HOST}", FTP_USER="${FTP_USER}", FTP_PORT=${FTP_PORT}`);
+
 // The FTP user lands in /home/i28qwzd7d2dt/ so paths are relative to that
 const BASE_PATH = 'public_html/ststaxrepair.org';
 const UPLOADS_DIR = 'uploads/clients';
