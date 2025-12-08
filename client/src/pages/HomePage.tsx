@@ -721,21 +721,28 @@ export default function HomePage() {
             {/* Title FIRST - At Top */}
             <motion.div
               className="text-center mb-6"
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
             >
               <h1 className="text-4xl font-black leading-[1.15] tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-sts-gold via-yellow-300 to-sts-gold drop-shadow-lg">
                 Reliable Tax Advisors
               </h1>
-              <p className="text-sts-gold font-semibold text-sm tracking-wide mt-2">STS TAX REPAIR</p>
+              <motion.p 
+                className="text-sts-gold font-semibold text-sm tracking-wide mt-2"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+              >
+                STS TAX REPAIR
+              </motion.p>
             </motion.div>
 
             {/* Team Image SECOND - Below Title */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.15 }}
               className="relative rounded-xl overflow-hidden shadow-2xl mb-8"
             >
               <img 
@@ -775,33 +782,45 @@ export default function HomePage() {
                     className="flex flex-col gap-4 pt-3 w-full"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: 0.4 }}
+                    transition={{ staggerChildren: 0.12, delayChildren: 0.35 }}
                   >
-                    <Button 
-                      size="lg"
-                      className="w-full bg-gradient-to-r from-[#fbd247] to-[#d4a016] hover:from-[#d4a016] hover:to-[#fbd247] text-sts-dark font-bold h-14 text-base shadow-xl shadow-sts-gold/40 relative overflow-hidden group rounded-xl"
-                      onClick={() => navigate("/book-appointment")}
-                      data-testid="button-book-appointment-mobile"
+                    <motion.div
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5 }}
                     >
-                      <span className="relative z-10 flex items-center justify-center gap-3">
-                        BOOK APPOINTMENT
-                        <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
-                      </span>
-                      <motion.div
-                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -skew-x-12"
-                        animate={{ x: ['-200%', '200%'] }}
-                        transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
-                      />
-                    </Button>
-                    <Button 
-                      size="lg"
-                      className="w-full bg-white hover:bg-gray-100 text-sts-dark font-bold h-14 text-base shadow-xl rounded-xl"
-                      onClick={() => navigate("/register")}
-                      data-testid="button-register-mobile"
+                      <Button 
+                        size="lg"
+                        className="w-full bg-gradient-to-r from-[#fbd247] to-[#d4a016] hover:from-[#d4a016] hover:to-[#fbd247] text-sts-dark font-bold h-14 text-base shadow-xl shadow-sts-gold/40 relative overflow-hidden group rounded-xl hover:shadow-2xl transition-all hover:-translate-y-1"
+                        onClick={() => navigate("/book-appointment")}
+                        data-testid="button-book-appointment-mobile"
+                      >
+                        <span className="relative z-10 flex items-center justify-center gap-3">
+                          BOOK APPOINTMENT
+                          <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+                        </span>
+                        <motion.div
+                          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -skew-x-12"
+                          animate={{ x: ['-200%', '200%'] }}
+                          transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
+                        />
+                      </Button>
+                    </motion.div>
+                    <motion.div
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5 }}
                     >
-                      REGISTER
-                      <ChevronRight className="w-6 h-6 ml-2" />
-                    </Button>
+                      <Button 
+                        size="lg"
+                        className="w-full bg-white hover:bg-gray-100 text-sts-dark font-bold h-14 text-base shadow-xl rounded-xl hover:shadow-2xl transition-all hover:-translate-y-1"
+                        onClick={() => navigate("/register")}
+                        data-testid="button-register-mobile"
+                      >
+                        REGISTER
+                        <ChevronRight className="w-6 h-6 ml-2" />
+                      </Button>
+                    </motion.div>
                   </motion.div>
                   
                   {/* Trust Badges */}
@@ -809,7 +828,7 @@ export default function HomePage() {
                     className="flex flex-wrap justify-center gap-4 pt-4"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: 0.5 }}
+                    transition={{ staggerChildren: 0.08, delayChildren: 0.55 }}
                   >
                     {[
                       { icon: Shield, text: "IRS Authorized" },
