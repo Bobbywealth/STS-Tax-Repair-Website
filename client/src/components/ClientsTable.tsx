@@ -187,9 +187,10 @@ export function ClientsTable({
             </div>
           ) : (
             filteredClients.map((client, index) => (
-              <div
+              <button
                 key={client.id}
-                className="p-4 rounded-lg border bg-card animate-fade-in"
+                onClick={() => setLocation(`/clients/${client.id}`)}
+                className="w-full p-4 rounded-lg border bg-card animate-fade-in text-left hover-elevate active-elevate-2 transition-all touch-manipulation"
                 style={{ animationDelay: `${index * 30}ms` }}
                 data-testid={`client-card-${client.id}`}
               >
@@ -202,27 +203,24 @@ export function ClientsTable({
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <button
-                          onClick={() => setLocation(`/clients/${client.id}`)}
-                          className="font-semibold text-primary hover:underline cursor-pointer text-left block truncate"
-                        >
+                        <span className="font-semibold text-primary text-left block truncate">
                           {client.name}
-                        </button>
+                        </span>
                         <Badge variant="secondary" className={`${statusColors[clientStatuses[client.id] || client.status]} text-xs mt-1`}>
                           {clientStatuses[client.id] || client.status}
                         </Badge>
                       </div>
                       <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button size="icon" variant="ghost" className="h-8 w-8 flex-shrink-0">
+                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                          <Button size="icon" variant="ghost" className="h-10 w-10 flex-shrink-0">
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setLocation(`/clients/${client.id}`)}>
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setLocation(`/clients/${client.id}`); }}>
                             View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem>Export Data</DropdownMenuItem>
+                          <DropdownMenuItem onClick={(e) => e.stopPropagation()}>Export Data</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -247,7 +245,7 @@ export function ClientsTable({
                     </div>
                   </div>
                 </div>
-              </div>
+              </button>
             ))
           )}
         </div>
