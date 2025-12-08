@@ -241,6 +241,7 @@ export default function HomePage() {
       iconImage: "https://www.ststaxrepair.net/wp-content/uploads/2023/12/svgviewer-output-2.svg",
       title: "Credit Restoration",
       description: "Rebuild your credit with our comprehensive restoration service. We analyze credit reports, identifying discrepancies and errors. Through strategic interventions, we dispute inaccuracies and guide you towards improved credit health. Let us help restore your financial standing and open doors to better opportunities.",
+      hasButton: true,
       agent: "Jessica Zephir",
       phone: "7868051104",
       email: "Zephirfinancialgroup@Outlook.Com"
@@ -1671,6 +1672,34 @@ export default function HomePage() {
             ))}
           </motion.div>
         </div>
+
+        {/* FAQ CTA Section */}
+        <motion.div 
+          className="mt-16 p-8 md:p-12 bg-gradient-to-r from-sts-primary/10 to-sts-gold/10 rounded-2xl border border-sts-primary/20"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="text-center">
+            <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3">Still Have Questions?</h3>
+            <p className="text-gray-600 text-lg mb-6 max-w-2xl mx-auto">Our tax experts are ready to answer any questions and guide you towards maximizing your refund.</p>
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Button 
+                size="lg"
+                className="bg-sts-primary hover:bg-sts-primary/90 text-white font-bold px-8 h-14 text-base shadow-lg hover:shadow-xl transition-all"
+                onClick={() => document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" })}
+                data-testid="button-faq-contact-us"
+              >
+                Contact Us Now
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Button>
+            </motion.div>
+          </div>
+        </motion.div>
       </section>
 
       {/* Newsletter Section */}
