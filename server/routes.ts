@@ -4091,8 +4091,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Document has no file URL" });
       }
 
-      // For Perfex CRM legacy documents, redirect to the external URL
+      // For Perfex CRM legacy documents, use Perfex's download endpoint
       if (fileUrl.startsWith('/perfex-uploads/')) {
+        // fileUrl is like: /perfex-uploads/uploads/customers/{clientId}/{filename}
+        // We need to transform it to: /download/preview_image?path=uploads/clients/{clientId}/{filename}
+        const pathMatch = fileUrl.match(/\/perfex-uploads\/uploads\/customers\/(\d+)\/(.+)/);
+        if (pathMatch) {
+          const clientId = pathMatch[1];
+          const filename = pathMatch[2];
+          // Perfex uses 'clients' not 'customers' in actual file path
+          const filePath = `uploads/clients/${clientId}/${filename}`;
+          const externalUrl = `https://ststaxrepair.org/download/preview_image?path=${encodeURIComponent(filePath)}`;
+          console.log(`[PERFEX] Redirecting to: ${externalUrl} for document ${documentId}`);
+          return res.redirect(externalUrl);
+        }
+        // Fallback for other perfex-uploads formats
         const externalUrl = `https://ststaxrepair.org${fileUrl}`;
         return res.redirect(externalUrl);
       }
