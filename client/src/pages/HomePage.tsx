@@ -45,6 +45,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence, useInView, useScroll, useTransform } from "framer-motion";
 import logoUrl from "@/assets/sts-logo.png";
+import officeBackgroundUrl from "@/assets/generated_images/professional_office_background_blur.png";
 
 const MotionCard = motion.create(Card);
 
@@ -607,12 +608,8 @@ export default function HomePage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
               >
-                <h1 className="text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.1] mb-4">
-                  <span className="animate-gradient-text italic">
-                    Reliable
-                  </span>
-                  {" "}
-                  <span className="animate-gradient-text">Tax Advisors</span>
+                <h1 className="text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.1] mb-4 text-transparent bg-clip-text bg-gradient-to-r from-sts-gold via-yellow-300 to-sts-gold">
+                  Reliable Tax Advisors
                 </h1>
                 <p className="text-white/90 text-lg lg:text-xl leading-relaxed mb-6 max-w-2xl mx-auto">
                   Let Us Be Your Trusted Partner. Work alongside a dependable ally invested in your best interests. For the maximum refund you deserve, your search ends here.
@@ -672,12 +669,8 @@ export default function HomePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              <h1 className="text-4xl font-black leading-[1.15] tracking-tight">
-                <span className="animate-gradient-text drop-shadow-lg">
-                  Reliable
-                </span>
-                <br />
-                <span className="animate-gradient-text">Tax Advisors</span>
+              <h1 className="text-4xl font-black leading-[1.15] tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-sts-gold via-yellow-300 to-sts-gold drop-shadow-lg">
+                Reliable Tax Advisors
               </h1>
               <p className="text-sts-gold font-semibold text-sm tracking-wide mt-2">STS TAX REPAIR</p>
             </motion.div>
@@ -1360,7 +1353,7 @@ export default function HomePage() {
                   className="flex-shrink-0 w-72 p-5 bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 group"
                   data-testid={`card-agent-row1-${index}`}
                 >
-                  <div className="w-48 h-56 mx-auto mb-4 rounded-lg overflow-hidden shadow-lg group-hover:scale-105 transition-transform ring-4 ring-sts-primary/20">
+                  <div className="w-48 h-56 mx-auto mb-4 rounded-lg overflow-hidden shadow-lg group-hover:scale-105 transition-transform ring-4 ring-sts-primary/20" style={{ backgroundImage: `url(${officeBackgroundUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
                     <img 
                       src={agent.image} 
                       alt={agent.name}
@@ -1420,7 +1413,7 @@ export default function HomePage() {
                   className="flex-shrink-0 w-72 p-5 bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 group"
                   data-testid={`card-agent-row2-${index}`}
                 >
-                  <div className="w-48 h-56 mx-auto mb-4 rounded-lg overflow-hidden shadow-lg group-hover:scale-105 transition-transform ring-4 ring-sts-primary/20">
+                  <div className="w-48 h-56 mx-auto mb-4 rounded-lg overflow-hidden shadow-lg group-hover:scale-105 transition-transform ring-4 ring-sts-primary/20" style={{ backgroundImage: `url(${officeBackgroundUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
                     <img 
                       src={agent.image} 
                       alt={agent.name}
