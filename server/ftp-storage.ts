@@ -16,7 +16,7 @@ const UPLOADS_DIR = 'uploads/clients';
 
 export class FTPStorageService {
   private async getClient(): Promise<ftp.Client> {
-    const client = new ftp.Client();
+    const client = new ftp.Client(30000); // 30 second timeout for operations
     client.ftp.verbose = true; // Enable verbose logging
     
     if (!FTP_HOST || !FTP_USER || !FTP_PASSWORD) {

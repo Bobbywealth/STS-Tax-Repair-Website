@@ -100,19 +100,41 @@ export default function AgentManagement() {
         setFormData(prev => ({ ...prev, imageUrl: objectPath }));
       } else if (mode === 'ftp') {
         const arrayBuffer = await file.arrayBuffer();
-        const ftpResponse = await fetch('/api/homepage-agents/photo-ftp', {
-          method: 'POST',
-          body: arrayBuffer,
-          headers: {
-            'Content-Type': 'application/octet-stream',
-            'x-agent-id': agentId,
-            'x-file-name': encodeURIComponent(file.name),
-          },
-          credentials: 'include',
-        });
-        if (!ftpResponse.ok) {
-          const errorData = await ftpResponse.json().catch(() => ({}));
-          throw new Error(errorData.error || 'FTP upload failed');
+        
+        // Add timeout to prevent hanging forever
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+        
+        try {
+          const ftpResponse = await fetch('/api/homepage-agents/photo-ftp', {
+            method: 'POST',
+            body: arrayBuffer,
+            headers: {
+              'Content-Type': 'application/octet-stream',
+              'x-agent-id': agentId,
+              'x-file-name': encodeURIComponent(file.name),
+            },
+            credentials: 'include',
+            signal: controller.signal,
+          });
+          
+          clearTimeout(timeoutId);
+          
+          if (!ftpResponse.ok) {
+            const errorData = await ftpResponse.json().catch(() => ({}));
+            throw new Error(errorData.error || 'FTP upload failed');
+          }
+          
+          const result = await ftpResponse.json().catch(() => ({}));
+          if (result.imageUrl) {
+            setFormData(prev => ({ ...prev, imageUrl: result.imageUrl }));
+          }
+        } catch (err: any) {
+          clearTimeout(timeoutId);
+          if (err.name === 'AbortError') {
+            throw new Error('Upload timed out. Please try again.');
+          }
+          throw err;
         }
       }
 
