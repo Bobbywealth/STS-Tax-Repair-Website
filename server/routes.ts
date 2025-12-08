@@ -4134,11 +4134,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const documentName = document.documentName || 'document';
 
+      // Normalize fileUrl - ensure leading slash for consistent matching
+      const normalizedUrl = fileUrl.startsWith('/') ? fileUrl : '/' + fileUrl;
+      console.log(`[DOWNLOAD] Document ${documentId}, original URL: ${fileUrl}, normalized: ${normalizedUrl}`);
+
       // For Perfex CRM legacy documents, download via FTP from GoDaddy
-      if (fileUrl.startsWith('/perfex-uploads/')) {
+      if (normalizedUrl.startsWith('/perfex-uploads/')) {
         // fileUrl is like: /perfex-uploads/uploads/customers/{clientId}/{filename}
         // Files are at: uploads/clients/{clientId}/{filename} on FTP server
-        const pathMatch = fileUrl.match(/\/perfex-uploads\/uploads\/customers\/(\d+)\/(.+)/);
+        // Note: clientId can be numeric or string like "perfex-965"
+        const pathMatch = normalizedUrl.match(/\/perfex-uploads\/uploads\/customers\/([^/]+)\/(.+)/);
         if (pathMatch) {
           const clientId = pathMatch[1];
           const filename = pathMatch[2];
@@ -4150,16 +4155,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(404).json({ error: "File not found on FTP server" });
         }
         // Fallback: try the raw path without /perfex-uploads/ prefix
-        const fallbackPath = fileUrl.replace('/perfex-uploads/', '');
+        const fallbackPath = normalizedUrl.replace('/perfex-uploads/', '');
+        console.log(`[PERFEX] Fallback path: ${fallbackPath}`);
         const success = await ftpStorageService.streamFileToResponse(fallbackPath, res, documentName);
         if (success) return;
         return res.status(404).json({ error: "File not found on FTP server" });
       }
 
       // For FTP-uploaded files, download via FTP from GoDaddy
-      if (fileUrl.startsWith('/ftp/')) {
+      if (normalizedUrl.startsWith('/ftp/')) {
         // Remove /ftp/ prefix to get the actual path
-        const relativePath = fileUrl.replace('/ftp/', '');
+        const relativePath = normalizedUrl.replace('/ftp/', '');
         console.log(`[FTP] Downloading via FTP: ${relativePath} for document ${documentId}`);
         const success = await ftpStorageService.streamFileToResponse(relativePath, res, documentName);
         if (success) return;
@@ -4167,20 +4173,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // For object storage files, get the file and stream it
-      if (fileUrl.startsWith('/objects/')) {
+      if (normalizedUrl.startsWith('/objects/')) {
         const objectStorageService = new ObjectStorageService();
-        const objectFile = await objectStorageService.getObjectEntityFile(fileUrl);
-        console.log(`[OBJECTS] Serving file: ${fileUrl} for document ${documentId}`);
+        const objectFile = await objectStorageService.getObjectEntityFile(normalizedUrl);
+        console.log(`[OBJECTS] Serving file: ${normalizedUrl} for document ${documentId}`);
         return objectStorageService.downloadObject(objectFile, res);
       }
 
       // For other URLs (like external https links), redirect to them
-      if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
-        return res.redirect(fileUrl);
+      if (normalizedUrl.startsWith('http://') || normalizedUrl.startsWith('https://')) {
+        return res.redirect(normalizedUrl);
       }
 
-      // Unknown URL format
-      return res.status(404).json({ error: "Unknown file URL format" });
+      // Unknown URL format - log for debugging
+      console.log(`[DOWNLOAD] Unknown URL format: ${normalizedUrl}`);
+      return res.status(404).json({ error: `Unknown file URL format: ${normalizedUrl}` });
     } catch (error) {
       console.error("Error serving document:", error);
       if (error instanceof ObjectNotFoundError) {
