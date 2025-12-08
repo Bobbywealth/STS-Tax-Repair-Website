@@ -602,58 +602,105 @@ export default function HomePage() {
           <div className="absolute inset-0 flex flex-col justify-end">
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
             <div className="relative max-w-7xl mx-auto px-8 w-full pb-8">
-              <motion.div 
-                className="text-center"
-                initial={{ opacity: 0, y: 30 }}
+              {/* Heading */}
+              <motion.div
+                initial={{ opacity: 0, y: 40 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
+                transition={{ duration: 0.7, ease: "easeOut" }}
+                className="text-center mb-4"
               >
-                <h1 className="text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.1] mb-4 text-transparent bg-clip-text bg-gradient-to-r from-sts-gold via-yellow-300 to-sts-gold">
+                <h1 className="text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.1] text-transparent bg-clip-text bg-gradient-to-r from-sts-gold via-yellow-300 to-sts-gold">
                   Reliable Tax Advisors
                 </h1>
-                <p className="text-white/90 text-lg lg:text-xl leading-relaxed mb-6 max-w-2xl mx-auto">
-                  Let Us Be Your Trusted Partner. Work alongside a dependable ally invested in your best interests. For the maximum refund you deserve, your search ends here.
-                </p>
-                <div className="flex flex-wrap justify-center gap-4 mb-8">
+              </motion.div>
+
+              {/* Description */}
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
+                className="text-white/90 text-lg lg:text-xl leading-relaxed mb-6 max-w-2xl mx-auto"
+              >
+                Let Us Be Your Trusted Partner. Work alongside a dependable ally invested in your best interests. For the maximum refund you deserve, your search ends here.
+              </motion.p>
+
+              {/* CTA Buttons - Staggered */}
+              <motion.div
+                className="flex flex-wrap justify-center gap-4 mb-8"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ staggerChildren: 0.15, delayChildren: 0.4 }}
+              >
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
                   <Button 
                     size="lg"
-                    className="bg-gradient-to-r from-sts-gold to-yellow-400 hover:from-yellow-400 hover:to-sts-gold text-sts-dark font-bold px-8 h-14 text-lg shadow-xl"
+                    className="bg-gradient-to-r from-sts-gold to-yellow-400 hover:from-yellow-400 hover:to-sts-gold text-sts-dark font-bold px-8 h-14 text-lg shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1"
                     onClick={() => navigate("/book-appointment")}
                     data-testid="button-book-appointment-hero"
                   >
                     BOOK APPOINTMENT <ArrowRight className="ml-2 w-5 h-5" />
                   </Button>
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
                   <Button 
                     size="lg"
-                    className="bg-white hover:bg-gray-100 text-sts-dark font-bold px-8 h-14 text-lg shadow-xl"
+                    className="bg-white hover:bg-gray-100 text-sts-dark font-bold px-8 h-14 text-lg shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1"
                     onClick={() => navigate("/register")}
                     data-testid="button-register-hero"
                   >
                     REGISTER <ArrowRight className="ml-2 w-5 h-5" />
                   </Button>
-                </div>
-                
-                {/* Trust Badges - Centered */}
-                <div className="flex flex-wrap justify-center gap-8">
-                  <div className="flex items-center gap-2 text-white/90">
-                    <div className="w-8 h-8 rounded-full bg-sts-gold/20 flex items-center justify-center">
-                      <Shield className="w-4 h-4 text-sts-gold" />
-                    </div>
-                    <span className="text-sm font-medium">IRS Authorized E-File</span>
+                </motion.div>
+              </motion.div>
+              
+              {/* Trust Badges - Animated with stagger */}
+              <motion.div
+                className="flex flex-wrap justify-center gap-8"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ staggerChildren: 0.1, delayChildren: 0.65 }}
+              >
+                <motion.div
+                  className="flex items-center gap-2 text-white/90"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <div className="w-8 h-8 rounded-full bg-sts-gold/20 flex items-center justify-center">
+                    <Shield className="w-4 h-4 text-sts-gold" />
                   </div>
-                  <div className="flex items-center gap-2 text-white/90">
-                    <div className="w-8 h-8 rounded-full bg-sts-gold/20 flex items-center justify-center">
-                      <Award className="w-4 h-4 text-sts-gold" />
-                    </div>
-                    <span className="text-sm font-medium">CTEC Certified</span>
+                  <span className="text-sm font-medium">IRS Authorized E-File</span>
+                </motion.div>
+                <motion.div
+                  className="flex items-center gap-2 text-white/90"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <div className="w-8 h-8 rounded-full bg-sts-gold/20 flex items-center justify-center">
+                    <Award className="w-4 h-4 text-sts-gold" />
                   </div>
-                  <div className="flex items-center gap-2 text-white/90">
-                    <div className="w-8 h-8 rounded-full bg-sts-gold/20 flex items-center justify-center">
-                      <Lock className="w-4 h-4 text-sts-gold" />
-                    </div>
-                    <span className="text-sm font-medium">100% Accuracy Guarantee</span>
+                  <span className="text-sm font-medium">CTEC Certified</span>
+                </motion.div>
+                <motion.div
+                  className="flex items-center gap-2 text-white/90"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <div className="w-8 h-8 rounded-full bg-sts-gold/20 flex items-center justify-center">
+                    <Lock className="w-4 h-4 text-sts-gold" />
                   </div>
-                </div>
+                  <span className="text-sm font-medium">100% Accuracy Guarantee</span>
+                </motion.div>
               </motion.div>
             </div>
           </div>
