@@ -208,6 +208,7 @@ function AdminRouter() {
 function AdminLayout() {
   const { data: user, isLoading, error } = useCurrentUser();
   const [, navigate] = useLocation();
+  const { isPWA } = usePWA();
 
   const sidebarStyle = {
     "--sidebar-width": "16rem",
@@ -226,6 +227,19 @@ function AdminLayout() {
   }
 
   if (error || !user) {
+    // In PWA mode, redirect to the custom login page
+    if (isPWA) {
+      window.location.href = '/client-login';
+      return (
+        <div className="flex items-center justify-center h-screen bg-animated-mesh">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-muted-foreground">Redirecting to login...</p>
+          </div>
+        </div>
+      );
+    }
+    
     return (
       <div className="flex items-center justify-center h-screen bg-animated-mesh">
         <div className="flex flex-col items-center gap-6 p-8 bg-card rounded-lg border shadow-sm max-w-md w-full mx-4">
@@ -265,7 +279,7 @@ function AdminLayout() {
           </div>
           
           <p className="text-xs text-muted-foreground text-center">
-            Client portal? <Link href="/login" className="text-primary hover:underline">Login here</Link>
+            Client portal? <Link href="/client-login" className="text-primary hover:underline">Login here</Link>
           </p>
         </div>
       </div>
