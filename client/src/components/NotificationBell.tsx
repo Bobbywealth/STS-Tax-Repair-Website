@@ -144,7 +144,7 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [, setLocation] = useLocation();
   const [soundEnabled, setSoundEnabled] = useState(() => {
-    const stored = localStorage.getItem('notification-sound');
+    const stored = localStorage.getItem('sts-sound-enabled');
     return stored !== 'false';
   });
   const previousCountRef = useRef<number | null>(null);
@@ -171,9 +171,9 @@ export function NotificationBell() {
     previousCountRef.current = currentCount;
   }, [countData?.count, soundEnabled]);
 
-  // Save sound preference
+  // Save sound preference (syncs with global sound setting)
   useEffect(() => {
-    localStorage.setItem('notification-sound', String(soundEnabled));
+    localStorage.setItem('sts-sound-enabled', String(soundEnabled));
   }, [soundEnabled]);
 
   const markAsReadMutation = useMutation({
