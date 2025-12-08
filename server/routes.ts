@@ -568,16 +568,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Redirect Perfex document URLs to the actual Perfex server
-  // Perfex stores files at: uploads/clients/[CLIENT_ID]/filename
-  // Accessed via: /download/preview_image?path=uploads/clients/[CLIENT_ID]/filename
+  // Perfex stores files at: uploads/clients/perfex-{CLIENT_ID}/filename
+  // Accessed via: /download/preview_image?path=uploads/clients/perfex-{CLIENT_ID}/filename
   app.get("/perfex-uploads/uploads/customers/:clientId/*", (req, res) => {
     const perfexBaseUrl = "https://ststaxrepair.org";
-    const clientId = req.params.clientId;
+    const perfexId = req.params.clientId;
     // Get filename from the path (everything after /customers/clientId/)
-    const pathParts = req.path.split(`/customers/${clientId}/`);
+    const pathParts = req.path.split(`/customers/${perfexId}/`);
     const filename = pathParts[1] || "";
-    // Perfex uses 'clients' not 'customers' in the actual file path
-    const filePath = `uploads/clients/${clientId}/${filename}`;
+    // Convert Perfex numeric ID to CRM folder format: perfex-{id}
+    const clientFolder = perfexId.startsWith('perfex-') ? perfexId : `perfex-${perfexId}`;
+    const filePath = `uploads/clients/${clientFolder}/${filename}`;
     const fullUrl = `${perfexBaseUrl}/download/preview_image?path=${encodeURIComponent(filePath)}`;
     return res.redirect(fullUrl);
   });
@@ -4141,22 +4142,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // For Perfex CRM legacy documents, download via FTP from GoDaddy
       if (normalizedUrl.startsWith('/perfex-uploads/')) {
         // fileUrl is like: /perfex-uploads/uploads/customers/{clientId}/{filename}
-        // Files are at: uploads/clients/{clientId}/{filename} on FTP server
-        // Note: clientId can be numeric or string like "perfex-965"
+        // Files are stored at: uploads/clients/perfex-{clientId}/{filename} on FTP server
+        // The database stores Perfex numeric IDs but files are in perfex-{id} folders
         const pathMatch = normalizedUrl.match(/\/perfex-uploads\/uploads\/customers\/([^/]+)\/(.+)/);
         if (pathMatch) {
-          const clientId = pathMatch[1];
+          const perfexId = pathMatch[1];
           const filename = pathMatch[2];
-          // Perfex uses 'clients' not 'customers' in actual file path
-          const filePath = `uploads/clients/${clientId}/${filename}`;
-          console.log(`[PERFEX] Downloading via FTP: ${filePath} for document ${documentId}`);
+          // Convert Perfex numeric ID to CRM folder format: perfex-{id}
+          // If it's already prefixed with "perfex-", use as-is; otherwise add the prefix
+          const clientFolder = perfexId.startsWith('perfex-') ? perfexId : `perfex-${perfexId}`;
+          const filePath = `uploads/clients/${clientFolder}/${filename}`;
+          console.log(`[PERFEX] Downloading via FTP: ${filePath} for document ${documentId} (Perfex ID: ${perfexId})`);
           const success = await ftpStorageService.streamFileToResponse(filePath, res, documentName);
           if (success) return;
+          
+          // Fallback: try without perfex- prefix in case some files use numeric IDs
+          const fallbackPath = `uploads/clients/${perfexId}/${filename}`;
+          console.log(`[PERFEX] Trying fallback path: ${fallbackPath}`);
+          const fallbackSuccess = await ftpStorageService.streamFileToResponse(fallbackPath, res, documentName);
+          if (fallbackSuccess) return;
+          
           return res.status(404).json({ error: "File not found on FTP server" });
         }
         // Fallback: try the raw path without /perfex-uploads/ prefix
         const fallbackPath = normalizedUrl.replace('/perfex-uploads/', '');
-        console.log(`[PERFEX] Fallback path: ${fallbackPath}`);
+        console.log(`[PERFEX] Fallback raw path: ${fallbackPath}`);
         const success = await ftpStorageService.streamFileToResponse(fallbackPath, res, documentName);
         if (success) return;
         return res.status(404).json({ error: "File not found on FTP server" });
