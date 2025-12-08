@@ -394,15 +394,18 @@ export default function HomePage() {
   const agents = useMemo(() => {
     if (apiAgents.length > 0) {
       return apiAgents.map(a => ({
+        id: a.id,
         name: a.name,
         role: a.title,
         phone: a.phone,
         email: a.email,
         address: a.address || "",
-        image: a.imageUrl || "",
+        image: a.imageUrl?.startsWith('/objects/') || a.imageUrl?.startsWith('/ftp/') 
+          ? `/api/agent-photos/${a.id}` 
+          : (a.imageUrl || ""),
       }));
     }
-    return fallbackAgents;
+    return fallbackAgents.map((a, i) => ({ ...a, id: `fallback-${i}` }));
   }, [apiAgents]);
 
   const stats = [

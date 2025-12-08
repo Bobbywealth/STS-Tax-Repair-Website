@@ -6213,6 +6213,167 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get upload URL for agent photo (admin only)
+  app.post("/api/homepage-agents/:id/photo", isAuthenticated, requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { fileName } = req.body;
+      
+      if (!fileName) {
+        return res.status(400).json({ error: "fileName is required" });
+      }
+      
+      // Check if we're on Replit with Object Storage available
+      if (isReplitEnvironment()) {
+        const objectStorageService = new ObjectStorageService();
+        const { uploadURL, objectPath } = await objectStorageService.getAgentPhotoUploadURL(id, fileName);
+        res.json({ uploadURL, objectPath, mode: 'object-storage' });
+      } else {
+        // On Render/other environments, use FTP
+        res.json({ 
+          uploadURL: '/api/homepage-agents/photo-ftp',
+          objectPath: null,
+          mode: 'ftp',
+          agentId: id
+        });
+      }
+    } catch (error: any) {
+      console.error('Error getting agent photo upload URL:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Confirm agent photo upload and update agent record (admin only)
+  app.post("/api/homepage-agents/:id/photo/confirm", isAuthenticated, requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { objectPath } = req.body;
+      
+      if (!objectPath) {
+        return res.status(400).json({ error: "objectPath is required" });
+      }
+      
+      // Validate agent exists first
+      const existingAgent = await mysqlStorage.getHomePageAgentById(id);
+      if (!existingAgent) {
+        return res.status(404).json({ error: "Agent not found" });
+      }
+      
+      // Store the object path - the /api/agent-photos/:id endpoint will handle serving
+      const agent = await mysqlStorage.updateHomePageAgent(id, { imageUrl: objectPath });
+      
+      res.json({ success: true, imageUrl: objectPath, agent });
+    } catch (error: any) {
+      console.error('Error confirming agent photo upload:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // FTP upload for agent photos (non-Replit environments)
+  app.post("/api/homepage-agents/photo-ftp", isAuthenticated, requireAdmin, async (req: any, res) => {
+    try {
+      const agentId = req.headers['x-agent-id'] as string;
+      const rawFileName = req.headers['x-file-name'] as string;
+      const fileName = rawFileName ? decodeURIComponent(rawFileName) : '';
+
+      if (!agentId || !fileName) {
+        return res.status(400).json({ error: "x-agent-id and x-file-name headers are required" });
+      }
+
+      // Validate agent exists
+      const existingAgent = await mysqlStorage.getHomePageAgentById(agentId);
+      if (!existingAgent) {
+        return res.status(404).json({ error: "Agent not found" });
+      }
+
+      const chunks: Buffer[] = [];
+      
+      req.on('data', (chunk: Buffer) => {
+        chunks.push(chunk);
+      });
+
+      req.on('end', async () => {
+        try {
+          const fileBuffer = Buffer.concat(chunks);
+          
+          if (fileBuffer.length === 0) {
+            return res.status(400).json({ error: "No file data received" });
+          }
+          
+          if (fileBuffer.length > 5 * 1024 * 1024) {
+            return res.status(400).json({ error: "File too large (max 5MB)" });
+          }
+
+          // Upload to FTP in agent-photos directory
+          const result = await ftpStorageService.uploadFile(
+            `agent-photos/${agentId}`,
+            fileName,
+            fileBuffer
+          );
+          
+          // Update agent with new image URL
+          const imageUrl = `/ftp/${result.filePath}`;
+          await mysqlStorage.updateHomePageAgent(agentId, { imageUrl });
+
+          res.json({ 
+            success: true, 
+            filePath: result.filePath,
+            fileUrl: result.fileUrl,
+            imageUrl
+          });
+        } catch (uploadError: any) {
+          console.error("[FTP] Agent photo upload error:", uploadError);
+          res.status(500).json({ error: uploadError.message });
+        }
+      });
+
+      req.on('error', (error: any) => {
+        console.error("[FTP] Request error:", error);
+        res.status(500).json({ error: error.message });
+      });
+    } catch (error: any) {
+      console.error("Error in FTP agent photo upload:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Serve agent photos from object storage
+  app.get("/api/agent-photos/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const agent = await mysqlStorage.getHomePageAgentById(id);
+      
+      if (!agent || !agent.imageUrl) {
+        return res.status(404).json({ error: "Agent photo not found" });
+      }
+      
+      const imageUrl = agent.imageUrl;
+      
+      // Handle different storage formats
+      if (imageUrl.startsWith('/objects/public/')) {
+        // Replit Object Storage
+        const objectStorageService = new ObjectStorageService();
+        const file = await objectStorageService.getPublicObjectFile(imageUrl);
+        if (!file) {
+          return res.status(404).json({ error: "Photo file not found" });
+        }
+        await objectStorageService.downloadObject(file, res);
+      } else if (imageUrl.startsWith('/ftp/')) {
+        // FTP storage - redirect to the actual URL
+        const ftpPath = imageUrl.replace('/ftp/', '');
+        return res.redirect(`https://ststaxrepair.org/${ftpPath}`);
+      } else if (imageUrl.startsWith('http')) {
+        // External URL - redirect
+        return res.redirect(imageUrl);
+      } else {
+        return res.status(404).json({ error: "Unknown image format" });
+      }
+    } catch (error: any) {
+      console.error("Error serving agent photo:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

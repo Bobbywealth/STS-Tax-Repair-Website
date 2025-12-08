@@ -2182,6 +2182,15 @@ export class MySQLStorage implements IStorage {
     return agents;
   }
 
+  async getHomePageAgentById(id: string): Promise<HomePageAgent | null> {
+    const agents = await mysqlDb
+      .select()
+      .from(homePageAgentsTable)
+      .where(eq(homePageAgentsTable.id, id))
+      .limit(1);
+    return agents[0] || null;
+  }
+
   async createHomePageAgent(data: InsertHomePageAgent): Promise<HomePageAgent> {
     const id = randomUUID();
     const maxOrderResult = await mysqlPool.query(

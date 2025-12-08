@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,8 @@ import {
   GripVertical,
   Image as ImageIcon,
   Loader2,
+  Upload,
+  Link as LinkIcon,
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import type { HomePageAgent } from "@shared/mysql-schema";
@@ -67,10 +69,90 @@ export default function AgentManagement() {
   const [editingAgent, setEditingAgent] = useState<HomePageAgent | null>(null);
   const [formData, setFormData] = useState<AgentFormData>(defaultFormData);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [imageInputMode, setImageInputMode] = useState<'url' | 'upload'>('url');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: agents = [], isLoading } = useQuery<HomePageAgent[]>({
     queryKey: ["/api/homepage-agents"],
   });
+
+  const handleImageUpload = async (file: File, agentId: string) => {
+    setIsUploading(true);
+    try {
+      const response = await apiRequest("POST", `/api/homepage-agents/${agentId}/photo`, {
+        fileName: file.name,
+      });
+      const { uploadURL, objectPath, mode } = await response.json();
+
+      if (mode === 'object-storage') {
+        await fetch(uploadURL, {
+          method: 'PUT',
+          body: file,
+          headers: { 'Content-Type': file.type },
+        });
+        
+        await apiRequest("POST", `/api/homepage-agents/${agentId}/photo/confirm`, {
+          objectPath,
+        });
+        
+        setFormData(prev => ({ ...prev, imageUrl: objectPath }));
+      } else if (mode === 'ftp') {
+        const arrayBuffer = await file.arrayBuffer();
+        await fetch('/api/homepage-agents/photo-ftp', {
+          method: 'POST',
+          body: arrayBuffer,
+          headers: {
+            'Content-Type': 'application/octet-stream',
+            'x-agent-id': agentId,
+            'x-file-name': encodeURIComponent(file.name),
+          },
+          credentials: 'include',
+        });
+      }
+
+      toast({ title: "Image Uploaded", description: "The agent photo has been uploaded successfully." });
+      queryClient.invalidateQueries({ queryKey: ["/api/homepage-agents"] });
+    } catch (error: any) {
+      console.error("Image upload error:", error);
+      toast({ title: "Upload Failed", description: error.message, variant: "destructive" });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const onFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast({ title: "Invalid File", description: "Please select an image file.", variant: "destructive" });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "File Too Large", description: "Please select an image under 5MB.", variant: "destructive" });
+      return;
+    }
+
+    if (editingAgent) {
+      await handleImageUpload(file, editingAgent.id);
+    } else {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setFormData(prev => ({ ...prev, imageUrl: event.target?.result as string }));
+      };
+      reader.readAsDataURL(file);
+      toast({ 
+        title: "Image Preview", 
+        description: "Save the agent first, then you can upload the actual image." 
+      });
+    }
+    
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const createMutation = useMutation({
     mutationFn: async (data: AgentFormData) => {
@@ -362,8 +444,67 @@ export default function AgentManagement() {
                 />
               </div>
               <div className="col-span-2">
-                <Label htmlFor="imageUrl">Profile Image URL</Label>
-                <div className="flex gap-2">
+                <Label>Profile Image</Label>
+                <div className="flex gap-2 mb-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={imageInputMode === 'upload' ? 'default' : 'outline'}
+                    onClick={() => setImageInputMode('upload')}
+                    className="flex-1"
+                  >
+                    <Upload className="h-4 w-4 mr-1" />
+                    Upload
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={imageInputMode === 'url' ? 'default' : 'outline'}
+                    onClick={() => setImageInputMode('url')}
+                    className="flex-1"
+                  >
+                    <LinkIcon className="h-4 w-4 mr-1" />
+                    URL
+                  </Button>
+                </div>
+                
+                {imageInputMode === 'upload' ? (
+                  <div className="space-y-2">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={onFileSelected}
+                      className="hidden"
+                      id="agent-photo-upload"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploading}
+                      data-testid="button-upload-image"
+                    >
+                      {isUploading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-4 w-4 mr-2" />
+                          {editingAgent ? 'Upload New Photo' : 'Select Photo'}
+                        </>
+                      )}
+                    </Button>
+                    {!editingAgent && (
+                      <p className="text-xs text-muted-foreground">
+                        Save the agent first to upload the photo to storage
+                      </p>
+                    )}
+                  </div>
+                ) : (
                   <Input
                     id="imageUrl"
                     value={formData.imageUrl}
@@ -371,13 +512,29 @@ export default function AgentManagement() {
                     placeholder="https://example.com/photo.jpg"
                     data-testid="input-agent-image"
                   />
-                  {formData.imageUrl && (
-                    <Avatar className="h-10 w-10 shrink-0">
-                      <AvatarImage src={formData.imageUrl} alt="Preview" />
-                      <AvatarFallback><ImageIcon className="h-4 w-4" /></AvatarFallback>
+                )}
+                
+                {formData.imageUrl && (
+                  <div className="flex items-center gap-2 mt-2 p-2 bg-muted rounded-md">
+                    <Avatar className="h-12 w-12">
+                      <AvatarImage 
+                        src={formData.imageUrl.startsWith('/objects/') || formData.imageUrl.startsWith('/ftp/') 
+                          ? `/api/agent-photos/${editingAgent?.id}` 
+                          : formData.imageUrl} 
+                        alt="Preview" 
+                      />
+                      <AvatarFallback><ImageIcon className="h-5 w-5" /></AvatarFallback>
                     </Avatar>
-                  )}
-                </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">Image Preview</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {formData.imageUrl.startsWith('/objects/') ? 'Stored in database' : 
+                         formData.imageUrl.startsWith('/ftp/') ? 'Stored on server' :
+                         formData.imageUrl.startsWith('data:') ? 'Preview only' : 'External URL'}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
               <div>
                 <Label htmlFor="rating">Rating (1-5)</Label>

@@ -142,14 +142,17 @@ export default function AgentsPage() {
 
   const agents = apiAgents.length > 0 
     ? apiAgents.map(a => ({
+        id: a.id,
         name: a.name,
         title: a.title,
-        image: a.imageUrl || "",
+        image: a.imageUrl?.startsWith('/objects/') || a.imageUrl?.startsWith('/ftp/') 
+          ? `/api/agent-photos/${a.id}` 
+          : (a.imageUrl || ""),
         phone: a.phone,
         email: a.email,
         location: a.address || "",
       }))
-    : fallbackAgents;
+    : fallbackAgents.map((a, i) => ({ ...a, id: `fallback-${i}` }));
 
   const navLinks = [
     { href: "/", label: "Home" },

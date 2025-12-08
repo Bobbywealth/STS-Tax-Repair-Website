@@ -251,6 +251,52 @@ export class ObjectStorageService {
       return null;
     }
   }
+
+  async getAgentPhotoUploadURL(agentId: string, fileName: string): Promise<{ uploadURL: string; objectPath: string }> {
+    const publicPaths = this.getPublicObjectSearchPaths();
+    const publicDir = publicPaths[0]; // Use first public path
+    
+    const objectId = randomUUID();
+    const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const fullPath = `${publicDir}/agent-photos/${agentId}/${objectId}_${sanitizedFileName}`;
+    const { bucketName, objectName } = parseObjectPath(fullPath);
+
+    const uploadURL = await signObjectURL({
+      bucketName,
+      objectName,
+      method: "PUT",
+      ttlSec: 900,
+    });
+
+    return {
+      uploadURL,
+      objectPath: `/objects/public/agent-photos/${agentId}/${objectId}_${sanitizedFileName}`,
+    };
+  }
+
+  async getPublicObjectFile(objectPath: string): Promise<File | null> {
+    try {
+      // Handle paths like /objects/public/agent-photos/...
+      if (objectPath.startsWith("/objects/public/")) {
+        const relativePath = objectPath.replace("/objects/public/", "");
+        const publicPaths = this.getPublicObjectSearchPaths();
+        for (const searchPath of publicPaths) {
+          const fullPath = `${searchPath}/${relativePath}`;
+          const { bucketName, objectName } = parseObjectPath(fullPath);
+          const bucket = objectStorageClient.bucket(bucketName);
+          const file = bucket.file(objectName);
+          const [exists] = await file.exists();
+          if (exists) {
+            return file;
+          }
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error("Error getting public object:", error);
+      return null;
+    }
+  }
 }
 
 function parseObjectPath(path: string): {
