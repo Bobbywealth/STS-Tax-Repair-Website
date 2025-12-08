@@ -1,247 +1,51 @@
 # STS TaxRepair CRM System
 
 ## Overview
-
-STS TaxRepair is a next-generation web-based CRM system designed for tax refund companies to manage clients, leads, tasks, and support operations. The application enables clients to sign up, upload tax documents, track refund progress, and communicate with assigned tax preparers. Staff members can manage the complete client lifecycle through a unified dashboard with comprehensive business tools.
-
-The system is built as a full-stack TypeScript application with a React frontend and Express backend, designed for secure handling of sensitive financial and tax data. The platform supports role-based access control (Admin, Staff/Manager, Client) and provides a complete suite of features including client management, lead tracking, task coordination, support ticketing, knowledge base, and analytics reporting.
+STS TaxRepair is a web-based CRM system for tax refund companies, enabling client management, lead tracking, task coordination, and support operations. Clients can sign up, upload documents, track refunds, and communicate with preparers. Staff manage the client lifecycle through a unified dashboard. Built with a React frontend and Express backend, the system securely handles sensitive financial data, featuring role-based access (Admin, Staff/Manager, Client) and comprehensive tools including client management, lead tracking, task coordination, support ticketing, knowledge base, and analytics.
 
 ## User Preferences
-
 Preferred communication style: Simple, everyday language.
 
 ## System Architecture
 
 ### Frontend Architecture
-
-**Framework & Build System**
-- React 18+ with TypeScript for type-safe component development
-- Vite as the build tool and development server for fast HMR and optimized production builds
-- Wouter for lightweight client-side routing instead of React Router
-- TanStack React Query (v5) for server state management, caching, and data fetching
-
-**UI Component System**
-- Shadcn UI component library (New York style variant) providing accessible, customizable components
-- Radix UI primitives as the foundation for all interactive components (dialogs, dropdowns, menus, etc.)
-- Tailwind CSS for utility-first styling with custom design tokens
-- Custom CSS variables for theming with light/dark mode support via class-based theme switching
-
-**Design System**
-- Professional enterprise CRM aesthetic optimized for information-dense interfaces
-- Custom color palette: Primary blue (217 91% 60%) for trust/stability, semantic colors for status indication
-- Typography: Inter font family for readability in data-heavy UIs, JetBrains Mono for monospace content
-- Consistent interaction patterns with hover/active states using CSS custom properties (--elevate-1, --elevate-2)
-- Responsive grid layouts with mobile-first approach
-
-**State Management Pattern**
-- Server state managed through React Query with stale-while-revalidate caching strategy
-- Local UI state handled with React hooks (useState, useReducer)
-- Form state managed via React Hook Form with Zod schema validation
-- No global state management library (Redux/Zustand) - relying on composition and React Query
-
-**Key Frontend Features**
-- Persistent collapsible sidebar navigation (16rem width) with 10 main sections
-- Dashboard with statistics cards, activity feeds, and chart visualizations (Recharts library)
-- Multi-step forms with validation for client onboarding and document uploads
-- Real-time status tracking with visual progress indicators
-- Kanban-style task board with drag-and-drop capabilities
-- Data tables with search, filtering, and inline editing
-- Theme toggle for light/dark mode persistence in localStorage
+The frontend uses React 18+ with TypeScript, Vite for fast builds, Wouter for routing, and TanStack React Query for server state management. UI is built with Shadcn UI (New York style) and Radix UI primitives, styled using Tailwind CSS with custom design tokens and support for light/dark mode. The design emphasizes a professional CRM aesthetic with a custom color palette, Inter font, and responsive grid layouts. State management relies on React Query for server state and React hooks for local UI state, with React Hook Form and Zod for forms. Key features include a collapsible sidebar, dashboard, multi-step forms, real-time status tracking, Kanban task board, and data tables with advanced functionalities.
 
 ### Backend Architecture
-
-**Server Framework**
-- Express.js as the HTTP server with middleware-based request processing
-- TypeScript with ES modules for modern JavaScript features and type safety
-- Custom request logging middleware tracking API response times and payloads
-
-**API Design**
-- RESTful API with all routes prefixed under `/api`
-- JSON request/response format with content-type validation
-- Session-based authentication planned (credentials: "include" in fetch calls)
-- Centralized error handling with consistent error response format
-
-**Data Access Layer**
-- Storage abstraction interface (IStorage) enabling flexible backend implementations
-- MySQL storage (MySQLStorage class) connected to cPanel/GoDaddy MySQL database
-- All entities fully backed by MySQL via Drizzle ORM (users, appointments, payments, e-signatures, etc.)
-- Storage methods for CRUD operations with proper async/await patterns
-- Ready for deployment to Render with cPanel MySQL backend
-
-**Authentication Strategy**
-- Dual authentication system supporting both Replit Auth (for Replit deployment) and email/password (for all deployments)
-- Conditional Replit Auth: Only initializes if REPL_ID and REPLIT_DOMAINS environment variables exist
-- For Render deployment: Uses email/password authentication only (Replit Auth skipped automatically)
-- Role-based access control: Admin, Staff/Manager, Client roles
-- Session-based auth with PostgreSQL session storage via connect-pg-simple
-- Email verification required for all new users before system access
-- Password reset flows via SendGrid integration
-- Admin user invitation system for internal staff onboarding
-
-**White-Labeling / Multi-Tenant Branding**
-- Tax Offices can fully customize their branding: logo, company name, primary/secondary colors, reply-to email
-- Subdomain detection middleware extracts office slug from hostname (e.g., acmetax.ststaxrepair.org)
-- useBranding hook applies CSS custom properties dynamically (--brand-primary, --brand-secondary, etc.)
-- All email templates accept OfficeBranding parameter for per-office customization
-- STS branding used as default fallback when no office branding configured
-- Branding Settings page (/branding) for Tax Office administrators with BRANDING_MANAGE permission
-- Dynamic favicon and sidebar logo update based on active office branding
-
-**Email Notification System (SendGrid)**
-- All transactional emails support multi-tenant branding (logo, colors, company name, reply-to headers)
-- Email verification: Required for new registrations, 24-hour token expiration, resend throttling (max 5 resends)
-- Notification hooks implemented for all major CRUD operations:
-  - Task assignments (with priority color coding)
-  - Document uploads (confirmation to client)
-  - Appointment confirmations (with date/time/location details)
-  - Payment received notifications (with amount and receipt number)
-  - Tax filing status changes (status-specific messaging)
-  - E-signature requests and completions (Form 8879)
-  - Support ticket creation and staff responses
-- All email sends use async/await with try-catch error handling to prevent blocking API responses
-- Email templates include: welcome, password reset, verification, appointment, payment, tax status, signature request/completed, ticket creation/response, task assignment, document upload
-
-**Render Deployment Notes**
-- App automatically detects non-Replit environment and disables Replit Auth
-- Staff login redirects to client login page with notice when Replit Auth unavailable
-- All authorization middleware checks both `req.user` (Replit Auth) AND `req.userId` (session auth)
-- MySQLStore uses shared connection pool (`mysqlPool`) to prevent connection exhaustion
-- CORS configured with credentials support for cross-origin requests
-- Session cookies use `sameSite: 'none'` in production for cross-origin cookie handling
-- Required environment variables for Render: SESSION_SECRET, MYSQL_HOST, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD
+The backend is an Express.js server using TypeScript with ES modules. It provides a RESTful API with JSON format, centralized error handling, and session-based authentication. Data access is abstracted, primarily using MySQL via Drizzle ORM for all entities. Authentication supports both Replit Auth (for development) and email/password (for all deployments), with role-based access control and email verification. The system supports multi-tenant branding, allowing tax offices to customize their branding (logo, colors) via subdomain detection and dynamic CSS. Transactional emails are handled via SendGrid, supporting multi-tenant branding and various notification types for CRUD operations.
 
 ### Data Storage Solutions
-
-**Database System**
-- MySQL/MariaDB as the production database via cPanel/GoDaddy hosting
-- Drizzle ORM for type-safe database queries and schema management
-- Connection pooling through mysql2/promise with keepalive support
-- Database configuration via MYSQL_HOST, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD environment variables
-- Remote MySQL access enabled for external connections (Render deployment ready)
-
-**Schema Design**
-- MySQL-compatible schema with UUID primary keys generated via MySQL UUID() function
-- Drizzle-Zod integration for automatic Zod schema generation from database schema
-- Schema definitions in /shared/mysql-schema.ts for MySQL-specific types
-- Tables: users, sessions, tax_deadlines, appointments, payments, document_versions, e_signatures, email_logs, document_request_templates, tax_filings
-
-**Tax Filings Per-Year Tracking**
-- tax_filings table with unique constraint on (client_id, tax_year) for per-year filing management
-- Status enum: new, documents_pending, review, filed, accepted, approved, paid
-- Tracks refund amounts (federal, state), date transitions (filed_date, approved_date, paid_date)
-- Preparer assignment (prepared_by, reviewed_by) for accountability
-- Status history stored as JSON for audit trail
-- API endpoints: GET /api/tax-filings (with year/status filters), POST /api/tax-filings, PATCH /api/tax-filings/:id/status, GET /api/tax-filings/metrics (aggregated counts)
-- Frontend: Year selector dropdown on Clients page, filing history timeline on Client Detail page
-
-**Session Management**
-- Session storage supported via MySQL sessions table
-- Session data persisted to database for scalability across server instances
+The primary database is MySQL/MariaDB hosted on cPanel/GoDaddy, accessed using Drizzle ORM for type-safe queries. The schema uses UUID primary keys and includes tables for users, sessions, tax_deadlines, appointments, payments, document_versions, e_signatures, and comprehensive `tax_filings` table for per-year tracking with status history. Session management is handled by persisting session data to a MySQL sessions table.
 
 ### External Dependencies
 
 **Third-Party UI Libraries**
-- Shadcn UI (component collection, not a package dependency)
-- Radix UI primitives (@radix-ui/* packages) for accessible component foundations
-- Lucide React for consistent icon system
-- Recharts for data visualization (charts and graphs)
-- React Day Picker for calendar/date selection components
-- Vaul for drawer/bottom sheet components
-- CMDK for command palette interfaces
+- Shadcn UI, Radix UI primitives, Lucide React (icons), Recharts (charts), React Day Picker (calendar), Vaul (drawers), CMDK (command palette).
 
 **Database & ORM**
-- MySQL2 (mysql2) - MySQL/MariaDB driver with promise support
-- Drizzle ORM (drizzle-orm/mysql2) - Type-safe SQL query builder for MySQL
-- Drizzle Kit (drizzle-kit) - Schema migration and management tool
-- Drizzle-Zod integration for validation schema generation
-- cPanel MySQL database on GoDaddy hosting (MariaDB 10.6.23)
+- MySQL2, Drizzle ORM (drizzle-orm/mysql2), Drizzle Kit, Drizzle-Zod.
+- cPanel MySQL database (MariaDB 10.6.23).
 
 **Form & Validation**
-- React Hook Form for performant form state management
-- Zod for runtime type validation and schema definition
-- @hookform/resolvers for Zod integration with React Hook Form
+- React Hook Form, Zod, @hookform/resolvers.
 
 **Styling & Animation**
-- Tailwind CSS with PostCSS for CSS processing
-- Autoprefixer for browser compatibility
-- Class Variance Authority (CVA) for component variant management
-- clsx and tailwind-merge for conditional class name composition
+- Tailwind CSS, PostCSS, Autoprefixer, Class Variance Authority (CVA), clsx, tailwind-merge.
 
-**Development Tools**
-- TSX for running TypeScript in development
-- ESBuild for production server bundling
-- Vite plugins: @replit/vite-plugin-runtime-error-modal, @replit/vite-plugin-cartographer, @replit/vite-plugin-dev-banner
-
-**Email Services** (Planned)
-- SendGrid for transactional emails (verification, password reset, notifications)
+**Email Services**
+- SendGrid (for transactional emails).
 
 **File Storage (Dual Environment Support)**
-- Document upload system for tax forms (W-2, 1099, ID scans)
-- File type validation and size limits (max 10MB)
-- Environment-aware storage backend:
-  - **Replit Development**: Uses Replit Object Storage (bucket: replit-objstore-793ab189-6e24-48a6-80da-c5b02a536f27)
-  - **Render Production**: Uses FTP upload to GoDaddy server
-- FTP Storage Configuration:
-  - Host: ftp.ststaxrepair.net (port 21)
-  - Base path: `/home/i28qwzd7d2dt/public_html/ststaxrepair.org/uploads/clients/{client_id}/`
-  - Public URL format: `https://ststaxrepair.org/download/preview_image?path=uploads/clients/{client_id}/{filename}`
-  - Credentials stored as secrets: FTP_HOST, FTP_USER, FTP_PASSWORD
-- Storage detection: Checks for `REPL_ID` and `PRIVATE_OBJECT_DIR` env vars to determine environment
-- File URL prefixes in database:
-  - `/objects/...` - Replit Object Storage files
-  - `/ftp/...` - FTP-uploaded files to GoDaddy
-  - `/perfex-uploads/...` - Legacy Perfex CRM documents
-- Download route (`/api/documents/:id/download`) handles all three file URL formats with appropriate redirects
+- Document uploads (tax forms, IDs) are stored using Replit Object Storage in development and FTP to GoDaddy in production. File URLs are prefixed (`/objects/`, `/ftp/`, `/perfex-uploads/`) and handled by a unified download route.
+- Agent photos for the homepage (`/homepage-agents`) are also stored and served similarly.
 
-### Perfex CRM Integration
+**Perfex CRM Integration**
+- Data migration included 868 clients and 2,930 documents from Perfex CRM.
+- Legacy Perfex documents are accessed via an Express route redirecting to `https://ststaxrepair.org/perfex-uploads/...`.
+- Read-only connection to the `perfexcrm` database is maintained for potential future sync.
 
-**Data Migration**
-- 868 real clients migrated from Perfex CRM `tblclients` table
-- 2,930 documents imported from Perfex CRM `tblfiles` table
-- Client IDs prefixed with "perfex-" (e.g., perfex-100) for imported records
-
-**Document Access**
-- Perfex documents stored at paths like `/perfex-uploads/uploads/customers/{id}/filename`
-- Express route redirects `/perfex-uploads/*` to `https://ststaxrepair.org/perfex-uploads/...`
-- Document metadata stored in MySQL `document_versions` table
-
-**Database Connections**
-- Primary CRM: MySQL database `tax_7648995` on cPanel server
-- Perfex read-only: MySQL database `perfexcrm` on same server (for future sync if needed)
-- Connection module: `server/perfex-db.ts`
-
-### Progressive Web App (PWA)
-
-**Service Worker** (`client/public/sw.js`)
-- Cache versioning with automatic cleanup of old caches
-- Multiple caching strategies: Network First (API), Cache First (fonts), Stale While Revalidate (assets)
-- Offline fallback for navigation requests
-- Push notification support with action buttons
-- Message handler for SKIP_WAITING during updates
-
-**Key PWA Components**
-- `SplashScreen.tsx` - Animated logo with loading spinner on app start
-- `PWAInstallPrompt.tsx` - Smart install prompt for Add to Home Screen
-- `OfflineIndicator.tsx` - Visual indicator when app is offline
-- `UpdateNotification.tsx` - Prompts user when new version available
-- `MobileNav.tsx` - Bottom navigation bar for mobile with haptic feedback
-- `PullToRefresh.tsx` - Native pull-to-refresh gesture for list refreshes
-
-**PWA Hooks**
-- `usePWA.tsx` - Manages install prompt, online/offline status, and update detection
-
-**Haptic Feedback** (`client/src/lib/haptics.ts`)
-- Wrapper for navigator.vibrate API with multiple feedback patterns
-- Patterns: light, medium, heavy, selection, success, warning, error
-- Integrated into MobileNav for tactile navigation feedback
-
-**iOS Optimization**
-- Apple touch icons for all iOS device sizes
-- Splash screen meta tags (using 512x512 icon as fallback - proper device-specific splash images recommended for production)
-- Status bar style set to black-translucent for edge-to-edge display
-
-**Manifest Configuration** (`client/public/manifest.json`)
-- PWA ID for consistent app identity
-- Launch handler for navigate-existing mode
-- Multiple icon sizes with maskable versions
-- Standalone display mode with portrait orientation
+**Progressive Web App (PWA)**
+- Features a service worker (`client/public/sw.js`) for caching strategies (Network First, Cache First, Stale While Revalidate), offline fallback, and push notifications.
+- Includes a splash screen, PWA install prompt, offline indicator, update notification, mobile navigation with haptic feedback, and pull-to-refresh.
+- Optimized for iOS with Apple touch icons and specific meta tags.
+- Manifest configuration (`client/public/manifest.json`) defines PWA identity, launch handler, icons, and display mode.
