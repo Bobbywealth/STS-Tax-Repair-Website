@@ -3,7 +3,7 @@
   "name": "STS TaxRepair",
   "short_name": "STS Tax",
   "description": "Expert Tax Refund Solutions - Maximum Refund Guaranteed",
-  "start_url": "/dashboard",
+  "start_url": "/client-login",
   "display": "standalone",
   "background_color": "#0a0a0a",
   "theme_color": "#4CAF50",
