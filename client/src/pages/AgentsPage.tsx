@@ -5,9 +5,11 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Phone, Mail, MapPin, Menu, X, ArrowRight } from "lucide-react";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import logoUrl from "@/assets/sts-logo.png";
+import type { HomePageAgent } from "@shared/mysql-schema";
 
-const agents = [
+const fallbackAgents = [
   {
     name: "Stephedena Cherfils",
     title: "Service Support",
@@ -133,6 +135,21 @@ const agents = [
 export default function AgentsPage() {
   const [, navigate] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const { data: apiAgents = [] } = useQuery<HomePageAgent[]>({
+    queryKey: ["/api/homepage-agents"],
+  });
+
+  const agents = apiAgents.length > 0 
+    ? apiAgents.map(a => ({
+        name: a.name,
+        title: a.title,
+        image: a.imageUrl || "",
+        phone: a.phone,
+        email: a.email,
+        location: a.address || "",
+      }))
+    : fallbackAgents;
 
   const navLinks = [
     { href: "/", label: "Home" },

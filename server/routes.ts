@@ -6142,6 +6142,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============================================
+  // Homepage Agents API (Public agents displayed on homepage)
+  // ============================================
+
+  // Get all homepage agents (public - no auth required)
+  app.get("/api/homepage-agents", async (req, res) => {
+    try {
+      const agents = await mysqlStorage.getHomePageAgents();
+      res.json(agents);
+    } catch (error: any) {
+      console.error('Error fetching homepage agents:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Create a new homepage agent (admin only)
+  app.post("/api/homepage-agents", isAuthenticated, requireAdmin, async (req, res) => {
+    try {
+      const agent = await mysqlStorage.createHomePageAgent(req.body);
+      res.status(201).json(agent);
+    } catch (error: any) {
+      console.error('Error creating homepage agent:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Update a homepage agent (admin only)
+  app.patch("/api/homepage-agents/:id", isAuthenticated, requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const agent = await mysqlStorage.updateHomePageAgent(id, req.body);
+      if (!agent) {
+        return res.status(404).json({ error: "Agent not found" });
+      }
+      res.json(agent);
+    } catch (error: any) {
+      console.error('Error updating homepage agent:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Delete a homepage agent (admin only)
+  app.delete("/api/homepage-agents/:id", isAuthenticated, requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deleted = await mysqlStorage.deleteHomePageAgent(id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Agent not found" });
+      }
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error deleting homepage agent:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Reorder homepage agents (admin only)
+  app.post("/api/homepage-agents/reorder", isAuthenticated, requireAdmin, async (req, res) => {
+    try {
+      const { agentIds } = req.body;
+      if (!Array.isArray(agentIds)) {
+        return res.status(400).json({ error: "agentIds must be an array" });
+      }
+      await mysqlStorage.reorderHomePageAgents(agentIds);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error reordering homepage agents:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

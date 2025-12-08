@@ -56,7 +56,10 @@ import {
   type Notification,
   type InsertNotification,
   type NotificationType,
+  type HomePageAgent,
+  type InsertHomePageAgent,
   users as usersTable,
+  homePageAgents as homePageAgentsTable,
   taxDeadlines as taxDeadlinesTable,
   appointments as appointmentsTable,
   payments as paymentsTable,
@@ -2164,6 +2167,89 @@ export class MySQLStorage implements IStorage {
       [cutoffDate]
     );
     return (result as any).affectedRows || 0;
+  }
+
+  // ============================================
+  // Homepage Agents (public agents on homepage)
+  // ============================================
+
+  async getHomePageAgents(): Promise<HomePageAgent[]> {
+    const agents = await mysqlDb
+      .select()
+      .from(homePageAgentsTable)
+      .where(eq(homePageAgentsTable.isActive, true))
+      .orderBy(asc(homePageAgentsTable.sortOrder), asc(homePageAgentsTable.name));
+    return agents;
+  }
+
+  async createHomePageAgent(data: InsertHomePageAgent): Promise<HomePageAgent> {
+    const id = randomUUID();
+    const maxOrderResult = await mysqlPool.query(
+      `SELECT MAX(sort_order) as max_order FROM home_page_agents`
+    );
+    const maxOrder = ((maxOrderResult as any)[0]?.[0]?.max_order || 0) + 1;
+
+    await mysqlDb.insert(homePageAgentsTable).values({
+      id,
+      ...data,
+      sortOrder: data.sortOrder ?? maxOrder,
+    });
+
+    const [agent] = await mysqlDb
+      .select()
+      .from(homePageAgentsTable)
+      .where(eq(homePageAgentsTable.id, id));
+    return agent;
+  }
+
+  async updateHomePageAgent(id: string, data: Partial<InsertHomePageAgent>): Promise<HomePageAgent | null> {
+    const [existing] = await mysqlDb
+      .select()
+      .from(homePageAgentsTable)
+      .where(eq(homePageAgentsTable.id, id));
+    
+    if (!existing) {
+      return null;
+    }
+
+    await mysqlDb
+      .update(homePageAgentsTable)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(homePageAgentsTable.id, id));
+
+    const [updated] = await mysqlDb
+      .select()
+      .from(homePageAgentsTable)
+      .where(eq(homePageAgentsTable.id, id));
+    return updated;
+  }
+
+  async deleteHomePageAgent(id: string): Promise<boolean> {
+    const [existing] = await mysqlDb
+      .select()
+      .from(homePageAgentsTable)
+      .where(eq(homePageAgentsTable.id, id));
+    
+    if (!existing) {
+      return false;
+    }
+
+    await mysqlDb
+      .delete(homePageAgentsTable)
+      .where(eq(homePageAgentsTable.id, id));
+    return true;
+  }
+
+  async reorderHomePageAgents(agentIds: string[]): Promise<void> {
+    for (let i = 0; i < agentIds.length; i++) {
+      await mysqlDb
+        .update(homePageAgentsTable)
+        .set({ sortOrder: i, updatedAt: new Date() })
+        .where(eq(homePageAgentsTable.id, agentIds[i]));
+    }
   }
 }
 

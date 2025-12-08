@@ -1,5 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Link, useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import type { HomePageAgent } from "@shared/mysql-schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -262,7 +264,11 @@ export default function HomePage() {
     }
   ];
 
-  const agents = [
+  const { data: apiAgents = [] } = useQuery<HomePageAgent[]>({
+    queryKey: ["/api/homepage-agents"],
+  });
+
+  const fallbackAgents = [
     {
       name: "Stephedena Cherfils",
       role: "Service Support",
@@ -384,6 +390,20 @@ export default function HomePage() {
       image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Roneshia-Brandon.webp"
     }
   ];
+
+  const agents = useMemo(() => {
+    if (apiAgents.length > 0) {
+      return apiAgents.map(a => ({
+        name: a.name,
+        role: a.title,
+        phone: a.phone,
+        email: a.email,
+        address: a.address || "",
+        image: a.imageUrl || "",
+      }));
+    }
+    return fallbackAgents;
+  }, [apiAgents]);
 
   const stats = [
     { value: 15, suffix: "+", label: "Years Experience" },

@@ -682,6 +682,36 @@ export async function runMySQLMigrations(): Promise<void> {
       console.log('notifications table created successfully!');
     }
     
+    // Create home_page_agents table for managing public-facing agent profiles
+    const [homePageAgentsTable] = await connection.query(
+      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'home_page_agents'`,
+      [dbName]
+    );
+    
+    if (Array.isArray(homePageAgentsTable) && homePageAgentsTable.length === 0) {
+      console.log('Creating home_page_agents table...');
+      await connection.query(`
+        CREATE TABLE home_page_agents (
+          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+          name VARCHAR(255) NOT NULL,
+          title VARCHAR(100) NOT NULL,
+          phone VARCHAR(50) NOT NULL,
+          email VARCHAR(255) NOT NULL,
+          address VARCHAR(500),
+          image_url VARCHAR(1000),
+          rating DECIMAL(2,1) DEFAULT 5.0,
+          sort_order INT DEFAULT 0,
+          is_active BOOLEAN DEFAULT TRUE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_home_page_agents_active (is_active),
+          INDEX idx_home_page_agents_sort (sort_order)
+        )
+      `);
+      console.log('home_page_agents table created successfully!');
+    }
+    
     connection.release();
   } catch (error) {
     console.error('MySQL migration error:', error);

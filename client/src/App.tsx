@@ -53,6 +53,7 @@ const ContactPage = lazy(() => import("@/pages/ContactPage"));
 const FAQPage = lazy(() => import("@/pages/FAQPage"));
 const BookAppointmentPage = lazy(() => import("@/pages/BookAppointmentPage"));
 const StaffSignup = lazy(() => import("@/pages/StaffSignup"));
+const AgentManagement = lazy(() => import("@/pages/AgentManagement"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
 function PageLoader() {
@@ -199,6 +200,10 @@ function AdminRouter() {
         </Route>
         <Route path="/permissions">
           <PermissionRoute component={Permissions} adminOnly />
+        </Route>
+        {/* Homepage Agent Management - Admin only */}
+        <Route path="/homepage-agents">
+          <PermissionRoute component={AgentManagement} adminOnly />
         </Route>
         <Route component={NotFound} />
       </Switch>
