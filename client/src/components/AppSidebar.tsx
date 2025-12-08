@@ -12,6 +12,7 @@ import {
   SidebarMenuItem,
   SidebarFooter,
   SidebarHeader,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -62,9 +63,16 @@ export function AppSidebar({ user }: AppSidebarProps) {
   const [location] = useLocation();
   const { hasPermission, role: permissionRole, isLoading } = usePermissions();
   const { branding } = useBranding();
+  const { setOpenMobile, isMobile } = useSidebar();
   const logoUrl = branding?.logoUrl || defaultLogoUrl;
   const companyName = branding?.companyName || 'STS TaxRepair';
   const userRole = (user?.role?.toLowerCase() || 'client') as UserRole;
+  
+  const handleMenuItemClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   const getProfileImageUrl = () => {
     if (!user?.avatar) return undefined;
@@ -146,6 +154,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
                         isActive={isActive} 
                         data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
                         className="relative z-10"
+                        onClick={handleMenuItemClick}
                       >
                         <Link href={item.url}>
                           <item.icon className="h-4 w-4 sidebar-icon transition-all duration-300" />
@@ -187,7 +196,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
           className="w-full sidebar-logout-btn rounded-md transition-all duration-300" 
           data-testid="button-logout"
         >
-          <button onClick={() => window.location.href = '/api/logout'}>
+          <button onClick={() => { handleMenuItemClick(); window.location.href = '/api/logout'; }}>
             <LogOut className="h-4 w-4 logout-icon transition-all duration-300" />
             <span>Logout</span>
           </button>
