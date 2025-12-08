@@ -1,9 +1,8 @@
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const CACHE_NAME = `sts-taxrepair-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `sts-runtime-${CACHE_VERSION}`;
 
 const STATIC_ASSETS = [
-  '/',
   '/manifest.json',
   '/favicon.png',
   '/icons/icon-192x192.png',
@@ -13,7 +12,7 @@ const STATIC_ASSETS = [
 const CACHE_STRATEGIES = {
   networkFirst: ['api'],
   cacheFirst: ['fonts.googleapis.com', 'fonts.gstatic.com', '.woff', '.woff2', '.ttf'],
-  staleWhileRevalidate: ['.js', '.css', '.png', '.jpg', '.jpeg', '.svg', '.webp', '.ico']
+  staleWhileRevalidate: ['.png', '.jpg', '.jpeg', '.svg', '.webp', '.ico']
 };
 
 self.addEventListener('install', (event) => {
@@ -66,27 +65,32 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
 
-  if (isApiRequest(url.pathname)) {
-    event.respondWith(networkFirstStrategy(request));
-    return;
-  }
-
-  if (shouldCacheFirst(request.url)) {
-    event.respondWith(cacheFirstStrategy(request));
-    return;
-  }
-
-  if (shouldStaleWhileRevalidate(request.url)) {
-    event.respondWith(staleWhileRevalidateStrategy(request));
-    return;
-  }
-
+  // Navigation requests (page loads) - always network first for SPA
   if (request.mode === 'navigate') {
     event.respondWith(networkFirstWithOfflineFallback(request));
     return;
   }
 
-  event.respondWith(staleWhileRevalidateStrategy(request));
+  // API calls - network first
+  if (isApiRequest(url.pathname)) {
+    event.respondWith(networkFirstStrategy(request));
+    return;
+  }
+
+  // Fonts - cache first (they don't change)
+  if (shouldCacheFirst(request.url)) {
+    event.respondWith(cacheFirstStrategy(request));
+    return;
+  }
+
+  // Images only - stale while revalidate
+  if (shouldStaleWhileRevalidate(request.url)) {
+    event.respondWith(staleWhileRevalidateStrategy(request));
+    return;
+  }
+
+  // Everything else (JS, CSS, HTML) - network first for freshness
+  event.respondWith(networkFirstWithOfflineFallback(request));
 });
 
 async function networkFirstStrategy(request) {
