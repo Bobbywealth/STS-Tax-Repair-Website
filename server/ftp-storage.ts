@@ -215,42 +215,51 @@ export class FTPStorageService {
         fullPath = `${dirPath}/${foundFile.name}`;
       }
       
-      console.log(`[FTP-STREAM] Serving file: ${fullPath} (size: ${foundFile.size} bytes)`);
+      console.log(`[FTP-STREAM] File found: ${fullPath} (size: ${foundFile.size} bytes). Now streaming...`);
       
-      // Determine content type from documentName (not the actual filename on FTP)
-      const ext = documentName.toLowerCase().split('.').pop() || '';
-      const mimeTypes: Record<string, string> = {
-        'pdf': 'application/pdf',
-        'jpg': 'image/jpeg',
-        'jpeg': 'image/jpeg',
-        'png': 'image/png',
-        'gif': 'image/gif',
-        'doc': 'application/msword',
-        'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'xls': 'application/vnd.ms-excel',
-        'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'txt': 'text/plain',
-      };
-      
-      const contentType = mimeTypes[ext] || 'application/octet-stream';
-      
-      // Set response headers before streaming
-      res.setHeader('Content-Type', contentType);
-      res.setHeader('Content-Length', foundFile.size);
-      
-      // All files are downloaded (not viewed online)
-      res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(documentName)}"`);
-      
-      // Stream directly from FTP to HTTP response using PassThrough
-      const { PassThrough } = require('stream');
-      const passThrough = new PassThrough();
-      passThrough.pipe(res);
-      
-      // Download directly to the PassThrough stream (which pipes to res)
-      await client.downloadTo(passThrough, fullPath);
-      
-      console.log(`[FTP-STREAM] Streaming complete for: ${fullPath}`);
-      return true;
+      try {
+        // Determine content type from documentName (not the actual filename on FTP)
+        const ext = documentName.toLowerCase().split('.').pop() || '';
+        const mimeTypes: Record<string, string> = {
+          'pdf': 'application/pdf',
+          'jpg': 'image/jpeg',
+          'jpeg': 'image/jpeg',
+          'png': 'image/png',
+          'gif': 'image/gif',
+          'doc': 'application/msword',
+          'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'xls': 'application/vnd.ms-excel',
+          'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'txt': 'text/plain',
+        };
+        
+        const contentType = mimeTypes[ext] || 'application/octet-stream';
+        
+        // Set response headers
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Content-Length', foundFile.size);
+        res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(documentName)}"`);
+        
+        // Stream directly from FTP to HTTP response
+        const { PassThrough } = require('stream');
+        const passThrough = new PassThrough();
+        passThrough.pipe(res);
+        
+        // Download directly to the PassThrough stream
+        await client.downloadTo(passThrough, fullPath);
+        
+        console.log(`[FTP-STREAM] Streaming complete for: ${fullPath}`);
+        return true;
+      } catch (streamError) {
+        console.error(`[FTP-STREAM] Error during file streaming: ${streamError}`);
+        // Headers already sent, cannot send error response
+        if (!res.headersSent) {
+          res.status(500).json({ error: "Error streaming file" });
+        } else {
+          res.end();
+        }
+        return false;
+      }
     } catch (error) {
       console.error(`[FTP-STREAM] Stream failed:`, error);
       return false;
