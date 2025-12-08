@@ -56,6 +56,18 @@
   90% { transform: rotate(0deg); }
 }
 
+/* Logo glow animation */
+@keyframes logoGlow {
+  0%, 100% { box-shadow: 0 0 10px rgba(253, 185, 19, 0.3), 0 0 20px rgba(253, 185, 19, 0.1); }
+  50% { box-shadow: 0 0 20px rgba(253, 185, 19, 0.5), 0 0 30px rgba(253, 185, 19, 0.2); }
+}
+
+/* Subtle bounce animation */
+@keyframes logoBounce {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-4px); }
+}
+
 .animate-marble {
   background: linear-gradient(135deg, #f8f6f3 0%, #e8e4df 50%, #f0ebe5 100%);
   position: relative;

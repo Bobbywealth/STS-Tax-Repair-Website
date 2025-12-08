@@ -475,11 +475,20 @@ export default function HomePage() {
           <div className="flex items-center justify-between h-20">
             {/* Real Logo */}
             <Link href="/" className="flex items-center gap-3 group" data-testid="link-home-logo">
-              <img 
-                src={logoUrl} 
-                alt="STS TaxRepair" 
-                className="h-14 w-auto object-contain"
-              />
+              <motion.div
+                className="h-14 rounded-lg flex items-center justify-center"
+                style={{
+                  animation: "logoGlow 3s ease-in-out infinite, logoBounce 2.5s ease-in-out infinite"
+                }}
+                whileHover={{ scale: 1.1 }}
+                transition={{ duration: 0.3 }}
+              >
+                <img 
+                  src={logoUrl} 
+                  alt="STS TaxRepair" 
+                  className="h-14 w-auto object-contain"
+                />
+              </motion.div>
             </Link>
 
             {/* Desktop Navigation */}
