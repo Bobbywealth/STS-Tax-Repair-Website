@@ -1,5 +1,8 @@
 import * as ftp from 'basic-ftp';
-import { Readable } from 'stream';
+import { Readable, PassThrough } from 'stream';
+import { createWriteStream } from 'fs';
+import * as path from 'path';
+import * as os from 'os';
 
 const FTP_HOST = process.env.FTP_HOST || '';
 const FTP_USER = process.env.FTP_USER || '';
@@ -124,6 +127,35 @@ export class FTPStorageService {
       return fileSize > 0;
     } catch {
       return false;
+    } finally {
+      client.close();
+    }
+  }
+
+  async downloadFile(filePath: string): Promise<Buffer> {
+    const client = await this.getClient();
+    
+    try {
+      const fullPath = `${BASE_PATH}/${filePath}`;
+      console.log(`[FTP] Downloading file: ${fullPath}`);
+      
+      // Create a PassThrough stream to collect data
+      const passThrough = new PassThrough();
+      const chunks: Buffer[] = [];
+      
+      passThrough.on('data', (chunk) => {
+        chunks.push(chunk);
+      });
+      
+      // Download file to stream
+      await client.downloadTo(passThrough, fullPath);
+      
+      const fileBuffer = Buffer.concat(chunks);
+      console.log(`[FTP] Successfully downloaded file, size: ${fileBuffer.length} bytes`);
+      return fileBuffer;
+    } catch (downloadError) {
+      console.error(`[FTP] Failed to download file:`, downloadError);
+      throw downloadError;
     } finally {
       client.close();
     }
