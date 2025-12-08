@@ -4097,27 +4097,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.redirect(externalUrl);
       }
 
-      // For FTP-uploaded files, download and stream directly
+      // For FTP-uploaded files, redirect to GoDaddy server
       if (fileUrl.startsWith('/ftp/')) {
-        try {
-          // Remove /ftp/ prefix to get the actual path
-          const relativePath = fileUrl.replace('/ftp/', '');
-          console.log(`[FTP] Downloading file: ${relativePath} for document ${documentId}`);
-          
-          const fileBuffer = await ftpStorageService.downloadFile(relativePath);
-          
-          // Set appropriate headers for streaming
-          const mimeType = document.mimeType || 'application/octet-stream';
-          res.setHeader('Content-Type', mimeType);
-          res.setHeader('Content-Length', fileBuffer.length);
-          res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(document.documentName)}"`);
-          
-          console.log(`[FTP] Streaming file: ${document.documentName} (${fileBuffer.length} bytes)`);
-          return res.send(fileBuffer);
-        } catch (ftpError) {
-          console.error(`[FTP] Failed to download file for document ${documentId}:`, ftpError);
-          return res.status(404).json({ error: 'Failed to download file from server' });
-        }
+        // Remove /ftp/ prefix to get the actual path
+        const relativePath = fileUrl.replace('/ftp/', '');
+        const externalUrl = ftpStorageService.getPublicUrl(relativePath);
+        console.log(`[FTP] Redirecting to: ${externalUrl} for document ${documentId}`);
+        return res.redirect(externalUrl);
       }
 
       // For object storage files, get the file and stream it
