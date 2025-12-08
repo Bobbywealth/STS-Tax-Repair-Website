@@ -6,17 +6,20 @@ const FTP_USER = process.env.FTP_USER || '';
 const FTP_PASSWORD = process.env.FTP_PASSWORD || '';
 const FTP_PORT = parseInt(process.env.FTP_PORT || '21');
 
-const BASE_PATH = '/home/i28qwzd7d2dt/public_html/ststaxrepair.org';
+// The FTP user lands in /home/i28qwzd7d2dt/ so paths are relative to that
+const BASE_PATH = 'public_html/ststaxrepair.org';
 const UPLOADS_DIR = 'uploads/clients';
 
 export class FTPStorageService {
   private async getClient(): Promise<ftp.Client> {
     const client = new ftp.Client();
-    client.ftp.verbose = false;
+    client.ftp.verbose = true; // Enable verbose logging
     
     if (!FTP_HOST || !FTP_USER || !FTP_PASSWORD) {
       throw new Error('FTP credentials not configured. Set FTP_HOST, FTP_USER, and FTP_PASSWORD environment variables.');
     }
+    
+    console.log(`[FTP] Connecting to ${FTP_HOST}:${FTP_PORT} as ${FTP_USER}...`);
     
     await client.access({
       host: FTP_HOST,
@@ -25,6 +28,10 @@ export class FTPStorageService {
       port: FTP_PORT,
       secure: false,
     });
+    
+    // Log the current working directory after login
+    const pwd = await client.pwd();
+    console.log(`[FTP] Connected successfully. Current directory: ${pwd}`);
     
     return client;
   }
@@ -42,23 +49,50 @@ export class FTPStorageService {
       const timestamp = Date.now();
       const uniqueFileName = `${timestamp}_${sanitizedFileName}`;
       
+      // Use relative path from FTP home directory
       const remoteDirPath = `${BASE_PATH}/${UPLOADS_DIR}/${clientId}`;
       const remoteFilePath = `${remoteDirPath}/${uniqueFileName}`;
       
+      console.log(`[FTP] Preparing to upload file:`);
+      console.log(`[FTP]   - Client ID: ${clientId}`);
+      console.log(`[FTP]   - Original filename: ${fileName}`);
+      console.log(`[FTP]   - Sanitized filename: ${uniqueFileName}`);
+      console.log(`[FTP]   - Remote directory: ${remoteDirPath}`);
+      console.log(`[FTP]   - Remote file path: ${remoteFilePath}`);
+      console.log(`[FTP]   - File size: ${fileBuffer.length} bytes`);
+      
       await this.ensureDirectory(client, remoteDirPath);
       
-      const stream = Readable.from(fileBuffer);
-      await client.uploadFrom(stream, remoteFilePath);
+      // Verify we're in the right directory
+      const pwdAfterMkdir = await client.pwd();
+      console.log(`[FTP] Current directory after ensureDirectory: ${pwdAfterMkdir}`);
       
-      console.log(`[FTP] Uploaded file to: ${remoteFilePath}`);
+      const stream = Readable.from(fileBuffer);
+      const uploadResponse = await client.uploadFrom(stream, remoteFilePath);
+      
+      console.log(`[FTP] Upload response code: ${uploadResponse.code}`);
+      console.log(`[FTP] Upload response message: ${uploadResponse.message}`);
+      
+      // Verify file exists after upload
+      try {
+        const fileSize = await client.size(remoteFilePath);
+        console.log(`[FTP] Verified file exists with size: ${fileSize} bytes`);
+      } catch (verifyError) {
+        console.error(`[FTP] WARNING: Could not verify file after upload:`, verifyError);
+      }
       
       const relativeFilePath = `${UPLOADS_DIR}/${clientId}/${uniqueFileName}`;
       const fileUrl = `/ftp/${relativeFilePath}`;
+      
+      console.log(`[FTP] Successfully uploaded. Returning fileUrl: ${fileUrl}`);
       
       return {
         filePath: relativeFilePath,
         fileUrl,
       };
+    } catch (uploadError) {
+      console.error(`[FTP] Upload failed with error:`, uploadError);
+      throw uploadError;
     } finally {
       client.close();
     }
