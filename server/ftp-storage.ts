@@ -1,5 +1,5 @@
 import * as ftp from 'basic-ftp';
-import { Readable } from 'stream';
+import { Readable, PassThrough } from 'stream';
 
 const FTP_HOST = process.env.FTP_HOST || '';
 const FTP_USER = process.env.FTP_USER || '';
@@ -245,7 +245,6 @@ export class FTPStorageService {
         res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(documentName)}"`);
         
         // Stream directly from FTP to HTTP response
-        const { PassThrough } = require('stream');
         const passThrough = new PassThrough();
         passThrough.pipe(res);
         
