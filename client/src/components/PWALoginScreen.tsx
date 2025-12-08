@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Mail,
   Lock,
@@ -19,6 +20,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import { useAuthStorage } from "@/hooks/useAuthStorage";
 import stsLogo from "@/assets/sts-logo.png";
 
 interface PWALoginScreenProps {
@@ -28,13 +30,16 @@ interface PWALoginScreenProps {
 export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
   const { toast } = useToast();
   const [, navigate] = useLocation();
+  const { saveAuthToken, saveCredentials } = useAuthStorage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showStaffLogin, setShowStaffLogin] = useState(false);
   const [staffEmail, setStaffEmail] = useState("");
   const [staffPassword, setStaffPassword] = useState("");
+  const [staffRememberMe, setStaffRememberMe] = useState(false);
   const [isStaffLoading, setIsStaffLoading] = useState(false);
   const [showStaffPassword, setShowStaffPassword] = useState(false);
   const [isPWA, setIsPWA] = useState(false);
@@ -61,6 +66,23 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
 
       if (!response.ok) {
         throw new Error(data.message || "Login failed");
+      }
+
+      // Save auth token with remember me option
+      if (data.token) {
+        saveAuthToken(
+          data.token,
+          data.expiresIn || 86400, // 24 hours default
+          'client',
+          email,
+          data.userId || email,
+          rememberMe
+        );
+      }
+
+      // Save credentials to browser password manager
+      if (rememberMe) {
+        saveCredentials(email, password);
       }
 
       toast({
@@ -97,6 +119,23 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
 
       if (!response.ok) {
         throw new Error(data.message || "Login failed");
+      }
+
+      // Save auth token with remember me option
+      if (data.token) {
+        saveAuthToken(
+          data.token,
+          data.expiresIn || 86400, // 24 hours default
+          'admin',
+          staffEmail,
+          data.userId || staffEmail,
+          staffRememberMe
+        );
+      }
+
+      // Save credentials to browser password manager
+      if (staffRememberMe) {
+        saveCredentials(staffEmail, staffPassword);
       }
 
       toast({
@@ -219,6 +258,18 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
                 </div>
               </div>
 
+              <div className="flex items-center gap-2 mb-3">
+                <Checkbox 
+                  id="remember-me"
+                  checked={rememberMe}
+                  onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                  data-testid="pwa-checkbox-remember-client"
+                />
+                <Label htmlFor="remember-me" className="text-gray-300 text-sm cursor-pointer font-normal">
+                  Remember me
+                </Label>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="pwa-password" className="text-gray-300 text-sm">
                   Password
@@ -336,6 +387,18 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
                             data-testid="pwa-input-staff-email"
                           />
                         </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 mb-3">
+                        <Checkbox 
+                          id="remember-me-staff"
+                          checked={staffRememberMe}
+                          onCheckedChange={(checked) => setStaffRememberMe(checked as boolean)}
+                          data-testid="pwa-checkbox-remember-staff"
+                        />
+                        <Label htmlFor="remember-me-staff" className="text-gray-300 text-sm cursor-pointer font-normal">
+                          Remember me
+                        </Label>
                       </div>
 
                       <div className="space-y-2">

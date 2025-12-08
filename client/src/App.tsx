@@ -17,6 +17,7 @@ import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { NavigationProgress } from "@/components/NavigationProgress";
 import { UpdateNotification } from "@/components/UpdateNotification";
 import { usePWA } from "@/hooks/usePWA";
+import { useAuthStorage } from "@/hooks/useAuthStorage";
 
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const Clients = lazy(() => import("@/pages/Clients"));
@@ -209,13 +210,28 @@ function AdminLayout() {
   const { data: user, isLoading, error } = useCurrentUser();
   const [, navigate] = useLocation();
   const { isPWA } = usePWA();
+  const { getStoredToken } = useAuthStorage();
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  // Check for stored auth token on mount (auto-login)
+  useEffect(() => {
+    const checkStoredAuth = async () => {
+      const storedToken = getStoredToken();
+      if (storedToken) {
+        // Token exists, user will be auto-logged in by the auth check below
+        // The query below will use the session cookie that was set when token was saved
+      }
+      setIsCheckingAuth(false);
+    };
+    checkStoredAuth();
+  }, [getStoredToken]);
 
   const sidebarStyle = {
     "--sidebar-width": "16rem",
     "--sidebar-width-icon": "3rem",
   };
 
-  if (isLoading) {
+  if (isLoading || isCheckingAuth) {
     return (
       <div className="flex items-center justify-center h-screen bg-animated-mesh">
         <div className="flex flex-col items-center gap-4">
