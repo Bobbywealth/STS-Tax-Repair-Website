@@ -586,7 +586,7 @@ export default function HomePage() {
         {/* DESKTOP HERO - Full width team image */}
         <div className="hidden lg:block relative pt-20">
           {/* Full Team Image - NO CROPPING - Starts below navbar */}
-          <div className="w-full animate-marble">
+          <div className="w-full animate-marble" style={{ backgroundImage: `url(${officeBackgroundUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
             <img 
               src="https://www.ststaxrepair.net/wp-content/uploads/2025/01/Untitled-design-3.png"
               alt="STS Tax Repair Team - All 6 Members"
@@ -1353,7 +1353,7 @@ export default function HomePage() {
                   className="flex-shrink-0 w-72 p-5 bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 group"
                   data-testid={`card-agent-row1-${index}`}
                 >
-                  <div className="w-48 h-56 mx-auto mb-4 rounded-lg overflow-hidden shadow-lg group-hover:scale-105 transition-transform ring-4 ring-sts-primary/20" style={{ backgroundImage: `url(${officeBackgroundUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+                  <div className="w-48 h-56 mx-auto mb-4 rounded-lg overflow-hidden shadow-lg group-hover:scale-105 transition-transform ring-4 ring-sts-primary/20">
                     <img 
                       src={agent.image} 
                       alt={agent.name}
@@ -1413,7 +1413,7 @@ export default function HomePage() {
                   className="flex-shrink-0 w-72 p-5 bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 group"
                   data-testid={`card-agent-row2-${index}`}
                 >
-                  <div className="w-48 h-56 mx-auto mb-4 rounded-lg overflow-hidden shadow-lg group-hover:scale-105 transition-transform ring-4 ring-sts-primary/20" style={{ backgroundImage: `url(${officeBackgroundUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+                  <div className="w-48 h-56 mx-auto mb-4 rounded-lg overflow-hidden shadow-lg group-hover:scale-105 transition-transform ring-4 ring-sts-primary/20">
                     <img 
                       src={agent.image} 
                       alt={agent.name}
