@@ -83,7 +83,8 @@ export default function AgentManagement() {
       const response = await apiRequest("POST", `/api/homepage-agents/${agentId}/photo`, {
         fileName: file.name,
       });
-      const { uploadURL, objectPath, mode } = await response.json();
+      const data = await response.json();
+      const { uploadURL, objectPath, mode } = data;
 
       if (mode === 'object-storage') {
         await fetch(uploadURL, {
@@ -99,7 +100,7 @@ export default function AgentManagement() {
         setFormData(prev => ({ ...prev, imageUrl: objectPath }));
       } else if (mode === 'ftp') {
         const arrayBuffer = await file.arrayBuffer();
-        await fetch('/api/homepage-agents/photo-ftp', {
+        const ftpResponse = await fetch('/api/homepage-agents/photo-ftp', {
           method: 'POST',
           body: arrayBuffer,
           headers: {
@@ -109,6 +110,10 @@ export default function AgentManagement() {
           },
           credentials: 'include',
         });
+        if (!ftpResponse.ok) {
+          const errorData = await ftpResponse.json().catch(() => ({}));
+          throw new Error(errorData.error || 'FTP upload failed');
+        }
       }
 
       toast({ title: "Image Uploaded", description: "The agent photo has been uploaded successfully." });

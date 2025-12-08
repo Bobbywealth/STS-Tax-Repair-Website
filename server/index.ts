@@ -54,6 +54,15 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: false }));
 
+// Raw body parser for binary file uploads (agent photos via FTP)
+app.use(express.raw({ 
+  type: 'application/octet-stream',
+  limit: '10mb',
+  verify: (req: any, _res, buf) => {
+    req.rawBody = buf;
+  }
+}));
+
 // Default STS branding for fallback
 const DEFAULT_BRANDING: Partial<OfficeBranding> = {
   companyName: 'STS TaxRepair',

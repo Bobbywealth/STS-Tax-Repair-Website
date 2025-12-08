@@ -6286,50 +6286,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Agent not found" });
       }
 
-      const chunks: Buffer[] = [];
+      // Use body from express.raw() middleware for application/octet-stream
+      const fileBuffer = Buffer.isBuffer(req.body) ? req.body : (req.rawBody as Buffer);
       
-      req.on('data', (chunk: Buffer) => {
-        chunks.push(chunk);
-      });
+      if (!fileBuffer || fileBuffer.length === 0) {
+        return res.status(400).json({ error: "No file data received" });
+      }
+      
+      if (fileBuffer.length > 5 * 1024 * 1024) {
+        return res.status(400).json({ error: "File too large (max 5MB)" });
+      }
 
-      req.on('end', async () => {
-        try {
-          const fileBuffer = Buffer.concat(chunks);
-          
-          if (fileBuffer.length === 0) {
-            return res.status(400).json({ error: "No file data received" });
-          }
-          
-          if (fileBuffer.length > 5 * 1024 * 1024) {
-            return res.status(400).json({ error: "File too large (max 5MB)" });
-          }
+      // Upload to FTP in agent-photos directory
+      const result = await ftpStorageService.uploadFile(
+        `agent-photos/${agentId}`,
+        fileName,
+        fileBuffer
+      );
+      
+      // Update agent with new image URL
+      const imageUrl = `/ftp/${result.filePath}`;
+      await mysqlStorage.updateHomePageAgent(agentId, { imageUrl });
 
-          // Upload to FTP in agent-photos directory
-          const result = await ftpStorageService.uploadFile(
-            `agent-photos/${agentId}`,
-            fileName,
-            fileBuffer
-          );
-          
-          // Update agent with new image URL
-          const imageUrl = `/ftp/${result.filePath}`;
-          await mysqlStorage.updateHomePageAgent(agentId, { imageUrl });
-
-          res.json({ 
-            success: true, 
-            filePath: result.filePath,
-            fileUrl: result.fileUrl,
-            imageUrl
-          });
-        } catch (uploadError: any) {
-          console.error("[FTP] Agent photo upload error:", uploadError);
-          res.status(500).json({ error: uploadError.message });
-        }
-      });
-
-      req.on('error', (error: any) => {
-        console.error("[FTP] Request error:", error);
-        res.status(500).json({ error: error.message });
+      res.json({ 
+        success: true, 
+        filePath: result.filePath,
+        fileUrl: result.fileUrl,
+        imageUrl
       });
     } catch (error: any) {
       console.error("Error in FTP agent photo upload:", error);
