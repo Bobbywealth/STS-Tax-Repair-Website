@@ -120,8 +120,12 @@ export class FTPStorageService {
     
     try {
       const fullPath = `${BASE_PATH}/${filePath}`;
-      const fileSize = await client.size(fullPath);
-      return fileSize > 0;
+      const lastSlash = fullPath.lastIndexOf('/');
+      const dirPath = fullPath.substring(0, lastSlash);
+      const fileName = fullPath.substring(lastSlash + 1);
+      
+      const files = await client.list(dirPath);
+      return files.some(f => f.name === fileName && !f.isDirectory);
     } catch {
       return false;
     } finally {
@@ -133,126 +137,103 @@ export class FTPStorageService {
     const client = await this.getClient();
     
     try {
-      let fullPath = `${BASE_PATH}/${filePath}`;
-      console.log(`[FTP-STREAM] Relative path: ${filePath}`);
-      console.log(`[FTP-STREAM] Full path: ${fullPath}`);
+      console.log(`[FTP-STREAM] Requested path: ${filePath}`);
       
-      // Get file size first
-      let fileSize: number;
-      try {
-        fileSize = await client.size(fullPath);
-        console.log(`[FTP-STREAM] SUCCESS! File size: ${fileSize} bytes`);
-      } catch (sizeError: any) {
-        console.error(`[FTP-STREAM] FAILED - File not found at: ${fullPath}`);
-        console.error(`[FTP-STREAM] Error details:`, sizeError.message);
-        
-        // Try alternate paths for Perfex migration compatibility
-        let foundPath = false;
-        
-        // Pattern 1: If path is uploads/customers/{id}/..., try uploads/clients/perfex-{id}/...
-        if (filePath.includes('uploads/customers/')) {
-          const match = filePath.match(/uploads\/customers\/(\d+)\/(.*)/);
-          if (match) {
-            const perfexId = match[1];
-            const filename = match[2];
-            const alternatePath = `uploads/clients/perfex-${perfexId}/${filename}`;
-            fullPath = `${BASE_PATH}/${alternatePath}`;
-            console.log(`[FTP-STREAM] Trying Perfex path (customers→clients/perfex-): ${fullPath}`);
-            try {
-              fileSize = await client.size(fullPath);
-              console.log(`[FTP-STREAM] Found at Perfex path! File size: ${fileSize} bytes`);
-              foundPath = true;
-            } catch (altError: any) {
-              console.error(`[FTP-STREAM] Perfex path failed: ${fullPath} - ${altError.message}`);
+      // Helper to list directory and find a file
+      const findFileInDir = async (dirPath: string, targetFileName?: string): Promise<{ name: string; size: number } | null> => {
+        try {
+          const files = await client.list(dirPath);
+          const fileList = files.filter(f => !f.isDirectory);
+          console.log(`[FTP-STREAM] Listed ${fileList.length} files in ${dirPath}`);
+          
+          // Try exact match first
+          if (targetFileName) {
+            const exactMatch = fileList.find(f => f.name === targetFileName);
+            if (exactMatch) {
+              console.log(`[FTP-STREAM] Found exact match: ${targetFileName}`);
+              return { name: exactMatch.name, size: exactMatch.size };
             }
+            console.log(`[FTP-STREAM] No exact match for: ${targetFileName}`);
           }
           
-          // Pattern 2: Try without perfex- prefix (fallback for non-prefixed folders)
-          if (!foundPath) {
-            const alternatePath = filePath.replace('uploads/customers/', 'uploads/clients/');
-            fullPath = `${BASE_PATH}/${alternatePath}`;
-            console.log(`[FTP-STREAM] Trying simple customers→clients: ${fullPath}`);
-            try {
-              fileSize = await client.size(fullPath);
-              console.log(`[FTP-STREAM] Found at simple path! File size: ${fileSize} bytes`);
-              foundPath = true;
-            } catch (altError: any) {
-              console.error(`[FTP-STREAM] Simple path also failed: ${fullPath} - ${altError.message}`);
-            }
+          // Fall back to first image file
+          const imageFiles = fileList.filter(f => /\.(jpg|jpeg|png|gif|pdf)$/i.test(f.name));
+          if (imageFiles.length > 0) {
+            console.log(`[FTP-STREAM] Using first available image: ${imageFiles[0].name}`);
+            return { name: imageFiles[0].name, size: imageFiles[0].size };
           }
-        } 
-        
-        // Pattern 3: If path is uploads/clients/{id}/... (without perfex-), try with perfex- prefix
-        if (!foundPath && filePath.includes('uploads/clients/')) {
-          const match = filePath.match(/uploads\/clients\/(\d+)\/(.*)/);
-          if (match) {
-            const perfexId = match[1];
-            const filename = match[2];
-            const alternatePath = `uploads/clients/perfex-${perfexId}/${filename}`;
-            fullPath = `${BASE_PATH}/${alternatePath}`;
-            console.log(`[FTP-STREAM] Trying to add perfex- prefix: ${fullPath}`);
-            try {
-              fileSize = await client.size(fullPath);
-              console.log(`[FTP-STREAM] Found with perfex- prefix! File size: ${fileSize} bytes`);
-              foundPath = true;
-            } catch (altError: any) {
-              console.error(`[FTP-STREAM] Perfex prefix also failed: ${fullPath} - ${altError.message}`);
-            }
+          
+          // Fall back to any file
+          if (fileList.length > 0) {
+            console.log(`[FTP-STREAM] Using first available file: ${fileList[0].name}`);
+            return { name: fileList[0].name, size: fileList[0].size };
           }
+          
+          console.error(`[FTP-STREAM] Directory is empty: ${dirPath}`);
+          return null;
+        } catch (error: any) {
+          console.error(`[FTP-STREAM] Failed to list directory ${dirPath}: ${error.message}`);
+          return null;
         }
-        
-        // Pattern 4: If still not found, try listing directory and serving any file there
-        // This handles Perfex migration mismatches where DB has old filenames but new files exist
-        if (!foundPath) {
-          console.log(`[FTP-STREAM] All path patterns failed. Attempting directory listing fallback.`);
-          
-          // Extract directory path
-          let dirPath = filePath.substring(0, filePath.lastIndexOf('/'));
-          let ftpDirPath = `${BASE_PATH}/${dirPath}`;
-          
-          console.log(`[FTP-STREAM] Listing directory contents: ${ftpDirPath}`);
-          try {
-            const files = await client.list(ftpDirPath);
-            const fileList = files.filter(f => !f.isDirectory);
-            
-            if (fileList.length > 0) {
-              // Use the first available file (or first image if multiple files exist)
-              const imageFiles = fileList.filter(f => /\.(jpg|jpeg|png|gif|pdf)$/i.test(f.name));
-              const targetFile = imageFiles.length > 0 ? imageFiles[0] : fileList[0];
-              
-              fullPath = `${ftpDirPath}/${targetFile.name}`;
-              console.log(`[FTP-STREAM] Directory fallback: Using file "${targetFile.name}" from directory`);
-              console.log(`[FTP-STREAM] Full fallback path: ${fullPath}`);
-              
-              try {
-                fileSize = await client.size(fullPath);
-                console.log(`[FTP-STREAM] Fallback SUCCESS! File size: ${fileSize} bytes`);
-                foundPath = true;
-              } catch (fbError: any) {
-                console.error(`[FTP-STREAM] Fallback file size check failed: ${fbError.message}`);
-                client.close();
-                return false;
-              }
-            } else {
-              console.error(`[FTP-STREAM] Directory is empty or inaccessible: ${ftpDirPath}`);
-              client.close();
-              return false;
-            }
-          } catch (listError: any) {
-            console.error(`[FTP-STREAM] Failed to list directory: ${ftpDirPath} - ${listError.message}`);
-            client.close();
-            return false;
+      };
+      
+      let fullPath = `${BASE_PATH}/${filePath}`;
+      let foundFile: { name: string; size: number } | null = null;
+      let dirPath = fullPath.substring(0, fullPath.lastIndexOf('/'));
+      let fileName = fullPath.substring(fullPath.lastIndexOf('/') + 1);
+      
+      // Pattern 1: Try exact file path as given
+      console.log(`[FTP-STREAM] Trying exact path: ${dirPath}/${fileName}`);
+      foundFile = await findFileInDir(dirPath, fileName);
+      
+      // Pattern 2: If not found and path contains uploads/customers, try with perfex- prefix
+      if (!foundFile && filePath.includes('uploads/customers/')) {
+        const match = filePath.match(/uploads\/customers\/(\d+)\/(.*)/);
+        if (match) {
+          const perfexId = match[1];
+          const filename = match[2];
+          const perfexPath = `uploads/clients/perfex-${perfexId}/${filename}`;
+          const perfexFullPath = `${BASE_PATH}/${perfexPath}`;
+          const perfexDir = perfexFullPath.substring(0, perfexFullPath.lastIndexOf('/'));
+          console.log(`[FTP-STREAM] Trying Perfex path: ${perfexDir}`);
+          foundFile = await findFileInDir(perfexDir, filename);
+          if (foundFile) {
+            fullPath = `${perfexDir}/${foundFile.name}`;
           }
-        }
-        
-        if (!foundPath) {
-          console.error(`[FTP-STREAM] All alternate paths and fallback failed for: ${filePath}`);
-          client.close();
-          return false;
         }
       }
       
-      // Determine content type from filename
+      // Pattern 3: If still not found and path contains uploads/clients/{numeric_id}, try with perfex- prefix
+      if (!foundFile && filePath.includes('uploads/clients/')) {
+        const match = filePath.match(/uploads\/clients\/(\d+)\/(.*)/);
+        if (match) {
+          const perfexId = match[1];
+          const filename = match[2];
+          const perfexizedPath = `uploads/clients/perfex-${perfexId}/${filename}`;
+          const perfexizedFullPath = `${BASE_PATH}/${perfexizedPath}`;
+          const perfexizedDir = perfexizedFullPath.substring(0, perfexizedFullPath.lastIndexOf('/'));
+          console.log(`[FTP-STREAM] Trying perfexized path: ${perfexizedDir}`);
+          foundFile = await findFileInDir(perfexizedDir, filename);
+          if (foundFile) {
+            fullPath = `${perfexizedDir}/${foundFile.name}`;
+          }
+        }
+      }
+      
+      if (!foundFile) {
+        console.error(`[FTP-STREAM] File not found: ${filePath}`);
+        client.close();
+        return false;
+      }
+      
+      // Use the found file path
+      if (foundFile.name !== fileName) {
+        fullPath = `${dirPath}/${foundFile.name}`;
+      }
+      
+      console.log(`[FTP-STREAM] Serving file: ${fullPath} (size: ${foundFile.size} bytes)`);
+      
+      // Determine content type from documentName (not the actual filename on FTP)
       const ext = documentName.toLowerCase().split('.').pop() || '';
       const mimeTypes: Record<string, string> = {
         'pdf': 'application/pdf',
@@ -271,7 +252,7 @@ export class FTPStorageService {
       
       // Set response headers before streaming
       res.setHeader('Content-Type', contentType);
-      res.setHeader('Content-Length', fileSize);
+      res.setHeader('Content-Length', foundFile.size);
       
       // Inline viewing for PDFs and images
       if (['pdf', 'jpg', 'jpeg', 'png', 'gif'].includes(ext)) {
@@ -283,17 +264,15 @@ export class FTPStorageService {
       // Stream directly from FTP to HTTP response using PassThrough
       const { PassThrough } = require('stream');
       const passThrough = new PassThrough();
-      
-      // Pipe the PassThrough stream to the response
       passThrough.pipe(res);
       
       // Download directly to the PassThrough stream (which pipes to res)
       await client.downloadTo(passThrough, fullPath);
       
-      console.log(`[FTP] Streaming complete for: ${fullPath}`);
+      console.log(`[FTP-STREAM] Streaming complete for: ${fullPath}`);
       return true;
     } catch (error) {
-      console.error(`[FTP] Stream failed:`, error);
+      console.error(`[FTP-STREAM] Stream failed:`, error);
       return false;
     } finally {
       client.close();
