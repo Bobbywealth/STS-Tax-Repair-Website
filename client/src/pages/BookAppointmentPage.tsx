@@ -44,6 +44,14 @@ const timeSlots = [
   "15:00", "15:30", "16:00", "16:30"
 ];
 
+// Convert 24-hour time to 12-hour format with AM/PM
+function formatTime12Hour(time24: string): string {
+  const [hours, minutes] = time24.split(":").map(Number);
+  const period = hours >= 12 ? "PM" : "AM";
+  const hours12 = hours % 12 || 12;
+  return `${hours12}:${minutes.toString().padStart(2, "0")} ${period}`;
+}
+
 export default function BookAppointmentPage() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
@@ -147,7 +155,7 @@ export default function BookAppointmentPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <Clock className="w-5 h-5 text-sts-gold" />
-                  <span className="font-medium">{bookingDetails.time}</span>
+                  <span className="font-medium">{formatTime12Hour(bookingDetails.time)}</span>
                 </div>
               </div>
 
@@ -233,7 +241,7 @@ export default function BookAppointmentPage() {
                         onClick={() => setSelectedTime(time)}
                         data-testid={`button-time-${time}`}
                       >
-                        {time}
+                        {formatTime12Hour(time)}
                       </Button>
                     ))}
                   </div>
@@ -374,7 +382,7 @@ export default function BookAppointmentPage() {
                         </p>
                         <p className="flex items-center gap-2">
                           <Clock className="w-4 h-4" />
-                          {selectedTime}
+                          {formatTime12Hour(selectedTime)}
                         </p>
                       </div>
                     </div>
