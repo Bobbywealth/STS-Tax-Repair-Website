@@ -189,17 +189,11 @@ export function ClientsTable({
             filteredClients.map((client, index) => (
               <div
                 key={client.id}
-                className={`p-4 rounded-lg border bg-card animate-fade-in ${selectedClients.has(client.id) ? 'ring-2 ring-primary/50 bg-primary/5' : ''}`}
+                className="p-4 rounded-lg border bg-card animate-fade-in"
                 style={{ animationDelay: `${index * 30}ms` }}
                 data-testid={`client-card-${client.id}`}
               >
                 <div className="flex items-start gap-3">
-                  <Checkbox 
-                    checked={selectedClients.has(client.id)}
-                    onCheckedChange={(checked) => handleSelectClient(client.id, checked as boolean)}
-                    aria-label={`Select ${client.name}`}
-                    className="mt-1"
-                  />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">
                       <Avatar className="h-10 w-10 flex-shrink-0">
