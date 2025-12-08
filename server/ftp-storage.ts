@@ -10,7 +10,8 @@ const FTP_PORT = parseInt(process.env.FTP_PORT || '21');
 console.log(`[FTP-CONFIG] FTP_HOST="${FTP_HOST}", FTP_USER="${FTP_USER}", FTP_PORT=${FTP_PORT}`);
 
 // The FTP user lands in /home/i28qwzd7d2dt/ so paths are relative to that
-const BASE_PATH = 'public_html/ststaxrepair.org';
+// ststaxrepair.org is a folder directly in home, NOT inside public_html
+const BASE_PATH = 'ststaxrepair.org';
 const UPLOADS_DIR = 'uploads/clients';
 
 export class FTPStorageService {
