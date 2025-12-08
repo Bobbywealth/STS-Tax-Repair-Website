@@ -286,19 +286,23 @@ export default function Clients() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Clients</h1>
-          <p className="text-muted-foreground mt-1">
-            {isLoading ? "Loading..." : (
-              searchQuery 
-                ? `${clients.length} result${clients.length !== 1 ? 's' : ''} for "${searchQuery}" in tax year ${selectedYear}`
-                : `${clients.length} clients for tax year ${selectedYear}`
-            )}
-          </p>
+    <div className="space-y-4 sm:space-y-6">
+      {/* Header Section */}
+      <div className="space-y-3">
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Clients</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {isLoading ? "Loading..." : `${clients.length} for ${selectedYear}`}
+            </p>
+          </div>
+          <Button size="sm" onClick={() => setShowAddDialog(true)} data-testid="button-add-client" className="sm:hidden">
+            <UserPlus className="h-4 w-4" />
+          </Button>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
+
+        {/* Desktop Actions Row */}
+        <div className="hidden sm:flex items-center gap-2">
           <div className="flex items-center gap-2 bg-card border rounded-lg px-3 py-1.5">
             <Calendar className="h-4 w-4 text-muted-foreground" />
             <Select
@@ -324,19 +328,42 @@ export default function Clients() {
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
-          <Button onClick={() => setShowAddDialog(true)} data-testid="button-add-client">
+          <Button onClick={() => setShowAddDialog(true)} data-testid="button-add-client-desktop">
             <UserPlus className="h-4 w-4 mr-2" />
             Add Client
           </Button>
         </div>
+
+        {/* Mobile Controls - Tax Year and Export */}
+        <div className="flex sm:hidden items-center gap-2">
+          <Select
+            value={String(selectedYear)}
+            onValueChange={(val) => setSelectedYear(parseInt(val))}
+          >
+            <SelectTrigger className="flex-1 h-9" data-testid="select-tax-year-mobile">
+              <Calendar className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Year" />
+            </SelectTrigger>
+            <SelectContent>
+              {availableYears.map(year => (
+                <SelectItem key={year} value={String(year)}>
+                  {year}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="sm" data-testid="button-export-clients-mobile">
+            <Download className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="relative max-w-md">
+      {/* Search Bar - Full Width */}
+      <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           type="text"
-          placeholder="Search by name, email, phone, city, or state..."
+          placeholder="Search name, email, phone..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-10 pr-10"
@@ -353,35 +380,38 @@ export default function Clients() {
         )}
       </div>
 
-      <div className="flex flex-wrap gap-2" data-testid="client-status-filters">
-        {statusFilters.map((filter) => (
-          <button
-            key={filter.value}
-            onClick={() => setActiveFilter(filter.value)}
-            data-testid={`filter-${filter.value.toLowerCase().replace('_', '-')}`}
-            className={`
-              flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all
-              ${activeFilter === filter.value 
-                ? 'bg-primary text-primary-foreground shadow-md shadow-primary/25' 
-                : 'bg-card hover-elevate border border-border/50'
-              }
-            `}
-          >
-            {filter.value !== "all" && (
-              <span className={`w-2 h-2 rounded-full ${filter.color}`} />
-            )}
-            <span>{filter.label}</span>
-            <span className={`
-              ml-1 px-1.5 py-0.5 rounded text-xs
-              ${activeFilter === filter.value 
-                ? 'bg-primary-foreground/20' 
-                : 'bg-muted'
-              }
-            `}>
-              {getStatusCount(filter.value)}
-            </span>
-          </button>
-        ))}
+      {/* Status Filters - Horizontal Scroll on Mobile */}
+      <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+        <div className="flex gap-2 pb-2 sm:pb-0 sm:flex-wrap min-w-max sm:min-w-0" data-testid="client-status-filters">
+          {statusFilters.map((filter) => (
+            <button
+              key={filter.value}
+              onClick={() => setActiveFilter(filter.value)}
+              data-testid={`filter-${filter.value.toLowerCase().replace('_', '-')}`}
+              className={`
+                flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap
+                ${activeFilter === filter.value 
+                  ? 'bg-primary text-primary-foreground shadow-md shadow-primary/25' 
+                  : 'bg-card hover-elevate border border-border/50'
+                }
+              `}
+            >
+              {filter.value !== "all" && (
+                <span className={`w-2 h-2 rounded-full ${filter.color}`} />
+              )}
+              <span>{filter.label}</span>
+              <span className={`
+                px-1.5 py-0.5 rounded text-xs
+                ${activeFilter === filter.value 
+                  ? 'bg-primary-foreground/20' 
+                  : 'bg-muted'
+                }
+              `}>
+                {getStatusCount(filter.value)}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {isLoading ? (
