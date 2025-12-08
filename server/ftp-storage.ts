@@ -186,36 +186,20 @@ export class FTPStorageService {
       console.log(`[FTP-STREAM] Trying exact path: ${dirPath}/${fileName}`);
       foundFile = await findFileInDir(dirPath, fileName);
       
-      // Pattern 2: If not found and path contains uploads/customers, try with perfex- prefix
+      // Pattern 2: If not found and path contains uploads/customers, convert to uploads/clients
+      // This handles legacy Perfex paths being converted to new structure
       if (!foundFile && filePath.includes('uploads/customers/')) {
         const match = filePath.match(/uploads\/customers\/(\d+)\/(.*)/);
         if (match) {
-          const perfexId = match[1];
+          const clientId = match[1];
           const filename = match[2];
-          const perfexPath = `uploads/clients/perfex-${perfexId}/${filename}`;
-          const perfexFullPath = `${BASE_PATH}/${perfexPath}`;
-          const perfexDir = perfexFullPath.substring(0, perfexFullPath.lastIndexOf('/'));
-          console.log(`[FTP-STREAM] Trying Perfex path: ${perfexDir}`);
-          foundFile = await findFileInDir(perfexDir, filename);
+          const clientPath = `uploads/clients/${clientId}/${filename}`;
+          const clientFullPath = `${BASE_PATH}/${clientPath}`;
+          const clientDir = clientFullPath.substring(0, clientFullPath.lastIndexOf('/'));
+          console.log(`[FTP-STREAM] Trying converted clients path: ${clientDir}`);
+          foundFile = await findFileInDir(clientDir, filename);
           if (foundFile) {
-            fullPath = `${perfexDir}/${foundFile.name}`;
-          }
-        }
-      }
-      
-      // Pattern 3: If still not found and path contains uploads/clients/{numeric_id}, try with perfex- prefix
-      if (!foundFile && filePath.includes('uploads/clients/')) {
-        const match = filePath.match(/uploads\/clients\/(\d+)\/(.*)/);
-        if (match) {
-          const perfexId = match[1];
-          const filename = match[2];
-          const perfexizedPath = `uploads/clients/perfex-${perfexId}/${filename}`;
-          const perfexizedFullPath = `${BASE_PATH}/${perfexizedPath}`;
-          const perfexizedDir = perfexizedFullPath.substring(0, perfexizedFullPath.lastIndexOf('/'));
-          console.log(`[FTP-STREAM] Trying perfexized path: ${perfexizedDir}`);
-          foundFile = await findFileInDir(perfexizedDir, filename);
-          if (foundFile) {
-            fullPath = `${perfexizedDir}/${foundFile.name}`;
+            fullPath = `${clientDir}/${foundFile.name}`;
           }
         }
       }
