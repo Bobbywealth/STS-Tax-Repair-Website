@@ -51,17 +51,26 @@ function LiveClockWidget() {
     return () => clearInterval(timer);
   }, []);
   
-  const formattedTime = format(currentTime, 'h:mm:ss a');
+  const formattedTime = format(currentTime, 'h:mm a');
+  const formattedTimeFull = format(currentTime, 'h:mm:ss a');
   const formattedDate = format(currentTime, 'EEEE, MMMM d, yyyy');
+  const formattedDateShort = format(currentTime, 'MMM d');
   
   return (
     <div className="clock-widget flex flex-col items-end" data-testid="widget-clock">
-      <div className="flex items-center gap-2">
-        <Clock className="h-4 w-4 text-white/80" />
-        <span className="text-xl font-mono font-bold tracking-wider">{formattedTime}</span>
+      {/* Mobile: Compact time only */}
+      <div className="md:hidden">
+        <span className="text-sm font-mono font-bold">{formattedTime}</span>
       </div>
-      <div className="text-sm text-white/70 mt-0.5">
-        {formattedDate}
+      {/* Desktop: Full clock display */}
+      <div className="hidden md:block">
+        <div className="flex items-center gap-2">
+          <Clock className="h-4 w-4 text-white/80" />
+          <span className="text-xl font-mono font-bold tracking-wider">{formattedTimeFull}</span>
+        </div>
+        <div className="text-sm text-white/70 mt-0.5">
+          {formattedDate}
+        </div>
       </div>
     </div>
   );
@@ -91,45 +100,70 @@ function TaxDeadlineCountdown() {
   const isCritical = daysRemaining <= 7;
   
   return (
-    <div 
-      className={cn(
-        "deadline-widget flex items-center gap-3 bg-white/15 backdrop-blur-sm rounded-lg px-4 py-2 border",
-        isCritical ? "border-red-400/50 bg-red-500/20" : 
-        isUrgent ? "border-amber-400/50 bg-amber-500/20" : 
-        "border-white/20"
-      )}
-      data-testid="widget-tax-deadline"
-    >
-      <div className={cn(
-        "h-10 w-10 rounded-full flex items-center justify-center",
-        isCritical ? "bg-red-500/30" : 
-        isUrgent ? "bg-amber-500/30" : 
-        "bg-white/20"
-      )}>
+    <>
+      {/* Mobile: Compact deadline */}
+      <div 
+        className={cn(
+          "md:hidden flex-shrink-0 snap-start flex items-center gap-2 rounded-lg px-3 py-2 border",
+          isCritical ? "border-red-400/50 bg-red-500/20" : 
+          isUrgent ? "border-amber-400/50 bg-amber-500/20" : 
+          "bg-white/15 border-white/10"
+        )}
+        data-testid="widget-tax-deadline-mobile"
+      >
         <Timer className={cn(
-          "h-5 w-5",
-          isCritical ? "text-red-200 animate-pulse" : 
+          "h-4 w-4",
+          isCritical ? "text-red-200" : 
           isUrgent ? "text-amber-200" : 
-          "text-white"
+          "text-white/80"
         )} />
+        <div className="text-sm">
+          <span className="font-bold">{daysRemaining}</span>
+          <span className="text-white/70 ml-1">days left</span>
+        </div>
       </div>
-      <div className="flex flex-col">
-        <div className="flex items-baseline gap-1">
-          <span className={cn(
-            "text-2xl font-bold",
-            isCritical ? "text-red-200" : 
+
+      {/* Desktop: Full deadline widget */}
+      <div 
+        className={cn(
+          "hidden md:flex deadline-widget items-center gap-3 bg-white/15 backdrop-blur-sm rounded-lg px-4 py-2 border",
+          isCritical ? "border-red-400/50 bg-red-500/20" : 
+          isUrgent ? "border-amber-400/50 bg-amber-500/20" : 
+          "border-white/20"
+        )}
+        data-testid="widget-tax-deadline"
+      >
+        <div className={cn(
+          "h-10 w-10 rounded-full flex items-center justify-center",
+          isCritical ? "bg-red-500/30" : 
+          isUrgent ? "bg-amber-500/30" : 
+          "bg-white/20"
+        )}>
+          <Timer className={cn(
+            "h-5 w-5",
+            isCritical ? "text-red-200 animate-pulse" : 
             isUrgent ? "text-amber-200" : 
             "text-white"
-          )}>
-            {daysRemaining}
-          </span>
-          <span className="text-sm text-white/80">days</span>
+          )} />
         </div>
-        <span className="text-xs text-white/70">
-          Until {format(taxDeadline, 'MMM d, yyyy')} Tax Deadline
-        </span>
+        <div className="flex flex-col">
+          <div className="flex items-baseline gap-1">
+            <span className={cn(
+              "text-2xl font-bold",
+              isCritical ? "text-red-200" : 
+              isUrgent ? "text-amber-200" : 
+              "text-white"
+            )}>
+              {daysRemaining}
+            </span>
+            <span className="text-sm text-white/80">days</span>
+          </div>
+          <span className="text-xs text-white/70">
+            Until {format(taxDeadline, 'MMM d, yyyy')} Tax Deadline
+          </span>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -503,72 +537,168 @@ export default function Dashboard() {
         }
       `}</style>
 
-      <FloatingParticles />
-      <GlowingOrbs />
-      <div className="scanline" />
+      {/* Decorative effects - hidden on mobile for performance */}
+      <div className="hidden md:block">
+        <FloatingParticles />
+        <GlowingOrbs />
+        <div className="scanline" />
+      </div>
 
       <div className="space-y-6 relative z-10">
-        {/* Hero Section */}
-        <div className="hero-section rounded-2xl p-8 text-white animate-scale-in">
+        {/* Hero Section - Compact on Mobile */}
+        <div className="hero-section rounded-2xl p-4 md:p-8 text-white">
           <div className="hero-grid" />
-          <div className="hero-glow top-0 right-0 animate-pulse" style={{ animationDuration: '4s' }} />
-          <div className="hero-glow bottom-0 left-1/4 animate-pulse" style={{ animationDuration: '5s', animationDelay: '1s' }} />
-          
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-teal-400/20 rounded-full translate-y-1/2 -translate-x-1/2 blur-2xl" />
+          <div className="hidden md:block">
+            <div className="hero-glow top-0 right-0 animate-pulse" style={{ animationDuration: '4s' }} />
+            <div className="hero-glow bottom-0 left-1/4 animate-pulse" style={{ animationDuration: '5s', animationDelay: '1s' }} />
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-teal-400/20 rounded-full translate-y-1/2 -translate-x-1/2 blur-2xl" />
+          </div>
           
           <div className="relative z-10">
-            {/* Top row with greeting and clock */}
-            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
-              <div className="animate-fade-in">
-                <div className="flex items-center gap-3">
-                  <Zap className="h-8 w-8 text-amber-400 animate-pulse" />
-                  <h1 className="text-3xl lg:text-4xl font-bold tracking-tight">
+            {/* Mobile: Compact greeting with inline clock */}
+            <div className="md:hidden">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Zap className="h-6 w-6 text-amber-400" />
+                  <h1 className="text-xl font-bold tracking-tight">
                     {getGreeting()}!
                   </h1>
                 </div>
-                <p className="text-emerald-100 mt-1 text-lg">
-                  Welcome to your STS TaxRepair command center
-                </p>
+                <LiveClockWidget />
               </div>
-              <LiveClockWidget />
-            </div>
-            
-            {/* Bottom row with stats and actions */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 hover:bg-white/30 transition-colors duration-300 border border-white/10">
-                  <CheckCircle2 className="h-4 w-4" />
-                  <span className="text-sm font-medium">{totalClients} Active Clients</span>
+              
+              {/* Mobile 2x2 Quick Actions Grid */}
+              <div className="grid grid-cols-2 gap-2 mb-3 w-full">
+                <Link href="/clients" className="block w-full">
+                  <Button 
+                    className="w-full h-14 bg-white/20 hover:bg-white/30 border border-white/20 flex-col gap-1"
+                    variant="ghost"
+                    data-testid="mobile-quick-clients"
+                  >
+                    <Users className="h-5 w-5" />
+                    <span className="text-xs font-medium">Clients</span>
+                  </Button>
+                </Link>
+                <Link href="/documents" className="block w-full">
+                  <Button 
+                    className="w-full h-14 bg-white/20 hover:bg-white/30 border border-white/20 flex-col gap-1"
+                    variant="ghost"
+                    data-testid="mobile-quick-documents"
+                  >
+                    <FileText className="h-5 w-5" />
+                    <span className="text-xs font-medium">Documents</span>
+                  </Button>
+                </Link>
+                <Link href="/tasks" className="block w-full">
+                  <Button 
+                    className="w-full h-14 bg-white/20 hover:bg-white/30 border border-white/20 flex-col gap-1"
+                    variant="ghost"
+                    data-testid="mobile-quick-tasks"
+                  >
+                    <ClipboardList className="h-5 w-5" />
+                    <span className="text-xs font-medium">Tasks</span>
+                  </Button>
+                </Link>
+                <Link href="/appointments" className="block w-full">
+                  <Button 
+                    className="w-full h-14 bg-white/20 hover:bg-white/30 border border-white/20 flex-col gap-1"
+                    variant="ghost"
+                    data-testid="mobile-quick-appointments"
+                  >
+                    <Calendar className="h-5 w-5" />
+                    <span className="text-xs font-medium">Appointments</span>
+                  </Button>
+                </Link>
+              </div>
+              
+              {/* Mobile Stats Row - horizontal scroll */}
+              <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory -mx-1 px-1 pb-1 scrollbar-hide">
+                <div className="flex-shrink-0 snap-start flex items-center gap-2 bg-white/15 rounded-lg px-3 py-2 border border-white/10">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-200" />
+                  <div className="text-sm">
+                    <span className="font-bold">{totalClients}</span>
+                    <span className="text-white/70 ml-1">Clients</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 hover:bg-white/30 transition-colors duration-300 border border-white/10">
-                  <FileText className="h-4 w-4" />
-                  <span className="text-sm font-medium">{totalDocuments.toLocaleString()} Documents</span>
+                <div className="flex-shrink-0 snap-start flex items-center gap-2 bg-white/15 rounded-lg px-3 py-2 border border-white/10">
+                  <FileText className="h-4 w-4 text-blue-200" />
+                  <div className="text-sm">
+                    <span className="font-bold">{totalDocuments.toLocaleString()}</span>
+                    <span className="text-white/70 ml-1">Docs</span>
+                  </div>
+                </div>
+                <div className="flex-shrink-0 snap-start flex items-center gap-2 bg-white/15 rounded-lg px-3 py-2 border border-white/10">
+                  <UserPlus className="h-4 w-4 text-amber-200" />
+                  <div className="text-sm">
+                    <span className="font-bold">{activeLeads}</span>
+                    <span className="text-white/70 ml-1">Leads</span>
+                  </div>
+                </div>
+                <div className="flex-shrink-0 snap-start flex items-center gap-2 bg-white/15 rounded-lg px-3 py-2 border border-white/10">
+                  <ClipboardList className="h-4 w-4 text-violet-200" />
+                  <div className="text-sm">
+                    <span className="font-bold">{openTasks}</span>
+                    <span className="text-white/70 ml-1">Tasks</span>
+                  </div>
                 </div>
                 <TaxDeadlineCountdown />
               </div>
-              <div className="flex items-center gap-3">
-                <Link href="/clients">
-                  <Button 
-                    size="lg" 
-                    className="bg-white text-emerald-600 hover:bg-emerald-50 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
-                    data-testid="button-view-clients"
-                  >
-                    <Users className="h-4 w-4 mr-2" />
-                    View Clients
-                  </Button>
-                </Link>
-                <Link href="/documents">
-                  <Button 
-                    size="lg" 
-                    variant="outline" 
-                    className="border-white/30 text-white hover:bg-white/20 backdrop-blur-sm hover:scale-105 transition-all duration-300"
-                    data-testid="button-view-documents"
-                  >
-                    <FileText className="h-4 w-4 mr-2" />
-                    Documents
-                  </Button>
-                </Link>
+            </div>
+
+            {/* Desktop: Full layout */}
+            <div className="hidden md:block">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
+                <div>
+                  <div className="flex items-center gap-3">
+                    <Zap className="h-8 w-8 text-amber-400 animate-pulse" />
+                    <h1 className="text-3xl lg:text-4xl font-bold tracking-tight">
+                      {getGreeting()}!
+                    </h1>
+                  </div>
+                  <p className="text-emerald-100 mt-1 text-lg">
+                    Welcome to your STS TaxRepair command center
+                  </p>
+                </div>
+                <LiveClockWidget />
+              </div>
+              
+              {/* Desktop stats and actions */}
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 hover:bg-white/30 transition-colors duration-300 border border-white/10">
+                    <CheckCircle2 className="h-4 w-4" />
+                    <span className="text-sm font-medium">{totalClients} Active Clients</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 hover:bg-white/30 transition-colors duration-300 border border-white/10">
+                    <FileText className="h-4 w-4" />
+                    <span className="text-sm font-medium">{totalDocuments.toLocaleString()} Documents</span>
+                  </div>
+                  <TaxDeadlineCountdown />
+                </div>
+                <div className="flex items-center gap-3">
+                  <Link href="/clients">
+                    <Button 
+                      size="lg" 
+                      className="bg-white text-emerald-600 hover:bg-emerald-50 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
+                      data-testid="button-view-clients"
+                    >
+                      <Users className="h-4 w-4 mr-2" />
+                      View Clients
+                    </Button>
+                  </Link>
+                  <Link href="/documents">
+                    <Button 
+                      size="lg" 
+                      variant="outline" 
+                      className="border-white/30 text-white hover:bg-white/20 backdrop-blur-sm hover:scale-105 transition-all duration-300"
+                      data-testid="button-view-documents"
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      Documents
+                    </Button>
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
@@ -586,8 +716,8 @@ export default function Dashboard() {
           </div>
         ) : (
           <>
-            {/* Quick Actions - Prominent CTA Section */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-slide-up" style={{ animationDelay: '350ms' }}>
+            {/* Quick Actions - Hidden on mobile (shown in hero), visible on desktop */}
+            <div className="hidden md:grid grid-cols-1 md:grid-cols-3 gap-4 animate-slide-up" style={{ animationDelay: '350ms' }}>
               <Link href="/clients">
                 <Card className="quick-action-card glass-card border-0 cursor-pointer group hover:shadow-xl transition-all">
                   <CardContent className="p-6">
@@ -638,8 +768,8 @@ export default function Dashboard() {
               </Link>
             </div>
 
-            {/* Stats Grid - horizontal scroll on mobile, grid on desktop */}
-            <div className="flex overflow-x-auto snap-x snap-mandatory md:grid md:grid-cols-2 lg:grid-cols-4 gap-4 pb-2 md:pb-0 -mx-3 px-3 md:mx-0 md:px-0 md:overflow-visible scrollbar-hide">
+            {/* Stats Grid - Hidden on mobile (summary in hero), visible on desktop */}
+            <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-4">
               <StatCard
                 title="Total Clients"
                 value={totalClients.toLocaleString()}
