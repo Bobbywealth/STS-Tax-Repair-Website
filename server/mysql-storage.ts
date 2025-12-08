@@ -2101,14 +2101,23 @@ export class MySQLStorage implements IStorage {
     return (result as any)[0]?.count || 0;
   }
 
-  async markNotificationAsRead(id: string): Promise<Notification | undefined> {
+  async markNotificationAsRead(id: string, userId: string): Promise<Notification | undefined> {
+    const [existing] = await mysqlDb
+      .select()
+      .from(notificationsTable)
+      .where(and(eq(notificationsTable.id, id), eq(notificationsTable.userId, userId)));
+    
+    if (!existing) {
+      return undefined;
+    }
+
     await mysqlDb
       .update(notificationsTable)
       .set({
         isRead: true,
         readAt: new Date()
       })
-      .where(eq(notificationsTable.id, id));
+      .where(and(eq(notificationsTable.id, id), eq(notificationsTable.userId, userId)));
     
     const [result] = await mysqlDb
       .select()
@@ -2130,10 +2139,20 @@ export class MySQLStorage implements IStorage {
       ));
   }
 
-  async deleteNotification(id: string): Promise<void> {
+  async deleteNotification(id: string, userId: string): Promise<boolean> {
+    const [existing] = await mysqlDb
+      .select()
+      .from(notificationsTable)
+      .where(and(eq(notificationsTable.id, id), eq(notificationsTable.userId, userId)));
+    
+    if (!existing) {
+      return false;
+    }
+
     await mysqlDb
       .delete(notificationsTable)
-      .where(eq(notificationsTable.id, id));
+      .where(and(eq(notificationsTable.id, id), eq(notificationsTable.userId, userId)));
+    return true;
   }
 
   async deleteOldNotifications(daysOld: number = 30): Promise<number> {

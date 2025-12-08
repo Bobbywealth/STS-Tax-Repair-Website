@@ -6016,10 +6016,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { id } = req.params;
-      const notification = await mysqlStorage.markNotificationAsRead(id);
+      const notification = await mysqlStorage.markNotificationAsRead(id, userId);
       
       if (!notification) {
-        return res.status(404).json({ error: "Notification not found" });
+        return res.status(404).json({ error: "Notification not found or access denied" });
       }
 
       res.json(notification);
@@ -6054,7 +6054,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { id } = req.params;
-      await mysqlStorage.deleteNotification(id);
+      const deleted = await mysqlStorage.deleteNotification(id, userId);
+      if (!deleted) {
+        return res.status(404).json({ error: "Notification not found or access denied" });
+      }
       res.json({ success: true });
     } catch (error: any) {
       console.error('Error deleting notification:', error);
