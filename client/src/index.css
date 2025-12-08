@@ -1393,7 +1393,11 @@
 
 /* ===== MOBILE IMPROVEMENTS ===== */
 
-/* Safe area for devices with home indicator (iPhone X+) */
+/* Safe area for devices with notch/dynamic island (iPhone X+) */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0);
+}
+
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0);
 }
