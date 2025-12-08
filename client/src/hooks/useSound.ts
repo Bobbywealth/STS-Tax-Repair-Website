@@ -268,10 +268,11 @@ export function getGlobalSound() {
       }
     };
 
+    const isSoundEnabled = () => localStorage.getItem(SOUND_ENABLED_KEY) !== 'false';
+
     globalSoundInstance = {
       play: (type: SoundType) => {
-        const stored = localStorage.getItem(SOUND_ENABLED_KEY);
-        if (stored === 'false') return;
+        if (!isSoundEnabled()) return;
         
         switch (type) {
           case 'click':
@@ -279,45 +280,52 @@ export function getGlobalSound() {
             break;
           case 'notification':
             playTone(523.25, 0.15, 'sine', 0.3);
-            setTimeout(() => playTone(659.25, 0.15, 'sine', 0.3), 100);
-            setTimeout(() => playTone(783.99, 0.2, 'sine', 0.3), 200);
+            setTimeout(() => { if (isSoundEnabled()) playTone(659.25, 0.15, 'sine', 0.3); }, 100);
+            setTimeout(() => { if (isSoundEnabled()) playTone(783.99, 0.2, 'sine', 0.3); }, 200);
             break;
           case 'success':
             playTone(440, 0.15, 'triangle', 0.25);
-            setTimeout(() => playTone(554.37, 0.15, 'triangle', 0.25), 80);
-            setTimeout(() => playTone(659.25, 0.2, 'triangle', 0.25), 160);
+            setTimeout(() => { if (isSoundEnabled()) playTone(554.37, 0.15, 'triangle', 0.25); }, 80);
+            setTimeout(() => { if (isSoundEnabled()) playTone(659.25, 0.2, 'triangle', 0.25); }, 160);
             break;
           case 'error':
             playTone(200, 0.12, 'sawtooth', 0.2);
-            setTimeout(() => playTone(180, 0.12, 'sawtooth', 0.2), 150);
+            setTimeout(() => { if (isSoundEnabled()) playTone(180, 0.12, 'sawtooth', 0.2); }, 150);
             break;
           case 'warning':
             playTone(440, 0.1, 'triangle', 0.25);
-            setTimeout(() => playTone(380, 0.15, 'triangle', 0.25), 100);
+            setTimeout(() => { if (isSoundEnabled()) playTone(380, 0.15, 'triangle', 0.25); }, 100);
             break;
         }
       },
-      playClick: () => playTone(800, 0.05, 'sine', 0.2),
+      playClick: () => {
+        if (!isSoundEnabled()) return;
+        playTone(800, 0.05, 'sine', 0.2);
+      },
       playNotification: () => {
+        if (!isSoundEnabled()) return;
         playTone(523.25, 0.15, 'sine', 0.3);
-        setTimeout(() => playTone(659.25, 0.15, 'sine', 0.3), 100);
-        setTimeout(() => playTone(783.99, 0.2, 'sine', 0.3), 200);
+        setTimeout(() => { if (isSoundEnabled()) playTone(659.25, 0.15, 'sine', 0.3); }, 100);
+        setTimeout(() => { if (isSoundEnabled()) playTone(783.99, 0.2, 'sine', 0.3); }, 200);
       },
       playSuccess: () => {
+        if (!isSoundEnabled()) return;
         playTone(440, 0.15, 'triangle', 0.25);
-        setTimeout(() => playTone(554.37, 0.15, 'triangle', 0.25), 80);
-        setTimeout(() => playTone(659.25, 0.2, 'triangle', 0.25), 160);
+        setTimeout(() => { if (isSoundEnabled()) playTone(554.37, 0.15, 'triangle', 0.25); }, 80);
+        setTimeout(() => { if (isSoundEnabled()) playTone(659.25, 0.2, 'triangle', 0.25); }, 160);
       },
       playError: () => {
+        if (!isSoundEnabled()) return;
         playTone(200, 0.12, 'sawtooth', 0.2);
-        setTimeout(() => playTone(180, 0.12, 'sawtooth', 0.2), 150);
+        setTimeout(() => { if (isSoundEnabled()) playTone(180, 0.12, 'sawtooth', 0.2); }, 150);
       },
       playWarning: () => {
+        if (!isSoundEnabled()) return;
         playTone(440, 0.1, 'triangle', 0.25);
-        setTimeout(() => playTone(380, 0.15, 'triangle', 0.25), 100);
+        setTimeout(() => { if (isSoundEnabled()) playTone(380, 0.15, 'triangle', 0.25); }, 100);
       },
       setEnabled: (value: boolean) => localStorage.setItem(SOUND_ENABLED_KEY, String(value)),
-      isEnabled: () => localStorage.getItem(SOUND_ENABLED_KEY) !== 'false',
+      isEnabled: isSoundEnabled,
     };
   }
   return globalSoundInstance;

@@ -294,7 +294,7 @@ export function NotificationBell() {
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                {soundEnabled ? 'Mute notifications' : 'Enable notification sounds'}
+                {soundEnabled ? 'Mute sounds' : 'Enable sounds'}
               </TooltipContent>
             </Tooltip>
             {unreadCount > 0 && (
