@@ -1,0 +1,350 @@
+2025-12-08T06:23:09Z clientIP="38.106.77.98" requestID="487f5048-a707-44ff" responseTimeMS=5786 responseBytes=369 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:23:09.980277749Z 6:23:09 AM [express] GET /api/documents/3d35015c-ce42-11f0-bf63-fa163e57a0f7/download 404 in 5784ms …
+2025-12-08T06:23:10Z clientIP="38.106.77.98" requestID="fd4237f6-479c-4868" responseTimeMS=44 responseBytes=1498 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:23:11Z clientIP="38.106.77.98" requestID="d6fff868-8358-4fc6" responseTimeMS=43 responseBytes=1305 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:26:50.310684295Z ==> Detected service running on port 10000
+2025-12-08T06:26:50.390863195Z ==> Docs on specifying a port: https://render.com/docs/web-services#port-binding
+2025-12-08T06:29:40Z clientIP="146.75.164.1" requestID="2846aff9-ac6c-4f32" responseTimeMS=8 responseBytes=1498 userAgent="Mozilla/5.0"
+2025-12-08T06:31:08.08604927Z [PERFEX] Downloading via FTP: uploads/clients/144/IMG_2183.png for document 3d35015c-ce42-11f0-bf63-fa163e57a0f7
+2025-12-08T06:31:08.086213664Z [FTP] Connecting to 198.12.220.248:21 as i28qwzd7d2dt...
+2025-12-08T06:31:08.12545702Z Connected to 198.12.220.248:21 (No encryption)
+2025-12-08T06:31:08.166235099Z < 220---------- Welcome to Pure-FTPd [privsep] [TLS] ----------
+2025-12-08T06:31:08.16626809Z 220-You are user number 1 of 500 allowed.
+2025-12-08T06:31:08.1662735Z 220-Local time is now 23:31. Server port: 21.
+2025-12-08T06:31:08.166295571Z 220-This is a private system - No anonymous login
+2025-12-08T06:31:08.166298601Z 220-IPv6 connections are also welcome on this server.
+2025-12-08T06:31:08.166301131Z 220 You will be disconnected after 15 minutes of inactivity.
+2025-12-08T06:31:08.166303631Z 
+2025-12-08T06:31:08.166555268Z > OPTS UTF8 ON
+2025-12-08T06:31:08.20528398Z < 504 Unknown command
+2025-12-08T06:31:08.205309711Z 
+2025-12-08T06:31:08.205442144Z Login security: No encryption
+2025-12-08T06:31:08.205622559Z > USER i28qwzd7d2dt
+2025-12-08T06:31:08.244921197Z < 331 User i28qwzd7d2dt OK. Password required
+2025-12-08T06:31:08.244946928Z 
+2025-12-08T06:31:08.244965718Z > PASS ###
+2025-12-08T06:31:13.320202825Z < 230-Your bandwidth usage is restricted
+2025-12-08T06:31:13.320236616Z 230 OK. Current restricted directory is /
+2025-12-08T06:31:13.320241316Z 
+2025-12-08T06:31:13.320523024Z > FEAT
+2025-12-08T06:31:13.360905081Z < 211-Extensions supported:
+2025-12-08T06:31:13.360946413Z  UTF8
+2025-12-08T06:31:13.360951213Z  EPRT
+2025-12-08T06:31:13.360954943Z  IDLE
+2025-12-08T06:31:13.360958533Z  MDTM
+2025-12-08T06:31:13.360962273Z  SIZE
+2025-12-08T06:31:13.360965903Z  MFMT
+2025-12-08T06:31:13.360969523Z  REST STREAM
+2025-12-08T06:31:13.360973633Z  MLST type*;size*;sizd*;modify*;UNIX.mode*;UNIX.uid*;UNIX.gid*;unique*;
+2025-12-08T06:31:13.360977733Z  MLSD
+2025-12-08T06:31:13.360981423Z  PRET
+2025-12-08T06:31:13.360985194Z  AUTH TLS
+2025-12-08T06:31:13.360988784Z  PBSZ
+2025-12-08T06:31:13.360992604Z  PROT
+2025-12-08T06:31:13.360996304Z  TVFS
+2025-12-08T06:31:13.360999944Z  ESTA
+2025-12-08T06:31:13.361003784Z  PASV
+2025-12-08T06:31:13.361007354Z  EPSV
+2025-12-08T06:31:13.361011104Z  ESTP
+2025-12-08T06:31:13.361014654Z 211 End.
+2025-12-08T06:31:13.361018215Z 
+2025-12-08T06:31:13Z clientIP="38.106.77.98" requestID="5d7ea2ea-62f2-49d3" responseTimeMS=5805 responseBytes=369 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:31:13Z clientIP="38.106.77.98" requestID="ec096900-7431-414f" responseTimeMS=84 responseBytes=321 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:31:13.361021804Z > TYPE I
+2025-12-08T06:31:13.396703652Z < 200 TYPE is now 8-bit binary
+2025-12-08T06:31:13.396728323Z 
+2025-12-08T06:31:13.397468243Z > STRU F
+2025-12-08T06:31:13.434940741Z < 200 F OK
+2025-12-08T06:31:13.434959871Z 
+2025-12-08T06:31:13.435178057Z > OPTS UTF8 ON
+2025-12-08T06:31:13.473184159Z < 504 Unknown command
+2025-12-08T06:31:13.47320984Z 
+2025-12-08T06:31:13.473471297Z > OPTS MLST type;size;modify;unique;unix.mode;unix.owner;unix.group;unix.ownername;unix.groupname;
+2025-12-08T06:31:13.511234392Z < 200  MLST OPTS type;size;sizd;modify;UNIX.mode;UNIX.uid;UNIX.gid;unique;
+2025-12-08T06:31:13.511252783Z 
+2025-12-08T06:31:13.511536411Z > PWD
+2025-12-08T06:31:13.549505732Z < 257 "/" is your current location
+2025-12-08T06:31:13.549542733Z 
+2025-12-08T06:31:13.549725087Z [FTP] Connected successfully. Current directory: /
+2025-12-08T06:31:13.549763009Z [FTP] Streaming file: public_html/ststaxrepair.org/uploads/clients/144/IMG_2183.png
+2025-12-08T06:31:13.549977445Z > SIZE public_html/ststaxrepair.org/uploads/clients/144/IMG_2183.png
+2025-12-08T06:31:13.587944836Z < 550 Can't check for file existence
+2025-12-08T06:31:13.587971126Z 
+2025-12-08T06:31:13.58811723Z [FTP] File not found: public_html/ststaxrepair.org/uploads/clients/144/IMG_2183.png
+2025-12-08T06:31:13.588174872Z > QUIT
+2025-12-08T06:31:13.630761711Z 6:31:13 AM [express] GET /api/documents/3d35015c-ce42-11f0-bf63-fa163e57a0f7/download 404 in 5801ms …
+2025-12-08T06:31:15Z clientIP="38.106.77.98" requestID="ab803303-3fe8-4fa6" responseTimeMS=83 responseBytes=320 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:32:07.441345615Z ==> Deploying...
+2025-12-08T06:32:34.543028837Z ==> Running 'yarn start'
+2025-12-08T06:32:35.131640144Z yarn run v1.22.22
+2025-12-08T06:32:35.212177019Z $ NODE_ENV=production node dist/index.js
+2025-12-08T06:32:39.140018205Z [EMAIL] ============================================
+2025-12-08T06:32:39.140476676Z [EMAIL] EMAIL SYSTEM STARTUP DIAGNOSTICS
+2025-12-08T06:32:39.140482656Z [EMAIL] ============================================
+2025-12-08T06:32:39.140499336Z [EMAIL] APP_URL: https://sts-tax-repair-website.onrender.com
+2025-12-08T06:32:39.140577438Z [EMAIL] FROM_EMAIL: ststaxrepair@gmail.com
+2025-12-08T06:32:39.140603449Z [EMAIL] SENDGRID_API_KEY configured: YES (key starts with: SG.nbIpm_Q...)
+2025-12-08T06:32:39.140629389Z [EMAIL] NODE_ENV: production
+2025-12-08T06:32:39.140757103Z [EMAIL] RENDER_EXTERNAL_URL: https://sts-tax-repair-website.onrender.com
+2025-12-08T06:32:39.140774583Z [EMAIL] ============================================
+2025-12-08T06:32:39.141120812Z [EMAIL] SendGrid API key has been set successfully
+2025-12-08T06:32:40.431783956Z Not running on Replit - Replit Auth disabled, using email/password auth only
+2025-12-08T06:32:40.4493375Z 6:32:40 AM [express] serving on port 10000
+2025-12-08T06:32:41.882061001Z ==> Your service is live 🎉
+2025-12-08T06:32:41.941017826Z ==> 
+2025-12-08T06:32:41.973055293Z ==> ///////////////////////////////////////////////////////////
+2025-12-08T06:32:42Z clientIP="35.247.111.159" requestID="e7803cba-d9dc-469f" responseTimeMS=5 responseBytes=1498 userAgent="Go-http-client/2.0"
+2025-12-08T06:32:42.006209831Z ==> 
+2025-12-08T06:32:42.218361553Z ==> Available at your primary URL https://ststaxrepair.org + 2 more domains
+2025-12-08T06:32:42.259544859Z ==> 
+2025-12-08T06:32:42.291504177Z ==> ///////////////////////////////////////////////////////////
+2025-12-08T06:33:10Z clientIP="38.106.77.98" requestID="c07662dd-37fe-4a0b" responseTimeMS=172 responseBytes=232 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:10.921846975Z 6:33:10 AM [express] GET /api/notifications/count 304 in 168ms :: {"count":2}
+2025-12-08T06:33:12Z clientIP="38.106.77.98" requestID="a6d79faf-abd0-446c" responseTimeMS=171 responseBytes=25661 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:12Z clientIP="38.106.77.98" requestID="e4fb50c9-dee5-4c32" responseTimeMS=48 responseBytes=1498 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:12Z clientIP="38.106.77.98" requestID="088af378-9146-4240" responseTimeMS=42 responseBytes=9845 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:12Z clientIP="38.106.77.98" requestID="dd1868a8-f346-40ee" responseTimeMS=208 responseBytes=168458 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:13Z clientIP="38.106.77.98" requestID="10e1ee2f-c4e8-4e4c" responseTimeMS=50 responseBytes=821 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:13Z clientIP="38.106.77.98" requestID="45ea0da5-57ec-4a49" responseTimeMS=121 responseBytes=234 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:13Z clientIP="38.106.77.98" requestID="006b31ba-891e-4d93" responseTimeMS=168 responseBytes=7929 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:13Z clientIP="38.106.77.98" requestID="498a2be4-1f8d-4fa3" responseTimeMS=45 responseBytes=781 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:13Z clientIP="38.106.77.98" requestID="ce41942f-9dd2-41f4" responseTimeMS=43 responseBytes=1837 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:13Z clientIP="38.106.77.98" requestID="1413f2df-ec83-426d" responseTimeMS=75 responseBytes=709 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:13Z clientIP="38.106.77.98" requestID="3d906a93-6e4d-4aa7" responseTimeMS=169 responseBytes=800 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:13Z clientIP="38.106.77.98" requestID="b49be60d-c3c4-44c7" responseTimeMS=62 responseBytes=1199 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:13Z clientIP="38.106.77.98" requestID="ce858f90-8882-4de4" responseTimeMS=169 responseBytes=234 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:13Z clientIP="38.106.77.98" requestID="d044e23d-6b6b-4b58" responseTimeMS=84 responseBytes=736 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:13Z clientIP="38.106.77.98" requestID="43ca5d0b-b894-482f" responseTimeMS=64 responseBytes=702 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:13Z clientIP="38.106.77.98" requestID="748a3b21-dcbd-40a2" responseTimeMS=49 responseBytes=7246 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:13Z clientIP="38.106.77.98" requestID="265c80e2-d611-4079" responseTimeMS=275 responseBytes=315664 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:13Z clientIP="38.106.77.98" requestID="ff7a9de1-535f-4bb5" responseTimeMS=165 responseBytes=721 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:13Z clientIP="38.106.77.98" requestID="b6bcbf63-f723-4dab" responseTimeMS=53 responseBytes=785 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:13Z clientIP="38.106.77.98" requestID="2aceed0d-bd02-4861" responseTimeMS=170 responseBytes=833 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:13Z clientIP="38.106.77.98" requestID="7d40f57b-78ae-43cc" responseTimeMS=166 responseBytes=731 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:13Z clientIP="38.106.77.98" requestID="ad205775-1229-4804" responseTimeMS=79 responseBytes=1290 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:13Z clientIP="38.106.77.98" requestID="429e9d99-58d6-4f35" responseTimeMS=82 responseBytes=763 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:13Z clientIP="38.106.77.98" requestID="55a3443f-8468-489c" responseTimeMS=80 responseBytes=233 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:13Z clientIP="38.106.77.98" requestID="b75564ee-8ed7-4af4" responseTimeMS=159 responseBytes=232 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:13Z clientIP="38.106.77.98" requestID="c9351887-e080-4c39" responseTimeMS=164 responseBytes=700 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:13Z clientIP="38.106.77.98" requestID="70b6f054-6632-483c" responseTimeMS=169 responseBytes=831 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:13Z clientIP="38.106.77.98" requestID="3fd6aa46-faf6-4d60" responseTimeMS=68 responseBytes=834 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:13Z clientIP="38.106.77.98" requestID="30e735a6-410b-4307" responseTimeMS=83 responseBytes=620 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:13.185943347Z 6:33:13 AM [express] GET /api/auth/user 304 in 121ms :: {"id":"45545974","email":"bobbycraig1293@gma…
+2025-12-08T06:33:13.405182418Z 6:33:13 AM [express] GET /api/branding 304 in 79ms :: {"companyName":"STS TaxRepair","logoUrl":null,…
+2025-12-08T06:33:13.476849117Z 6:33:13 AM [express] GET /api/notifications/count 304 in 159ms :: {"count":2}
+2025-12-08T06:33:13.484342473Z 6:33:13 AM [express] GET /api/auth/permissions 304 in 164ms :: {"role":"admin","permissions":["dashb…
+2025-12-08T06:33:14Z clientIP="38.106.77.98" requestID="8523848a-9b0f-4990" responseTimeMS=162 responseBytes=232 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:14Z clientIP="38.106.77.98" requestID="36b2aebb-b55a-4dcb" responseTimeMS=164 responseBytes=235 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:14Z clientIP="38.106.77.98" requestID="62fee64a-cbea-4937" responseTimeMS=165 responseBytes=234 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:14.105982702Z 6:33:14 AM [express] GET /api/users/perfex-144 304 in 165ms :: {"id":"perfex-144","email":"chachipag…
+2025-12-08T06:33:14.124900601Z 6:33:14 AM [express] GET /api/tax-filings/client/perfex-144 304 in 160ms :: []
+2025-12-08T06:33:14.514026829Z 6:33:14 AM [express] GET /api/documents/perfex-144 304 in 163ms :: [{"id":"23daab2c-ce42-11f0-bf63-f…
+2025-12-08T06:33:16.899552515Z [DOWNLOAD] Document 23daab2c-ce42-11f0-bf63-fa163e57a0f7, original URL: /perfex-uploads/uploads/customers/144/2023 Tax Return Documents (PAGAN DESIREE).pdf, normalized: /perfex-uploads/uploads/customers/144/2023 Tax Return Documents (PAGAN DESIREE).pdf
+2025-12-08T06:33:16.899675558Z [PERFEX] Downloading via FTP: uploads/clients/144/2023 Tax Return Documents (PAGAN DESIREE).pdf for document 23daab2c-ce42-11f0-bf63-fa163e57a0f7
+2025-12-08T06:33:16.900502288Z [FTP] Connecting to 198.12.220.248:21 as i28qwzd7d2dt...
+2025-12-08T06:33:16.940902941Z Connected to 198.12.220.248:21 (No encryption)
+2025-12-08T06:33:16.979805237Z < 220---------- Welcome to Pure-FTPd [privsep] [TLS] ----------
+2025-12-08T06:33:16.979825357Z 220-You are user number 1 of 500 allowed.
+2025-12-08T06:33:16.979828937Z 220-Local time is now 23:33. Server port: 21.
+2025-12-08T06:33:16.979831947Z 220-This is a private system - No anonymous login
+2025-12-08T06:33:16.979834808Z 220-IPv6 connections are also welcome on this server.
+2025-12-08T06:33:16.979837717Z 220 You will be disconnected after 15 minutes of inactivity.
+2025-12-08T06:33:16.979841228Z 
+2025-12-08T06:33:16.980480353Z > OPTS UTF8 ON
+2025-12-08T06:33:17.029929891Z < 504 Unknown command
+2025-12-08T06:33:17.029942531Z 
+2025-12-08T06:33:17.030417543Z Login security: No encryption
+2025-12-08T06:33:17.030572257Z > USER i28qwzd7d2dt
+2025-12-08T06:33:17.068699693Z < 331 User i28qwzd7d2dt OK. Password required
+2025-12-08T06:33:17.068713963Z 
+2025-12-08T06:33:17.068937119Z > PASS ###
+2025-12-08T06:33:22.176498412Z < 230-Your bandwidth usage is restricted
+2025-12-08T06:33:22.176526783Z 230 OK. Current restricted directory is /
+2025-12-08T06:33:22.176529713Z 
+2025-12-08T06:33:22.176902813Z > FEAT
+2025-12-08T06:33:22.214990268Z < 211-Extensions supported:
+2025-12-08T06:33:22.215022249Z  UTF8
+2025-12-08T06:33:22.215028489Z  EPRT
+2025-12-08T06:33:22.215030989Z  IDLE
+2025-12-08T06:33:22.215033189Z  MDTM
+2025-12-08T06:33:22.215035409Z  SIZE
+2025-12-08T06:33:22.215037549Z  MFMT
+2025-12-08T06:33:22.215039959Z  REST STREAM
+2025-12-08T06:33:22.215042819Z  MLST type*;size*;sizd*;modify*;UNIX.mode*;UNIX.uid*;UNIX.gid*;unique*;
+2025-12-08T06:33:22.215045079Z  MLSD
+2025-12-08T06:33:22.215047279Z  PRET
+2025-12-08T06:33:22.215049499Z  AUTH TLS
+2025-12-08T06:33:22.215051669Z  PBSZ
+2025-12-08T06:33:22.21505384Z  PROT
+2025-12-08T06:33:22.21505602Z  TVFS
+2025-12-08T06:33:22.21505815Z  ESTA
+2025-12-08T06:33:22.21506029Z  PASV
+2025-12-08T06:33:22.21506234Z  EPSV
+2025-12-08T06:33:22.21506452Z  ESTP
+2025-12-08T06:33:22.21506704Z 211 End.
+2025-12-08T06:33:22.21506904Z 
+2025-12-08T06:33:22.21547755Z > TYPE I
+2025-12-08T06:33:22.253548085Z < 200 TYPE is now 8-bit binary
+2025-12-08T06:33:22.253569395Z 
+2025-12-08T06:33:22.254041207Z > STRU F
+2025-12-08T06:33:22.295134147Z < 200 F OK
+2025-12-08T06:33:22.295145647Z 
+2025-12-08T06:33:22.295382603Z > OPTS UTF8 ON
+2025-12-08T06:33:22.334060643Z < 504 Unknown command
+2025-12-08T06:33:22.334075353Z 
+2025-12-08T06:33:22.334312869Z > OPTS MLST type;size;modify;unique;unix.mode;unix.owner;unix.group;unix.ownername;unix.groupname;
+2025-12-08T06:33:22.373899052Z < 200  MLST OPTS type;size;sizd;modify;UNIX.mode;UNIX.uid;UNIX.gid;unique;
+2025-12-08T06:33:22.373922783Z 
+2025-12-08T06:33:22.374260471Z > PWD
+2025-12-08T06:33:22.413099715Z < 257 "/" is your current location
+2025-12-08T06:33:22.413121315Z 
+2025-12-08T06:33:22Z clientIP="38.106.77.98" requestID="f528bec4-42f7-49e8" responseTimeMS=43 responseBytes=1498 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:22Z clientIP="38.106.77.98" requestID="23dd6a2e-9dbc-48f4" responseTimeMS=5722 responseBytes=369 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:22.413278919Z [FTP] Connected successfully. Current directory: /
+2025-12-08T06:33:22.41329788Z [FTP] Streaming file: public_html/ststaxrepair.org/uploads/clients/144/2023 Tax Return Documents (PAGAN DESIREE).pdf
+2025-12-08T06:33:22.413693129Z > SIZE public_html/ststaxrepair.org/uploads/clients/144/2023 Tax Return Documents (PAGAN DESIREE).pdf
+2025-12-08T06:33:22.452412071Z < 550 Can't check for file existence
+2025-12-08T06:33:22.452439841Z 
+2025-12-08T06:33:22.452732558Z [FTP] File not found: public_html/ststaxrepair.org/uploads/clients/144/2023 Tax Return Documents (PAGAN DESIREE).pdf
+2025-12-08T06:33:22.452955624Z > QUIT
+2025-12-08T06:33:22.495420818Z 6:33:22 AM [express] GET /api/documents/23daab2c-ce42-11f0-bf63-fa163e57a0f7/download 404 in 5720ms …
+2025-12-08T06:33:24Z clientIP="38.106.77.98" requestID="f6d8c111-4456-4436" responseTimeMS=43 responseBytes=1305 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:27.639985719Z [DOWNLOAD] Document 43d6a443-ce42-11f0-bf63-fa163e57a0f7, original URL: /perfex-uploads/uploads/customers/144/IMG_2129.jpeg, normalized: /perfex-uploads/uploads/customers/144/IMG_2129.jpeg
+2025-12-08T06:33:27.640131593Z [PERFEX] Downloading via FTP: uploads/clients/144/IMG_2129.jpeg for document 43d6a443-ce42-11f0-bf63-fa163e57a0f7
+2025-12-08T06:33:27.640272007Z [FTP] Connecting to 198.12.220.248:21 as i28qwzd7d2dt...
+2025-12-08T06:33:27.701681881Z Connected to 198.12.220.248:21 (No encryption)
+2025-12-08T06:33:27.727356738Z < 220---------- Welcome to Pure-FTPd [privsep] [TLS] ----------
+2025-12-08T06:33:27.727382058Z 220-You are user number 1 of 500 allowed.
+2025-12-08T06:33:27.727385058Z 220-Local time is now 23:33. Server port: 21.
+2025-12-08T06:33:27.727387999Z 220-This is a private system - No anonymous login
+2025-12-08T06:33:27.727391049Z 220-IPv6 connections are also welcome on this server.
+2025-12-08T06:33:27.727407809Z 220 You will be disconnected after 15 minutes of inactivity.
+2025-12-08T06:33:27.727410469Z 
+2025-12-08T06:33:27.727607394Z > OPTS UTF8 ON
+2025-12-08T06:33:27.765495074Z < 504 Unknown command
+2025-12-08T06:33:27.765510455Z 
+2025-12-08T06:33:27.765693679Z Login security: No encryption
+2025-12-08T06:33:27.765842863Z > USER i28qwzd7d2dt
+2025-12-08T06:33:27.805101937Z < 331 User i28qwzd7d2dt OK. Password required
+2025-12-08T06:33:27.805125788Z 
+2025-12-08T06:33:27.805141738Z > PASS ###
+2025-12-08T06:33:27.879687448Z < 230-Your bandwidth usage is restricted
+2025-12-08T06:33:27.879710279Z 230 OK. Current restricted directory is /
+2025-12-08T06:33:27.879713169Z 
+2025-12-08T06:33:27.880017977Z > FEAT
+2025-12-08T06:33:27.918295187Z < 211-Extensions supported:
+2025-12-08T06:33:27.918328977Z  UTF8
+2025-12-08T06:33:27.918332717Z  EPRT
+2025-12-08T06:33:27.918335578Z  IDLE
+2025-12-08T06:33:27.918337898Z  MDTM
+2025-12-08T06:33:27.918340598Z  SIZE
+2025-12-08T06:33:27.918343398Z  MFMT
+2025-12-08T06:33:27.918346158Z  REST STREAM
+2025-12-08T06:33:27.918349638Z  MLST type*;size*;sizd*;modify*;UNIX.mode*;UNIX.uid*;UNIX.gid*;unique*;
+2025-12-08T06:33:27.918352388Z  MLSD
+2025-12-08T06:33:27.918355108Z  PRET
+2025-12-08T06:33:27.918357398Z  AUTH TLS
+2025-12-08T06:33:27.918359968Z  PBSZ
+2025-12-08T06:33:27.918362668Z  PROT
+2025-12-08T06:33:27.918365218Z  TVFS
+2025-12-08T06:33:27.918367849Z  ESTA
+2025-12-08T06:33:27.918370278Z  PASV
+2025-12-08T06:33:27.918372389Z  EPSV
+2025-12-08T06:33:27.918374399Z  ESTP
+2025-12-08T06:33:27.918376339Z 211 End.
+2025-12-08T06:33:27.918378259Z 
+2025-12-08T06:33:27.918562763Z > TYPE I
+2025-12-08T06:33:27.956583007Z < 200 TYPE is now 8-bit binary
+2025-12-08T06:33:27.956595617Z 
+2025-12-08T06:33:27.956758741Z > STRU F
+2025-12-08T06:33:27.994939079Z < 200 F OK
+2025-12-08T06:33:27.994956989Z 
+2025-12-08T06:33:27.995181795Z > OPTS UTF8 ON
+2025-12-08T06:33:28Z clientIP="38.106.77.98" requestID="3a9a4ccd-cc4c-408a" responseTimeMS=679 responseBytes=369 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:28Z clientIP="38.106.77.98" requestID="7ac66a4d-8349-4190" responseTimeMS=84 responseBytes=321 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:28.037179417Z < 504 Unknown command
+2025-12-08T06:33:28.037198758Z 
+2025-12-08T06:33:28.037440034Z > OPTS MLST type;size;modify;unique;unix.mode;unix.owner;unix.group;unix.ownername;unix.groupname;
+2025-12-08T06:33:28.078154054Z < 200  MLST OPTS type;size;sizd;modify;UNIX.mode;UNIX.uid;UNIX.gid;unique;
+2025-12-08T06:33:28.078176435Z 
+2025-12-08T06:33:28.078348059Z > PWD
+2025-12-08T06:33:28.11705542Z < 257 "/" is your current location
+2025-12-08T06:33:28.11706755Z 
+2025-12-08T06:33:28.117210693Z [FTP] Connected successfully. Current directory: /
+2025-12-08T06:33:28.117217284Z [FTP] Streaming file: public_html/ststaxrepair.org/uploads/clients/144/IMG_2129.jpeg
+2025-12-08T06:33:28.117353967Z > SIZE public_html/ststaxrepair.org/uploads/clients/144/IMG_2129.jpeg
+2025-12-08T06:33:28.155403271Z < 550 Can't check for file existence
+2025-12-08T06:33:28.155413442Z 
+2025-12-08T06:33:28.155493154Z [FTP] File not found: public_html/ststaxrepair.org/uploads/clients/144/IMG_2129.jpeg
+2025-12-08T06:33:28.155601836Z > QUIT
+2025-12-08T06:33:28.198140392Z 6:33:28 AM [express] GET /api/documents/43d6a443-ce42-11f0-bf63-fa163e57a0f7/download 404 in 677ms :…
+2025-12-08T06:33:30Z clientIP="38.106.77.98" requestID="9e0fdedb-8fc2-4625" responseTimeMS=81 responseBytes=320 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:30.454929763Z [DOWNLOAD] Document 43d6a443-ce42-11f0-bf63-fa163e57a0f7, original URL: /perfex-uploads/uploads/customers/144/IMG_2129.jpeg, normalized: /perfex-uploads/uploads/customers/144/IMG_2129.jpeg
+2025-12-08T06:33:30.454950433Z [PERFEX] Downloading via FTP: uploads/clients/144/IMG_2129.jpeg for document 43d6a443-ce42-11f0-bf63-fa163e57a0f7
+2025-12-08T06:33:30.455059856Z [FTP] Connecting to 198.12.220.248:21 as i28qwzd7d2dt...
+2025-12-08T06:33:30.494360211Z Connected to 198.12.220.248:21 (No encryption)
+2025-12-08T06:33:30.53461532Z < 220---------- Welcome to Pure-FTPd [privsep] [TLS] ----------
+2025-12-08T06:33:30.534641531Z 220-You are user number 1 of 500 allowed.
+2025-12-08T06:33:30.534645161Z 220-Local time is now 23:33. Server port: 21.
+2025-12-08T06:33:30.534647911Z 220-This is a private system - No anonymous login
+2025-12-08T06:33:30.534650411Z 220-IPv6 connections are also welcome on this server.
+2025-12-08T06:33:30.534653731Z 220 You will be disconnected after 15 minutes of inactivity.
+2025-12-08T06:33:30.534656221Z 
+2025-12-08T06:33:30.534964429Z > OPTS UTF8 ON
+2025-12-08T06:33:30.572743887Z < 504 Unknown command
+2025-12-08T06:33:30.572766227Z 
+2025-12-08T06:33:30.57290496Z Login security: No encryption
+2025-12-08T06:33:30.573066295Z > USER i28qwzd7d2dt
+2025-12-08T06:33:30.611005506Z < 331 User i28qwzd7d2dt OK. Password required
+2025-12-08T06:33:30.611022117Z 
+2025-12-08T06:33:30.611036067Z > PASS ###
+2025-12-08T06:33:30.712640219Z < 230-Your bandwidth usage is restricted
+2025-12-08T06:33:30.712653889Z 230 OK. Current restricted directory is /
+2025-12-08T06:33:30.712657409Z 
+2025-12-08T06:33:30.712882235Z > FEAT
+2025-12-08T06:33:30.753200975Z < 211-Extensions supported:
+2025-12-08T06:33:30.753234746Z  UTF8
+2025-12-08T06:33:30.753237946Z  EPRT
+2025-12-08T06:33:30.753240366Z  IDLE
+2025-12-08T06:33:30.753242426Z  MDTM
+2025-12-08T06:33:30.753244616Z  SIZE
+2025-12-08T06:33:30.753246756Z  MFMT
+2025-12-08T06:33:30.753248807Z  REST STREAM
+2025-12-08T06:33:30.753251577Z  MLST type*;size*;sizd*;modify*;UNIX.mode*;UNIX.uid*;UNIX.gid*;unique*;
+2025-12-08T06:33:30.753253847Z  MLSD
+2025-12-08T06:33:30.753255867Z  PRET
+2025-12-08T06:33:30.753258287Z  AUTH TLS
+2025-12-08T06:33:30.753260427Z  PBSZ
+2025-12-08T06:33:30.753262477Z  PROT
+2025-12-08T06:33:30.753264557Z  TVFS
+2025-12-08T06:33:30.753266577Z  ESTA
+2025-12-08T06:33:30.753268807Z  PASV
+2025-12-08T06:33:30.753270877Z  EPSV
+2025-12-08T06:33:30.753272957Z  ESTP
+2025-12-08T06:33:30.753275157Z 211 End.
+2025-12-08T06:33:30.753277167Z 
+2025-12-08T06:33:30.753410131Z > TYPE I
+2025-12-08T06:33:30.795383422Z < 200 TYPE is now 8-bit binary
+2025-12-08T06:33:30.795413573Z 
+2025-12-08T06:33:30.795619348Z > STRU F
+2025-12-08T06:33:30.833527239Z < 200 F OK
+2025-12-08T06:33:30.83354854Z 
+2025-12-08T06:33:30.833744304Z > OPTS UTF8 ON
+2025-12-08T06:33:30.876116506Z < 504 Unknown command
+2025-12-08T06:33:30.876139157Z 
+2025-12-08T06:33:30.876351142Z > OPTS MLST type;size;modify;unique;unix.mode;unix.owner;unix.group;unix.ownername;unix.groupname;
+2025-12-08T06:33:30.914905089Z < 200  MLST OPTS type;size;sizd;modify;UNIX.mode;UNIX.uid;UNIX.gid;unique;
+2025-12-08T06:33:30.914922109Z 
+2025-12-08T06:33:30.915264237Z > PWD
+2025-12-08T06:33:30.954947362Z < 257 "/" is your current location
+2025-12-08T06:33:30.954962623Z 
+2025-12-08T06:33:30.95526864Z [FTP] Connected successfully. Current directory: /
+2025-12-08T06:33:30.955846445Z [FTP] Streaming file: public_html/ststaxrepair.org/uploads/clients/144/IMG_2129.jpeg
+2025-12-08T06:33:30.956298586Z > SIZE public_html/ststaxrepair.org/uploads/clients/144/IMG_2129.jpeg
+2025-12-08T06:33:30.994994266Z < 550 Can't check for file existence
+2025-12-08T06:33:30.995007757Z 
+2025-12-08T06:33:30.995261533Z [FTP] File not found: public_html/ststaxrepair.org/uploads/clients/144/IMG_2129.jpeg
+2025-12-08T06:33:30.995424397Z > QUIT
+2025-12-08T06:33:31Z clientIP="38.106.77.98" requestID="6427e34f-689c-4dbe" responseTimeMS=712 responseBytes=369 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:31Z clientIP="38.106.77.98" requestID="25bfd34a-08c5-489c" responseTimeMS=43 responseBytes=1498 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+2025-12-08T06:33:31.039755687Z 6:33:31 AM [express] GET /api/documents/43d6a443-ce42-11f0-bf63-fa163e57a0f7/download 404 in 709ms :…

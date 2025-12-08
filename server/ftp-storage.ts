@@ -133,8 +133,8 @@ export class FTPStorageService {
     const client = await this.getClient();
     
     try {
-      const fullPath = `${BASE_PATH}/${filePath}`;
-      console.log(`[FTP] Streaming file: ${fullPath}`);
+      let fullPath = `${BASE_PATH}/${filePath}`;
+      console.log(`[FTP] Attempting to stream file: ${fullPath}`);
       
       // Get file size first
       let fileSize: number;
@@ -142,9 +142,39 @@ export class FTPStorageService {
         fileSize = await client.size(fullPath);
         console.log(`[FTP] File size: ${fileSize} bytes`);
       } catch (sizeError) {
-        console.error(`[FTP] File not found: ${fullPath}`);
-        client.close();
-        return false;
+        console.log(`[FTP] File not found at: ${fullPath}`);
+        
+        // Try alternate path: if path is uploads/clients/{id}, try uploads/customers/{id}
+        if (filePath.includes('uploads/clients/')) {
+          const alternatePath = filePath.replace('uploads/clients/', 'uploads/customers/');
+          fullPath = `${BASE_PATH}/${alternatePath}`;
+          console.log(`[FTP] Trying alternate path: ${fullPath}`);
+          try {
+            fileSize = await client.size(fullPath);
+            console.log(`[FTP] Found at alternate path! File size: ${fileSize} bytes`);
+          } catch {
+            console.error(`[FTP] File not found at alternate path either: ${fullPath}`);
+            client.close();
+            return false;
+          }
+        } else if (filePath.includes('uploads/customers/')) {
+          // Try the other way around
+          const alternatePath = filePath.replace('uploads/customers/', 'uploads/clients/');
+          fullPath = `${BASE_PATH}/${alternatePath}`;
+          console.log(`[FTP] Trying alternate path: ${fullPath}`);
+          try {
+            fileSize = await client.size(fullPath);
+            console.log(`[FTP] Found at alternate path! File size: ${fileSize} bytes`);
+          } catch {
+            console.error(`[FTP] File not found at alternate path either: ${fullPath}`);
+            client.close();
+            return false;
+          }
+        } else {
+          console.error(`[FTP] File not found: ${fullPath}`);
+          client.close();
+          return false;
+        }
       }
       
       // Determine content type from filename
