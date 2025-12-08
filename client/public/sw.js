@@ -1,12 +1,23 @@
-const CACHE_VERSION = 'v8';
+const CACHE_VERSION = 'v9';
 const CACHE_NAME = `sts-taxrepair-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `sts-runtime-${CACHE_VERSION}`;
 
 const STATIC_ASSETS = [
+  '/',
+  '/offline.html',
   '/manifest.json',
   '/favicon.png',
+  '/icons/icon-64x64.png',
+  '/icons/icon-72x72.png',
+  '/icons/icon-96x96.png',
+  '/icons/icon-128x128.png',
+  '/icons/icon-144x144.png',
+  '/icons/icon-152x152.png',
   '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png'
+  '/icons/icon-384x384.png',
+  '/icons/icon-512x512.png',
+  '/screenshots/mobile.png',
+  '/screenshots/desktop.png'
 ];
 
 const CACHE_STRATEGIES = {
@@ -162,11 +173,16 @@ async function networkFirstWithOfflineFallback(request) {
     if (cachedResponse) {
       return cachedResponse;
     }
-    const offlinePage = await caches.match('/');
+    // Try offline page first, then root page
+    const offlinePage = await caches.match('/offline.html');
     if (offlinePage) {
       return offlinePage;
     }
-    return new Response('You are offline', { 
+    const rootPage = await caches.match('/');
+    if (rootPage) {
+      return rootPage;
+    }
+    return new Response('You are offline. Please check your connection.', { 
       status: 503, 
       headers: { 'Content-Type': 'text/html' } 
     });
