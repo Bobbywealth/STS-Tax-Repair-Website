@@ -4144,29 +4144,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // fileUrl is like: /perfex-uploads/uploads/customers/{clientId}/{filename}
         // Files are stored at: uploads/clients/perfex-{clientId}/{filename} on FTP server
         // The database stores Perfex numeric IDs but files are in perfex-{id} folders
+        console.log(`[DOWNLOAD-PERFEX] Processing URL: ${normalizedUrl}`);
         const pathMatch = normalizedUrl.match(/\/perfex-uploads\/uploads\/customers\/([^/]+)\/(.+)/);
         if (pathMatch) {
           const perfexId = pathMatch[1];
           const filename = pathMatch[2];
+          console.log(`[DOWNLOAD-PERFEX] Extracted - ID: ${perfexId}, Filename: ${filename}`);
+          
           // Convert Perfex numeric ID to CRM folder format: perfex-{id}
           // If it's already prefixed with "perfex-", use as-is; otherwise add the prefix
           const clientFolder = perfexId.startsWith('perfex-') ? perfexId : `perfex-${perfexId}`;
           const filePath = `uploads/clients/${clientFolder}/${filename}`;
-          console.log(`[PERFEX] Downloading via FTP: ${filePath} for document ${documentId} (Perfex ID: ${perfexId})`);
+          console.log(`[DOWNLOAD-PERFEX] Primary path: ${filePath}`);
+          
           const success = await ftpStorageService.streamFileToResponse(filePath, res, documentName);
           if (success) return;
           
           // Fallback: try without perfex- prefix in case some files use numeric IDs
           const fallbackPath = `uploads/clients/${perfexId}/${filename}`;
-          console.log(`[PERFEX] Trying fallback path: ${fallbackPath}`);
+          console.log(`[DOWNLOAD-PERFEX] Fallback path: ${fallbackPath}`);
           const fallbackSuccess = await ftpStorageService.streamFileToResponse(fallbackPath, res, documentName);
           if (fallbackSuccess) return;
           
+          console.error(`[DOWNLOAD-PERFEX] Both paths failed. Document: ${documentId}`);
           return res.status(404).json({ error: "File not found on FTP server" });
         }
         // Fallback: try the raw path without /perfex-uploads/ prefix
+        console.log(`[DOWNLOAD-PERFEX] URL pattern did not match. Trying raw fallback.`);
         const fallbackPath = normalizedUrl.replace('/perfex-uploads/', '');
-        console.log(`[PERFEX] Fallback raw path: ${fallbackPath}`);
+        console.log(`[DOWNLOAD-PERFEX] Raw fallback path: ${fallbackPath}`);
         const success = await ftpStorageService.streamFileToResponse(fallbackPath, res, documentName);
         if (success) return;
         return res.status(404).json({ error: "File not found on FTP server" });

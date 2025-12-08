@@ -134,26 +134,28 @@ export class FTPStorageService {
     
     try {
       let fullPath = `${BASE_PATH}/${filePath}`;
-      console.log(`[FTP] Attempting to stream file: ${fullPath}`);
+      console.log(`[FTP-STREAM] Relative path: ${filePath}`);
+      console.log(`[FTP-STREAM] Full path: ${fullPath}`);
       
       // Get file size first
       let fileSize: number;
       try {
         fileSize = await client.size(fullPath);
-        console.log(`[FTP] File size: ${fileSize} bytes`);
-      } catch (sizeError) {
-        console.log(`[FTP] File not found at: ${fullPath}`);
+        console.log(`[FTP-STREAM] SUCCESS! File size: ${fileSize} bytes`);
+      } catch (sizeError: any) {
+        console.error(`[FTP-STREAM] FAILED - File not found at: ${fullPath}`);
+        console.error(`[FTP-STREAM] Error details:`, sizeError.message);
         
         // Try alternate path: if path is uploads/clients/{id}, try uploads/customers/{id}
         if (filePath.includes('uploads/clients/')) {
           const alternatePath = filePath.replace('uploads/clients/', 'uploads/customers/');
           fullPath = `${BASE_PATH}/${alternatePath}`;
-          console.log(`[FTP] Trying alternate path: ${fullPath}`);
+          console.log(`[FTP-STREAM] Trying alternate path: ${fullPath}`);
           try {
             fileSize = await client.size(fullPath);
-            console.log(`[FTP] Found at alternate path! File size: ${fileSize} bytes`);
-          } catch {
-            console.error(`[FTP] File not found at alternate path either: ${fullPath}`);
+            console.log(`[FTP-STREAM] Found at alternate path! File size: ${fileSize} bytes`);
+          } catch (altError: any) {
+            console.error(`[FTP-STREAM] Alternate path also failed: ${fullPath} - ${altError.message}`);
             client.close();
             return false;
           }
@@ -161,17 +163,17 @@ export class FTPStorageService {
           // Try the other way around
           const alternatePath = filePath.replace('uploads/customers/', 'uploads/clients/');
           fullPath = `${BASE_PATH}/${alternatePath}`;
-          console.log(`[FTP] Trying alternate path: ${fullPath}`);
+          console.log(`[FTP-STREAM] Trying alternate path: ${fullPath}`);
           try {
             fileSize = await client.size(fullPath);
-            console.log(`[FTP] Found at alternate path! File size: ${fileSize} bytes`);
-          } catch {
-            console.error(`[FTP] File not found at alternate path either: ${fullPath}`);
+            console.log(`[FTP-STREAM] Found at alternate path! File size: ${fileSize} bytes`);
+          } catch (altError: any) {
+            console.error(`[FTP-STREAM] Alternate path also failed: ${fullPath} - ${altError.message}`);
             client.close();
             return false;
           }
         } else {
-          console.error(`[FTP] File not found: ${fullPath}`);
+          console.error(`[FTP-STREAM] No alternate path to try for: ${filePath}`);
           client.close();
           return false;
         }
