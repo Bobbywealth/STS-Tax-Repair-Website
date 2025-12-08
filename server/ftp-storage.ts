@@ -123,12 +123,15 @@ export class FTPStorageService {
   }
 
   getPublicUrl(filePath: string): string {
+    // Files are in public_html, so they're directly accessible via the domain
+    // Encode each path segment to handle special characters in filenames
     const encodedPath = filePath.split('/').map(segment => encodeURIComponent(segment)).join('/');
-    return `https://ststaxrepair.org/download/preview_image?path=${encodeURIComponent(filePath)}`;
+    return `https://ststaxrepair.org/${encodedPath}`;
   }
 
   getDirectUrl(filePath: string): string {
-    return `https://ststaxrepair.org/${filePath}`;
+    const encodedPath = filePath.split('/').map(segment => encodeURIComponent(segment)).join('/');
+    return `https://ststaxrepair.org/${encodedPath}`;
   }
 }
 
