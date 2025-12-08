@@ -2388,6 +2388,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.error('[EMAIL] Failed to send payment notification:', emailError);
           }
         }
+
+        // Send in-app notification to all admins about payment received
+        if (result.data.clientId && result.data.paymentStatus === 'completed') {
+          try {
+            const client = await storage.getUser(result.data.clientId);
+            const admins = await storage.getUsersByRole('admin');
+            for (const admin of admins) {
+              await storage.createNotification({
+                userId: admin.id,
+                type: 'payment_received',
+                title: 'Payment Received',
+                message: `${client?.firstName || 'Client'} paid $${result.data.amountPaid || 0}`,
+                link: '/payments',
+                resourceType: 'payment',
+                resourceId: payment.id
+              });
+            }
+          } catch (notifError) {
+            console.error('[NOTIFICATION] Failed to send payment notifications to admins:', notifError);
+          }
+        }
         
         res.status(201).json(payment);
       } catch (error: any) {
@@ -2853,6 +2874,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
 
+        // Send in-app notification to all admins about task creation
+        try {
+          const admins = await storage.getUsersByRole('admin');
+          for (const admin of admins) {
+            await storage.createNotification({
+              userId: admin.id,
+              type: 'task_assigned',
+              title: 'Task Created',
+              message: `New task: ${title} assigned to ${assignedTo}`,
+              link: '/tasks',
+              resourceType: 'task',
+              resourceId: task.id
+            });
+          }
+        } catch (notifError) {
+          console.error('[NOTIFICATION] Failed to send task notifications to admins:', notifError);
+        }
+
         res.status(201).json(task);
       } catch (error: any) {
         console.error("Error creating task:", error);
@@ -3232,6 +3271,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           } catch (emailError) {
             console.error('[EMAIL] Failed to send document upload confirmation:', emailError);
+          }
+
+          // Send in-app notification to all admins about document upload
+          try {
+            const client = await storage.getUser(result.data.clientId);
+            const admins = await storage.getUsersByRole('admin');
+            for (const admin of admins) {
+              await storage.createNotification({
+                userId: admin.id,
+                type: 'document_uploaded',
+                title: 'Document Uploaded',
+                message: `${client?.firstName || 'Client'} uploaded ${result.data.documentName || 'document'}`,
+                link: '/documents',
+                resourceType: 'document',
+                resourceId: document.id
+              });
+            }
+          } catch (notifError) {
+            console.error('[NOTIFICATION] Failed to send document notifications to admins:', notifError);
           }
         }
         
@@ -4841,6 +4899,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
               ticketData.priority || 'normal'
             );
             console.log(`[EMAIL] Support ticket created notification sent to ${client.email}`);
+          }
+
+          // Send in-app notification to all admins about new ticket
+          try {
+            const client = await storage.getUser(clientId);
+            const admins = await storage.getUsersByRole('admin');
+            for (const admin of admins) {
+              await storage.createNotification({
+                userId: admin.id,
+                type: 'new_ticket',
+                title: 'New Support Ticket',
+                message: `${client?.firstName || 'Client'}: ${ticketData.subject || 'Support Request'}`,
+                link: '/support',
+                resourceType: 'ticket',
+                resourceId: ticket.id
+              });
+            }
+          } catch (notifError) {
+            console.error('[NOTIFICATION] Failed to send ticket notifications to admins:', notifError);
           }
         } catch (emailError) {
           console.error('[EMAIL] Failed to send support ticket notification:', emailError);
