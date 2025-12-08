@@ -316,14 +316,14 @@ function AdminLayout() {
             <SidebarTrigger data-testid="button-sidebar-toggle" />
             <div className="flex items-center gap-3">
               <NotificationBell />
-              <Link href="/settings" className="flex items-center gap-2 hover-elevate rounded-full p-1 sm:pr-3 transition-colors" data-testid="link-user-profile">
+              <Link href="/settings" className="hidden sm:flex items-center gap-2 hover-elevate rounded-full p-1 pr-3 transition-colors" data-testid="link-user-profile">
                 <Avatar className="h-8 w-8 border-2 border-primary/20">
                   <AvatarImage src={getProfileImageUrl()} alt={displayName} />
                   <AvatarFallback className="bg-primary text-primary-foreground text-sm font-medium">
                     {getInitials()}
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-sm font-medium hidden sm:inline">{displayName}</span>
+                <span className="text-sm font-medium">{displayName}</span>
               </Link>
               <ThemeToggle />
             </div>
