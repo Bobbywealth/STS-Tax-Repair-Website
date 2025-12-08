@@ -248,19 +248,19 @@ export default function ClientDetail() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
+      <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-wrap">
         <Link href="/clients">
           <Button variant="ghost" size="icon" data-testid="button-back">
             <ArrowLeft className="h-5 w-5" />
           </Button>
         </Link>
-        <div className="flex-1">
-          <h1 className="text-3xl font-bold tracking-tight">Client Profile</h1>
-          <p className="text-muted-foreground mt-1">View and manage client information</p>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Client Profile</h1>
+          <p className="text-muted-foreground text-sm mt-1 hidden sm:block">View and manage client information</p>
         </div>
-        <Button onClick={openEditDialog} data-testid="button-edit-client">
-          <Edit className="h-4 w-4 mr-2" />
-          Edit Profile
+        <Button onClick={openEditDialog} size="sm" className="sm:size-default" data-testid="button-edit-client">
+          <Edit className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">Edit Profile</span>
         </Button>
       </div>
 
@@ -375,74 +375,140 @@ export default function ClientDetail() {
               {filings.map((filing) => (
                 <div 
                   key={filing.id} 
-                  className="flex items-center justify-between p-4 border rounded-lg hover-elevate"
+                  className="p-4 border rounded-lg hover-elevate"
                   data-testid={`filing-${filing.taxYear}`}
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <span className="font-bold text-primary">{filing.taxYear.toString().slice(-2)}</span>
+                  {/* Mobile Layout */}
+                  <div className="sm:hidden">
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <span className="font-bold text-primary">{filing.taxYear.toString().slice(-2)}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium">Tax Year {filing.taxYear}</span>
+                          <Badge className={statusColors[filing.status || 'new']}>
+                            {statusLabels[filing.status || 'new']}
+                          </Badge>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-1">
+                          {filing.estimatedRefund && (
+                            <span className="flex items-center gap-1">
+                              <DollarSign className="h-3 w-3" />
+                              Est: ${parseFloat(filing.estimatedRefund).toLocaleString()}
+                            </span>
+                          )}
+                          {filing.preparerName && (
+                            <span className="flex items-center gap-1">
+                              <User className="h-3 w-3" />
+                              {filing.preparerName}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 flex-shrink-0"
+                        onClick={() => {
+                          setSelectedFiling(filing);
+                          setShowFilingDetails(true);
+                        }}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">Tax Year {filing.taxYear}</span>
-                        <Badge className={statusColors[filing.status || 'new']}>
-                          {statusLabels[filing.status || 'new']}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                        {filing.estimatedRefund && (
-                          <span className="flex items-center gap-1">
-                            <DollarSign className="h-3 w-3" />
-                            Est: ${parseFloat(filing.estimatedRefund).toLocaleString()}
-                          </span>
-                        )}
-                        {filing.actualRefund && (
-                          <span className="flex items-center gap-1 text-green-600">
-                            <CheckCircle2 className="h-3 w-3" />
-                            Actual: ${parseFloat(filing.actualRefund).toLocaleString()}
-                          </span>
-                        )}
-                        {filing.preparerName && (
-                          <span className="flex items-center gap-1">
-                            <User className="h-3 w-3" />
-                            {filing.preparerName}
-                          </span>
-                        )}
-                      </div>
+                    <div className="flex items-center gap-2 pt-2 border-t">
+                      <Select
+                        value={filing.status || 'new'}
+                        onValueChange={(val) => updateStatusMutation.mutate({ 
+                          filingId: filing.id, 
+                          status: val as FilingStatus 
+                        })}
+                      >
+                        <SelectTrigger className="flex-1 h-8 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="new">New</SelectItem>
+                          <SelectItem value="documents_pending">Docs Pending</SelectItem>
+                          <SelectItem value="review">In Review</SelectItem>
+                          <SelectItem value="filed">Filed</SelectItem>
+                          <SelectItem value="accepted">Accepted</SelectItem>
+                          <SelectItem value="approved">Approved</SelectItem>
+                          <SelectItem value="paid">Paid</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Select
-                      value={filing.status || 'new'}
-                      onValueChange={(val) => updateStatusMutation.mutate({ 
-                        filingId: filing.id, 
-                        status: val as FilingStatus 
-                      })}
-                    >
-                      <SelectTrigger className="w-[130px]" data-testid={`select-status-${filing.taxYear}`}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="new">New</SelectItem>
-                        <SelectItem value="documents_pending">Docs Pending</SelectItem>
-                        <SelectItem value="review">In Review</SelectItem>
-                        <SelectItem value="filed">Filed</SelectItem>
-                        <SelectItem value="accepted">Accepted</SelectItem>
-                        <SelectItem value="approved">Approved</SelectItem>
-                        <SelectItem value="paid">Paid</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      data-testid={`button-view-filing-${filing.taxYear}`}
-                      onClick={() => {
-                        setSelectedFiling(filing);
-                        setShowFilingDetails(true);
-                      }}
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
+                  {/* Desktop Layout */}
+                  <div className="hidden sm:flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <span className="font-bold text-primary">{filing.taxYear.toString().slice(-2)}</span>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">Tax Year {filing.taxYear}</span>
+                          <Badge className={statusColors[filing.status || 'new']}>
+                            {statusLabels[filing.status || 'new']}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                          {filing.estimatedRefund && (
+                            <span className="flex items-center gap-1">
+                              <DollarSign className="h-3 w-3" />
+                              Est: ${parseFloat(filing.estimatedRefund).toLocaleString()}
+                            </span>
+                          )}
+                          {filing.actualRefund && (
+                            <span className="flex items-center gap-1 text-green-600">
+                              <CheckCircle2 className="h-3 w-3" />
+                              Actual: ${parseFloat(filing.actualRefund).toLocaleString()}
+                            </span>
+                          )}
+                          {filing.preparerName && (
+                            <span className="flex items-center gap-1">
+                              <User className="h-3 w-3" />
+                              {filing.preparerName}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Select
+                        value={filing.status || 'new'}
+                        onValueChange={(val) => updateStatusMutation.mutate({ 
+                          filingId: filing.id, 
+                          status: val as FilingStatus 
+                        })}
+                      >
+                        <SelectTrigger className="w-[130px]" data-testid={`select-status-${filing.taxYear}`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="new">New</SelectItem>
+                          <SelectItem value="documents_pending">Docs Pending</SelectItem>
+                          <SelectItem value="review">In Review</SelectItem>
+                          <SelectItem value="filed">Filed</SelectItem>
+                          <SelectItem value="accepted">Accepted</SelectItem>
+                          <SelectItem value="approved">Approved</SelectItem>
+                          <SelectItem value="paid">Paid</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        data-testid={`button-view-filing-${filing.taxYear}`}
+                        onClick={() => {
+                          setSelectedFiling(filing);
+                          setShowFilingDetails(true);
+                        }}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}

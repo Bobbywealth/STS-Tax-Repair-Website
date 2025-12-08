@@ -178,8 +178,88 @@ export function ClientsTable({
           </div>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="overflow-x-auto">
+      <CardContent className="p-0 md:p-6">
+        {/* Mobile Card View */}
+        <div className="md:hidden space-y-3 p-4">
+          {filteredClients.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No clients found matching your search.
+            </div>
+          ) : (
+            filteredClients.map((client, index) => (
+              <div
+                key={client.id}
+                className={`p-4 rounded-lg border bg-card animate-fade-in ${selectedClients.has(client.id) ? 'ring-2 ring-primary/50 bg-primary/5' : ''}`}
+                style={{ animationDelay: `${index * 30}ms` }}
+                data-testid={`client-card-${client.id}`}
+              >
+                <div className="flex items-start gap-3">
+                  <Checkbox 
+                    checked={selectedClients.has(client.id)}
+                    onCheckedChange={(checked) => handleSelectClient(client.id, checked as boolean)}
+                    aria-label={`Select ${client.name}`}
+                    className="mt-1"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Avatar className="h-10 w-10 flex-shrink-0">
+                        <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                          {client.name.split(' ').map(n => n[0]).join('')}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <button
+                          onClick={() => setLocation(`/clients/${client.id}`)}
+                          className="font-semibold text-primary hover:underline cursor-pointer text-left block truncate"
+                        >
+                          {client.name}
+                        </button>
+                        <Badge variant="secondary" className={`${statusColors[clientStatuses[client.id] || client.status]} text-xs mt-1`}>
+                          {clientStatuses[client.id] || client.status}
+                        </Badge>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="icon" variant="ghost" className="h-8 w-8 flex-shrink-0">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => setLocation(`/clients/${client.id}`)}>
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>Export Data</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                    
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <span className="truncate">{client.email}</span>
+                      </div>
+                      {client.phone && (
+                        <div className="text-muted-foreground">{client.phone}</div>
+                      )}
+                      <div className="flex items-center justify-between pt-2 border-t">
+                        <span className="text-xs text-muted-foreground">Tax Year {client.taxYear}</span>
+                        <span className="text-xs">
+                          {client.assignedTo && client.assignedTo !== "Unassigned" ? (
+                            <Badge variant="outline" className="text-xs">{client.assignedTo}</Badge>
+                          ) : (
+                            <span className="text-muted-foreground">Unassigned</span>
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b text-sm text-muted-foreground">
