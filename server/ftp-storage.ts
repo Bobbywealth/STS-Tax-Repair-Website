@@ -51,31 +51,32 @@ export class FTPStorageService {
       
       // Use relative path from FTP home directory
       const remoteDirPath = `${BASE_PATH}/${UPLOADS_DIR}/${clientId}`;
-      const remoteFilePath = `${remoteDirPath}/${uniqueFileName}`;
       
       console.log(`[FTP] Preparing to upload file:`);
       console.log(`[FTP]   - Client ID: ${clientId}`);
       console.log(`[FTP]   - Original filename: ${fileName}`);
       console.log(`[FTP]   - Sanitized filename: ${uniqueFileName}`);
       console.log(`[FTP]   - Remote directory: ${remoteDirPath}`);
-      console.log(`[FTP]   - Remote file path: ${remoteFilePath}`);
       console.log(`[FTP]   - File size: ${fileBuffer.length} bytes`);
       
+      // Navigate to the target directory (this also creates it if needed)
       await this.ensureDirectory(client, remoteDirPath);
       
-      // Verify we're in the right directory
+      // We're now IN the target directory, so just upload with the filename
       const pwdAfterMkdir = await client.pwd();
       console.log(`[FTP] Current directory after ensureDirectory: ${pwdAfterMkdir}`);
+      console.log(`[FTP] Uploading file as: ${uniqueFileName} (filename only, since we're in the target dir)`);
       
       const stream = Readable.from(fileBuffer);
-      const uploadResponse = await client.uploadFrom(stream, remoteFilePath);
+      // Upload using just the filename since we're already in the target directory
+      const uploadResponse = await client.uploadFrom(stream, uniqueFileName);
       
       console.log(`[FTP] Upload response code: ${uploadResponse.code}`);
       console.log(`[FTP] Upload response message: ${uploadResponse.message}`);
       
       // Verify file exists after upload
       try {
-        const fileSize = await client.size(remoteFilePath);
+        const fileSize = await client.size(uniqueFileName);
         console.log(`[FTP] Verified file exists with size: ${fileSize} bytes`);
       } catch (verifyError) {
         console.error(`[FTP] WARNING: Could not verify file after upload:`, verifyError);
