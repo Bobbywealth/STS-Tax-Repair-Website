@@ -145,7 +145,7 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
       <div className="relative h-full flex flex-col items-center justify-center p-6 overflow-y-auto">
         {/* Logo section */}
         <motion.div
-          className="flex flex-col items-center mb-8"
+          className="flex flex-col items-center mb-12"
           initial={{ y: -50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
@@ -164,12 +164,12 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
             <img
               src={stsLogo}
               alt="STS TaxRepair"
-              className="w-24 h-24 object-contain"
+              className="w-32 h-32 md:w-40 md:h-40 object-contain"
             />
           </motion.div>
 
           <motion.h1
-            className="mt-4 text-3xl font-bold tracking-tight"
+            className="mt-6 text-4xl md:text-5xl font-bold tracking-tight"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
@@ -178,18 +178,6 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
             <span className="text-[#4CAF50]"> Tax</span>
             <span className="text-[#FDB913]">Repair</span>
           </motion.h1>
-
-          {isPWA && (
-            <motion.div
-              className="mt-2 flex items-center gap-2 text-xs text-gray-500"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
-            >
-              <Smartphone className="w-3 h-3" />
-              <span>App Mode</span>
-            </motion.div>
-          )}
         </motion.div>
 
         {/* Login Card */}
@@ -224,7 +212,7 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
                     placeholder="you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 h-12 bg-white/5 border-white/10 text-white placeholder:text-gray-500 rounded-xl focus:border-[#4CAF50] focus:ring-[#4CAF50]/20 transition-all"
+                    className="pl-10 h-13 md:h-12 bg-white/5 border-white/10 text-white placeholder:text-gray-500 rounded-xl focus:border-[#4CAF50] focus:ring-[#4CAF50]/20 transition-all text-base"
                     required
                     data-testid="pwa-input-email"
                   />
@@ -243,7 +231,7 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
                     placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10 h-12 bg-white/5 border-white/10 text-white placeholder:text-gray-500 rounded-xl focus:border-[#4CAF50] focus:ring-[#4CAF50]/20 transition-all"
+                    className="pl-10 pr-10 h-13 md:h-12 bg-white/5 border-white/10 text-white placeholder:text-gray-500 rounded-xl focus:border-[#4CAF50] focus:ring-[#4CAF50]/20 transition-all text-base"
                     required
                     data-testid="pwa-input-password"
                   />
@@ -260,7 +248,7 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full h-12 bg-gradient-to-r from-[#4CAF50] via-[#45a049] to-[#1a4d2e] hover:opacity-90 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg shadow-[#4CAF50]/25"
+                className="w-full h-14 md:h-12 bg-gradient-to-r from-[#4CAF50] via-[#45a049] to-[#1a4d2e] hover:opacity-90 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg shadow-[#4CAF50]/25 text-lg"
                 data-testid="pwa-button-login"
               >
                 {isLoading ? (
@@ -379,7 +367,7 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
                       <Button
                         type="submit"
                         disabled={isStaffLoading}
-                        className="w-full h-11 bg-gradient-to-r from-[#FDB913] to-[#e5a811] hover:opacity-90 text-[#1a1a1a] font-semibold rounded-xl transition-all duration-300"
+                        className="w-full h-13 md:h-11 bg-gradient-to-r from-[#FDB913] to-[#e5a811] hover:opacity-90 text-[#1a1a1a] font-semibold rounded-xl transition-all duration-300 text-base"
                         data-testid="pwa-button-staff-login"
                       >
                         {isStaffLoading ? (

@@ -10,12 +10,14 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import { cn } from "@/lib/utils";
+import { PullToRefresh } from "@/components/PullToRefresh";
+import { queryClient } from "@/lib/queryClient";
 import type { User, DocumentVersion, AuditLog } from "@shared/mysql-schema";
 import { format, formatDistanceToNow, differenceInDays } from "date-fns";
 
 function FloatingParticles() {
   return (
-    <div className="particles-container">
+    <div className="particles-container hidden md:block">
       {Array.from({ length: 30 }).map((_, i) => (
         <div
           key={i}
@@ -33,7 +35,7 @@ function FloatingParticles() {
 
 function GlowingOrbs() {
   return (
-    <div className="orbs-container">
+    <div className="orbs-container hidden md:block">
       <div className="orb orb-1" />
       <div className="orb orb-2" />
       <div className="orb orb-3" />
@@ -282,6 +284,10 @@ export default function Dashboard() {
     const firstName = currentUser?.firstName || "";
     const timeGreeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
     return firstName ? `${timeGreeting}, ${firstName}` : timeGreeting;
+  };
+
+  const handleRefresh = async () => {
+    await queryClient.refetchQueries();
   };
 
   return (
@@ -544,8 +550,9 @@ export default function Dashboard() {
         <div className="scanline" />
       </div>
 
-      <div className="space-y-6 relative z-10">
-        {/* Hero Section - Compact on Mobile */}
+      <PullToRefresh onRefresh={handleRefresh}>
+        <div className="space-y-6 relative z-10">
+          {/* Hero Section - Compact on Mobile */}
         <div className="hero-section rounded-2xl p-4 md:p-8 text-white">
           <div className="hero-grid" />
           <div className="hidden md:block">
@@ -886,7 +893,7 @@ export default function Dashboard() {
                     Recent Clients
                   </CardTitle>
                   <Link href="/clients">
-                    <Button variant="ghost" size="sm" className="view-all-link text-emerald-500 hover:text-emerald-400">
+                    <Button variant="ghost" size="sm" className="view-all-link text-emerald-500 hover:text-emerald-400 h-12 md:h-10">
                       View All <ArrowRight className="h-4 w-4 ml-1" />
                     </Button>
                   </Link>
@@ -1028,7 +1035,8 @@ export default function Dashboard() {
             </div>
           </>
         )}
-      </div>
+        </div>
+      </PullToRefresh>
     </>
   );
 }

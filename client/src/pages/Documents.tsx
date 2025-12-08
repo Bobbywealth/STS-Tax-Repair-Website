@@ -99,41 +99,43 @@ export default function Documents() {
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
+      <div className="flex flex-col gap-4">
+        <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search documents..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="pl-10 h-12 md:h-10"
             data-testid="input-search-documents"
           />
         </div>
-        <Select value={selectedClient} onValueChange={setSelectedClient}>
-          <SelectTrigger className="w-full sm:w-64" data-testid="select-client">
-            <SelectValue placeholder="Select client" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Clients</SelectItem>
-            {clients?.slice(0, 50).map(client => (
-              <SelectItem key={client.id} value={client.id}>
-                {client.firstName} {client.lastName}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={documentType} onValueChange={setDocumentType}>
-          <SelectTrigger className="w-full sm:w-48" data-testid="select-type">
-            <SelectValue placeholder="Document type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            {documentTypes.map(type => (
-              <SelectItem key={type} value={type}>{getDocumentTypeLabel(type)}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Select value={selectedClient} onValueChange={setSelectedClient}>
+            <SelectTrigger className="w-full h-12 md:h-10" data-testid="select-client">
+              <SelectValue placeholder="Select client" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Clients</SelectItem>
+              {clients?.slice(0, 50).map(client => (
+                <SelectItem key={client.id} value={client.id}>
+                  {client.firstName} {client.lastName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={documentType} onValueChange={setDocumentType}>
+            <SelectTrigger className="w-full h-12 md:h-10" data-testid="select-type">
+              <SelectValue placeholder="Document type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              {documentTypes.map(type => (
+                <SelectItem key={type} value={type}>{getDocumentTypeLabel(type)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {isLoading ? (
