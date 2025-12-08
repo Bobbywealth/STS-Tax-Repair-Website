@@ -15,28 +15,28 @@ import logoUrl from "@/assets/sts-logo.png";
 
 const faqs = [
   {
-    question: "What Services Does STS Tax Repair Offer?",
-    answer: "STS Tax Repair provides a range of services including professional tax filing, credit restoration, assistance with business registration, and support in securing business loans."
+    question: "How much do your services cost?",
+    answer: "Our pricing starts at $150 for simple tax returns. We provide transparent, upfront quotes based on your specific tax situation before we begin any work."
   },
   {
-    question: "How Can I Contact STS Tax Repair?",
-    answer: "You can reach us at different locations:\n\nValley Stream, NY: (929) 235-0185\nHouston, TX: (954) 851-4159\nFort Lauderdale, FL: (954) 851-4159\n\nAdditionally, you can email us at amtaxrepair@gmail.com or ststaxrepair@gmail.com, and find us on Instagram: @amtaxrepair and @ststaxrepair respectively."
+    question: "How fast can I get my refund?",
+    answer: "With e-filing, most refunds arrive within 10-21 days. We also offer same-day refund advances up to $7,000 for qualified clients."
   },
   {
-    question: "What Are The Benefits Of Professional Tax Filing Services?",
-    answer: "Our professional tax filing services ensure accuracy, compliance, and optimized returns, saving you time and stress while maximizing your eligible deductions."
+    question: "What if I get audited?",
+    answer: "All our returns come with free audit support. If the IRS questions your return, we'll represent you at no additional charge."
   },
   {
-    question: "Can STS Tax Repair Help With Business Registration?",
-    answer: "Yes, we assist in streamlining the process of business registration, offering guidance on necessary paperwork and requirements to establish your business effectively."
+    question: "Can you help with back taxes?",
+    answer: "Absolutely. We specialize in resolving IRS debt, filing unfiled returns, and setting up payment plans. Many clients save thousands with our help."
   },
   {
-    question: "What Types Of Business Loans Does STS Tax Repair Assist With?",
-    answer: "We help businesses secure various types of loans including term loans, lines of credit, equipment financing, and Small Business Administration (SBA) loans, tailoring our assistance to specific business needs."
+    question: "Do you work with clients nationwide?",
+    answer: "Yes! While we have offices in California, Texas, and Florida, we serve clients across all 50 states through our secure online portal."
   },
   {
-    question: "How Long Does Credit Restoration Typically Take?",
-    answer: "Credit restoration timelines vary based on individual circumstances. However, our team at STS Tax Repair works efficiently to address issues and improve credit scores as quickly as possible."
+    question: "What documents do I need to provide?",
+    answer: "For a basic return, you'll need your W-2s, 1099s, and records of any deductions. We'll provide a detailed checklist when you contact us."
   }
 ];
 
@@ -157,10 +157,10 @@ export default function FAQPage() {
             className="text-center mb-12"
           >
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900 mb-4">
-              Frequently Asked Question
+              Frequently Asked Questions
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Suspendisse ac condimentum velit. Nullam pulvinar a velit ac convallis. Proin non leo ac quam blandit faucibus sed nec ex. Pellentesque dapibus mi vehicula tincidunt porttitor.
+              Find answers to common questions about our tax services and how we can help maximize your refund.
             </p>
           </motion.div>
 
@@ -175,12 +175,12 @@ export default function FAQPage() {
               >
                 <AccordionItem 
                   value={`item-${index}`} 
-                  className="bg-gray-50 rounded-xl border-0 px-6 shadow-sm"
+                  className="bg-white rounded-xl border border-gray-200 px-6 shadow-sm hover:shadow-md transition-shadow"
                 >
                   <AccordionTrigger className="text-left font-semibold text-gray-900 hover:text-sts-primary py-5">
                     {faq.question}
                   </AccordionTrigger>
-                  <AccordionContent className="text-gray-600 pb-5 whitespace-pre-line">
+                  <AccordionContent className="text-gray-600 pb-5">
                     {faq.answer}
                   </AccordionContent>
                 </AccordionItem>

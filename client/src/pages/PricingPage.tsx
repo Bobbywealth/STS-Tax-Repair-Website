@@ -7,46 +7,18 @@ import { Check, Menu, X, ArrowRight } from "lucide-react";
 import { useState } from "react";
 import logoUrl from "@/assets/sts-logo.png";
 
-const pricingPlans = [
-  {
-    name: "Basic",
-    price: "$99",
-    description: "Perfect for simple tax returns",
-    features: [
-      "W-2 Income Only",
-      "Standard Deductions",
-      "E-File Included",
-      "Basic Support"
-    ],
-    featured: false
-  },
-  {
-    name: "Professional",
-    price: "$199",
-    description: "For more complex tax situations",
-    features: [
-      "All Basic Features",
-      "Self-Employment Income",
-      "Itemized Deductions",
-      "Schedule C & E",
-      "Priority Support"
-    ],
-    featured: true
-  },
-  {
-    name: "Business",
-    price: "$399",
-    description: "Complete business tax solutions",
-    features: [
-      "All Professional Features",
-      "Business Returns",
-      "Quarterly Estimates",
-      "Tax Planning",
-      "Dedicated Support"
-    ],
-    featured: false
-  }
-];
+const pricingInfo = {
+  startingPrice: "$150",
+  description: "Professional tax filing services starting at $150. Pricing varies based on your specific tax situation complexity.",
+  features: [
+    "Transparent, upfront pricing quotes",
+    "No hidden fees or surprises",
+    "Professional expert guidance",
+    "E-File included",
+    "Free audit support",
+    "Personalized tax planning"
+  ]
+};
 
 export default function PricingPage() {
   const [, navigate] = useLocation();
@@ -148,48 +120,73 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* Pricing Grid */}
+      {/* Pricing Display */}
       <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-3 gap-8">
-            {pricingPlans.map((plan, index) => (
-              <motion.div
-                key={plan.name}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-              >
-                <Card className={`p-8 h-full ${plan.featured ? 'ring-2 ring-sts-gold shadow-xl' : ''}`}>
-                  {plan.featured && (
-                    <Badge className="bg-sts-gold text-sts-dark mb-4">Most Popular</Badge>
-                  )}
-                  <h3 className="text-2xl font-bold text-gray-900">{plan.name}</h3>
-                  <div className="mt-4 mb-6">
-                    <span className="text-4xl font-black text-sts-primary">{plan.price}</span>
-                    <span className="text-gray-500">/return</span>
-                  </div>
-                  <p className="text-gray-600 mb-6">{plan.description}</p>
-                  <ul className="space-y-3 mb-8">
-                    {plan.features.map((feature) => (
-                      <li key={feature} className="flex items-center gap-2">
-                        <Check className={`w-5 h-5 ${plan.featured ? 'text-sts-gold' : 'text-sts-primary'}`} />
-                        <span className="text-gray-700">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-black text-gray-900 mb-6">
+              Transparent Tax Pricing
+            </h2>
+            <p className="text-xl text-gray-600">
+              {pricingInfo.description}
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.1 }}
+          >
+            <Card className="p-12 bg-white border-2 border-sts-gold/30 shadow-xl">
+              <div className="text-center mb-12">
+                <Badge className="bg-sts-gold text-sts-dark mb-6 text-lg px-4 py-2">Starting Price</Badge>
+                <div className="mb-8">
+                  <span className="text-6xl md:text-7xl font-black text-sts-primary">{pricingInfo.startingPrice}</span>
+                </div>
+                <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+                  Our pricing starts at $150 for simple returns. We'll provide a detailed quote based on your specific tax situation.
+                </p>
+              </div>
+
+              <div className="border-t border-gray-200 pt-12">
+                <h3 className="text-2xl font-bold text-gray-900 mb-8 text-center">What's Included</h3>
+                <ul className="grid md:grid-cols-2 gap-6 mb-12">
+                  {pricingInfo.features.map((feature) => (
+                    <motion.li 
+                      key={feature} 
+                      className="flex items-start gap-3"
+                      initial={{ opacity: 0, x: -10 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true }}
+                    >
+                      <Check className="w-6 h-6 text-sts-gold flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-700 text-lg">{feature}</span>
+                    </motion.li>
+                  ))}
+                </ul>
+
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="text-center"
+                >
                   <Button 
-                    className={`w-full ${plan.featured 
-                      ? 'bg-sts-gold hover:bg-sts-gold/90 text-sts-dark' 
-                      : 'bg-sts-primary hover:bg-sts-primary/90'}`}
+                    size="lg"
+                    className="bg-sts-gold hover:bg-sts-gold/90 text-sts-dark font-bold px-12 h-16 text-lg"
                     onClick={() => navigate("/contact")}
                   >
-                    Get Started
+                    Get Your Free Quote
                   </Button>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
+                </motion.div>
+              </div>
+            </Card>
+          </motion.div>
         </div>
       </section>
 
