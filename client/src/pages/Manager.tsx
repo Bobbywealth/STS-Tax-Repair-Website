@@ -3,39 +3,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Users, ClipboardList, UserCheck, ExternalLink } from "lucide-react";
-
-interface PerfexStaff {
-  id: number;
-  name: string;
-  email: string;
-  role: string;
-  isActive: number;
-  createdAt: string;
-}
-
-interface PerfexTask {
-  id: number;
-  title: string;
-  assignedTo: string | null;
-  status: string;
-}
+import { Loader2, Users, ClipboardList, UserCheck } from "lucide-react";
+import type { User, Task } from "@shared/mysql-schema";
 
 export default function Manager() {
-  const { data: staff, isLoading: staffLoading } = useQuery<PerfexStaff[]>({
-    queryKey: ['/api/staff'],
+  const { data: staff, isLoading: staffLoading } = useQuery<User[]>({
+    queryKey: ['/api/staff-members'],
   });
 
-  const { data: tasks, isLoading: tasksLoading } = useQuery<PerfexTask[]>({
+  const { data: tasks, isLoading: tasksLoading } = useQuery<Task[]>({
     queryKey: ['/api/tasks'],
   });
 
   const isLoading = staffLoading || tasksLoading;
 
-  const staffWithStats = staff?.map(member => {
-    const memberTasks = tasks?.filter(t => t.assignedTo === member.name) || [];
-    const activeTasks = memberTasks.filter(t => t.status !== "done");
-    const completedTasks = memberTasks.filter(t => t.status === "done");
+  const staffWithStats = staff?.filter(m => m.role !== 'client').map(member => {
+    const memberTasks = tasks?.filter(t => t.assignedToId === member.id) || [];
+    const activeTasks = memberTasks.filter(t => t.status !== "completed");
+    const completedTasks = memberTasks.filter(t => t.status === "completed");
     
     return {
       ...member,
@@ -45,10 +30,10 @@ export default function Manager() {
     };
   }) || [];
 
-  const totalStaff = staff?.length || 0;
+  const totalStaff = staff?.filter(m => m.role !== 'client').length || 0;
   const totalTasks = tasks?.length || 0;
-  const activeTasks = tasks?.filter(t => t.status !== "done").length || 0;
-  const completedTasks = tasks?.filter(t => t.status === "done").length || 0;
+  const activeTasks = tasks?.filter(t => t.status !== "completed").length || 0;
+  const completedTasks = tasks?.filter(t => t.status === "completed").length || 0;
 
   if (isLoading) {
     return (
@@ -63,15 +48,8 @@ export default function Manager() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-lg bg-flow-gradient">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Manager Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Monitor staff performance from Perfex CRM.</p>
+          <p className="text-muted-foreground mt-1">Monitor staff performance and task assignments.</p>
         </div>
-        <Button 
-          onClick={() => window.open('https://ststaxrepair.org/admin/staff', '_blank')}
-          data-testid="button-manage-staff"
-        >
-          <ExternalLink className="h-4 w-4 mr-2" />
-          Manage Staff in Perfex
-        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -136,27 +114,26 @@ export default function Manager() {
         <CardContent>
           {staffWithStats.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No staff members found in Perfex CRM.
+              No staff members found.
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {staffWithStats.map((member) => (
                 <Card 
                   key={member.id} 
-                  className="hover-elevate cursor-pointer"
+                  className="hover-elevate"
                   data-testid={`staff-${member.id}`}
-                  onClick={() => window.open(`https://ststaxrepair.org/admin/staff/profile/${member.id}`, '_blank')}
                 >
                   <CardContent className="p-4">
                     <div className="flex items-start gap-4">
                       <Avatar className="h-12 w-12">
                         <AvatarFallback className="bg-primary/10 text-primary">
-                          {member.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                          {`${member.firstName?.[0] || ''}${member.lastName?.[0] || ''}`.toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2 mb-1">
-                          <h4 className="font-medium truncate">{member.name}</h4>
+                          <h4 className="font-medium truncate">{member.firstName} {member.lastName}</h4>
                           <Badge variant="secondary" className="shrink-0">{member.role}</Badge>
                         </div>
                         <p className="text-sm text-muted-foreground truncate mb-3">{member.email}</p>
