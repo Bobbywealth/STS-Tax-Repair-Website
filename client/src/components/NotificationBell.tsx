@@ -206,13 +206,45 @@ export function NotificationBell() {
     },
   });
 
+  // Get default navigation link based on notification type
+  const getDefaultLink = (type: NotificationType, resourceId?: string): string => {
+    switch (type) {
+      case 'staff_request':
+        return '/manager?tab=requests';
+      case 'new_client':
+      case 'lead_created':
+        return '/clients';
+      case 'new_ticket':
+      case 'ticket_response':
+        return '/support';
+      case 'task_assigned':
+      case 'task_completed':
+        return '/tasks';
+      case 'payment_received':
+        return '/payments';
+      case 'document_uploaded':
+        return '/documents';
+      case 'appointment_scheduled':
+        return '/appointments';
+      case 'signature_completed':
+      case 'tax_filing_status':
+        return resourceId ? `/clients/${resourceId}` : '/clients';
+      default:
+        return '/';
+    }
+  };
+
   const handleNotificationClick = useCallback((notification: Notification) => {
     if (!notification.isRead) {
       markAsReadMutation.mutate(notification.id);
     }
-    if (notification.link) {
+    
+    // Use explicit link if available, otherwise use default based on type
+    const linkToNavigate = notification.link || getDefaultLink(notification.type, notification.resourceId);
+    
+    if (linkToNavigate) {
       setOpen(false);
-      setLocation(notification.link);
+      setLocation(linkToNavigate);
     }
   }, [markAsReadMutation, setLocation]);
 
