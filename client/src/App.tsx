@@ -326,12 +326,12 @@ function AdminLayout() {
     <SidebarProvider style={sidebarStyle as React.CSSProperties}>
       <div className="flex h-screen w-full">
         <AppSidebar user={sidebarUser} />
-        <div className="flex flex-col flex-1 overflow-hidden">
-          <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-background/95 sticky top-0 z-50 safe-area-top">
+        <div className="flex flex-col flex-1 overflow-hidden w-full">
+          <header className="flex items-center justify-between px-3 md:px-4 py-2 md:py-3 border-b border-border/50 md:border-border bg-background/95 sticky top-0 z-50 safe-area-top">
             <SidebarTrigger data-testid="button-sidebar-toggle" />
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 md:gap-3">
               <NotificationBell />
-              <Link href="/settings" className="hidden sm:flex items-center gap-2 hover-elevate rounded-full p-1 pr-3 transition-colors" data-testid="link-user-profile">
+              <Link href="/settings" className="hidden md:flex items-center gap-2 hover-elevate rounded-full p-1 pr-3 transition-colors" data-testid="link-user-profile">
                 <Avatar className="h-8 w-8 border-2 border-primary/20">
                   <AvatarImage src={getProfileImageUrl()} alt={displayName} />
                   <AvatarFallback className="bg-primary text-primary-foreground text-sm font-medium">

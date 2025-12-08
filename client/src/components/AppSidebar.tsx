@@ -121,10 +121,10 @@ export function AppSidebar({ user }: AppSidebarProps) {
   };
 
   return (
-    <Sidebar className="futuristic-sidebar border-r-0">
+    <Sidebar className="futuristic-sidebar border-r-0 sm:border-r">
       <div className="sidebar-scanlines" />
       
-      <SidebarHeader className="py-6 px-4 border-b border-emerald-500/20 flex-shrink-0 relative z-10">
+      <SidebarHeader className="py-3 sm:py-6 px-3 sm:px-4 border-b border-emerald-500/20 border-b-emerald-500/10 sm:border-b-emerald-500/20 flex-shrink-0 relative z-10">
         <div className="sidebar-logo-container flex items-center justify-center flex-shrink-0">
           <img 
             src={logoUrl} 
