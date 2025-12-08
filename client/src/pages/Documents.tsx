@@ -165,22 +165,19 @@ export default function Documents() {
               <Card key={doc.id} className="hover-elevate" data-testid={`card-document-${doc.id}`}>
                 <CardContent className="p-4">
                   {/* Mobile Layout */}
-                  <div className="sm:hidden">
-                    <div className="flex items-start gap-3 mb-3">
-                      <div className="h-10 w-10 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <div className="sm:hidden space-y-2">
+                    <div className="flex items-start gap-3">
+                      <div className="h-10 w-10 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
                         <FileText className="h-5 w-5 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm leading-tight line-clamp-2">{doc.documentName}</p>
-                        <Badge className={`${getDocumentTypeBadgeColor(doc.documentType)} mt-1.5 text-xs`}>
-                          {getDocumentTypeLabel(doc.documentType)}
-                        </Badge>
+                        <p className="font-medium text-sm leading-snug break-words whitespace-normal line-clamp-2">{doc.documentName}</p>
                       </div>
                       {doc.fileUrl && (
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-8 w-8 flex-shrink-0"
+                          className="h-8 w-8 flex-shrink-0 mt-0.5"
                           onClick={() => {
                             window.open(`/api/documents/${doc.id}/download`, '_blank');
                           }}
@@ -189,15 +186,20 @@ export default function Documents() {
                         </Button>
                       )}
                     </div>
-                    <div className="flex items-center justify-between pt-2 border-t text-xs">
+                    <div className="flex items-center gap-2 flex-wrap text-xs pl-13">
+                      <Badge className={`${getDocumentTypeBadgeColor(doc.documentType)}`}>
+                        {getDocumentTypeLabel(doc.documentType)}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-3 flex-wrap text-xs pl-13">
                       <Link href={`/clients/${doc.clientId}`}>
-                        <span className="text-primary hover:underline flex items-center gap-1">
-                          <User className="h-3 w-3" />
-                          {getClientName(doc.clientId)}
+                        <span className="text-primary hover:underline inline-flex items-center gap-1 whitespace-nowrap">
+                          <User className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate">{getClientName(doc.clientId)}</span>
                         </span>
                       </Link>
-                      <span className="text-muted-foreground flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
+                      <span className="text-muted-foreground inline-flex items-center gap-1 whitespace-nowrap">
+                        <Calendar className="h-3 w-3 flex-shrink-0" />
                         {doc.uploadedAt ? format(new Date(doc.uploadedAt), "MMM d") : "Unknown"}
                       </span>
                     </div>
