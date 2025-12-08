@@ -146,34 +146,63 @@ export class FTPStorageService {
         console.error(`[FTP-STREAM] FAILED - File not found at: ${fullPath}`);
         console.error(`[FTP-STREAM] Error details:`, sizeError.message);
         
-        // Try alternate path: if path is uploads/clients/{id}, try uploads/customers/{id}
-        if (filePath.includes('uploads/clients/')) {
-          const alternatePath = filePath.replace('uploads/clients/', 'uploads/customers/');
-          fullPath = `${BASE_PATH}/${alternatePath}`;
-          console.log(`[FTP-STREAM] Trying alternate path: ${fullPath}`);
-          try {
-            fileSize = await client.size(fullPath);
-            console.log(`[FTP-STREAM] Found at alternate path! File size: ${fileSize} bytes`);
-          } catch (altError: any) {
-            console.error(`[FTP-STREAM] Alternate path also failed: ${fullPath} - ${altError.message}`);
-            client.close();
-            return false;
+        // Try alternate paths for Perfex migration compatibility
+        let foundPath = false;
+        
+        // Pattern 1: If path is uploads/customers/{id}/..., try uploads/clients/perfex-{id}/...
+        if (filePath.includes('uploads/customers/')) {
+          const match = filePath.match(/uploads\/customers\/(\d+)\/(.*)/);
+          if (match) {
+            const perfexId = match[1];
+            const filename = match[2];
+            const alternatePath = `uploads/clients/perfex-${perfexId}/${filename}`;
+            fullPath = `${BASE_PATH}/${alternatePath}`;
+            console.log(`[FTP-STREAM] Trying Perfex path (customers→clients/perfex-): ${fullPath}`);
+            try {
+              fileSize = await client.size(fullPath);
+              console.log(`[FTP-STREAM] Found at Perfex path! File size: ${fileSize} bytes`);
+              foundPath = true;
+            } catch (altError: any) {
+              console.error(`[FTP-STREAM] Perfex path failed: ${fullPath} - ${altError.message}`);
+            }
           }
-        } else if (filePath.includes('uploads/customers/')) {
-          // Try the other way around
-          const alternatePath = filePath.replace('uploads/customers/', 'uploads/clients/');
-          fullPath = `${BASE_PATH}/${alternatePath}`;
-          console.log(`[FTP-STREAM] Trying alternate path: ${fullPath}`);
-          try {
-            fileSize = await client.size(fullPath);
-            console.log(`[FTP-STREAM] Found at alternate path! File size: ${fileSize} bytes`);
-          } catch (altError: any) {
-            console.error(`[FTP-STREAM] Alternate path also failed: ${fullPath} - ${altError.message}`);
-            client.close();
-            return false;
+          
+          // Pattern 2: Try without perfex- prefix (fallback for non-prefixed folders)
+          if (!foundPath) {
+            const alternatePath = filePath.replace('uploads/customers/', 'uploads/clients/');
+            fullPath = `${BASE_PATH}/${alternatePath}`;
+            console.log(`[FTP-STREAM] Trying simple customers→clients: ${fullPath}`);
+            try {
+              fileSize = await client.size(fullPath);
+              console.log(`[FTP-STREAM] Found at simple path! File size: ${fileSize} bytes`);
+              foundPath = true;
+            } catch (altError: any) {
+              console.error(`[FTP-STREAM] Simple path also failed: ${fullPath} - ${altError.message}`);
+            }
           }
-        } else {
-          console.error(`[FTP-STREAM] No alternate path to try for: ${filePath}`);
+        } 
+        
+        // Pattern 3: If path is uploads/clients/{id}/... (without perfex-), try with perfex- prefix
+        if (!foundPath && filePath.includes('uploads/clients/')) {
+          const match = filePath.match(/uploads\/clients\/(\d+)\/(.*)/);
+          if (match) {
+            const perfexId = match[1];
+            const filename = match[2];
+            const alternatePath = `uploads/clients/perfex-${perfexId}/${filename}`;
+            fullPath = `${BASE_PATH}/${alternatePath}`;
+            console.log(`[FTP-STREAM] Trying to add perfex- prefix: ${fullPath}`);
+            try {
+              fileSize = await client.size(fullPath);
+              console.log(`[FTP-STREAM] Found with perfex- prefix! File size: ${fileSize} bytes`);
+              foundPath = true;
+            } catch (altError: any) {
+              console.error(`[FTP-STREAM] Perfex prefix also failed: ${fullPath} - ${altError.message}`);
+            }
+          }
+        }
+        
+        if (!foundPath) {
+          console.error(`[FTP-STREAM] All alternate paths failed for: ${filePath}`);
           client.close();
           return false;
         }
