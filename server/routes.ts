@@ -4117,62 +4117,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Helper function to stream files from GoDaddy
-  async function streamFileFromGoDaddy(filePath: string, res: any, documentName: string) {
-    // Encode each path segment to handle special characters in filenames
-    const encodedPath = filePath.split('/').map(segment => encodeURIComponent(segment)).join('/');
-    const externalUrl = `https://ststaxrepair.org/${encodedPath}`;
-    console.log(`[GODADDY] Fetching file from: ${externalUrl}`);
-    
-    try {
-      const response = await fetch(externalUrl);
-      
-      if (!response.ok) {
-        console.error(`[GODADDY] Failed to fetch file: ${response.status} ${response.statusText}`);
-        return res.status(404).json({ error: `File not found on server: ${response.status}` });
-      }
-      
-      // Get content type from response or guess from filename
-      const contentType = response.headers.get('content-type') || 'application/octet-stream';
-      const contentLength = response.headers.get('content-length');
-      
-      // Set response headers
-      res.setHeader('Content-Type', contentType);
-      if (contentLength) {
-        res.setHeader('Content-Length', contentLength);
-      }
-      
-      // For inline viewing of images and PDFs
-      const lowerName = documentName.toLowerCase();
-      if (lowerName.endsWith('.pdf') || lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg') || lowerName.endsWith('.png') || lowerName.endsWith('.gif')) {
-        res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(documentName)}"`);
-      } else {
-        res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(documentName)}"`);
-      }
-      
-      // Stream the response body to the client
-      if (response.body) {
-        const reader = response.body.getReader();
-        const pump = async () => {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            res.write(Buffer.from(value));
-          }
-          res.end();
-        };
-        await pump();
-      } else {
-        // Fallback: read entire response as buffer
-        const buffer = await response.arrayBuffer();
-        res.send(Buffer.from(buffer));
-      }
-    } catch (error) {
-      console.error(`[GODADDY] Error streaming file:`, error);
-      return res.status(500).json({ error: "Failed to fetch file from server" });
-    }
-  }
-
   // Download/view a document
   app.get("/api/documents/:id/download", isAuthenticated, async (req, res) => {
     try {
@@ -4190,30 +4134,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const documentName = document.documentName || 'document';
 
-      // For Perfex CRM legacy documents, fetch and stream from GoDaddy
+      // For Perfex CRM legacy documents, download via FTP from GoDaddy
       if (fileUrl.startsWith('/perfex-uploads/')) {
         // fileUrl is like: /perfex-uploads/uploads/customers/{clientId}/{filename}
-        // Files are at: uploads/clients/{clientId}/{filename}
+        // Files are at: uploads/clients/{clientId}/{filename} on FTP server
         const pathMatch = fileUrl.match(/\/perfex-uploads\/uploads\/customers\/(\d+)\/(.+)/);
         if (pathMatch) {
           const clientId = pathMatch[1];
           const filename = pathMatch[2];
           // Perfex uses 'clients' not 'customers' in actual file path
           const filePath = `uploads/clients/${clientId}/${filename}`;
-          console.log(`[PERFEX] Streaming file: ${filePath} for document ${documentId}`);
-          return await streamFileFromGoDaddy(filePath, res, documentName);
+          console.log(`[PERFEX] Downloading via FTP: ${filePath} for document ${documentId}`);
+          const success = await ftpStorageService.streamFileToResponse(filePath, res, documentName);
+          if (success) return;
+          return res.status(404).json({ error: "File not found on FTP server" });
         }
         // Fallback: try the raw path without /perfex-uploads/ prefix
         const fallbackPath = fileUrl.replace('/perfex-uploads/', '');
-        return await streamFileFromGoDaddy(fallbackPath, res, documentName);
+        const success = await ftpStorageService.streamFileToResponse(fallbackPath, res, documentName);
+        if (success) return;
+        return res.status(404).json({ error: "File not found on FTP server" });
       }
 
-      // For FTP-uploaded files, fetch and stream from GoDaddy
+      // For FTP-uploaded files, download via FTP from GoDaddy
       if (fileUrl.startsWith('/ftp/')) {
         // Remove /ftp/ prefix to get the actual path
         const relativePath = fileUrl.replace('/ftp/', '');
-        console.log(`[FTP] Streaming file: ${relativePath} for document ${documentId}`);
-        return await streamFileFromGoDaddy(relativePath, res, documentName);
+        console.log(`[FTP] Downloading via FTP: ${relativePath} for document ${documentId}`);
+        const success = await ftpStorageService.streamFileToResponse(relativePath, res, documentName);
+        if (success) return;
+        return res.status(404).json({ error: "File not found on FTP server" });
       }
 
       // For object storage files, get the file and stream it

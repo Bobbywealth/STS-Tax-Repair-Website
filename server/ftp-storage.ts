@@ -129,6 +129,72 @@ export class FTPStorageService {
     }
   }
 
+  async streamFileToResponse(filePath: string, res: any, documentName: string): Promise<boolean> {
+    const client = await this.getClient();
+    
+    try {
+      const fullPath = `${BASE_PATH}/${filePath}`;
+      console.log(`[FTP] Streaming file: ${fullPath}`);
+      
+      // Get file size first
+      let fileSize: number;
+      try {
+        fileSize = await client.size(fullPath);
+        console.log(`[FTP] File size: ${fileSize} bytes`);
+      } catch (sizeError) {
+        console.error(`[FTP] File not found: ${fullPath}`);
+        client.close();
+        return false;
+      }
+      
+      // Determine content type from filename
+      const ext = documentName.toLowerCase().split('.').pop() || '';
+      const mimeTypes: Record<string, string> = {
+        'pdf': 'application/pdf',
+        'jpg': 'image/jpeg',
+        'jpeg': 'image/jpeg',
+        'png': 'image/png',
+        'gif': 'image/gif',
+        'doc': 'application/msword',
+        'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'xls': 'application/vnd.ms-excel',
+        'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'txt': 'text/plain',
+      };
+      
+      const contentType = mimeTypes[ext] || 'application/octet-stream';
+      
+      // Set response headers before streaming
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Length', fileSize);
+      
+      // Inline viewing for PDFs and images
+      if (['pdf', 'jpg', 'jpeg', 'png', 'gif'].includes(ext)) {
+        res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(documentName)}"`);
+      } else {
+        res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(documentName)}"`);
+      }
+      
+      // Stream directly from FTP to HTTP response using PassThrough
+      const { PassThrough } = require('stream');
+      const passThrough = new PassThrough();
+      
+      // Pipe the PassThrough stream to the response
+      passThrough.pipe(res);
+      
+      // Download directly to the PassThrough stream (which pipes to res)
+      await client.downloadTo(passThrough, fullPath);
+      
+      console.log(`[FTP] Streaming complete for: ${fullPath}`);
+      return true;
+    } catch (error) {
+      console.error(`[FTP] Stream failed:`, error);
+      return false;
+    } finally {
+      client.close();
+    }
+  }
+
   private async ensureDirectory(client: ftp.Client, dirPath: string): Promise<void> {
     const parts = dirPath.split('/').filter(p => p);
     let currentPath = '';
