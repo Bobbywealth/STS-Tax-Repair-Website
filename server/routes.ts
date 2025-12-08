@@ -4677,66 +4677,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ===========================================
   // Removed duplicate - tasks endpoints are defined earlier with proper permission checks
 
-  // ===========================================
-  // DOCUMENTS ENDPOINTS
-  // ===========================================
-  app.get("/api/documents", isAuthenticated, async (req: any, res) => {
-    try {
-      const clientId = req.query.clientId as string;
-      if (clientId) {
-        const docs = await storage.getDocumentVersions(clientId);
-        return res.json(docs);
-      }
-      const docs = await storage.getAllDocuments();
-      res.json(docs);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.post("/api/documents", isAuthenticated, async (req: any, res) => {
-    try {
-      const doc = await storage.createDocumentVersion(req.body);
-      
-      // Send email notification to client about document upload
-      if (req.body.clientId) {
-        try {
-          const client = await storage.getUser(req.body.clientId);
-          const uploaderId = req.userId || req.user?.claims?.sub;
-          const uploader = uploaderId ? await storage.getUser(uploaderId) : null;
-          
-          if (client?.email) {
-            await sendDocumentUploadConfirmationEmail(
-              client.email,
-              client.firstName || 'Client',
-              req.body.fileName || req.body.name || 'Document',
-              req.body.documentType || undefined,
-              uploader && uploader.id !== client.id 
-                ? `${uploader.firstName} ${uploader.lastName}` 
-                : undefined
-            );
-            console.log(`[EMAIL] Document upload notification sent to ${client.email}`);
-          }
-        } catch (emailError) {
-          console.error('[EMAIL] Failed to send document upload notification:', emailError);
-        }
-      }
-      
-      res.status(201).json(doc);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.delete("/api/documents/:id", isAuthenticated, async (req: any, res) => {
-    try {
-      const { id } = req.params;
-      await storage.deleteDocumentVersion(id);
-      res.json({ success: true });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
+  // Document endpoints are defined earlier with proper permission checks
+  // (lines 3132-3213) - removed duplicate uncontrolled routes here
 
   // ===========================================
   // TICKETS ENDPOINTS
