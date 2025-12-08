@@ -710,6 +710,17 @@ export async function runMySQLMigrations(): Promise<void> {
         )
       `);
       console.log('home_page_agents table created successfully!');
+      
+      // Seed default homepage agents
+      await seedDefaultHomePageAgents(connection);
+    }
+    
+    // Check if home_page_agents table is empty and seed if needed
+    const [agentCount] = await connection.query(
+      `SELECT COUNT(*) as count FROM home_page_agents`
+    );
+    if (Array.isArray(agentCount) && (agentCount[0] as any).count === 0) {
+      await seedDefaultHomePageAgents(connection);
     }
     
     connection.release();
@@ -757,4 +768,130 @@ async function seedDefaultRolePermissions(connection: mysql.PoolConnection): Pro
     }
   }
   console.log(`Seeded ${count} role permissions successfully!`);
+}
+
+// Seed default homepage agents
+async function seedDefaultHomePageAgents(connection: mysql.PoolConnection): Promise<void> {
+  console.log('Seeding default homepage agents...');
+  
+  const defaultAgents = [
+    {
+      name: "Stephedena Cherfils",
+      title: "Service Support",
+      phone: "954-534-5227",
+      email: "Info.ststax@gmail.com",
+      address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
+      imageUrl: "https://iili.io/fxO48DF.jpg",
+      sortOrder: 1
+    },
+    {
+      name: "Withney Simon",
+      title: "Service Support",
+      phone: "407-427-7619",
+      email: "Withney.ststax@yahoo.com",
+      address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
+      imageUrl: "https://iili.io/fxO4Uog.png",
+      sortOrder: 2
+    },
+    {
+      name: "Keelie Duvignaud",
+      title: "Service Support",
+      phone: "772-877-1588",
+      email: "Taxesbykeys@gmail.com",
+      address: "3181 SW Crenshaw St, Port St. Lucie, FL 34953, USA",
+      imageUrl: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Keelie-Duvignaud.webp",
+      sortOrder: 3
+    },
+    {
+      name: "Christy S Dor",
+      title: "Service Support",
+      phone: "561-932-6114",
+      email: "christyststaxrepair@gmail.com",
+      address: "Florida Office, USA",
+      imageUrl: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Christy-S-Dor.webp",
+      sortOrder: 4
+    },
+    {
+      name: "Alexandra Isaac",
+      title: "Service Support",
+      phone: "786-792-4713",
+      email: "Alexandra.ststax@gmail.com",
+      address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
+      imageUrl: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Alexandra-Isaac.webp",
+      sortOrder: 5
+    },
+    {
+      name: "Roselyne Dormeus",
+      title: "Service Support",
+      phone: "305-299-5228",
+      email: "Roselyne.ststax@gmail.com",
+      address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
+      imageUrl: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/roselyne-dormeus.webp",
+      sortOrder: 6
+    },
+    {
+      name: "Wensly Martin",
+      title: "Service Support",
+      phone: "305-776-6475",
+      email: "Wensly.sts@gmail.com",
+      address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
+      imageUrl: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Wensly-Martin.webp",
+      sortOrder: 7
+    },
+    {
+      name: "Erica Gordon",
+      title: "Service Support",
+      phone: "352-262-4080",
+      email: "Ericargordon@gmail.com",
+      address: "1127 International Pkwy Suite 2185, Lake Mary, FL 32746, USA",
+      imageUrl: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Erica-Gordon.webp",
+      sortOrder: 8
+    },
+    {
+      name: "Jessica Zephir",
+      title: "Credit Specialist",
+      phone: "786-805-1104",
+      email: "Zephirfinancialgroup@outlook.com",
+      address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
+      imageUrl: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/whatsapp-image-2025-01-02-at-064332-2898178b-6779657b30e6d.webp",
+      sortOrder: 9
+    },
+    {
+      name: "John Jay",
+      title: "Service Support",
+      phone: "(407) 340-7964",
+      email: "JohnJ.Financial@gmail.com",
+      address: "3042 Herold Dr, Orlando, FL 32805",
+      imageUrl: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/WhatsApp-Image-2025-11-20-at-17.00.09.jpeg",
+      sortOrder: 10
+    },
+    {
+      name: "Kerlens Casseus",
+      title: "Funding Specialist",
+      phone: "786-961-5014",
+      email: "Kerlens@casseussolutions.info",
+      address: "Florida, USA",
+      imageUrl: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/WhatsApp-Image-2025-11-20-at-19.17.28.jpeg",
+      sortOrder: 11
+    },
+    {
+      name: "Roneshia Brandon",
+      title: "Service Support",
+      phone: "305-804-6227",
+      email: "Oneshiabrandon22@gmail.com",
+      address: "4000 Hollywood Blvd Suite 555-S, Hollywood, FL 33021",
+      imageUrl: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Roneshia-Brandon.webp",
+      sortOrder: 12
+    }
+  ];
+  
+  for (const agent of defaultAgents) {
+    await connection.query(
+      `INSERT INTO home_page_agents (name, title, phone, email, address, image_url, sort_order, is_active) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, TRUE)`,
+      [agent.name, agent.title, agent.phone, agent.email, agent.address, agent.imageUrl, agent.sortOrder]
+    );
+  }
+  
+  console.log(`Seeded ${defaultAgents.length} homepage agents successfully!`);
 }
