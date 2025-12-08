@@ -5,7 +5,7 @@ import { useSidebar } from "@/components/ui/sidebar";
 import { triggerHaptic } from "@/lib/haptics";
 
 const navItems = [
-  { title: "Home", url: "/", icon: Home },
+  { title: "Home", url: "/dashboard", icon: Home },
   { title: "Clients", url: "/clients", icon: Users },
   { title: "Tasks", url: "/tasks", icon: CheckSquare },
   { title: "Docs", url: "/documents", icon: FileText },
@@ -19,7 +19,7 @@ export function MobileNav() {
     <nav className="mobile-bottom-nav md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border safe-area-bottom">
       <div className="flex items-center justify-around h-16 px-2">
         {navItems.map((item) => {
-          const isActive = location === item.url;
+          const isActive = location === item.url || (item.url === "/dashboard" && location === "/");
           return (
             <Link key={item.title} href={item.url}>
               <button
