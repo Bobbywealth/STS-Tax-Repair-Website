@@ -4216,6 +4216,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============ FTP DIAGNOSTIC ROUTES ============
+  
+  // List FTP directory contents (for debugging)
+  app.get("/api/admin/ftp/list", isAuthenticated, requireAdmin(), async (req, res) => {
+    try {
+      const path = (req.query.path as string) || 'uploads';
+      console.log(`[FTP DEBUG] Listing directory: ${path}`);
+      const contents = await ftpStorageService.listDirectory(path);
+      res.json({ path, contents });
+    } catch (error: any) {
+      console.error("[FTP DEBUG] Error listing directory:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // ============ PERFEX CRM MIGRATION ROUTES ============
   // All admin routes require admin role
 

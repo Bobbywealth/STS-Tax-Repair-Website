@@ -253,6 +253,28 @@ export class FTPStorageService {
       .substring(0, 200);
   }
 
+  // List files in a directory on FTP server (for debugging)
+  async listDirectory(dirPath: string): Promise<{ name: string; type: string; size: number }[]> {
+    const client = await this.getClient();
+    
+    try {
+      const fullPath = `${BASE_PATH}/${dirPath}`;
+      console.log(`[FTP] Listing directory: ${fullPath}`);
+      
+      const list = await client.list(fullPath);
+      return list.map(item => ({
+        name: item.name,
+        type: item.isDirectory ? 'directory' : 'file',
+        size: item.size
+      }));
+    } catch (error) {
+      console.error(`[FTP] Error listing directory:`, error);
+      throw error;
+    } finally {
+      client.close();
+    }
+  }
+
   getPublicUrl(filePath: string): string {
     // Files are in public_html, so they're directly accessible via the domain
     // Encode each path segment to handle special characters in filenames
