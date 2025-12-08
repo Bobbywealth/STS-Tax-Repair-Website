@@ -45,7 +45,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence, useInView, useScroll, useTransform } from "framer-motion";
 import logoUrl from "@/assets/sts-logo.png";
-import officeBackgroundUrl from "../../../attached_assets/generated_images/professional_office_background_blur.png";
+import officeBackgroundUrl from "@assets/generated_images/professional_office_background_blur.png";
 
 const MotionCard = motion.create(Card);
 
