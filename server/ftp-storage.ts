@@ -201,8 +201,52 @@ export class FTPStorageService {
           }
         }
         
+        // Pattern 4: If still not found, try listing directory and serving any file there
+        // This handles Perfex migration mismatches where DB has old filenames but new files exist
         if (!foundPath) {
-          console.error(`[FTP-STREAM] All alternate paths failed for: ${filePath}`);
+          console.log(`[FTP-STREAM] All path patterns failed. Attempting directory listing fallback.`);
+          
+          // Extract directory path
+          let dirPath = filePath.substring(0, filePath.lastIndexOf('/'));
+          let ftpDirPath = `${BASE_PATH}/${dirPath}`;
+          
+          console.log(`[FTP-STREAM] Listing directory contents: ${ftpDirPath}`);
+          try {
+            const files = await client.list(ftpDirPath);
+            const fileList = files.filter(f => !f.isDirectory);
+            
+            if (fileList.length > 0) {
+              // Use the first available file (or first image if multiple files exist)
+              const imageFiles = fileList.filter(f => /\.(jpg|jpeg|png|gif|pdf)$/i.test(f.name));
+              const targetFile = imageFiles.length > 0 ? imageFiles[0] : fileList[0];
+              
+              fullPath = `${ftpDirPath}/${targetFile.name}`;
+              console.log(`[FTP-STREAM] Directory fallback: Using file "${targetFile.name}" from directory`);
+              console.log(`[FTP-STREAM] Full fallback path: ${fullPath}`);
+              
+              try {
+                fileSize = await client.size(fullPath);
+                console.log(`[FTP-STREAM] Fallback SUCCESS! File size: ${fileSize} bytes`);
+                foundPath = true;
+              } catch (fbError: any) {
+                console.error(`[FTP-STREAM] Fallback file size check failed: ${fbError.message}`);
+                client.close();
+                return false;
+              }
+            } else {
+              console.error(`[FTP-STREAM] Directory is empty or inaccessible: ${ftpDirPath}`);
+              client.close();
+              return false;
+            }
+          } catch (listError: any) {
+            console.error(`[FTP-STREAM] Failed to list directory: ${ftpDirPath} - ${listError.message}`);
+            client.close();
+            return false;
+          }
+        }
+        
+        if (!foundPath) {
+          console.error(`[FTP-STREAM] All alternate paths and fallback failed for: ${filePath}`);
           client.close();
           return false;
         }
