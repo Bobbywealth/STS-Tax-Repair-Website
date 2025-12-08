@@ -5540,9 +5540,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all staff requests (admin only)
-  app.get("/api/staff-requests", isAuthenticated, requireAdmin, async (req: any, res) => {
+  // Get all staff requests (admin, tax office, agent)
+  app.get("/api/staff-requests", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.userId || req.user?.claims?.sub;
+      const currentUser = await storage.getUser(userId);
+      const userRole = currentUser?.role?.toLowerCase() || 'client';
+      
+      // Only admin, tax_office, and agent can view staff requests
+      if (!['admin', 'tax_office', 'agent'].includes(userRole)) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+
       const { status, officeId, limit, offset } = req.query;
       
       const requests = await mysqlStorage.getStaffRequests({
@@ -5558,9 +5567,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get staff request count (admin only)
-  app.get("/api/staff-requests/count", isAuthenticated, requireAdmin, async (req: any, res) => {
+  // Get staff request count (admin, tax office, agent)
+  app.get("/api/staff-requests/count", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.userId || req.user?.claims?.sub;
+      const currentUser = await storage.getUser(userId);
+      const userRole = currentUser?.role?.toLowerCase() || 'client';
+      
+      if (!['admin', 'tax_office', 'agent'].includes(userRole)) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+
       const { status } = req.query;
       const count = await mysqlStorage.getStaffRequestsCount(status as any);
       res.json({ count });
@@ -5569,9 +5586,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get single staff request (admin only)
-  app.get("/api/staff-requests/:id", isAuthenticated, requireAdmin, async (req: any, res) => {
+  // Get single staff request (admin, tax office, agent)
+  app.get("/api/staff-requests/:id", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.userId || req.user?.claims?.sub;
+      const currentUser = await storage.getUser(userId);
+      const userRole = currentUser?.role?.toLowerCase() || 'client';
+      
+      if (!['admin', 'tax_office', 'agent'].includes(userRole)) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+
       const { id } = req.params;
       const request = await mysqlStorage.getStaffRequest(id);
       
@@ -5585,9 +5610,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Approve or reject staff request (admin only)
-  app.patch("/api/staff-requests/:id", isAuthenticated, requireAdmin, async (req: any, res) => {
+  // Approve or reject staff request (admin, tax office)
+  app.patch("/api/staff-requests/:id", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.userId || req.user?.claims?.sub;
+      const currentUser = await storage.getUser(userId);
+      const userRole = currentUser?.role?.toLowerCase() || 'client';
+      
+      if (!['admin', 'tax_office'].includes(userRole)) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+      
       const { id } = req.params;
       const { status, reviewNotes } = req.body;
       const adminId = req.userId || req.user?.claims?.sub;
