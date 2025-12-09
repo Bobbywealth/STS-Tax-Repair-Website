@@ -130,7 +130,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
           <img 
             src={logoUrl} 
             alt={`${companyName} Logo`}
-            className="h-20 w-auto object-contain flex-shrink-0 drop-shadow-[0_0_10px_rgba(16,185,129,0.3)]"
+            className="h-32 w-auto object-contain flex-shrink-0 drop-shadow-[0_0_10px_rgba(16,185,129,0.3)]"
           />
         </div>
       </SidebarHeader>
