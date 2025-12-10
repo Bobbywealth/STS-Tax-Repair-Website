@@ -119,6 +119,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // JS / CSS - stale while revalidate so they're cached for offline after first load
+  if (request.destination === 'script' || request.destination === 'style') {
+    event.respondWith(staleWhileRevalidateStrategy(request));
+    return;
+  }
+
   // Images only - stale while revalidate
   if (shouldStaleWhileRevalidate(request.url)) {
     event.respondWith(staleWhileRevalidateStrategy(request));
