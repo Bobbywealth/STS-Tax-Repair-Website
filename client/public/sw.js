@@ -1,6 +1,11 @@
-const CACHE_VERSION = 'v9';
+const CACHE_VERSION = 'v10';
 const CACHE_NAME = `sts-taxrepair-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `sts-runtime-${CACHE_VERSION}`;
+const SYNC_TAG = 'sync-data';
+const PERIODIC_SYNC_TAG = 'periodic-content-sync';
+const PERIODIC_SYNC_URLS = ['/api/sync', '/api/notifications'];
+const QUEUE_DB = 'sts-sync-queue';
+const QUEUE_STORE = 'requests';
 
 const STATIC_ASSETS = [
   '/',
@@ -17,7 +22,20 @@ const STATIC_ASSETS = [
   '/icons/icon-384x384.png',
   '/icons/icon-512x512.png',
   '/screenshots/mobile.png',
-  '/screenshots/desktop.png'
+  '/screenshots/desktop.png',
+  '/client-login',
+  '/client-portal',
+  '/client-portal/documents',
+  '/client-portal/messages'
+];
+
+const APP_SHELL_ROUTES = [
+  '/',
+  '/client-login',
+  '/client-portal',
+  '/client-portal/documents',
+  '/client-portal/messages',
+  '/offline.html'
 ];
 
 const CACHE_STRATEGIES = {
@@ -32,6 +50,10 @@ self.addEventListener('install', (event) => {
       .then((cache) => {
         console.log('[SW] Caching static assets');
         return cache.addAll(STATIC_ASSETS);
+      })
+      .then((cache) => {
+        console.log('[SW] Caching app shell routes');
+        return cache.addAll(APP_SHELL_ROUTES.filter(Boolean));
       })
       .then(() => self.skipWaiting())
   );
@@ -72,7 +94,10 @@ function shouldStaleWhileRevalidate(url) {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   
-  if (request.method !== 'GET') return;
+  if (request.method !== 'GET') {
+    event.respondWith(handleNonGetRequest(request));
+    return;
+  }
 
   const url = new URL(request.url);
 
@@ -102,6 +127,22 @@ self.addEventListener('fetch', (event) => {
 
   // Everything else (JS, CSS, HTML) - network first for freshness
   event.respondWith(networkFirstWithOfflineFallback(request));
+});
+
+self.addEventListener('sync', (event) => {
+  if (event.tag === SYNC_TAG) {
+    event.waitUntil(replayQueuedRequests());
+  }
+
+  if (event.tag === PERIODIC_SYNC_TAG) {
+    event.waitUntil(runPeriodicSync());
+  }
+});
+
+self.addEventListener('periodicsync', (event) => {
+  if (event.tag === PERIODIC_SYNC_TAG) {
+    event.waitUntil(runPeriodicSync());
+  }
 });
 
 async function networkFirstStrategy(request) {
@@ -254,3 +295,134 @@ self.addEventListener('message', (event) => {
     event.ports[0].postMessage({ version: CACHE_VERSION });
   }
 });
+
+async function handleNonGetRequest(request) {
+  const fetchClone = request.clone();
+  const queueClone = request.clone();
+
+  try {
+    return await fetch(fetchClone);
+  } catch (error) {
+    console.log('[SW] Queueing request for background sync:', request.url);
+    if (self.registration?.sync) {
+      await queueRequest(queueClone);
+      await self.registration.sync.register(SYNC_TAG);
+    }
+
+    return new Response(
+      JSON.stringify({
+        queued: true,
+        offline: true,
+        message: 'Request queued. We will retry when you are back online.'
+      }),
+      {
+        status: 202,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+  }
+}
+
+function openQueueDb() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(QUEUE_DB, 1);
+
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(QUEUE_STORE)) {
+        db.createObjectStore(QUEUE_STORE, { autoIncrement: true });
+      }
+    };
+
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function queueRequest(request) {
+  const db = await openQueueDb();
+  const bodyBuffer = request.method !== 'GET' && request.method !== 'HEAD'
+    ? await request.arrayBuffer()
+    : null;
+  const headers = Array.from(request.headers.entries());
+
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(QUEUE_STORE, 'readwrite');
+    const store = tx.objectStore(QUEUE_STORE);
+    const addRequest = store.add({
+      url: request.url,
+      method: request.method,
+      headers,
+      body: bodyBuffer ? Array.from(new Uint8Array(bodyBuffer)) : null,
+      timestamp: Date.now()
+    });
+
+    addRequest.onsuccess = () => resolve();
+    addRequest.onerror = () => reject(addRequest.error);
+    tx.oncomplete = () => db.close();
+  });
+}
+
+async function replayQueuedRequests() {
+  const db = await openQueueDb();
+  const tx = db.transaction(QUEUE_STORE, 'readwrite');
+  const store = tx.objectStore(QUEUE_STORE);
+  const queued = await readAllQueuedRequests(store);
+
+  for (const entry of queued) {
+    const { key, value } = entry;
+    const bodyBuffer = value.body ? new Uint8Array(value.body).buffer : undefined;
+    const headers = new Headers(value.headers || []);
+    const requestInit = {
+      method: value.method,
+      headers,
+      credentials: 'include'
+    };
+
+    if (bodyBuffer && value.method !== 'GET' && value.method !== 'HEAD') {
+      requestInit.body = bodyBuffer;
+    }
+
+    try {
+      await fetch(value.url, requestInit);
+      store.delete(key);
+    } catch (error) {
+      console.log('[SW] Retry failed for', value.url, error);
+    }
+  }
+
+  tx.oncomplete = () => db.close();
+}
+
+function readAllQueuedRequests(store) {
+  return new Promise((resolve, reject) => {
+    const items = [];
+    const cursor = store.openCursor();
+
+    cursor.onsuccess = () => {
+      const c = cursor.result;
+      if (c) {
+        items.push({ key: c.key, value: c.value });
+        c.continue();
+      } else {
+        resolve(items);
+      }
+    };
+
+    cursor.onerror = () => reject(cursor.error);
+  });
+}
+
+async function runPeriodicSync() {
+  for (const url of PERIODIC_SYNC_URLS) {
+    try {
+      const response = await fetch(url, { credentials: 'include' });
+      if (response.ok) {
+        const cache = await caches.open(RUNTIME_CACHE);
+        cache.put(url, response.clone());
+      }
+    } catch (error) {
+      console.log('[SW] Periodic sync failed for', url, error);
+    }
+  }
+}
