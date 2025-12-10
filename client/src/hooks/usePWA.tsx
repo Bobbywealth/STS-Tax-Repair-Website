@@ -5,6 +5,9 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
 }
 
+const SYNC_TAG = 'sync-data';
+const PERIODIC_SYNC_TAG = 'periodic-content-sync';
+
 export function usePWA() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstallable, setIsInstallable] = useState(false);
@@ -102,6 +105,60 @@ export function usePWA() {
     }
   }, []);
 
+  const registerBackgroundFeatures = useCallback(async () => {
+    if (!('serviceWorker' in navigator)) return false;
+
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      let registered = false;
+
+      if ('periodicSync' in registration) {
+        try {
+          await (registration as any).periodicSync.register(PERIODIC_SYNC_TAG, {
+            minInterval: 12 * 60 * 60 * 1000, // 12 hours
+          });
+          registered = true;
+        } catch (error) {
+          console.warn('Periodic sync registration failed:', error);
+        }
+      }
+
+      if (!registered && 'sync' in registration) {
+        try {
+          await registration.sync.register(SYNC_TAG);
+          registered = true;
+        } catch (error) {
+          console.warn('Background sync registration failed:', error);
+        }
+      }
+
+      return registered;
+    } catch (error) {
+      console.error('Background features registration error:', error);
+      return false;
+    }
+  }, []);
+
+  const requestManualSync = useCallback(async () => {
+    if (!('serviceWorker' in navigator)) return false;
+
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      if ('sync' in registration) {
+        await registration.sync.register(SYNC_TAG);
+        return true;
+      }
+    } catch (error) {
+      console.error('Failed to request manual sync:', error);
+    }
+
+    return false;
+  }, []);
+
+  useEffect(() => {
+    registerBackgroundFeatures();
+  }, [registerBackgroundFeatures]);
+
   return {
     isInstallable,
     isInstalled,
@@ -110,6 +167,8 @@ export function usePWA() {
     hasUpdate,
     installApp,
     updateApp,
+    registerBackgroundFeatures,
+    requestManualSync,
   };
 }
 
