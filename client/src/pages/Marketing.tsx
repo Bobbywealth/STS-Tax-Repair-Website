@@ -92,7 +92,7 @@ export default function Marketing() {
   const [emailTemplateName, setEmailTemplateName] = useState("");
   const [smsTemplateName, setSmsTemplateName] = useState("");
 
-  // Load custom templates from localStorage (client-only)
+  // Load custom templates from localStorage
   useEffect(() => {
     try {
       const storedEmail = localStorage.getItem("sts-marketing-email-templates");
@@ -109,16 +109,6 @@ export default function Marketing() {
       console.warn("Template load failed", e);
     }
   }, []);
-
-  const saveEmailTemplates = (custom: EmailTemplate[]) => {
-    setEmailTemplates([...DEFAULT_EMAIL_TEMPLATES, ...custom]);
-    localStorage.setItem("sts-marketing-email-templates", JSON.stringify(custom));
-  };
-
-  const saveSmsTemplates = (custom: SmsTemplate[]) => {
-    setSmsTemplates([...DEFAULT_SMS_TEMPLATES, ...custom]);
-    localStorage.setItem("sts-marketing-sms-templates", JSON.stringify(custom));
-  };
 
   const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/users"],
@@ -283,10 +273,11 @@ export default function Marketing() {
       toast({ title: "Template name required", variant: "destructive" });
       return;
     }
-    const custom = (emailTemplates.filter((t) => !DEFAULT_EMAIL_TEMPLATES.some((d) => d.id === t.id)) as EmailTemplate[]);
+    const custom = emailTemplates.filter((t) => !DEFAULT_EMAIL_TEMPLATES.some((d) => d.id === t.id));
     const id = `custom-email-${Date.now()}`;
     const updated = [...custom, { id, name: emailTemplateName.trim(), subject: emailSubject, body: emailBody }];
-    saveEmailTemplates(updated);
+    setEmailTemplates([...DEFAULT_EMAIL_TEMPLATES, ...custom, { id, name: emailTemplateName.trim(), subject: emailSubject, body: emailBody }]);
+    localStorage.setItem("sts-marketing-email-templates", JSON.stringify(updated));
     setEmailTemplateName("");
     toast({ title: "Email template saved" });
   };
@@ -296,10 +287,11 @@ export default function Marketing() {
       toast({ title: "Template name required", variant: "destructive" });
       return;
     }
-    const custom = (smsTemplates.filter((t) => !DEFAULT_SMS_TEMPLATES.some((d) => d.id === t.id)) as SmsTemplate[]);
+    const custom = smsTemplates.filter((t) => !DEFAULT_SMS_TEMPLATES.some((d) => d.id === t.id));
     const id = `custom-sms-${Date.now()}`;
     const updated = [...custom, { id, name: smsTemplateName.trim(), body: smsBody }];
-    saveSmsTemplates(updated);
+    setSmsTemplates([...DEFAULT_SMS_TEMPLATES, ...custom, { id, name: smsTemplateName.trim(), body: smsBody }]);
+    localStorage.setItem("sts-marketing-sms-templates", JSON.stringify(updated));
     setSmsTemplateName("");
     toast({ title: "SMS template saved" });
   };
@@ -313,7 +305,7 @@ export default function Marketing() {
             <h1 className="text-2xl font-semibold">Marketing Center</h1>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            Send email and SMS campaigns using Gmail and Twilio.
+            Simple, step-by-step sending for email and SMS campaigns.
           </p>
         </div>
         <Badge variant="outline">Admin only</Badge>
@@ -326,14 +318,15 @@ export default function Marketing() {
         </AlertDescription>
       </Alert>
 
+      {/* Step 1: Audience */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5 text-primary" />
-            Recipients
+            Step 1: Choose audience
           </CardTitle>
           <CardDescription>
-            Filter by role, select all, or pick specific contacts. Only contacts with an email/phone are included per channel.
+            Filter by role, then pick contacts or select all. Only contacts with an email/phone appear per channel.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -351,7 +344,10 @@ export default function Marketing() {
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <p className="font-semibold text-sm">Email recipients</p>
+                <div>
+                  <p className="font-semibold text-sm">Email recipients</p>
+                  <p className="text-xs text-muted-foreground">Only contacts with an email.</p>
+                </div>
                 <Button variant="ghost" size="sm" onClick={selectAllEmails} disabled={usersLoading}>
                   Select all visible
                 </Button>
@@ -386,7 +382,10 @@ export default function Marketing() {
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <p className="font-semibold text-sm">SMS recipients</p>
+                <div>
+                  <p className="font-semibold text-sm">SMS recipients</p>
+                  <p className="text-xs text-muted-foreground">Only contacts with a phone number.</p>
+                </div>
                 <Button variant="ghost" size="sm" onClick={selectAllSms} disabled={usersLoading}>
                   Select all visible
                 </Button>
@@ -423,42 +422,79 @@ export default function Marketing() {
         </CardContent>
       </Card>
 
+      {/* Step 2: Templates */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">Step 2: Pick or save templates</CardTitle>
+          <CardDescription>Apply a preset or save your current draft for reuse.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 lg:grid-cols-2">
+          <div className="space-y-2">
+            <p className="font-semibold text-sm">Email templates</p>
+            <div className="flex flex-wrap gap-2">
+              {emailTemplates.map((tpl) => (
+                <Button
+                  key={tpl.id}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleApplyEmailTemplate(tpl)}
+                  className={cn("justify-start", "min-w-[140px]")}
+                >
+                  {tpl.name}
+                </Button>
+              ))}
+            </div>
+            <div className="flex flex-col gap-2">
+              <Input
+                placeholder="Template name"
+                value={emailTemplateName}
+                onChange={(e) => setEmailTemplateName(e.target.value)}
+              />
+              <Button variant="secondary" size="sm" onClick={handleSaveEmailTemplate}>
+                Save current email as template
+              </Button>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <p className="font-semibold text-sm">SMS templates</p>
+            <div className="flex flex-wrap gap-2">
+              {smsTemplates.map((tpl) => (
+                <Button
+                  key={tpl.id}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleApplySmsTemplate(tpl)}
+                  className={cn("justify-start", "min-w-[140px]")}
+                >
+                  {tpl.name}
+                </Button>
+              ))}
+            </div>
+            <div className="flex flex-col gap-2">
+              <Input
+                placeholder="Template name"
+                value={smsTemplateName}
+                onChange={(e) => setSmsTemplateName(e.target.value)}
+              />
+              <Button variant="secondary" size="sm" onClick={handleSaveSmsTemplate}>
+                Save current SMS as template
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Step 3 & 4: Campaigns */}
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Mail className="h-5 w-5 text-primary" />
-              Email Campaign (Gmail)
+              Step 3: Email (Gmail)
             </CardTitle>
-            <CardDescription>Send branded emails via your Gmail account.</CardDescription>
+            <CardDescription>Fill in or tweak after applying a template.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Templates</Label>
-              <div className="flex flex-wrap gap-2">
-                {emailTemplates.map((tpl) => (
-                  <Button
-                    key={tpl.id}
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleApplyEmailTemplate(tpl)}
-                    className={cn("justify-start", "min-w-[140px]")}
-                  >
-                    {tpl.name}
-                  </Button>
-                ))}
-              </div>
-              <div className="flex flex-col gap-2">
-                <Input
-                  placeholder="Template name"
-                  value={emailTemplateName}
-                  onChange={(e) => setEmailTemplateName(e.target.value)}
-                />
-                <Button variant="secondary" size="sm" onClick={handleSaveEmailTemplate}>
-                  Save current as template
-                </Button>
-              </div>
-            </div>
             <div className="space-y-2">
               <Label htmlFor="email-recipients">Recipients (optional manual add)</Label>
               <Textarea
@@ -508,37 +544,11 @@ export default function Marketing() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MessageSquare className="h-5 w-5 text-primary" />
-              SMS Campaign (Twilio)
+              Step 4: SMS (Twilio)
             </CardTitle>
-            <CardDescription>Send SMS blasts via Twilio.</CardDescription>
+            <CardDescription>Apply a template, then send.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Templates</Label>
-              <div className="flex flex-wrap gap-2">
-                {smsTemplates.map((tpl) => (
-                  <Button
-                    key={tpl.id}
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleApplySmsTemplate(tpl)}
-                    className={cn("justify-start", "min-w-[140px]")}
-                  >
-                    {tpl.name}
-                  </Button>
-                ))}
-              </div>
-              <div className="flex flex-col gap-2">
-                <Input
-                  placeholder="Template name"
-                  value={smsTemplateName}
-                  onChange={(e) => setSmsTemplateName(e.target.value)}
-                />
-                <Button variant="secondary" size="sm" onClick={handleSaveSmsTemplate}>
-                  Save current as template
-                </Button>
-              </div>
-            </div>
             <div className="space-y-2">
               <Label htmlFor="sms-recipients">Recipients (optional manual add)</Label>
               <Textarea
