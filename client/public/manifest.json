@@ -94,7 +94,7 @@
     }
   ],
   "categories": ["finance", "business", "productivity"],
-  "display_override": ["window-controls-overlay", "tabbed", "standalone"],
+  "display_override": ["tabbed", "window-controls-overlay", "standalone"],
   "note_taking": {
     "new_note_url": "/new-note"
   },
@@ -106,7 +106,8 @@
     }
   ],
   "scope_extensions": [
-    { "origin": "https://ststaxrepair.org" }
+    { "origin": "https://ststaxrepair.org" },
+    { "origin": "https://app.ststaxrepair.org" }
   ],
   "file_handlers": [
     {
