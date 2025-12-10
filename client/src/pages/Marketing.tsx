@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -13,6 +13,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Megaphone, Mail, MessageSquare, Users } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type MarketingResult = {
   success: boolean;
@@ -29,6 +30,37 @@ type User = {
   phone?: string | null;
   role?: string | null;
 };
+
+type EmailTemplate = { id: string; name: string; subject: string; body: string };
+type SmsTemplate = { id: string; name: string; body: string };
+
+const DEFAULT_EMAIL_TEMPLATES: EmailTemplate[] = [
+  {
+    id: "tax-promo",
+    name: "Tax Prep Promo",
+    subject: "Save on your tax prep this season",
+    body: "<p>Hi {{name}},</p><p>We’re offering a limited-time discount on tax preparation. Book your appointment today and save.</p><p>Reply to this email or call us to schedule.</p>",
+  },
+  {
+    id: "appointment-reminder",
+    name: "Appointment Reminder",
+    subject: "Reminder: Upcoming appointment",
+    body: "<p>Hi {{name}},</p><p>This is a reminder about your upcoming appointment. If you need to reschedule, let us know.</p>",
+  },
+];
+
+const DEFAULT_SMS_TEMPLATES: SmsTemplate[] = [
+  {
+    id: "sms-reminder",
+    name: "Reminder",
+    body: "Hi {{name}}, this is a reminder about your upcoming appointment with STS Tax Repair. Reply to reschedule.",
+  },
+  {
+    id: "sms-promo",
+    name: "Promo",
+    body: "Hi {{name}}, save on your tax prep this season. Reply or call to book your slot.",
+  },
+];
 
 function parseRecipients(input: string): string[] {
   return input
@@ -55,6 +87,38 @@ export default function Marketing() {
   const [roleFilters, setRoleFilters] = useState<string[]>(["client"]);
   const [selectedEmailIds, setSelectedEmailIds] = useState<Set<string>>(new Set());
   const [selectedSmsIds, setSelectedSmsIds] = useState<Set<string>>(new Set());
+  const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>(DEFAULT_EMAIL_TEMPLATES);
+  const [smsTemplates, setSmsTemplates] = useState<SmsTemplate[]>(DEFAULT_SMS_TEMPLATES);
+  const [emailTemplateName, setEmailTemplateName] = useState("");
+  const [smsTemplateName, setSmsTemplateName] = useState("");
+
+  // Load custom templates from localStorage (client-only)
+  useEffect(() => {
+    try {
+      const storedEmail = localStorage.getItem("sts-marketing-email-templates");
+      const storedSms = localStorage.getItem("sts-marketing-sms-templates");
+      if (storedEmail) {
+        const parsed = JSON.parse(storedEmail) as EmailTemplate[];
+        setEmailTemplates([...DEFAULT_EMAIL_TEMPLATES, ...parsed]);
+      }
+      if (storedSms) {
+        const parsed = JSON.parse(storedSms) as SmsTemplate[];
+        setSmsTemplates([...DEFAULT_SMS_TEMPLATES, ...parsed]);
+      }
+    } catch (e) {
+      console.warn("Template load failed", e);
+    }
+  }, []);
+
+  const saveEmailTemplates = (custom: EmailTemplate[]) => {
+    setEmailTemplates([...DEFAULT_EMAIL_TEMPLATES, ...custom]);
+    localStorage.setItem("sts-marketing-email-templates", JSON.stringify(custom));
+  };
+
+  const saveSmsTemplates = (custom: SmsTemplate[]) => {
+    setSmsTemplates([...DEFAULT_SMS_TEMPLATES, ...custom]);
+    localStorage.setItem("sts-marketing-sms-templates", JSON.stringify(custom));
+  };
 
   const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/users"],
@@ -205,6 +269,41 @@ export default function Marketing() {
     !smsBody.trim() ||
     smsRecipientCount === 0;
 
+  const handleApplyEmailTemplate = (tpl: EmailTemplate) => {
+    setEmailSubject(tpl.subject);
+    setEmailBody(tpl.body);
+  };
+
+  const handleApplySmsTemplate = (tpl: SmsTemplate) => {
+    setSmsBody(tpl.body);
+  };
+
+  const handleSaveEmailTemplate = () => {
+    if (!emailTemplateName.trim()) {
+      toast({ title: "Template name required", variant: "destructive" });
+      return;
+    }
+    const custom = (emailTemplates.filter((t) => !DEFAULT_EMAIL_TEMPLATES.some((d) => d.id === t.id)) as EmailTemplate[]);
+    const id = `custom-email-${Date.now()}`;
+    const updated = [...custom, { id, name: emailTemplateName.trim(), subject: emailSubject, body: emailBody }];
+    saveEmailTemplates(updated);
+    setEmailTemplateName("");
+    toast({ title: "Email template saved" });
+  };
+
+  const handleSaveSmsTemplate = () => {
+    if (!smsTemplateName.trim()) {
+      toast({ title: "Template name required", variant: "destructive" });
+      return;
+    }
+    const custom = (smsTemplates.filter((t) => !DEFAULT_SMS_TEMPLATES.some((d) => d.id === t.id)) as SmsTemplate[]);
+    const id = `custom-sms-${Date.now()}`;
+    const updated = [...custom, { id, name: smsTemplateName.trim(), body: smsBody }];
+    saveSmsTemplates(updated);
+    setSmsTemplateName("");
+    toast({ title: "SMS template saved" });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
@@ -335,6 +434,32 @@ export default function Marketing() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
+              <Label>Templates</Label>
+              <div className="flex flex-wrap gap-2">
+                {emailTemplates.map((tpl) => (
+                  <Button
+                    key={tpl.id}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleApplyEmailTemplate(tpl)}
+                    className={cn("justify-start", "min-w-[140px]")}
+                  >
+                    {tpl.name}
+                  </Button>
+                ))}
+              </div>
+              <div className="flex flex-col gap-2">
+                <Input
+                  placeholder="Template name"
+                  value={emailTemplateName}
+                  onChange={(e) => setEmailTemplateName(e.target.value)}
+                />
+                <Button variant="secondary" size="sm" onClick={handleSaveEmailTemplate}>
+                  Save current as template
+                </Button>
+              </div>
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="email-recipients">Recipients (optional manual add)</Label>
               <Textarea
                 id="email-recipients"
@@ -388,6 +513,32 @@ export default function Marketing() {
             <CardDescription>Send SMS blasts via Twilio.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Templates</Label>
+              <div className="flex flex-wrap gap-2">
+                {smsTemplates.map((tpl) => (
+                  <Button
+                    key={tpl.id}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleApplySmsTemplate(tpl)}
+                    className={cn("justify-start", "min-w-[140px]")}
+                  >
+                    {tpl.name}
+                  </Button>
+                ))}
+              </div>
+              <div className="flex flex-col gap-2">
+                <Input
+                  placeholder="Template name"
+                  value={smsTemplateName}
+                  onChange={(e) => setSmsTemplateName(e.target.value)}
+                />
+                <Button variant="secondary" size="sm" onClick={handleSaveSmsTemplate}>
+                  Save current as template
+                </Button>
+              </div>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="sms-recipients">Recipients (optional manual add)</Label>
               <Textarea
