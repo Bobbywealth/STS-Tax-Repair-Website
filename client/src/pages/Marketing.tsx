@@ -1,5 +1,9 @@
 import { useMemo, useState } from "react";
+<<<<<<< HEAD
 import { useMutation } from "@tanstack/react-query";
+=======
+import { useMutation, useQuery } from "@tanstack/react-query";
+>>>>>>> 881087f (Enhance marketing center with contact selection)
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +14,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+<<<<<<< HEAD
 import { Megaphone, Mail, MessageSquare } from "lucide-react";
+=======
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Megaphone, Mail, MessageSquare, Users } from "lucide-react";
+>>>>>>> 881087f (Enhance marketing center with contact selection)
 
 type MarketingResult = {
   success: boolean;
@@ -19,6 +29,18 @@ type MarketingResult = {
   errors?: string[];
 };
 
+<<<<<<< HEAD
+=======
+type User = {
+  id: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  role?: string | null;
+};
+
+>>>>>>> 881087f (Enhance marketing center with contact selection)
 function parseRecipients(input: string): string[] {
   return input
     .split(/[,;\n]/)
@@ -26,8 +48,19 @@ function parseRecipients(input: string): string[] {
     .filter(Boolean);
 }
 
+<<<<<<< HEAD
 export default function Marketing() {
   const { toast } = useToast();
+=======
+function displayName(user: User) {
+  const name = `${user.firstName || ""} ${user.lastName || ""}`.trim();
+  return name || user.email || user.phone || "Contact";
+}
+
+export default function Marketing() {
+  const { toast } = useToast();
+
+>>>>>>> 881087f (Enhance marketing center with contact selection)
   const [emailRecipients, setEmailRecipients] = useState("");
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
@@ -35,9 +68,97 @@ export default function Marketing() {
   const [smsRecipients, setSmsRecipients] = useState("");
   const [smsBody, setSmsBody] = useState("");
 
+<<<<<<< HEAD
   const emailMutation = useMutation({
     mutationFn: async () => {
       const to = parseRecipients(emailRecipients);
+=======
+  const [roleFilters, setRoleFilters] = useState<string[]>(["client"]);
+  const [selectedEmailIds, setSelectedEmailIds] = useState<Set<string>>(new Set());
+  const [selectedSmsIds, setSelectedSmsIds] = useState<Set<string>>(new Set());
+
+  const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
+    queryKey: ["/api/users"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/users");
+      return res.json();
+    },
+  });
+
+  const filteredUsers = useMemo(() => {
+    const roles = roleFilters.map((r) => r.toLowerCase());
+    if (!roles.length) return users;
+    return users.filter((u) => roles.includes((u.role || "").toLowerCase()));
+  }, [users, roleFilters]);
+
+  const userById = useMemo(() => {
+    const map = new Map<string, User>();
+    users.forEach((u) => map.set(u.id, u));
+    return map;
+  }, [users]);
+
+  const selectAllEmails = () => {
+    const ids = new Set<string>();
+    filteredUsers.forEach((u) => {
+      if (u.email) ids.add(u.id);
+    });
+    setSelectedEmailIds(ids);
+  };
+
+  const selectAllSms = () => {
+    const ids = new Set<string>();
+    filteredUsers.forEach((u) => {
+      if (u.phone) ids.add(u.id);
+    });
+    setSelectedSmsIds(ids);
+  };
+
+  const toggleRole = (role: string) => {
+    setRoleFilters((prev) =>
+      prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role]
+    );
+  };
+
+  const toggleEmailSelection = (id: string) => {
+    setSelectedEmailIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSmsSelection = (id: string) => {
+    setSelectedSmsIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const selectedEmailAddresses = useMemo(() => {
+    const emails: string[] = [];
+    selectedEmailIds.forEach((id) => {
+      const u = userById.get(id);
+      if (u?.email) emails.push(u.email);
+    });
+    return emails;
+  }, [selectedEmailIds, userById]);
+
+  const selectedSmsNumbers = useMemo(() => {
+    const phones: string[] = [];
+    selectedSmsIds.forEach((id) => {
+      const u = userById.get(id);
+      if (u?.phone) phones.push(u.phone);
+    });
+    return phones;
+  }, [selectedSmsIds, userById]);
+
+  const emailMutation = useMutation({
+    mutationFn: async () => {
+      const to = Array.from(
+        new Set([...selectedEmailAddresses, ...parseRecipients(emailRecipients)])
+      );
+>>>>>>> 881087f (Enhance marketing center with contact selection)
       const res = await apiRequest("POST", "/api/marketing/email", {
         to,
         subject: emailSubject,
@@ -62,7 +183,13 @@ export default function Marketing() {
 
   const smsMutation = useMutation({
     mutationFn: async () => {
+<<<<<<< HEAD
       const to = parseRecipients(smsRecipients);
+=======
+      const to = Array.from(
+        new Set([...selectedSmsNumbers, ...parseRecipients(smsRecipients)])
+      );
+>>>>>>> 881087f (Enhance marketing center with contact selection)
       const res = await apiRequest("POST", "/api/marketing/sms", {
         to,
         message: smsBody,
@@ -84,8 +211,19 @@ export default function Marketing() {
     },
   });
 
+<<<<<<< HEAD
   const emailRecipientCount = useMemo(() => parseRecipients(emailRecipients).length, [emailRecipients]);
   const smsRecipientCount = useMemo(() => parseRecipients(smsRecipients).length, [smsRecipients]);
+=======
+  const emailRecipientCount = useMemo(
+    () => parseRecipients(emailRecipients).length + selectedEmailAddresses.length,
+    [emailRecipients, selectedEmailAddresses]
+  );
+  const smsRecipientCount = useMemo(
+    () => parseRecipients(smsRecipients).length + selectedSmsNumbers.length,
+    [smsRecipients, selectedSmsNumbers]
+  );
+>>>>>>> 881087f (Enhance marketing center with contact selection)
 
   const emailDisabled =
     emailMutation.isPending ||
@@ -120,6 +258,106 @@ export default function Marketing() {
         </AlertDescription>
       </Alert>
 
+<<<<<<< HEAD
+=======
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-primary" />
+            Recipients
+          </CardTitle>
+          <CardDescription>
+            Filter by role, select all, or pick specific contacts. Only contacts with an email/phone are included per channel.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap gap-3">
+            {["admin", "tax_office", "agent", "client"].map((role) => (
+              <label key={role} className="flex items-center gap-2 text-sm">
+                <Checkbox
+                  checked={roleFilters.includes(role)}
+                  onCheckedChange={() => toggleRole(role)}
+                />
+                <span className="capitalize">{role.replace("_", " ")}</span>
+              </label>
+            ))}
+          </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="font-semibold text-sm">Email recipients</p>
+                <Button variant="ghost" size="sm" onClick={selectAllEmails} disabled={usersLoading}>
+                  Select all visible
+                </Button>
+              </div>
+              <ScrollArea className="h-48 rounded-md border">
+                <div className="p-2 space-y-1">
+                  {filteredUsers
+                    .filter((u) => u.email)
+                    .map((u) => (
+                      <label
+                        key={u.id}
+                        className="flex items-center justify-between gap-2 rounded px-2 py-1 hover:bg-muted"
+                      >
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium">{displayName(u)}</span>
+                          <span className="text-xs text-muted-foreground">{u.email}</span>
+                        </div>
+                        <Checkbox
+                          checked={selectedEmailIds.has(u.id)}
+                          onCheckedChange={() => toggleEmailSelection(u.id)}
+                        />
+                      </label>
+                    ))}
+                  {!usersLoading && filteredUsers.filter((u) => u.email).length === 0 && (
+                    <p className="text-xs text-muted-foreground px-2">No contacts with email.</p>
+                  )}
+                </div>
+              </ScrollArea>
+              <p className="text-xs text-muted-foreground">
+                Selected from directory: {selectedEmailAddresses.length}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="font-semibold text-sm">SMS recipients</p>
+                <Button variant="ghost" size="sm" onClick={selectAllSms} disabled={usersLoading}>
+                  Select all visible
+                </Button>
+              </div>
+              <ScrollArea className="h-48 rounded-md border">
+                <div className="p-2 space-y-1">
+                  {filteredUsers
+                    .filter((u) => u.phone)
+                    .map((u) => (
+                      <label
+                        key={u.id}
+                        className="flex items-center justify-between gap-2 rounded px-2 py-1 hover:bg-muted"
+                      >
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium">{displayName(u)}</span>
+                          <span className="text-xs text-muted-foreground">{u.phone}</span>
+                        </div>
+                        <Checkbox
+                          checked={selectedSmsIds.has(u.id)}
+                          onCheckedChange={() => toggleSmsSelection(u.id)}
+                        />
+                      </label>
+                    ))}
+                  {!usersLoading && filteredUsers.filter((u) => u.phone).length === 0 && (
+                    <p className="text-xs text-muted-foreground px-2">No contacts with phone.</p>
+                  )}
+                </div>
+              </ScrollArea>
+              <p className="text-xs text-muted-foreground">
+                Selected from directory: {selectedSmsNumbers.length}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+>>>>>>> 881087f (Enhance marketing center with contact selection)
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
@@ -131,7 +369,11 @@ export default function Marketing() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
+<<<<<<< HEAD
               <Label htmlFor="email-recipients">Recipients</Label>
+=======
+              <Label htmlFor="email-recipients">Recipients (optional manual add)</Label>
+>>>>>>> 881087f (Enhance marketing center with contact selection)
               <Textarea
                 id="email-recipients"
                 placeholder="comma, semicolon, or new line separated emails"
@@ -139,7 +381,11 @@ export default function Marketing() {
                 onChange={(e) => setEmailRecipients(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
+<<<<<<< HEAD
                 {emailRecipientCount} recipient{emailRecipientCount === 1 ? "" : "s"}
+=======
+                Total (directory + manual): {emailRecipientCount} recipient{emailRecipientCount === 1 ? "" : "s"}
+>>>>>>> 881087f (Enhance marketing center with contact selection)
               </p>
             </div>
             <div className="space-y-2">
@@ -185,7 +431,11 @@ export default function Marketing() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
+<<<<<<< HEAD
               <Label htmlFor="sms-recipients">Recipients</Label>
+=======
+              <Label htmlFor="sms-recipients">Recipients (optional manual add)</Label>
+>>>>>>> 881087f (Enhance marketing center with contact selection)
               <Textarea
                 id="sms-recipients"
                 placeholder="+15551234567, one per line or comma separated"
@@ -193,7 +443,11 @@ export default function Marketing() {
                 onChange={(e) => setSmsRecipients(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
+<<<<<<< HEAD
                 {smsRecipientCount} recipient{smsRecipientCount === 1 ? "" : "s"}
+=======
+                Total (directory + manual): {smsRecipientCount} recipient{smsRecipientCount === 1 ? "" : "s"}
+>>>>>>> 881087f (Enhance marketing center with contact selection)
               </p>
             </div>
             <div className="space-y-2">
