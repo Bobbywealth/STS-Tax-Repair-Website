@@ -62,6 +62,8 @@ import {
   generateSecureToken,
   sendEmail
 } from "./email";
+import nodemailer from "nodemailer";
+import twilio from "twilio";
 import { randomUUID } from "crypto";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -6138,6 +6140,107 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error: any) {
       console.error('Error deleting notification:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ===========================================
+  // MARKETING - Email (Gmail) and SMS (Twilio)
+  // ===========================================
+
+  const GMAIL_USER = process.env.GMAIL_USER;
+  const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD;
+  const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
+  const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
+  const TWILIO_FROM = process.env.TWILIO_FROM;
+
+  // Send marketing email via Gmail SMTP
+  app.post("/api/marketing/email", isAuthenticated, requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { to, subject, message } = req.body || {};
+
+      if (!Array.isArray(to) || to.length === 0) {
+        return res.status(400).json({ error: "At least one recipient is required" });
+      }
+      if (!subject || !message) {
+        return res.status(400).json({ error: "Subject and message are required" });
+      }
+      if (!GMAIL_USER || !GMAIL_APP_PASSWORD) {
+        return res.status(500).json({ error: "Gmail credentials are not configured (GMAIL_USER, GMAIL_APP_PASSWORD)" });
+      }
+
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: GMAIL_USER,
+          pass: GMAIL_APP_PASSWORD,
+        },
+      });
+
+      let sent = 0;
+      const errors: string[] = [];
+
+      for (const recipient of to) {
+        try {
+          await transporter.sendMail({
+            from: `"STS Marketing" <${GMAIL_USER}>`,
+            to: recipient,
+            subject,
+            html: message,
+            text: message.replace(/<[^>]*>/g, ""),
+          });
+          sent += 1;
+        } catch (err: any) {
+          console.error(`[MARKETING][EMAIL] Failed for ${recipient}:`, err?.message || err);
+          errors.push(`${recipient}: ${err?.message || "Send failed"}`);
+        }
+      }
+
+      const failed = to.length - sent;
+      res.json({ success: failed === 0, sent, failed, errors });
+    } catch (error: any) {
+      console.error("[MARKETING][EMAIL] Error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Send marketing SMS via Twilio
+  app.post("/api/marketing/sms", isAuthenticated, requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { to, message } = req.body || {};
+
+      if (!Array.isArray(to) || to.length === 0) {
+        return res.status(400).json({ error: "At least one recipient is required" });
+      }
+      if (!message) {
+        return res.status(400).json({ error: "Message is required" });
+      }
+      if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_FROM) {
+        return res.status(500).json({ error: "Twilio is not configured (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM)" });
+      }
+
+      const client = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
+      let sent = 0;
+      const errors: string[] = [];
+
+      for (const recipient of to) {
+        try {
+          await client.messages.create({
+            from: TWILIO_FROM,
+            to: recipient,
+            body: message,
+          });
+          sent += 1;
+        } catch (err: any) {
+          console.error(`[MARKETING][SMS] Failed for ${recipient}:`, err?.message || err);
+          errors.push(`${recipient}: ${err?.message || "Send failed"}`);
+        }
+      }
+
+      const failed = to.length - sent;
+      res.json({ success: failed === 0, sent, failed, errors });
+    } catch (error: any) {
+      console.error("[MARKETING][SMS] Error:", error);
       res.status(500).json({ error: error.message });
     }
   });

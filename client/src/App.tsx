@@ -37,6 +37,7 @@ const Settings = lazy(() => import("@/pages/Settings"));
 const Branding = lazy(() => import("@/pages/Branding"));
 const UserManagement = lazy(() => import("@/pages/UserManagement"));
 const Permissions = lazy(() => import("@/pages/Permissions"));
+const Marketing = lazy(() => import("@/pages/Marketing"));
 const Notifications = lazy(() => import("@/pages/Notifications"));
 const ClientLogin = lazy(() => import("@/pages/ClientLogin"));
 const AdminLogin = lazy(() => import("@/pages/AdminLogin"));
@@ -201,6 +202,9 @@ function AdminRouter() {
         </Route>
         <Route path="/permissions">
           <PermissionRoute component={Permissions} adminOnly />
+        </Route>
+        <Route path="/marketing">
+          <PermissionRoute component={Marketing} adminOnly />
         </Route>
         <Route path="/notifications">
           <PermissionRoute component={Notifications} />
