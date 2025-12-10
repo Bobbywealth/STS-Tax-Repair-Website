@@ -37,6 +37,7 @@ const Settings = lazy(() => import("@/pages/Settings"));
 const Branding = lazy(() => import("@/pages/Branding"));
 const UserManagement = lazy(() => import("@/pages/UserManagement"));
 const Permissions = lazy(() => import("@/pages/Permissions"));
+const Notifications = lazy(() => import("@/pages/Notifications"));
 const ClientLogin = lazy(() => import("@/pages/ClientLogin"));
 const AdminLogin = lazy(() => import("@/pages/AdminLogin"));
 const ClientPortal = lazy(() => import("@/pages/ClientPortal"));
@@ -201,6 +202,9 @@ function AdminRouter() {
         <Route path="/permissions">
           <PermissionRoute component={Permissions} adminOnly />
         </Route>
+        <Route path="/notifications">
+          <PermissionRoute component={Notifications} />
+        </Route>
         {/* Homepage Agent Management - Admin only */}
         <Route path="/homepage-agents">
           <PermissionRoute component={AgentManagement} adminOnly />
@@ -230,6 +234,7 @@ function AdminLayout() {
     };
     checkStoredAuth();
   }, [getStoredToken]);
+
 
   const sidebarStyle = {
     "--sidebar-width": "16rem",
@@ -395,6 +400,7 @@ function App() {
       setShowSplash(false);
     }
   }, [isPWA]);
+
 
   if (showSplash && isPWA) {
     return <SplashScreen onComplete={() => setShowSplash(false)} minimumDisplayTime={2500} />;
