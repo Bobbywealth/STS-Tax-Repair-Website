@@ -6391,10 +6391,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // FTP upload for agent photos (non-Replit environments)
   app.post("/api/homepage-agents/photo-ftp", isAuthenticated, requireAdmin(), async (req: any, res) => {
+    let diagId = `ftp-agent-${Date.now()}`;
     try {
       const agentId = req.headers['x-agent-id'] as string;
       const rawFileName = req.headers['x-file-name'] as string;
       const fileName = rawFileName ? decodeURIComponent(rawFileName) : '';
+      const contentLength = Number(req.headers['content-length'] || 0);
+
+      // Check env configuration early for clearer errors
+      const missingEnv = ['FTP_HOST', 'FTP_USER', 'FTP_PASSWORD']
+        .filter((k) => !process.env[k]);
+      if (missingEnv.length > 0) {
+        console.error(`[${diagId}] Missing FTP env vars: ${missingEnv.join(', ')}`);
+        return res.status(500).json({ 
+          error: "FTP credentials not configured",
+          missingEnv,
+          diagId,
+        });
+      }
 
       if (!agentId || !fileName) {
         return res.status(400).json({ error: "x-agent-id and x-file-name headers are required" });
@@ -6410,12 +6424,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const fileBuffer = Buffer.isBuffer(req.body) ? req.body : (req.rawBody as Buffer);
       
       if (!fileBuffer || fileBuffer.length === 0) {
-        return res.status(400).json({ error: "No file data received" });
+        return res.status(400).json({ error: "No file data received", diagId, contentLength });
       }
       
       if (fileBuffer.length > 5 * 1024 * 1024) {
-        return res.status(400).json({ error: "File too large (max 5MB)" });
+        return res.status(400).json({ error: "File too large (max 5MB)", diagId, size: fileBuffer.length });
       }
+
+      console.log(`[${diagId}] Uploading agent photo`, {
+        agentId,
+        fileName,
+        size: fileBuffer.length,
+        contentLength,
+      });
 
       // Upload to FTP in agent-photos directory
       const result = await ftpStorageService.uploadFile(
@@ -6432,11 +6453,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true, 
         filePath: result.filePath,
         fileUrl: result.fileUrl,
-        imageUrl
+        imageUrl,
+        diagId,
       });
     } catch (error: any) {
       console.error("Error in FTP agent photo upload:", error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: error.message, diagId });
     }
   });
 
