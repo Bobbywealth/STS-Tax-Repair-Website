@@ -11,16 +11,59 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Loader2, Upload, Camera } from "lucide-react";
-import type { User } from "@shared/mysql-schema";
+import type { User, Office, OfficeBranding, NotificationPreferences } from "@shared/mysql-schema";
 
 export default function Settings() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isLogoUploading, setIsLogoUploading] = useState(false);
 
   // Fetch current user data
   const { data: user, isLoading } = useQuery<User>({
     queryKey: ["/api/auth/user"],
+  });
+
+  const isAdminOrOffice =
+    user?.role === "admin" || user?.role === "super_admin" || user?.role === "tax_office";
+
+  // If admin without officeId, get first available office as fallback
+  const { data: fallbackOffices } = useQuery<Office[]>({
+    queryKey: ["/api/offices"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/offices");
+      return response.json();
+    },
+    enabled: !!isAdminOrOffice && !user?.officeId,
+  });
+
+  const officeIdForSettings = user?.officeId || fallbackOffices?.[0]?.id;
+
+  const { data: office, isLoading: isLoadingOffice } = useQuery<Office>({
+    queryKey: ["/api/offices", officeIdForSettings],
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/offices/${officeIdForSettings}`);
+      return response.json();
+    },
+    enabled: !!officeIdForSettings,
+  });
+
+  const { data: branding } = useQuery<OfficeBranding>({
+    queryKey: ["/api/offices", officeIdForSettings, "branding"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/offices/${officeIdForSettings}/branding`);
+      return response.json();
+    },
+    enabled: !!officeIdForSettings,
+  });
+
+  const { data: notificationPrefs } = useQuery<NotificationPreferences>({
+    queryKey: ["/api/notifications/preferences"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/notifications/preferences");
+      return response.json();
+    },
+    enabled: !!user,
   });
 
   // Form state
@@ -33,6 +76,18 @@ export default function Settings() {
     state: "",
     zipCode: "",
     country: "",
+  });
+
+  const [companyForm, setCompanyForm] = useState({
+    companyName: "",
+    companyEmail: "",
+    companyPhone: "",
+    address: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    defaultTaxYear: new Date().getFullYear().toString(),
+    logoUrl: "",
   });
 
   // Notification preferences state
@@ -60,6 +115,41 @@ export default function Settings() {
     }
   }, [user]);
 
+  useEffect(() => {
+    if (notificationPrefs) {
+      setNotificationPrefs({
+        emailNotifications: notificationPrefs.emailNotifications ?? true,
+        documentAlerts: notificationPrefs.documentAlerts ?? true,
+        statusNotifications: notificationPrefs.statusNotifications ?? true,
+        messageAlerts: notificationPrefs.messageAlerts ?? true,
+        smsNotifications: notificationPrefs.smsNotifications ?? false,
+      });
+    }
+  }, [notificationPrefs]);
+
+  useEffect(() => {
+    if (office) {
+      setCompanyForm((prev) => ({
+        ...prev,
+        companyName: office.name || "",
+        companyEmail: office.email || "",
+        companyPhone: office.phone || "",
+        address: office.address || "",
+        city: office.city || "",
+        state: office.state || "",
+        zipCode: office.zipCode || "",
+        defaultTaxYear: (office as any).defaultTaxYear?.toString?.() || prev.defaultTaxYear,
+      }));
+    }
+    if (branding) {
+      setCompanyForm((prev) => ({
+        ...prev,
+        companyName: branding.companyName || prev.companyName,
+        logoUrl: branding.logoUrl || prev.logoUrl,
+      }));
+    }
+  }, [office, branding]);
+
   // Profile update mutation
   const updateProfileMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -77,6 +167,69 @@ export default function Settings() {
       toast({
         title: "Update Failed",
         description: error.message || "Could not update profile. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const saveNotificationsMutation = useMutation({
+    mutationFn: async (data: typeof notificationPrefs) => {
+      const response = await apiRequest("PATCH", "/api/notifications/preferences", data);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications/preferences"] });
+      toast({
+        title: "Preferences Saved",
+        description: "Your notification preferences have been updated.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Save Failed",
+        description: error.message || "Could not update notification preferences.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const saveCompanyMutation = useMutation({
+    mutationFn: async (data: typeof companyForm) => {
+      if (!officeIdForSettings) {
+        throw new Error("No office is available for updating settings.");
+      }
+
+      await apiRequest("PATCH", `/api/offices/${officeIdForSettings}`, {
+        name: data.companyName,
+        email: data.companyEmail,
+        phone: data.companyPhone,
+        address: data.address,
+        city: data.city,
+        state: data.state,
+        zipCode: data.zipCode,
+        defaultTaxYear: Number(data.defaultTaxYear) || undefined,
+      });
+
+      await apiRequest("PUT", `/api/offices/${officeIdForSettings}/branding`, {
+        companyName: data.companyName,
+        logoUrl: data.logoUrl || null,
+        replyToEmail: data.companyEmail || undefined,
+      });
+
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/offices", officeIdForSettings] });
+      queryClient.invalidateQueries({ queryKey: ["/api/offices", officeIdForSettings, "branding"] });
+      toast({
+        title: "Company Settings Saved",
+        description: "Company details and branding have been updated.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Save Failed",
+        description: error.message || "Could not update company settings.",
         variant: "destructive",
       });
     },
@@ -165,10 +318,15 @@ export default function Settings() {
 
   // Save notification preferences
   const handleSaveNotifications = () => {
-    toast({
-      title: "Preferences Saved",
-      description: "Your notification preferences have been updated.",
-    });
+    if (!user) {
+      toast({
+        title: "Not Authenticated",
+        description: "Please log in to update your preferences.",
+        variant: "destructive",
+      });
+      return;
+    }
+    saveNotificationsMutation.mutate(notificationPrefs);
   };
 
   const handleSubmit = () => {
@@ -181,6 +339,89 @@ export default function Settings() {
       return;
     }
     updateProfileMutation.mutate(formData);
+  };
+
+  const handleCompanySave = () => {
+    if (!officeIdForSettings) {
+      toast({
+        title: "No Office Configured",
+        description: "No office is available to update. Please contact an admin.",
+        variant: "destructive",
+      });
+      return;
+    }
+    saveCompanyMutation.mutate(companyForm);
+  };
+
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !officeIdForSettings) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast({
+        title: "Invalid File",
+        description: "Please select an image file (JPG, PNG, etc.)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File Too Large",
+        description: "Please select an image under 5MB.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLogoUploading(true);
+
+    try {
+      const uploadUrlResp = await apiRequest("POST", `/api/offices/${officeIdForSettings}/logo-upload`, {
+        fileName: file.name,
+      });
+      const { uploadURL, objectPath } = await uploadUrlResp.json();
+
+      const uploadResponse = await fetch(uploadURL, {
+        method: "PUT",
+        body: file,
+        headers: {
+          "Content-Type": file.type,
+        },
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error("Failed to upload logo");
+      }
+
+      const confirmResp = await apiRequest("POST", `/api/offices/${officeIdForSettings}/logo-confirm`, {
+        objectPath,
+      });
+
+      if (!confirmResp.ok) {
+        throw new Error("Failed to confirm logo upload");
+      }
+
+      setCompanyForm((prev) => ({ ...prev, logoUrl: objectPath }));
+      queryClient.invalidateQueries({ queryKey: ["/api/offices", officeIdForSettings, "branding"] });
+
+      toast({
+        title: "Logo Updated",
+        description: "Company logo has been uploaded successfully.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Logo Upload Failed",
+        description: error.message || "Could not upload logo. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLogoUploading(false);
+      if (event.target) {
+        event.target.value = "";
+      }
+    }
   };
 
   const getInitials = () => {
@@ -402,24 +643,62 @@ export default function Settings() {
               <CardTitle>Company Settings</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
+              {!officeIdForSettings && (
+                <p className="text-sm text-muted-foreground">
+                  No office is assigned to your account. Company settings cannot be updated.
+                </p>
+              )}
+              {isLoadingOffice && (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading office settings...
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="companyName">Company Name</Label>
-                <Input id="companyName" defaultValue="STS TaxRepair" data-testid="input-company-name" />
+                <Input
+                  id="companyName"
+                  value={companyForm.companyName}
+                  onChange={(e) => setCompanyForm({ ...companyForm, companyName: e.target.value })}
+                  data-testid="input-company-name"
+                  disabled={!officeIdForSettings || saveCompanyMutation.isPending}
+                />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="companyEmail">Contact Email</Label>
-                <Input id="companyEmail" type="email" defaultValue="contact@ststaxrepair.com" data-testid="input-company-email" />
+                <Input
+                  id="companyEmail"
+                  type="email"
+                  value={companyForm.companyEmail}
+                  onChange={(e) => setCompanyForm({ ...companyForm, companyEmail: e.target.value })}
+                  data-testid="input-company-email"
+                  disabled={!officeIdForSettings || saveCompanyMutation.isPending}
+                />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="companyPhone">Contact Phone</Label>
-                <Input id="companyPhone" type="tel" defaultValue="(555) TAX-HELP" data-testid="input-company-phone" />
+                <Input
+                  id="companyPhone"
+                  type="tel"
+                  value={companyForm.companyPhone}
+                  onChange={(e) => setCompanyForm({ ...companyForm, companyPhone: e.target.value })}
+                  data-testid="input-company-phone"
+                  disabled={!officeIdForSettings || saveCompanyMutation.isPending}
+                />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="defaultTaxYear">Default Tax Year</Label>
-                <Input id="defaultTaxYear" defaultValue="2024" data-testid="input-default-tax-year" />
+                <Input
+                  id="defaultTaxYear"
+                  type="number"
+                  value={companyForm.defaultTaxYear}
+                  onChange={(e) => setCompanyForm({ ...companyForm, defaultTaxYear: e.target.value })}
+                  data-testid="input-default-tax-year"
+                  disabled={!officeIdForSettings || saveCompanyMutation.isPending}
+                />
               </div>
 
               <Separator />
@@ -427,17 +706,66 @@ export default function Settings() {
               <div className="space-y-2">
                 <Label>Company Logo</Label>
                 <div className="flex items-center gap-4">
-                  <div className="h-16 w-16 rounded-md bg-primary flex items-center justify-center">
-                    <span className="text-primary-foreground font-bold text-lg">STS</span>
+                  <div className="h-16 w-16 rounded-md bg-primary flex items-center justify-center overflow-hidden">
+                    {companyForm.logoUrl ? (
+                      <img src={companyForm.logoUrl.startsWith("http") ? companyForm.logoUrl : `/api/offices/${officeIdForSettings}/logo`} alt="Logo" className="h-full w-full object-cover" />
+                    ) : (
+                      <span className="text-primary-foreground font-bold text-lg">
+                        {companyForm.companyName?.slice(0, 2).toUpperCase() || "LOGO"}
+                      </span>
+                    )}
                   </div>
-                  <Button variant="outline" data-testid="button-upload-logo">
-                    <Upload className="mr-2 h-4 w-4" />
-                    Upload Logo
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoUpload}
+                      className="hidden"
+                      id="logoFileInput"
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={() => document.getElementById("logoFileInput")?.click()}
+                      disabled={!officeIdForSettings || isLogoUploading}
+                      data-testid="button-upload-logo"
+                    >
+                      {isLogoUploading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="mr-2 h-4 w-4" />
+                          Upload Logo
+                        </>
+                      )}
+                    </Button>
+                    <Input
+                      placeholder="Or paste logo URL"
+                      value={companyForm.logoUrl}
+                      onChange={(e) => setCompanyForm({ ...companyForm, logoUrl: e.target.value })}
+                      className="w-64"
+                      disabled={!officeIdForSettings || saveCompanyMutation.isPending}
+                    />
+                  </div>
                 </div>
               </div>
 
-              <Button data-testid="button-save-company">Save Company Settings</Button>
+              <Button
+                data-testid="button-save-company"
+                onClick={handleCompanySave}
+                disabled={!officeIdForSettings || saveCompanyMutation.isPending}
+              >
+                {saveCompanyMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save Company Settings"
+                )}
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -496,7 +824,20 @@ export default function Settings() {
                 <Switch  checked={notificationPrefs.smsNotifications} onCheckedChange={() => handleNotificationChange('smsNotifications')}data-testid="switch-sms-notifications" />
               </div>
 
-              <Button data-testid="button-save-notifications" onClick={handleSaveNotifications}>Save Preferences</Button>
+              <Button
+                data-testid="button-save-notifications"
+                onClick={handleSaveNotifications}
+                disabled={saveNotificationsMutation.isPending}
+              >
+                {saveNotificationsMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save Preferences"
+                )}
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
