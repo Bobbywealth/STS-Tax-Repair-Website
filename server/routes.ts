@@ -783,6 +783,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error(`Error sending verification email to ${email}:`, err);
         });
 
+      // Notify admins about the new client signup (email + in-app), but don't block signup
+      try {
+        const admins = await mysqlStorage.getUsersByRole('admin');
+        const adminPortalUrl =
+          (process.env.APP_URL ||
+            process.env.RENDER_EXTERNAL_URL ||
+            'https://ststaxrepair.org') + '/clients';
+        const newClientName = `${firstName} ${lastName}`.trim() || 'New client';
+
+        for (const admin of admins) {
+          // In-app notification
+          await mysqlStorage.createNotification({
+            userId: admin.id,
+            type: 'client_signup',
+            title: 'New Client Signed Up',
+            message: `${newClientName} (${email}) created an account.`,
+            link: '/clients',
+            resourceType: 'client',
+            resourceId: user.id
+          });
+
+          // Email notification (best effort)
+          if (admin.email && admin.isActive !== false) {
+            await sendEmail({
+              to: admin.email,
+              subject: `New Client Signup: ${newClientName || email}`,
+              html: `
+                <p>Hello ${admin.firstName || 'Admin'},</p>
+                <p>A new client has signed up:</p>
+                <ul>
+                  <li>Name: ${newClientName}</li>
+                  <li>Email: ${email}</li>
+                </ul>
+                <p>You can review the client in the admin dashboard:</p>
+                <p><a href="${adminPortalUrl}" target="_blank">View Clients</a></p>
+              `,
+            });
+          }
+        }
+      } catch (notifError) {
+        console.error('[NOTIFICATION] Failed to send admin signup notifications:', notifError);
+      }
+
       return res.status(201).json({
         message: "Registration successful. Please check your email to verify your account.",
         userId: user.id,
