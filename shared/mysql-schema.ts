@@ -17,7 +17,9 @@ export const sessions = mysqlTable(
 );
 
 // User Roles - defines access levels in the system
-export type UserRole = 'client' | 'agent' | 'tax_office' | 'admin';
+// super_admin = STS HQ with global, multi-office oversight
+export type UserRole = 'client' | 'agent' | 'tax_office' | 'admin' | 'super_admin';
+export const ALL_ROLES: UserRole[] = ['client', 'agent', 'tax_office', 'admin', 'super_admin'];
 
 // Offices Table - Tax Office tenant isolation
 // Each Tax Office belongs to an office, and all their clients/agents are scoped to that office
@@ -704,6 +706,13 @@ export const DefaultPermissions: Array<{
   { slug: 'admin.invites', label: 'Manage Invites', description: 'Create and manage staff invites (Tax Office: office-scoped)', featureGroup: 'admin', defaultRoles: ['tax_office', 'admin'] },
   { slug: 'admin.system', label: 'System Administration', description: 'Full system administration access', featureGroup: 'admin', defaultRoles: ['admin'] },
 ];
+
+// Ensure super admins inherit every permission by default (global HQ)
+DefaultPermissions.forEach((perm) => {
+  if (!perm.defaultRoles.includes('super_admin')) {
+    perm.defaultRoles.push('super_admin');
+  }
+});
 
 // Tickets Table for support
 // Note: internalNotes is deprecated, use ticket_messages with is_internal=true instead

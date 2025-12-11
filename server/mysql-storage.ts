@@ -2,6 +2,7 @@ import {
   type User, 
   type UpsertUser,
   type UserRole,
+  ALL_ROLES,
   type ThemePreference,
   type TaxDeadline,
   type InsertTaxDeadline,
@@ -931,15 +932,18 @@ export class MySQLStorage implements IStorage {
   }
 
   async getAllRolePermissions(): Promise<Record<UserRole, string[]>> {
-    const roles: UserRole[] = ['client', 'agent', 'tax_office', 'admin'];
-    const result: Record<UserRole, string[]> = {
-      client: [],
-      agent: [],
-      tax_office: [],
-      admin: []
-    };
+    const result = ALL_ROLES.reduce((acc, role) => {
+      acc[role] = [] as string[];
+      return acc;
+    }, {} as Record<UserRole, string[]>);
     
-    for (const role of roles) {
+    for (const role of ALL_ROLES) {
+      // Super Admin inherits everything implicitly; no DB check required
+      if (role === 'super_admin') {
+        const allPerms = await this.getPermissions();
+        result[role] = allPerms.map((p) => p.slug);
+        continue;
+      }
       result[role] = await this.getRolePermissions(role);
     }
     
@@ -1012,14 +1016,10 @@ export class MySQLStorage implements IStorage {
     matrix: Record<UserRole, Record<string, boolean>>;
   }> {
     const permissions = await this.getPermissions();
-    const roles: UserRole[] = ['client', 'agent', 'tax_office', 'admin'];
-    
-    const matrix: Record<UserRole, Record<string, boolean>> = {
-      client: {},
-      agent: {},
-      tax_office: {},
-      admin: {}
-    };
+    const matrix: Record<UserRole, Record<string, boolean>> = {} as Record<UserRole, Record<string, boolean>>;
+    for (const role of ALL_ROLES) {
+      matrix[role] = {};
+    }
 
     // Get all role permissions in one query
     const allRolePerms = await mysqlDb
@@ -1033,7 +1033,11 @@ export class MySQLStorage implements IStorage {
 
     // Build the matrix
     for (const perm of permissions) {
-      for (const role of roles) {
+      for (const role of ALL_ROLES) {
+        if (role === 'super_admin') {
+          matrix[role][perm.slug] = true;
+          continue;
+        }
         const match = allRolePerms.find(rp => rp.role === role && rp.slug === perm.slug);
         matrix[role][perm.slug] = match?.granted ?? false;
       }

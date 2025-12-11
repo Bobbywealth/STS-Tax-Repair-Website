@@ -122,13 +122,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // One-time setup endpoint to make a user admin by email
+  // One-time setup endpoint to make a user admin or super_admin by email
   app.post("/api/setup/make-admin", async (req, res) => {
     try {
-      const { email } = req.body;
+      const { email, role } = req.body;
       if (!email) {
         return res.status(400).json({ error: "Email required" });
       }
+
+      const targetRole = role === "super_admin" ? "super_admin" : "admin";
 
       // Find user by email
       const [rows] = await mysqlPool.query(
@@ -142,16 +144,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const user = rows[0] as any;
 
-      // Update role to admin
+      // Update role to admin/super_admin
       await mysqlPool.query("UPDATE users SET role = ? WHERE id = ?", [
-        "admin",
+        targetRole,
         user.id,
       ]);
 
       return res.json({
         success: true,
-        message: `User ${email} is now an admin`,
-        user: { id: user.id, email: user.email, role: "admin" },
+        message: `User ${email} is now an ${targetRole}`,
+        user: { id: user.id, email: user.email, role: targetRole },
       });
     } catch (error: any) {
       return res.status(500).json({ error: error.message });
@@ -1028,7 +1030,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin Test Email Endpoint - for verifying email configuration
-  app.post("/api/admin/test-email", isAuthenticated, requireAdmin, async (req: any, res) => {
+  app.post("/api/admin/test-email", isAuthenticated, requireAdmin(), async (req: any, res) => {
     try {
       const { email } = req.body;
       const userId = req.userId || req.user?.claims?.sub;
@@ -2003,8 +2005,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "User not found" });
       }
 
-      // Admin has all permissions
-      if (user.role === "admin") {
+      // Admin and Super Admin have all permissions
+      if (user.role === "admin" || user.role === "super_admin") {
         const allPermissions = await storage.getPermissions();
         return res.json({
           role: user.role,
@@ -2030,10 +2032,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req, res) => {
       try {
         const role = req.params.role as any;
-        if (!["client", "agent", "tax_office", "admin"].includes(role)) {
+        if (!["client", "agent", "tax_office", "admin", "super_admin"].includes(role)) {
           return res.status(400).json({ error: "Invalid role" });
         }
-        const permissions = await storage.getRolePermissions(role);
+        const permissions = role === "super_admin" 
+          ? (await storage.getPermissions()).map((p) => p.slug)
+          : await storage.getRolePermissions(role);
         res.json(permissions);
       } catch (error: any) {
         res.status(500).json({ error: error.message });
@@ -2049,8 +2053,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req: any, res) => {
       try {
         const role = req.params.role as any;
-        if (!["client", "agent", "tax_office", "admin"].includes(role)) {
+        if (!["client", "agent", "tax_office", "admin", "super_admin"].includes(role)) {
           return res.status(400).json({ error: "Invalid role" });
+        }
+
+        if (role === "super_admin") {
+          return res.status(400).json({ error: "Super Admin permissions are implied and cannot be edited" });
         }
 
         const { permissions } = req.body;
@@ -5406,7 +5414,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ===========================================
 
   // Get all offices (admin only)
-  app.get("/api/offices", isAuthenticated, requireAdmin, async (req: any, res) => {
+  app.get("/api/offices", isAuthenticated, requireAdmin(), async (req: any, res) => {
     try {
       const offices = await storage.getOffices();
       res.json(offices);
@@ -5438,7 +5446,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create office (admin only)
-  app.post("/api/offices", isAuthenticated, requireAdmin, async (req: any, res) => {
+  app.post("/api/offices", isAuthenticated, requireAdmin(), async (req: any, res) => {
     try {
       const { name, slug, address, phone, email } = req.body;
       
@@ -6155,7 +6163,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const TWILIO_FROM = process.env.TWILIO_FROM;
 
   // Send marketing email via Gmail SMTP
-  app.post("/api/marketing/email", isAuthenticated, requireAdmin, async (req: AuthenticatedRequest, res) => {
+  app.post("/api/marketing/email", isAuthenticated, requireAdmin(), async (req: AuthenticatedRequest, res) => {
     try {
       const { to, subject, message } = req.body || {};
 
@@ -6205,7 +6213,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Send marketing SMS via Twilio
-  app.post("/api/marketing/sms", isAuthenticated, requireAdmin, async (req: AuthenticatedRequest, res) => {
+  app.post("/api/marketing/sms", isAuthenticated, requireAdmin(), async (req: AuthenticatedRequest, res) => {
     try {
       const { to, message } = req.body || {};
 
@@ -6261,7 +6269,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create a new homepage agent (admin only)
-  app.post("/api/homepage-agents", isAuthenticated, requireAdmin, async (req, res) => {
+  app.post("/api/homepage-agents", isAuthenticated, requireAdmin(), async (req, res) => {
     try {
       const agent = await mysqlStorage.createHomePageAgent(req.body);
       res.status(201).json(agent);
@@ -6272,7 +6280,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update a homepage agent (admin only)
-  app.patch("/api/homepage-agents/:id", isAuthenticated, requireAdmin, async (req, res) => {
+  app.patch("/api/homepage-agents/:id", isAuthenticated, requireAdmin(), async (req, res) => {
     try {
       const { id } = req.params;
       const agent = await mysqlStorage.updateHomePageAgent(id, req.body);
@@ -6287,7 +6295,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete a homepage agent (admin only)
-  app.delete("/api/homepage-agents/:id", isAuthenticated, requireAdmin, async (req, res) => {
+  app.delete("/api/homepage-agents/:id", isAuthenticated, requireAdmin(), async (req, res) => {
     try {
       const { id } = req.params;
       const deleted = await mysqlStorage.deleteHomePageAgent(id);
@@ -6302,7 +6310,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Reorder homepage agents (admin only)
-  app.post("/api/homepage-agents/reorder", isAuthenticated, requireAdmin, async (req, res) => {
+  app.post("/api/homepage-agents/reorder", isAuthenticated, requireAdmin(), async (req, res) => {
     try {
       const { agentIds } = req.body;
       if (!Array.isArray(agentIds)) {
@@ -6317,7 +6325,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get upload URL for agent photo (admin only)
-  app.post("/api/homepage-agents/:id/photo", isAuthenticated, requireAdmin, async (req, res) => {
+  app.post("/api/homepage-agents/:id/photo", isAuthenticated, requireAdmin(), async (req, res) => {
     try {
       const { id } = req.params;
       const { fileName } = req.body;
@@ -6347,7 +6355,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Confirm agent photo upload and update agent record (admin only)
-  app.post("/api/homepage-agents/:id/photo/confirm", isAuthenticated, requireAdmin, async (req, res) => {
+  app.post("/api/homepage-agents/:id/photo/confirm", isAuthenticated, requireAdmin(), async (req, res) => {
     try {
       const { id } = req.params;
       const { objectPath } = req.body;
@@ -6373,7 +6381,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // FTP upload for agent photos (non-Replit environments)
-  app.post("/api/homepage-agents/photo-ftp", isAuthenticated, requireAdmin, async (req: any, res) => {
+  app.post("/api/homepage-agents/photo-ftp", isAuthenticated, requireAdmin(), async (req: any, res) => {
     try {
       const agentId = req.headers['x-agent-id'] as string;
       const rawFileName = req.headers['x-file-name'] as string;
