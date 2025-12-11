@@ -1633,22 +1633,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "User not found" });
       }
 
-      const hasObjectStorage = !!process.env.PRIVATE_OBJECT_DIR;
+      const preferFtp = process.env.PROFILE_PHOTO_MODE === "ftp";
+      const hasObjectStorage = !preferFtp && !!process.env.PRIVATE_OBJECT_DIR;
 
-      // Prefer object storage when configured, otherwise fall back to FTP upload endpoint
+      // Prefer object storage when configured and not forced to FTP
       if (hasObjectStorage) {
-        const objectStorage = new ObjectStorageService();
-        const fileName = `profile-photo-${Date.now()}.jpg`;
-        const { uploadURL, objectPath } =
-          await objectStorage.getProfilePhotoUploadURL(userId, fileName);
+        try {
+          const objectStorage = new ObjectStorageService();
+          const fileName = `profile-photo-${Date.now()}.jpg`;
+          const { uploadURL, objectPath } =
+            await objectStorage.getProfilePhotoUploadURL(userId, fileName);
 
-        return res.json({
-          uploadURL,
-          objectPath,
-          mode: "object-storage",
-          message:
-            "Use the uploadURL to PUT the file, then call /api/profile/photo/confirm with the objectPath",
-        });
+          return res.json({
+            uploadURL,
+            objectPath,
+            mode: "object-storage",
+            message:
+              "Use the uploadURL to PUT the file, then call /api/profile/photo/confirm with the objectPath",
+          });
+        } catch (error) {
+          console.warn(
+            "[profile-photo] Object storage unavailable, falling back to FTP:",
+            error instanceof Error ? error.message : error,
+          );
+        }
       }
 
       // FTP fallback for environments without object storage
