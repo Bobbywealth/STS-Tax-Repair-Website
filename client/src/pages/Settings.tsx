@@ -91,7 +91,7 @@ export default function Settings() {
   });
 
   // Notification preferences state
-  const [notificationPrefs, setNotificationPrefs] = useState({
+  const [notificationPrefsState, setNotificationPrefsState] = useState({
     emailNotifications: true,
     documentAlerts: true,
     statusNotifications: true,
@@ -117,7 +117,7 @@ export default function Settings() {
 
   useEffect(() => {
     if (notificationPrefsData) {
-      setNotificationPrefs({
+      setNotificationPrefsState({
         emailNotifications: notificationPrefsData.emailNotifications ?? true,
         documentAlerts: notificationPrefsData.documentAlerts ?? true,
         statusNotifications: notificationPrefsData.statusNotifications ?? true,
@@ -173,7 +173,7 @@ export default function Settings() {
   });
 
   const saveNotificationsMutation = useMutation({
-    mutationFn: async (data: typeof notificationPrefs) => {
+    mutationFn: async (data: typeof notificationPrefsState) => {
       const response = await apiRequest("PATCH", "/api/notifications/preferences", data);
       return response.json();
     },
@@ -273,6 +273,7 @@ export default function Settings() {
         body: file,
         headers: {
           "Content-Type": file.type,
+          "x-file-name": encodeURIComponent(file.name),
         },
       });
 
@@ -280,9 +281,20 @@ export default function Settings() {
         throw new Error("Failed to upload photo");
       }
 
+      // Get uploaded path if backend returned one (FTP mode)
+      let uploadedPath = objectPath;
+      try {
+        const uploadJson = await uploadResponse.json();
+        if (uploadJson?.objectPath) {
+          uploadedPath = uploadJson.objectPath;
+        }
+      } catch {
+        // ignore parse errors for object-storage PUTs
+      }
+
       // Confirm upload
       const confirmResponse = await apiRequest("POST", "/api/profile/photo/confirm", {
-        objectPath,
+        objectPath: uploadedPath,
       });
 
       if (!confirmResponse.ok) {
@@ -312,8 +324,8 @@ export default function Settings() {
   };
 
   // Handle notification preference changes
-  const handleNotificationChange = (key: keyof typeof notificationPrefs) => {
-    setNotificationPrefs(prev => ({ ...prev, [key]: !prev[key] }));
+  const handleNotificationChange = (key: keyof typeof notificationPrefsState) => {
+    setNotificationPrefsState(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
   // Save notification preferences
@@ -326,7 +338,7 @@ export default function Settings() {
       });
       return;
     }
-    saveNotificationsMutation.mutate(notificationPrefs);
+    saveNotificationsMutation.mutate(notificationPrefsState);
   };
 
   const handleSubmit = () => {
@@ -781,7 +793,7 @@ export default function Settings() {
                   <Label>Email Notifications</Label>
                   <p className="text-sm text-muted-foreground">Receive email updates for important events</p>
                 </div>
-                <Switch checked={notificationPrefs.emailNotifications} onCheckedChange={() => handleNotificationChange('emailNotifications')} data-testid="switch-email-notifications" />
+                <Switch checked={notificationPrefsState.emailNotifications} onCheckedChange={() => handleNotificationChange('emailNotifications')} data-testid="switch-email-notifications" />
               </div>
 
               <Separator />
@@ -791,7 +803,7 @@ export default function Settings() {
                   <Label>Document Upload Alerts</Label>
                   <p className="text-sm text-muted-foreground">Get notified when clients upload documents</p>
                 </div>
-                <Switch checked={notificationPrefs.documentAlerts} onCheckedChange={() => handleNotificationChange('documentAlerts')} data-testid="switch-document-alerts" />
+                <Switch checked={notificationPrefsState.documentAlerts} onCheckedChange={() => handleNotificationChange('documentAlerts')} data-testid="switch-document-alerts" />
               </div>
 
               <Separator />
@@ -801,7 +813,7 @@ export default function Settings() {
                   <Label>Status Change Notifications</Label>
                   <p className="text-sm text-muted-foreground">Alerts when refund status changes</p>
                 </div>
-                <Switch checked={notificationPrefs.statusNotifications} onCheckedChange={() => handleNotificationChange('statusNotifications')} data-testid="switch-status-notifications" />
+                <Switch checked={notificationPrefsState.statusNotifications} onCheckedChange={() => handleNotificationChange('statusNotifications')} data-testid="switch-status-notifications" />
               </div>
 
               <Separator />
@@ -811,7 +823,7 @@ export default function Settings() {
                   <Label>New Message Alerts</Label>
                   <p className="text-sm text-muted-foreground">Notifications for new client messages</p>
                 </div>
-                <Switch checked={notificationPrefs.messageAlerts} onCheckedChange={() => handleNotificationChange('messageAlerts')} data-testid="switch-message-alerts" />
+                <Switch checked={notificationPrefsState.messageAlerts} onCheckedChange={() => handleNotificationChange('messageAlerts')} data-testid="switch-message-alerts" />
               </div>
 
               <Separator />
@@ -821,7 +833,7 @@ export default function Settings() {
                   <Label>SMS Notifications</Label>
                   <p className="text-sm text-muted-foreground">Receive text messages for critical updates</p>
                 </div>
-                <Switch  checked={notificationPrefs.smsNotifications} onCheckedChange={() => handleNotificationChange('smsNotifications')}data-testid="switch-sms-notifications" />
+                <Switch  checked={notificationPrefsState.smsNotifications} onCheckedChange={() => handleNotificationChange('smsNotifications')}data-testid="switch-sms-notifications" />
               </div>
 
               <Button
