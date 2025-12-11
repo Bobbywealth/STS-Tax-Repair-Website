@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 const statusColors: Record<FilingStatus, string> = {
@@ -75,6 +75,19 @@ export default function ClientDetail() {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [selectedFiling, setSelectedFiling] = useState<TaxFiling | null>(null);
   const [showFilingDetails, setShowFilingDetails] = useState(false);
+  const [filingEditForm, setFilingEditForm] = useState({
+    status: "new" as FilingStatus,
+    estimatedRefund: "",
+    actualRefund: "",
+    serviceFee: "",
+    feePaid: false,
+    preparerName: "",
+    officeLocation: "",
+    filingType: "individual",
+    federalStatus: "",
+    stateStatus: "",
+    notes: "",
+  });
   const [editFormData, setEditFormData] = useState<EditFormData>({
     firstName: "",
     lastName: "",
@@ -124,6 +137,36 @@ export default function ClientDetail() {
       toast({
         title: "Error",
         description: error.message || "Failed to create tax filing",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateFilingMutation = useMutation({
+    mutationFn: async ({
+      filingId,
+      payload,
+    }: {
+      filingId: string;
+      payload: Partial<TaxFiling>;
+    }) => {
+      return apiRequest("PATCH", `/api/tax-filings/${filingId}`, payload).then((res) =>
+        res.json ? res.json() : res,
+      );
+    },
+    onSuccess: (updated: TaxFiling) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tax-filings/client", clientId] });
+      setSelectedFiling(updated);
+      toast({
+        title: "Filing updated",
+        description: "Tax filing details have been saved.",
+      });
+      setShowFilingDetails(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Update failed",
+        description: error?.message || "Could not update filing.",
         variant: "destructive",
       });
     },
@@ -195,6 +238,24 @@ export default function ClientDetail() {
     e.preventDefault();
     updateProfileMutation.mutate(editFormData);
   };
+
+  useEffect(() => {
+    if (selectedFiling) {
+      setFilingEditForm({
+        status: selectedFiling.status || "new",
+        estimatedRefund: selectedFiling.estimatedRefund || "",
+        actualRefund: selectedFiling.actualRefund || "",
+        serviceFee: selectedFiling.serviceFee || "",
+        feePaid: selectedFiling.feePaid || false,
+        preparerName: selectedFiling.preparerName || "",
+        officeLocation: selectedFiling.officeLocation || "",
+        filingType: selectedFiling.filingType || "individual",
+        federalStatus: selectedFiling.federalStatus || "",
+        stateStatus: selectedFiling.stateStatus || "",
+        notes: selectedFiling.notes || "",
+      });
+    }
+  }, [selectedFiling]);
 
   const existingYears = new Set((filings || []).map(f => f.taxYear));
   const yearsWithoutFilings = availableYears.filter(y => !existingYears.has(y));
@@ -689,6 +750,7 @@ export default function ClientDetail() {
         </DialogContent>
       </Dialog>
 
+
       <Dialog open={showFilingDetails} onOpenChange={setShowFilingDetails}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -697,177 +759,163 @@ export default function ClientDetail() {
               Tax Year {selectedFiling?.taxYear} Details
             </DialogTitle>
             <DialogDescription>
-              Complete details for this tax filing
+              Edit the filing details for this client
             </DialogDescription>
           </DialogHeader>
           {selectedFiling && (
-            <div className="space-y-6">
+            <form
+              className="space-y-6"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!selectedFiling) return;
+                const payload: Partial<TaxFiling> = {
+                  status: filingEditForm.status,
+                  estimatedRefund: filingEditForm.estimatedRefund ? parseFloat(filingEditForm.estimatedRefund as any) : null,
+                  actualRefund: filingEditForm.actualRefund ? parseFloat(filingEditForm.actualRefund as any) : null,
+                  serviceFee: filingEditForm.serviceFee ? parseFloat(filingEditForm.serviceFee as any) : null,
+                  feePaid: filingEditForm.feePaid,
+                  preparerName: filingEditForm.preparerName || null,
+                  officeLocation: filingEditForm.officeLocation || null,
+                  filingType: filingEditForm.filingType || "individual",
+                  federalStatus: filingEditForm.federalStatus || null,
+                  stateStatus: filingEditForm.stateStatus || null,
+                  notes: filingEditForm.notes || null,
+                };
+                updateFilingMutation.mutate({ filingId: selectedFiling.id, payload });
+              }}
+            >
               <div className="flex items-center gap-4">
                 <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
                   <span className="font-bold text-2xl text-primary">{selectedFiling.taxYear.toString().slice(-2)}</span>
                 </div>
                 <div>
                   <h3 className="text-xl font-semibold">Tax Year {selectedFiling.taxYear}</h3>
-                  <Badge className={statusColors[selectedFiling.status || 'new']}>
-                    {statusLabels[selectedFiling.status || 'new']}
-                  </Badge>
+                  <Select
+                    value={filingEditForm.status}
+                    onValueChange={(val) => setFilingEditForm((prev) => ({ ...prev, status: val as FilingStatus }))}
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(statusLabels).map(([key, label]) => (
+                        <SelectItem key={key} value={key}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Estimated Refund</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Amount:</span>
-                      <span className="font-medium">
-                        {selectedFiling.estimatedRefund 
-                          ? `$${parseFloat(selectedFiling.estimatedRefund).toLocaleString()}` 
-                          : "Not set"}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Actual Refund</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Amount:</span>
-                      <span className="font-medium text-green-600">
-                        {selectedFiling.actualRefund 
-                          ? `$${parseFloat(selectedFiling.actualRefund).toLocaleString()}` 
-                          : "Pending"}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Service Fee</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Amount:</span>
-                      <span className="font-medium">
-                        {selectedFiling.serviceFee 
-                          ? `$${parseFloat(selectedFiling.serviceFee).toLocaleString()}` 
-                          : "Not set"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between mt-2">
-                      <span className="text-sm text-muted-foreground">Status:</span>
-                      <Badge variant={selectedFiling.feePaid ? "default" : "secondary"}>
-                        {selectedFiling.feePaid ? "Paid" : "Unpaid"}
-                      </Badge>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Filing Status</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Federal:</span>
-                      <span className="font-medium">{selectedFiling.federalStatus || "N/A"}</span>
-                    </div>
-                    <div className="flex justify-between mt-2">
-                      <span className="text-sm text-muted-foreground">State:</span>
-                      <span className="font-medium">{selectedFiling.stateStatus || "N/A"}</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Key Dates</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Financials</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">Created:</span>
-                      <span>{selectedFiling.createdAt 
-                        ? new Date(selectedFiling.createdAt).toLocaleDateString() 
-                        : "N/A"}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">Submitted:</span>
-                      <span>{selectedFiling.submittedAt 
-                        ? new Date(selectedFiling.submittedAt).toLocaleDateString() 
-                        : "Not yet filed"}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">Approved:</span>
-                      <span>{selectedFiling.approvedAt 
-                        ? new Date(selectedFiling.approvedAt).toLocaleDateString() 
-                        : "Pending"}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">Funded:</span>
-                      <span>{selectedFiling.fundedAt 
-                        ? new Date(selectedFiling.fundedAt).toLocaleDateString() 
-                        : "Pending"}</span>
-                    </div>
+                <CardContent className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="space-y-2">
+                    <Label>Estimated Refund</Label>
+                    <Input
+                      type="number"
+                      inputMode="decimal"
+                      value={filingEditForm.estimatedRefund}
+                      onChange={(e) => setFilingEditForm((prev) => ({ ...prev, estimatedRefund: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Actual Refund</Label>
+                    <Input
+                      type="number"
+                      inputMode="decimal"
+                      value={filingEditForm.actualRefund}
+                      onChange={(e) => setFilingEditForm((prev) => ({ ...prev, actualRefund: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Service Fee</Label>
+                    <Input
+                      type="number"
+                      inputMode="decimal"
+                      value={filingEditForm.serviceFee}
+                      onChange={(e) => setFilingEditForm((prev) => ({ ...prev, serviceFee: e.target.value }))}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between mt-6">
+                    <Label className="text-sm">Fee Paid</Label>
+                    <Switch
+                      checked={filingEditForm.feePaid}
+                      onCheckedChange={(checked) => setFilingEditForm((prev) => ({ ...prev, feePaid: Boolean(checked) }))}
+                    />
                   </div>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Assignment & Details</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Details</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">Preparer:</span>
-                      <span className="font-medium">{selectedFiling.preparerName || "Unassigned"}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Building className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">Office:</span>
-                      <span className="font-medium">{selectedFiling.officeLocation || "N/A"}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">Filing Type:</span>
-                      <span className="font-medium capitalize">{selectedFiling.filingType || "Individual"}</span>
-                    </div>
+                <CardContent className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="space-y-2">
+                    <Label>Preparer</Label>
+                    <Input
+                      value={filingEditForm.preparerName}
+                      onChange={(e) => setFilingEditForm((prev) => ({ ...prev, preparerName: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Office</Label>
+                    <Input
+                      value={filingEditForm.officeLocation}
+                      onChange={(e) => setFilingEditForm((prev) => ({ ...prev, officeLocation: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Filing Type</Label>
+                    <Input
+                      value={filingEditForm.filingType}
+                      onChange={(e) => setFilingEditForm((prev) => ({ ...prev, filingType: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Federal Status</Label>
+                    <Input
+                      value={filingEditForm.federalStatus}
+                      onChange={(e) => setFilingEditForm((prev) => ({ ...prev, federalStatus: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>State Status</Label>
+                    <Input
+                      value={filingEditForm.stateStatus}
+                      onChange={(e) => setFilingEditForm((prev) => ({ ...prev, stateStatus: e.target.value }))}
+                    />
                   </div>
                 </CardContent>
               </Card>
 
-              {selectedFiling.notes && (
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Notes</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm">{selectedFiling.notes}</p>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Notes</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Textarea
+                    value={filingEditForm.notes}
+                    onChange={(e) => setFilingEditForm((prev) => ({ ...prev, notes: e.target.value }))}
+                    placeholder="Add internal notes for this filing..."
+                  />
+                </CardContent>
+              </Card>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowFilingDetails(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={updateFilingMutation.isPending}>
+                  {updateFilingMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save changes"}
+                </Button>
+              </DialogFooter>
+            </form>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowFilingDetails(false)}>
-              Close
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
