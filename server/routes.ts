@@ -1377,13 +1377,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Not authenticated" });
       }
       const adminUser = await storage.getUser(userId);
-      if (!adminUser || adminUser.role !== "admin") {
+      if (!adminUser || (adminUser.role !== "admin" && adminUser.role !== "super_admin")) {
         return res.status(403).json({ error: "Admin access required" });
       }
 
       const { role, reason } = req.body;
-      if (!role || !["client", "agent", "tax_office", "admin"].includes(role)) {
+      if (!role || !["client", "agent", "tax_office", "admin", "super_admin"].includes(role)) {
         return res.status(400).json({ error: "Invalid role" });
+      }
+
+      // Only a super admin can grant or revoke super admin access
+      if (role === "super_admin" && adminUser.role !== "super_admin") {
+        return res.status(403).json({ error: "Super Admin access required to assign this role" });
       }
 
       const adminName =
@@ -1488,7 +1493,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req, res) => {
       try {
         const role = req.params.role as any;
-        if (!["client", "agent", "tax_office", "admin"].includes(role)) {
+        if (!["client", "agent", "tax_office", "admin", "super_admin"].includes(role)) {
           return res.status(400).json({ error: "Invalid role" });
         }
         const users = await storage.getUsersByRole(role);
@@ -2102,8 +2107,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req: any, res) => {
       try {
         const { role, slug } = req.params;
-        if (!["client", "agent", "tax_office", "admin"].includes(role)) {
+        if (!["client", "agent", "tax_office", "admin", "super_admin"].includes(role)) {
           return res.status(400).json({ error: "Invalid role" });
+        }
+
+        if (role === "super_admin") {
+          return res.status(400).json({ error: "Super Admin permissions are implied and cannot be edited" });
         }
 
         const { granted } = req.body;
@@ -5901,7 +5910,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Build scope options based on role
-      let scopeOptions: any = { isGlobal: user.role === 'admin' };
+      let scopeOptions: any = { isGlobal: user.role === 'admin' || user.role === 'super_admin' };
       
       if (user.role === 'tax_office') {
         scopeOptions.officeId = user.officeId;

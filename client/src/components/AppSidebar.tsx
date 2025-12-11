@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { usePermissions, PERMISSIONS } from "@/hooks/usePermissions";
 import { useBranding } from "@/hooks/useBranding";
 
-type UserRole = 'client' | 'agent' | 'tax_office' | 'admin';
+type UserRole = 'client' | 'agent' | 'tax_office' | 'admin' | 'super_admin';
 
 interface MenuItem {
   title: string;
@@ -86,14 +86,14 @@ export function AppSidebar({ user }: AppSidebarProps) {
     }
     return undefined;
   };
-  const isAdmin = userRole === 'admin';
+  const isAdmin = userRole === 'admin' || userRole === 'super_admin';
   
   const filteredMenuItems = menuItems.filter(item => {
     if (item.alwaysShow) return true;
     if (item.adminOnly) return isAdmin;
     
     if (isLoading) {
-      if (userRole === 'admin') return true;
+      if (userRole === 'admin' || userRole === 'super_admin') return true;
       if (userRole === 'tax_office') return !item.adminOnly;
       if (userRole === 'agent') return !item.adminOnly && item.permission !== PERMISSIONS.PAYMENTS_VIEW && item.permission !== PERMISSIONS.REPORTS_VIEW && item.permission !== PERMISSIONS.SETTINGS_VIEW;
       return false;
@@ -105,6 +105,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
 
   const getRoleBadgeVariant = (role: string) => {
     switch (role?.toLowerCase()) {
+      case 'super_admin': return 'destructive';
       case 'admin': return 'destructive';
       case 'tax_office': return 'default';
       case 'agent': return 'secondary';
@@ -114,6 +115,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
 
   const getRoleDisplayName = (role: string) => {
     switch (role?.toLowerCase()) {
+      case 'super_admin': return 'Super Admin';
       case 'admin': return 'Admin';
       case 'tax_office': return 'Tax Office';
       case 'agent': return 'Agent';

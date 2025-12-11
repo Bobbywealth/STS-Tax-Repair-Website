@@ -86,7 +86,7 @@ async function upsertUser(claims: any) {
   if (!existingUser || existingUser.role === 'client') {
     try {
       const allUsers = await storage.getUsers();
-      const hasAdmin = allUsers.some(u => u.role === 'admin');
+      const hasAdmin = allUsers.some(u => u.role === 'admin' || u.role === 'super_admin');
       if (!hasAdmin) {
         console.log(`No admin found - promoting ${claims["email"]} to admin`);
         role = 'admin';

@@ -76,6 +76,11 @@ const roleConfig: Record<UserRole, { label: string; color: string; description: 
     color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
     description: "Complete system access including user management"
   },
+  super_admin: { 
+    label: "Super Admin (STS HQ)", 
+    color: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+    description: "Global control across all branches and offices"
+  },
 };
 
 export default function UserManagement() {
@@ -209,6 +214,7 @@ export default function UserManagement() {
     agents: users?.filter(u => u.role === 'agent').length || 0,
     taxOffice: users?.filter(u => u.role === 'tax_office').length || 0,
     admins: users?.filter(u => u.role === 'admin').length || 0,
+    superAdmins: users?.filter(u => u.role === 'super_admin').length || 0,
   };
 
   const handleOpenRoleDialog = (user: User) => {
@@ -304,6 +310,19 @@ export default function UserManagement() {
             </div>
           </CardContent>
         </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <div className="h-8 w-8 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center">
+                <Shield className="h-4 w-4 text-orange-600 dark:text-orange-200" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{roleStats.superAdmins}</p>
+                <p className="text-sm text-muted-foreground">Super Admins</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <Tabs defaultValue="users" className="space-y-4">
@@ -351,6 +370,7 @@ export default function UserManagement() {
                       <SelectItem value="agent">Agents</SelectItem>
                       <SelectItem value="tax_office">Tax Office</SelectItem>
                       <SelectItem value="admin">Administrators</SelectItem>
+                      <SelectItem value="super_admin">Super Admins</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

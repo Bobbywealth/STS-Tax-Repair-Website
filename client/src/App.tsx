@@ -68,7 +68,7 @@ function PageLoader() {
 
 import { usePermissions, PERMISSIONS } from "@/hooks/usePermissions";
 
-type UserRole = 'client' | 'agent' | 'tax_office' | 'admin';
+type UserRole = 'client' | 'agent' | 'tax_office' | 'admin' | 'super_admin';
 
 interface User {
   id: string;
@@ -115,7 +115,7 @@ function PermissionRoute({ component: Component, permission, adminOnly }: Permis
   }
   
   // Now check permissions after loading completes
-  if (adminOnly && role !== 'admin') {
+  if (adminOnly && role !== 'admin' && role !== 'super_admin') {
     return <Redirect to="/" />;
   }
   

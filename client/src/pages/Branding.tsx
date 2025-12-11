@@ -46,7 +46,7 @@ export default function Branding() {
   const { data: user, isLoading: userLoading } = useQuery<User | null>({
     queryKey: ['/api/auth/user'],
   });
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
 
   useEffect(() => {
     if (user?.officeId) {
