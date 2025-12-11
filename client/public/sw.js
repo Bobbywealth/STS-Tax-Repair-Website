@@ -184,7 +184,7 @@ async function cacheFirstStrategy(request) {
     if (response.ok) {
       const cache = await caches.open(RUNTIME_CACHE);
       cache.put(request, response.clone());
-      enforceRuntimeCacheLimits(cache);
+      await enforceRuntimeCacheLimits(cache);
     }
     return response;
   } catch (error) {
@@ -198,10 +198,10 @@ async function staleWhileRevalidateStrategy(request) {
   const cachedResponse = await cache.match(request);
 
   const fetchPromise = fetch(request)
-    .then((response) => {
+    .then(async (response) => {
       if (response.ok && response.status !== 206) {
         cache.put(request, response.clone());
-        enforceRuntimeCacheLimits(cache);
+        await enforceRuntimeCacheLimits(cache);
       }
       return response;
     })
@@ -218,7 +218,7 @@ async function networkFirstWithOfflineFallback(request) {
     const response = await fetch(request);
     const cache = await caches.open(RUNTIME_CACHE);
     cache.put(request, response.clone());
-    enforceRuntimeCacheLimits(cache);
+    await enforceRuntimeCacheLimits(cache);
     return response;
   } catch (error) {
     console.log('[SW] Navigation offline, serving cached page');
@@ -436,7 +436,7 @@ async function runPeriodicSync() {
       if (response.ok) {
         const cache = await caches.open(RUNTIME_CACHE);
         cache.put(url, response.clone());
-        enforceRuntimeCacheLimits(cache);
+        await enforceRuntimeCacheLimits(cache);
       }
     } catch (error) {
       console.log('[SW] Periodic sync failed for', url, error);
