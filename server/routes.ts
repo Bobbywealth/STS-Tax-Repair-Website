@@ -1498,7 +1498,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Only admin, tax_office, or agent can update client profiles
       // Or users can update their own profile
       const targetUserId = req.params.id;
-      const isAdmin = currentUser.role === "admin";
+      const isAdmin = currentUser.role === "admin" || currentUser.role === "super_admin";
       const isStaff = currentUser.role === "tax_office" || currentUser.role === "agent";
       const isSelf = currentUserId === targetUserId;
       
@@ -6481,11 +6481,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         contentLength,
       });
 
-      // Upload to FTP in agent-photos directory
+      // Upload to FTP in agent-photos directory (separate from client uploads)
       const result = await ftpStorageService.uploadFile(
-        `agent-photos/${agentId}`,
+        agentId,
         fileName,
-        fileBuffer
+        fileBuffer,
+        undefined,
+        'agent-photos'
       );
       
       // Update agent with new image URL
