@@ -1,6 +1,9 @@
-const CACHE_VERSION = 'v13';
+const CACHE_VERSION = 'v14';
 const CACHE_NAME = `sts-taxrepair-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `sts-runtime-${CACHE_VERSION}`;
+const RUNTIME_MAX_ENTRIES = 80;
+const RUNTIME_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const FETCH_TIMEOUT_MS = 7000;
 const SYNC_TAG = 'sync-data';
 const PERIODIC_SYNC_TAG = 'periodic-content-sync';
 const PERIODIC_SYNC_URLS = ['/api/sync', '/api/notifications'];
@@ -181,6 +184,7 @@ async function cacheFirstStrategy(request) {
     if (response.ok) {
       const cache = await caches.open(RUNTIME_CACHE);
       cache.put(request, response.clone());
+      enforceRuntimeCacheLimits(cache);
     }
     return response;
   } catch (error) {
@@ -197,6 +201,7 @@ async function staleWhileRevalidateStrategy(request) {
     .then((response) => {
       if (response.ok && response.status !== 206) {
         cache.put(request, response.clone());
+        enforceRuntimeCacheLimits(cache);
       }
       return response;
     })
@@ -213,6 +218,7 @@ async function networkFirstWithOfflineFallback(request) {
     const response = await fetch(request);
     const cache = await caches.open(RUNTIME_CACHE);
     cache.put(request, response.clone());
+    enforceRuntimeCacheLimits(cache);
     return response;
   } catch (error) {
     console.log('[SW] Navigation offline, serving cached page');
@@ -422,13 +428,43 @@ function readAllQueuedRequests(store) {
 async function runPeriodicSync() {
   for (const url of PERIODIC_SYNC_URLS) {
     try {
-      const response = await fetch(url, { credentials: 'include' });
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+      const response = await fetch(url, { credentials: 'include', signal: controller.signal });
+      clearTimeout(timeout);
+
       if (response.ok) {
         const cache = await caches.open(RUNTIME_CACHE);
         cache.put(url, response.clone());
+        enforceRuntimeCacheLimits(cache);
       }
     } catch (error) {
       console.log('[SW] Periodic sync failed for', url, error);
     }
+  }
+}
+
+async function enforceRuntimeCacheLimits(cache) {
+  const keys = await cache.keys();
+  if (keys.length <= RUNTIME_MAX_ENTRIES) return;
+
+  const now = Date.now();
+  // Remove old entries first
+  for (const request of keys) {
+    const response = await cache.match(request);
+    const dateHeader = response?.headers.get('date');
+    if (dateHeader) {
+      const age = now - new Date(dateHeader).getTime();
+      if (age > RUNTIME_MAX_AGE_MS) {
+        await cache.delete(request);
+      }
+    }
+  }
+
+  // If still over limit, prune LRU order (oldest first)
+  const updatedKeys = await cache.keys();
+  if (updatedKeys.length > RUNTIME_MAX_ENTRIES) {
+    const excess = updatedKeys.length - RUNTIME_MAX_ENTRIES;
+    await Promise.all(updatedKeys.slice(0, excess).map((req) => cache.delete(req)));
   }
 }
