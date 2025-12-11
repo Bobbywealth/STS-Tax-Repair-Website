@@ -5369,6 +5369,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         slug
       } = req.body;
       
+      // Validate slug uniqueness if provided
+      if (slug !== undefined) {
+        if (!slug || typeof slug !== 'string' || !/^[a-z0-9-]+$/.test(slug)) {
+          return res.status(400).json({ error: 'Slug must contain only lowercase letters, numbers, or hyphens' });
+        }
+        
+        const existing = await storage.getOfficeBySlug(slug);
+        if (existing && existing.id !== id) {
+          return res.status(400).json({ error: 'Slug already in use' });
+        }
+      }
+      
       // Check for existing branding
       let branding = await storage.getOfficeBranding(id);
       

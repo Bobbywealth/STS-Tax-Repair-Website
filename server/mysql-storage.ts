@@ -1791,13 +1791,27 @@ export class MySQLStorage implements IStorage {
     isGlobal?: boolean;
     clientId?: string;
   }): Promise<Ticket[]> {
+    // Join users to derive officeId since legacy tickets table may not have the column
     const [rows] = await mysqlPool.query(
-      `SELECT id, client_id as clientId, client_name as clientName, office_id as officeId,
-       subject, description, category, priority, status, 
-       assigned_to_id as assignedToId, assigned_to as assignedTo,
-       internal_notes as internalNotes, resolved_at as resolvedAt,
-       created_at as createdAt, updated_at as updatedAt
-       FROM tickets ORDER BY created_at DESC`
+      `SELECT 
+         t.id,
+         t.client_id AS clientId,
+         t.client_name AS clientName,
+         u.office_id AS officeId,
+         t.subject,
+         t.description,
+         t.category,
+         t.priority,
+         t.status,
+         t.assigned_to_id AS assignedToId,
+         t.assigned_to AS assignedTo,
+         t.internal_notes AS internalNotes,
+         t.resolved_at AS resolvedAt,
+         t.created_at AS createdAt,
+         t.updated_at AS updatedAt
+       FROM tickets t
+       LEFT JOIN users u ON u.id = t.client_id
+       ORDER BY t.created_at DESC`
     );
     let tickets = rows as Ticket[];
     
