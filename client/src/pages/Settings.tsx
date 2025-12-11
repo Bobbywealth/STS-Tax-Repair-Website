@@ -57,7 +57,7 @@ export default function Settings() {
     enabled: !!officeIdForSettings,
   });
 
-  const { data: notificationPrefs } = useQuery<NotificationPreferences>({
+  const { data: notificationPrefsData } = useQuery<NotificationPreferences>({
     queryKey: ["/api/notifications/preferences"],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/notifications/preferences");
@@ -116,16 +116,16 @@ export default function Settings() {
   }, [user]);
 
   useEffect(() => {
-    if (notificationPrefs) {
+    if (notificationPrefsData) {
       setNotificationPrefs({
-        emailNotifications: notificationPrefs.emailNotifications ?? true,
-        documentAlerts: notificationPrefs.documentAlerts ?? true,
-        statusNotifications: notificationPrefs.statusNotifications ?? true,
-        messageAlerts: notificationPrefs.messageAlerts ?? true,
-        smsNotifications: notificationPrefs.smsNotifications ?? false,
+        emailNotifications: notificationPrefsData.emailNotifications ?? true,
+        documentAlerts: notificationPrefsData.documentAlerts ?? true,
+        statusNotifications: notificationPrefsData.statusNotifications ?? true,
+        messageAlerts: notificationPrefsData.messageAlerts ?? true,
+        smsNotifications: notificationPrefsData.smsNotifications ?? false,
       });
     }
-  }, [notificationPrefs]);
+  }, [notificationPrefsData]);
 
   useEffect(() => {
     if (office) {
