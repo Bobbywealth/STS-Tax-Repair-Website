@@ -6,7 +6,7 @@ const RUNTIME_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 const FETCH_TIMEOUT_MS = 7000;
 const SYNC_TAG = 'sync-data';
 const PERIODIC_SYNC_TAG = 'periodic-content-sync';
-const PERIODIC_SYNC_URLS = ['/api/sync', '/api/notifications'];
+const PERIODIC_SYNC_URLS = ['/api/notifications', '/api/auth/user'];
 const QUEUE_DB = 'sts-sync-queue';
 const QUEUE_STORE = 'requests';
 

@@ -22,6 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { useAuthStorage } from "@/hooks/useAuthStorage";
 import stsLogo from "@/assets/sts-logo.png";
+import { usePWA } from "@/hooks/usePWA";
 
 interface PWALoginScreenProps {
   onLoginSuccess: () => void;
@@ -31,6 +32,7 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const { saveAuthToken, saveCredentials } = useAuthStorage();
+  const { isOnline, requestManualSync } = usePWA();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
@@ -52,6 +54,14 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
 
   const handleClientLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isOnline) {
+      toast({
+        title: "Offline",
+        description: "Reconnect to sign in. We queued a background sync.",
+      });
+      requestManualSync?.();
+      return;
+    }
     setIsLoading(true);
 
     try {
@@ -158,6 +168,12 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
+      {!isOnline && (
+        <div className="absolute top-0 inset-x-0 z-[300] bg-amber-500/90 text-amber-950 text-sm font-semibold px-4 py-3 shadow-lg flex items-center justify-center gap-2">
+          <WifiOff className="h-4 w-4" />
+          <span>Offline mode: cached screens are available. Reconnect to sign in.</span>
+        </div>
+      )}
       {/* Animated background */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a0a] via-[#0d1a14] to-[#0a0a0a]">
         {/* Animated mesh gradient */}
@@ -314,7 +330,7 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
                 ) : (
                   <span className="flex items-center gap-2">
                     <Sparkles className="h-4 w-4" />
-                    Sign In
+                    {isOnline ? "Sign In" : "Reconnect to sign in"}
                   </span>
                 )}
               </Button>
