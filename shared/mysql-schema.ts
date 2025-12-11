@@ -33,6 +33,7 @@ export const offices = mysqlTable("offices", {
   zipCode: varchar("zip_code", { length: 20 }),
   phone: varchar("phone", { length: 20 }),
   email: varchar("email", { length: 255 }),
+  defaultTaxYear: int("default_tax_year").default(2024),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -74,6 +75,28 @@ export const insertOfficeBrandingSchema = createInsertSchema(officeBranding).omi
 
 export type InsertOfficeBranding = z.infer<typeof insertOfficeBrandingSchema>;
 export type OfficeBranding = typeof officeBranding.$inferSelect;
+
+// Notification Preferences per user
+export const notificationPreferences = mysqlTable("notification_preferences", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+  userId: varchar("user_id", { length: 36 }).notNull().unique(),
+  emailNotifications: boolean("email_notifications").default(true),
+  documentAlerts: boolean("document_alerts").default(true),
+  statusNotifications: boolean("status_notifications").default(true),
+  messageAlerts: boolean("message_alerts").default(true),
+  smsNotifications: boolean("sms_notifications").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertNotificationPreferencesSchema = createInsertSchema(notificationPreferences).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertNotificationPreferences = z.infer<typeof insertNotificationPreferencesSchema>;
+export type NotificationPreferences = typeof notificationPreferences.$inferSelect;
 
 // Theme preference type for users
 export type ThemePreference = 'system' | 'light' | 'dark';

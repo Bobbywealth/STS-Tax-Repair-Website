@@ -4677,7 +4677,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
-  // Notification preferences endpoint
+  // Notification preferences endpoints
+  app.get(
+    "/api/notifications/preferences",
+    isAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.userId || req.user?.claims?.sub;
+        if (!userId) {
+          return res.status(401).json({ error: "Unauthorized" });
+        }
+
+        const prefs = await storage.getNotificationPreferences(userId);
+        const defaults = {
+          emailNotifications: true,
+          documentAlerts: true,
+          statusNotifications: true,
+          messageAlerts: true,
+          smsNotifications: false,
+        };
+
+        res.json(prefs ? prefs : { userId, ...defaults });
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    },
+  );
+
   app.patch(
     "/api/notifications/preferences",
     isAuthenticated,
@@ -4696,18 +4722,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(401).json({ error: "Unauthorized" });
         }
 
-        // For now, we'll store preferences in user settings or a separate table
-        // This is a placeholder implementation - you may want to create a separate notifications_preferences table
+        const updated = await storage.upsertNotificationPreferences({
+          userId,
+          emailNotifications,
+          documentAlerts,
+          statusNotifications,
+          messageAlerts,
+          smsNotifications,
+        });
+
         res.json({
           success: true,
           message: "Notification preferences updated successfully",
-          preferences: {
-            emailNotifications,
-            documentAlerts,
-            statusNotifications,
-            messageAlerts,
-            smsNotifications,
-          },
+          preferences: updated,
         });
       } catch (error: any) {
         res.status(500).json({ error: error.message });
@@ -5395,6 +5422,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Upload office logo - returns presigned URL
+  app.post("/api/offices/:id/logo-upload", isAuthenticated, requirePermission('branding.manage'), async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { fileName } = req.body;
+      const userId = req.userId || req.user?.claims?.sub;
+      const user = await storage.getUser(userId);
+
+      if (!user || (user.role !== 'admin' && user.officeId !== id)) {
+        return res.status(403).json({ error: 'Unauthorized - cannot upload logo for this office' });
+      }
+
+      if (!fileName) {
+        return res.status(400).json({ error: 'fileName is required' });
+      }
+
+      const objectStorage = new ObjectStorageService();
+      const { uploadURL, objectPath } = await objectStorage.getOfficeLogoUploadURL(id, fileName);
+      res.json({ uploadURL, objectPath });
+    } catch (error: any) {
+      console.error('Office logo upload URL error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Confirm office logo upload and persist branding
+  app.post("/api/offices/:id/logo-confirm", isAuthenticated, requirePermission('branding.manage'), async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { objectPath } = req.body;
+      const userId = req.userId || req.user?.claims?.sub;
+      const user = await storage.getUser(userId);
+
+      if (!user || (user.role !== 'admin' && user.officeId !== id)) {
+        return res.status(403).json({ error: 'Unauthorized - cannot update logo for this office' });
+      }
+
+      if (!objectPath) {
+        return res.status(400).json({ error: 'objectPath is required' });
+      }
+
+      const office = await storage.getOffice(id);
+      if (!office) {
+        return res.status(404).json({ error: 'Office not found' });
+      }
+
+      let branding = await storage.getOfficeBranding(id);
+      if (branding) {
+        branding = await storage.updateOfficeBranding(id, {
+          logoUrl: objectPath,
+          logoObjectKey: objectPath,
+          updatedByUserId: userId,
+        });
+      } else {
+        branding = await storage.createOfficeBranding({
+          officeId: id,
+          companyName: office.name,
+          logoUrl: objectPath,
+          logoObjectKey: objectPath,
+          updatedByUserId: userId,
+        } as any);
+      }
+
+      res.json({
+        success: true,
+        branding,
+      });
+    } catch (error: any) {
+      console.error('Office logo confirm error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Serve office logo
+  app.get("/api/offices/:id/logo", async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const branding = await storage.getOfficeBranding(id);
+
+      if (!branding?.logoUrl) {
+        return res.status(404).json({ error: 'Logo not found' });
+      }
+
+      // External URL
+      if (branding.logoUrl.startsWith('http')) {
+        return res.redirect(branding.logoUrl);
+      }
+
+      const objectStorage = new ObjectStorageService();
+      const file = await objectStorage.getObjectEntityFile(branding.logoUrl);
+      await objectStorage.downloadObject(file, res, 3600);
+    } catch (error: any) {
+      console.error('Office logo fetch error:', error);
+      if (!res.headersSent) {
+        res.status(404).json({ error: 'Logo not found' });
+      }
+    }
+  });
+
   // Delete/Reset office branding to defaults (requires branding.manage permission)
   app.delete("/api/offices/:id/branding", isAuthenticated, requirePermission('branding.manage'), async (req: any, res) => {
     try {
@@ -5500,7 +5626,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create office (admin only)
   app.post("/api/offices", isAuthenticated, requireAdmin(), async (req: any, res) => {
     try {
-      const { name, slug, address, phone, email } = req.body;
+      const { name, slug, address, city, state, zipCode, phone, email, defaultTaxYear } = req.body;
       
       if (!name) {
         return res.status(400).json({ error: 'Office name is required' });
@@ -5514,7 +5640,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      const office = await storage.createOffice({ name, slug, address, phone, email });
+      const office = await storage.createOffice({ name, slug, address, city, state, zipCode, phone, email, defaultTaxYear });
       res.status(201).json(office);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -5532,7 +5658,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: 'Unauthorized' });
       }
       
-      const { name, slug, address, phone, email, isActive } = req.body;
+      const { name, slug, address, city, state, zipCode, phone, email, defaultTaxYear, isActive } = req.body;
       
       // Check slug uniqueness if changing
       if (slug) {
@@ -5546,8 +5672,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name, 
         slug, 
         address, 
+        city,
+        state,
+        zipCode,
         phone, 
         email,
+        defaultTaxYear,
         isActive 
       });
       

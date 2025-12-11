@@ -43,6 +43,8 @@ import {
   type InsertOffice,
   type OfficeBranding,
   type InsertOfficeBranding,
+  type NotificationPreferences,
+  type InsertNotificationPreferences,
 } from "@shared/mysql-schema";
 
 export interface IStorage {
@@ -226,6 +228,10 @@ export interface IStorage {
   updateOfficeBranding(officeId: string, branding: Partial<InsertOfficeBranding>): Promise<OfficeBranding | undefined>;
   deleteOfficeBranding(officeId: string): Promise<boolean>;
   
+  // Notification preferences
+  getNotificationPreferences(userId: string): Promise<NotificationPreferences | undefined>;
+  upsertNotificationPreferences(prefs: InsertNotificationPreferences): Promise<NotificationPreferences>;
+
   // User theme preference
   updateUserThemePreference(userId: string, theme: ThemePreference): Promise<User | undefined>;
 }

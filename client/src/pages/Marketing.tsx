@@ -275,8 +275,9 @@ export default function Marketing() {
     }
     const custom = emailTemplates.filter((t) => !DEFAULT_EMAIL_TEMPLATES.some((d) => d.id === t.id));
     const id = `custom-email-${Date.now()}`;
-    const updated = [...custom, { id, name: emailTemplateName.trim(), subject: emailSubject, body: emailBody }];
-    setEmailTemplates([...DEFAULT_EMAIL_TEMPLATES, ...custom, { id, name: emailTemplateName.trim(), subject: emailSubject, body: emailBody }]);
+    const newTemplate = { id, name: emailTemplateName.trim(), subject: emailSubject, body: emailBody };
+    const updated = [...custom, newTemplate];
+    setEmailTemplates([...DEFAULT_EMAIL_TEMPLATES, ...updated]);
     localStorage.setItem("sts-marketing-email-templates", JSON.stringify(updated));
     setEmailTemplateName("");
     toast({ title: "Email template saved" });
@@ -289,8 +290,9 @@ export default function Marketing() {
     }
     const custom = smsTemplates.filter((t) => !DEFAULT_SMS_TEMPLATES.some((d) => d.id === t.id));
     const id = `custom-sms-${Date.now()}`;
-    const updated = [...custom, { id, name: smsTemplateName.trim(), body: smsBody }];
-    setSmsTemplates([...DEFAULT_SMS_TEMPLATES, ...custom, { id, name: smsTemplateName.trim(), body: smsBody }]);
+    const newTemplate = { id, name: smsTemplateName.trim(), body: smsBody };
+    const updated = [...custom, newTemplate];
+    setSmsTemplates([...DEFAULT_SMS_TEMPLATES, ...updated]);
     localStorage.setItem("sts-marketing-sms-templates", JSON.stringify(updated));
     setSmsTemplateName("");
     toast({ title: "SMS template saved" });

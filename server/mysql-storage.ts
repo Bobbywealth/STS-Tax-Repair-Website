@@ -59,6 +59,8 @@ import {
   type NotificationType,
   type HomePageAgent,
   type InsertHomePageAgent,
+  type NotificationPreferences,
+  type InsertNotificationPreferences,
   users as usersTable,
   homePageAgents as homePageAgentsTable,
   taxDeadlines as taxDeadlinesTable,
@@ -80,6 +82,7 @@ import {
   emailVerificationTokens as emailVerificationTokensTable,
   offices as officesTable,
   officeBranding as officeBrandingTable,
+  notificationPreferences as notificationPreferencesTable,
   agentClientAssignments as agentAssignmentsTable,
   ticketMessages as ticketMessagesTable,
   auditLogs as auditLogsTable,
@@ -1564,6 +1567,7 @@ export class MySQLStorage implements IStorage {
       .values({
         id,
         ...office,
+        defaultTaxYear: office.defaultTaxYear ?? 2024,
         createdAt: new Date(),
         updatedAt: new Date()
       });
@@ -2106,6 +2110,61 @@ export class MySQLStorage implements IStorage {
       [userId]
     );
     return (result as any)[0]?.count || 0;
+  }
+
+  // ============================================================================
+  // NOTIFICATION PREFERENCES
+  // ============================================================================
+
+  async getNotificationPreferences(userId: string): Promise<NotificationPreferences | undefined> {
+    const [prefs] = await mysqlDb
+      .select()
+      .from(notificationPreferencesTable)
+      .where(eq(notificationPreferencesTable.userId, userId));
+    return prefs;
+  }
+
+  async upsertNotificationPreferences(
+    prefs: InsertNotificationPreferences
+  ): Promise<NotificationPreferences> {
+    const existing = await this.getNotificationPreferences(prefs.userId);
+    if (existing) {
+      await mysqlDb
+        .update(notificationPreferencesTable)
+        .set({
+          emailNotifications: prefs.emailNotifications ?? existing.emailNotifications,
+          documentAlerts: prefs.documentAlerts ?? existing.documentAlerts,
+          statusNotifications: prefs.statusNotifications ?? existing.statusNotifications,
+          messageAlerts: prefs.messageAlerts ?? existing.messageAlerts,
+          smsNotifications: prefs.smsNotifications ?? existing.smsNotifications,
+          updatedAt: new Date(),
+        })
+        .where(eq(notificationPreferencesTable.userId, prefs.userId));
+      const [updated] = await mysqlDb
+        .select()
+        .from(notificationPreferencesTable)
+        .where(eq(notificationPreferencesTable.userId, prefs.userId));
+      return updated;
+    }
+
+    const id = randomUUID();
+    await mysqlDb.insert(notificationPreferencesTable).values({
+      id,
+      userId: prefs.userId,
+      emailNotifications: prefs.emailNotifications ?? true,
+      documentAlerts: prefs.documentAlerts ?? true,
+      statusNotifications: prefs.statusNotifications ?? true,
+      messageAlerts: prefs.messageAlerts ?? true,
+      smsNotifications: prefs.smsNotifications ?? false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const [created] = await mysqlDb
+      .select()
+      .from(notificationPreferencesTable)
+      .where(eq(notificationPreferencesTable.userId, prefs.userId));
+    return created;
   }
 
   async markNotificationAsRead(id: string, userId: string): Promise<Notification | undefined> {
