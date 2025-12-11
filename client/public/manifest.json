@@ -106,8 +106,9 @@
     }
   ],
   "scope_extensions": [
-    { "origin": "https://ststaxrepair.org" },
-    { "origin": "https://app.ststaxrepair.org" }
+    { "origin": "https://ststaxrepair.org", "scope": "/" },
+    { "origin": "https://app.ststaxrepair.org", "scope": "/" },
+    { "origin": "https://ststaxrepair.net", "scope": "/" }
   ],
   "file_handlers": [
     {

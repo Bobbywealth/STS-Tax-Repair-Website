@@ -1633,21 +1633,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "User not found" });
       }
 
-      // Get upload URL from object storage
-      const objectStorage = new ObjectStorageService();
-      const fileName = `profile-photo-${Date.now()}.jpg`;
-      const { uploadURL, objectPath } =
-        await objectStorage.getProfilePhotoUploadURL(userId, fileName);
+      const hasObjectStorage = !!process.env.PRIVATE_OBJECT_DIR;
 
-      res.json({
+      // Prefer object storage when configured, otherwise fall back to FTP upload endpoint
+      if (hasObjectStorage) {
+        const objectStorage = new ObjectStorageService();
+        const fileName = `profile-photo-${Date.now()}.jpg`;
+        const { uploadURL, objectPath } =
+          await objectStorage.getProfilePhotoUploadURL(userId, fileName);
+
+        return res.json({
+          uploadURL,
+          objectPath,
+          mode: "object-storage",
+          message:
+            "Use the uploadURL to PUT the file, then call /api/profile/photo/confirm with the objectPath",
+        });
+      }
+
+      // FTP fallback for environments without object storage
+      const sanitizedFileName = `profile-${Date.now()}.jpg`;
+      const objectPath = `/ftp/uploads/profile-photos/${userId}/${sanitizedFileName}`;
+      const uploadURL = `/api/profile/photo/upload-ftp?userId=${encodeURIComponent(
+        userId
+      )}&objectPath=${encodeURIComponent(objectPath)}&fileName=${encodeURIComponent(
+        sanitizedFileName
+      )}`;
+
+      return res.json({
         uploadURL,
         objectPath,
+        mode: "ftp",
         message:
-          "Use the uploadURL to PUT the file, then call /api/profile/photo/confirm with the objectPath",
+          "PUT the binary file to uploadURL, then call /api/profile/photo/confirm with the objectPath",
       });
     } catch (error: any) {
       console.error("Photo upload URL error:", error);
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // FTP upload endpoint for profile photos (binary PUT)
+  app.put("/api/profile/photo/upload-ftp", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.query.userId as string) || req.userId || req.session?.userId || req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const existingUser = await storage.getUser(userId);
+      if (!existingUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const fileName =
+        (req.query.fileName as string) ||
+        (req.headers["x-file-name"] as string) ||
+        `profile-${Date.now()}.jpg`;
+
+      let fileBuffer: Buffer | undefined = req.rawBody as Buffer;
+      if (!fileBuffer || fileBuffer.length === 0) {
+        // Fallback: collect stream (for image/jpeg, etc.)
+        const chunks: Buffer[] = [];
+        await new Promise<void>((resolve) => {
+          req.on("data", (chunk: Buffer) => chunks.push(chunk));
+          req.on("end", () => resolve());
+        });
+        fileBuffer = Buffer.concat(chunks);
+      }
+
+      if (!fileBuffer || fileBuffer.length === 0) {
+        return res.status(400).json({ error: "No file content provided" });
+      }
+
+      const uploadResult = await ftpStorageService.uploadFile(
+        userId,
+        fileName,
+        fileBuffer,
+        req.headers["content-type"] as string | undefined,
+        "uploads/profile-photos"
+      );
+
+      return res.json({
+        success: true,
+        objectPath: `/ftp/${uploadResult.filePath}`,
+        fileUrl: uploadResult.fileUrl,
+      });
+    } catch (error: any) {
+      console.error("FTP profile photo upload error:", error);
+      res.status(500).json({ error: error.message || "Upload failed" });
     }
   });
 
@@ -1706,7 +1780,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
-  // Serve profile photo from object storage
+  // Serve profile photo from storage (object storage or FTP)
   app.get("/api/profile/photo/:userId", async (req: any, res) => {
     try {
       const user = await storage.getUser(req.params.userId);
@@ -1714,14 +1788,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Photo not found" });
       }
 
-      // If the profile image URL is an external URL (e.g., from Replit Auth), redirect to it
-      if (user.profileImageUrl.startsWith("http")) {
-        return res.redirect(user.profileImageUrl);
+      const imageUrl = user.profileImageUrl;
+
+      // External URL
+      if (imageUrl.startsWith("http")) {
+        return res.redirect(imageUrl);
       }
 
-      // Otherwise, serve from object storage
+      // FTP-backed photo
+      if (imageUrl.startsWith("/ftp/")) {
+        const relativePath = imageUrl.replace("/ftp/", "");
+        const success = await ftpStorageService.streamFileToResponse(
+          relativePath,
+          res,
+          "profile-photo"
+        );
+        if (success) return;
+        return res.status(404).json({ error: "Photo not found on FTP" });
+      }
+
+      // Object storage
       const objectStorage = new ObjectStorageService();
-      const file = await objectStorage.getPrivateObject(user.profileImageUrl);
+      const file = await objectStorage.getPrivateObject(imageUrl);
       if (!file) {
         return res.status(404).json({ error: "Photo not found in storage" });
       }

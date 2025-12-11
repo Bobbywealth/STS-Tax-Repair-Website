@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v14';
+const CACHE_VERSION = 'v15';
 const CACHE_NAME = `sts-taxrepair-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `sts-runtime-${CACHE_VERSION}`;
 const RUNTIME_MAX_ENTRIES = 80;
@@ -41,6 +41,17 @@ const APP_SHELL_ROUTES = [
   '/offline.html'
 ];
 
+async function safeAddAll(cache, urls) {
+  const results = await Promise.allSettled(
+    urls.map((url) => cache.add(url))
+  );
+  results
+    .filter((result) => result.status === 'rejected')
+    .forEach((result, idx) => {
+      console.warn('[SW] Skipped caching asset (continuing install):', urls[idx], result.reason);
+    });
+}
+
 const CACHE_STRATEGIES = {
   networkFirst: ['api'],
   cacheFirst: ['fonts.googleapis.com', 'fonts.gstatic.com', '.woff', '.woff2', '.ttf'],
@@ -50,13 +61,11 @@ const CACHE_STRATEGIES = {
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => {
+      .then(async (cache) => {
         console.log('[SW] Caching static assets');
-        return cache.addAll(STATIC_ASSETS);
-      })
-      .then((cache) => {
+        await safeAddAll(cache, STATIC_ASSETS);
         console.log('[SW] Caching app shell routes');
-        return cache.addAll(APP_SHELL_ROUTES.filter(Boolean));
+        await safeAddAll(cache, APP_SHELL_ROUTES.filter(Boolean));
       })
       .then(() => self.skipWaiting())
   );
