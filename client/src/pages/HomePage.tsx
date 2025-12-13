@@ -753,7 +753,7 @@ export default function HomePage() {
                 Reliable Tax Advisors
               </h1>
               <motion.p 
-                className="text-sts-gold font-semibold text-sm tracking-wide mt-2"
+                className="text-sts-gold font-semibold text-[30px] tracking-wide mt-2"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
