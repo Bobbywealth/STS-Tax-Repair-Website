@@ -72,6 +72,11 @@ export default function ResetPassword() {
     e.preventDefault();
     setError("");
 
+    if (!navigator.onLine) {
+      setError("You're offline. Please reconnect and try again.");
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError("Passwords do not match");
       return;

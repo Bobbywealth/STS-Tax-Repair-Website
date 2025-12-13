@@ -5876,32 +5876,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send notification emails and in-app notifications to all admins
       try {
         const admins = await mysqlStorage.getUsersByRole('admin');
-        for (const admin of admins) {
-          if (admin.email && admin.isActive !== false) {
-            // Send email notification
-            await sendStaffRequestNotificationEmail(
-              admin.email,
-              `${admin.firstName || ''} ${admin.lastName || ''}`.trim() || 'Admin',
-              firstName,
-              lastName,
-              email,
-              roleRequested,
-              reason || 'No reason provided'
-            );
-            
-            // Create in-app notification
-            await mysqlStorage.createNotification({
-              userId: admin.id,
-              type: 'staff_request',
-              title: 'New Staff Request',
-              message: `${firstName} ${lastName} has requested to join as ${roleRequested}`,
-              link: '/manager?tab=requests',
-              resourceType: 'staff_request',
-              resourceId: staffRequest.id
-            });
-          }
+        const superAdmins = await mysqlStorage.getUsersByRole('super_admin');
+        const recipients = Array.from(
+          new Map(
+            [...admins, ...superAdmins]
+              .filter((user) => user.email && user.isActive !== false)
+              .map((user) => [user.id ?? user.email, user])
+          ).values()
+        );
+
+        for (const admin of recipients) {
+          // Send email notification
+          await sendStaffRequestNotificationEmail(
+            admin.email as string,
+            `${admin.firstName || ''} ${admin.lastName || ''}`.trim() || 'Admin',
+            firstName,
+            lastName,
+            email,
+            roleRequested,
+            reason || 'No reason provided'
+          );
+          
+          // Create in-app notification
+          await mysqlStorage.createNotification({
+            userId: admin.id,
+            type: 'staff_request',
+            title: 'New Staff Request',
+            message: `${firstName} ${lastName} has requested to join as ${roleRequested}`,
+            link: '/manager?tab=requests',
+            resourceType: 'staff_request',
+            resourceId: staffRequest.id
+          });
         }
-        console.log(`[EMAIL] Staff request notifications sent to ${admins.length} admin(s)`);
+        console.log(`[EMAIL] Staff request notifications sent to ${recipients.length} admin(s)`);
       } catch (emailError) {
         console.error('[EMAIL] Failed to send staff request notifications:', emailError);
       }

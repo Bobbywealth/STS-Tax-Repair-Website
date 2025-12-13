@@ -74,9 +74,23 @@ export default function Appointments() {
 
   const createAppointmentMutation = useMutation({
     mutationFn: async (data: CreateAppointmentForm) => {
+      const clientTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const offsetMinutes = new Date().getTimezoneOffset();
+      const offsetHours = offsetMinutes / 60;
+      const offsetLabel = `UTC${offsetHours <= 0 ? "+" : "-"}${Math.abs(offsetHours).toString().padStart(2, "0")}:${Math.abs(offsetMinutes % 60)
+        .toString()
+        .padStart(2, "0")}`;
+      const notesWithTimezone = [
+        data.notes?.trim(),
+        `Client time zone: ${clientTimezone} (${offsetLabel})`,
+      ]
+        .filter(Boolean)
+        .join("\n");
+
       return apiRequest("POST", "/api/appointments", {
         ...data,
         appointmentDate: new Date(data.appointmentDate).toISOString(),
+        notes: notesWithTimezone,
       });
     },
     onSuccess: () => {

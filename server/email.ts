@@ -3,8 +3,10 @@ import { EmailType } from '@shared/mysql-schema';
 import crypto from 'crypto';
 
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
-const FROM_EMAIL = 'ststaxrepair@gmail.com';
-const FROM_NAME = 'STS Tax Repair';
+const FROM_EMAIL =
+  process.env.FROM_EMAIL ||
+  'support@ststaxrepair.org'; // domain-based sender improves deliverability (esp. Yahoo)
+const FROM_NAME = process.env.FROM_NAME || 'STS Tax Repair';
 
 export interface OfficeBranding {
   companyName: string;
@@ -65,6 +67,7 @@ interface SendEmailParams {
   html: string;
   text?: string;
   branding?: OfficeBranding;
+  category?: string;
 }
 
 export async function sendEmail(params: SendEmailParams): Promise<EmailResult> {
@@ -90,6 +93,11 @@ export async function sendEmail(params: SendEmailParams): Promise<EmailResult> {
       html: params.html,
       text: params.text || params.html.replace(/<[^>]*>/g, ''),
     };
+
+    // Helps SendGrid reporting/deliverability tuning (esp. Yahoo/Gmail)
+    if (params.category) {
+      msg.categories = [params.category];
+    }
     
     if (params.branding?.replyToEmail) {
       msg.replyTo = {
@@ -658,6 +666,7 @@ export async function sendPasswordResetEmail(
     subject: template.subject,
     html: template.html,
     branding,
+    category: 'password_reset',
   });
 }
 

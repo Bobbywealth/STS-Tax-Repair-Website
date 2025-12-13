@@ -76,13 +76,24 @@ export default function BookAppointmentPage() {
     mutationFn: async (data: BookingFormData & { date: Date; time: string }) => {
       const [hours, minutes] = data.time.split(":").map(Number);
       const appointmentDate = setMinutes(setHours(data.date, hours), minutes);
+      const clientTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const offsetMinutes = new Date().getTimezoneOffset();
+      const offsetHours = offsetMinutes / 60;
+      const offsetLabel = `UTC${offsetHours <= 0 ? "+" : "-"}${Math.abs(offsetHours)
+        .toString()
+        .padStart(2, "0")}:${Math.abs(offsetMinutes % 60)
+        .toString()
+        .padStart(2, "0")}`;
+      const timezoneNote = `Client time zone: ${clientTimezone} (${offsetLabel}) | Local selection: ${formatTime12Hour(
+        data.time,
+      )} on ${format(data.date, "yyyy-MM-dd")}`;
       
       return apiRequest("POST", "/api/appointments/public", {
         clientName: `${data.firstName} ${data.lastName}`,
         email: data.email,
         phone: data.phone,
         title: services.find(s => s.value === data.service)?.label || data.service,
-        description: data.notes || "",
+        description: [data.notes, timezoneNote].filter(Boolean).join("\n"),
         appointmentDate: appointmentDate.toISOString(),
         duration: 60,
         status: "pending",
