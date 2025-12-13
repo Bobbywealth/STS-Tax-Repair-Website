@@ -5,7 +5,7 @@ import crypto from 'crypto';
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 const FROM_EMAIL =
   process.env.FROM_EMAIL ||
-  'support@ststaxrepair.org'; // domain-based sender improves deliverability (esp. Yahoo)
+  'ststaxrepair@gmail.com'; // requested SendGrid sender
 const FROM_NAME = process.env.FROM_NAME || 'STS Tax Repair';
 
 export interface OfficeBranding {
@@ -160,11 +160,11 @@ function getEmailTemplate(type: EmailType, data: Record<string, any>, branding?:
   const footer = `
     <div class="footer">
       <p>${companyName} | Professional Tax Services</p>
-      <p>Phone: (555) 123-4567 | Email: ${brand.replyToEmail || 'support@ststaxrepair.org'}</p>
+      <p>Phone: (555) 123-4567 | Email: ${brand.replyToEmail || 'ststaxrepair@gmail.com'}</p>
       <p style="margin-top: 15px;">This is an automated message. Please do not reply directly to this email.</p>
       <div style="margin-top: 15px; padding: 12px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; text-align: left;">
         <p style="margin: 0; font-size: 12px; color: #856404;">
-          <strong>Can't find this email?</strong> Please check your Spam/Junk folder. To ensure you receive future emails from ${companyName}, add <strong>support@ststaxrepair.org</strong> to your contacts.
+          <strong>Can't find this email?</strong> Please check your Spam/Junk folder. To ensure you receive future emails from ${companyName}, add <strong>ststaxrepair@gmail.com</strong> to your contacts.
         </p>
       </div>
     </div>
