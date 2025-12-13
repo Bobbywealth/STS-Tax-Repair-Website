@@ -164,7 +164,7 @@ function getEmailTemplate(type: EmailType, data: Record<string, any>, branding?:
       <p style="margin-top: 15px;">This is an automated message. Please do not reply directly to this email.</p>
       <div style="margin-top: 15px; padding: 12px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; text-align: left;">
         <p style="margin: 0; font-size: 12px; color: #856404;">
-          <strong>Can't find this email?</strong> Please check your Spam/Junk folder. To ensure you receive future emails from ${companyName}, add <strong>ststaxrepair@gmail.com</strong> to your contacts.
+          <strong>Can't find this email?</strong> Please check your Spam/Junk folder. To ensure you receive future emails from ${companyName}, add <strong>support@ststaxrepair.org</strong> to your contacts.
         </p>
       </div>
     </div>
@@ -193,6 +193,8 @@ function getEmailTemplate(type: EmailType, data: Record<string, any>, branding?:
                 </div>
                 <p>If you didn't request this password reset, you can safely ignore this email. Your password will remain unchanged.</p>
                 <p>For security reasons, never share this link with anyone.</p>
+              <p style="font-size: 13px; color: #555;">If the button doesn't work, copy and paste this link into your browser:</p>
+              <p style="word-break: break-all; font-size: 12px; color: #006838;">${data.resetLink}</p>
               </div>
               ${footer}
             </div>
