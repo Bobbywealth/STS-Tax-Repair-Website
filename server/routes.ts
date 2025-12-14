@@ -4201,13 +4201,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           console.log(`[FTP] Uploading file for client ${clientId}: ${fileName} (${fileBuffer.length} bytes)`);
 
-          // Upload to GoDaddy via FTP
-          const { filePath, fileUrl } = await ftpStorageService.uploadFile(
+          // Upload to GoDaddy via FTP with timeout to avoid hanging requests
+          const timeoutMs = 20000;
+          const ftpUpload = ftpStorageService.uploadFile(
             clientId,
             fileName,
             fileBuffer,
             fileType
           );
+
+          const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error(`FTP upload timed out after ${timeoutMs}ms`)), timeoutMs)
+          );
+
+          const { filePath, fileUrl } = await Promise.race([ftpUpload, timeoutPromise]);
 
           // Determine document type
           let documentType = category || "Other";
