@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v15';
+const CACHE_VERSION = 'v18';
 const CACHE_NAME = `sts-taxrepair-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `sts-runtime-${CACHE_VERSION}`;
 const RUNTIME_MAX_ENTRIES = 80;
@@ -105,6 +105,12 @@ function shouldStaleWhileRevalidate(url) {
 
 self.addEventListener('fetch', (event) => {
   const { request } = event;
+  
+  // Bypass Service Worker for file uploads - let them go directly to server
+  if (request.method !== 'GET' && request.url.includes('/upload')) {
+    // Don't intercept - pass through to network
+    return;
+  }
   
   if (request.method !== 'GET') {
     event.respondWith(handleNonGetRequest(request));
@@ -322,7 +328,14 @@ async function handleNonGetRequest(request) {
   const queueClone = request.clone();
 
   try {
-    return await fetch(fetchClone);
+    // Add 30 second timeout to prevent infinite hanging
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+    
+    const response = await fetch(fetchClone, { signal: controller.signal });
+    clearTimeout(timeout);
+    
+    return response;
   } catch (error) {
     console.log('[SW] Queueing request for background sync:', request.url);
     if (self.registration?.sync) {
