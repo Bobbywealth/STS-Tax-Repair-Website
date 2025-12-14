@@ -6558,6 +6558,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/homepage-agents", async (req, res) => {
     try {
       const agents = await mysqlStorage.getHomePageAgents();
+      console.log(`[HOMEPAGE-AGENTS] Returning ${agents.length} agents`);
+      agents.forEach(a => {
+        console.log(`[HOMEPAGE-AGENTS] Agent: ${a.name}, imageUrl: ${a.imageUrl || 'NONE'}`);
+      });
       res.json(agents);
     } catch (error: any) {
       console.error('Error fetching homepage agents:', error);
@@ -6756,13 +6760,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/agent-photos/:id", async (req, res) => {
     try {
       const { id } = req.params;
+      console.log(`[AGENT-PHOTO] Request for agent ID: ${id}`);
       const agent = await mysqlStorage.getHomePageAgentById(id);
       
-      if (!agent || !agent.imageUrl) {
+      if (!agent) {
+        console.log(`[AGENT-PHOTO] Agent not found: ${id}`);
+        return res.status(404).json({ error: "Agent not found" });
+      }
+      
+      if (!agent.imageUrl) {
+        console.log(`[AGENT-PHOTO] Agent ${id} has no imageUrl`);
         return res.status(404).json({ error: "Agent photo not found" });
       }
       
       const imageUrl = agent.imageUrl;
+      console.log(`[AGENT-PHOTO] Agent ${id} imageUrl: ${imageUrl}`);
       
       // Handle different storage formats
       if (imageUrl.startsWith('/objects/public/')) {
