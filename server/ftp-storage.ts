@@ -6,8 +6,28 @@ const FTP_USER = process.env.FTP_USER || '';
 const FTP_PASSWORD = process.env.FTP_PASSWORD || '';
 const FTP_PORT = parseInt(process.env.FTP_PORT || '21');
 
+// Overall timeout for FTP operations (60 seconds)
+const FTP_OPERATION_TIMEOUT = 60000;
+
 // Debug: Log FTP config at startup
 console.log(`[FTP-CONFIG] FTP_HOST="${FTP_HOST}", FTP_USER="${FTP_USER}", FTP_PORT=${FTP_PORT}`);
+
+// Helper function to wrap any async operation with a timeout (properly cleans up timer)
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, operationName: string): Promise<T> {
+  let timeoutId: NodeJS.Timeout | null = null;
+  
+  const timeoutPromise = new Promise<T>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`[FTP] ${operationName} timed out after ${timeoutMs / 1000} seconds`));
+    }, timeoutMs);
+  });
+  
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  });
+}
 
 // The FTP user lands in /home/i28qwzd7d2dt/ so paths are relative to that
 // ststaxrepair.org is a folder directly in home, NOT inside public_html
@@ -41,6 +61,20 @@ export class FTPStorageService {
   }
 
   async uploadFile(
+    clientId: string,
+    fileName: string,
+    fileBuffer: Buffer,
+    mimeType?: string
+  ): Promise<{ filePath: string; fileUrl: string }> {
+    // Wrap entire upload operation with a timeout
+    return withTimeout(
+      this._uploadFileInternal(clientId, fileName, fileBuffer, mimeType),
+      FTP_OPERATION_TIMEOUT,
+      'File upload'
+    );
+  }
+
+  private async _uploadFileInternal(
     clientId: string,
     fileName: string,
     fileBuffer: Buffer,

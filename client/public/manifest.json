@@ -123,5 +123,38 @@
   "handle_links": "preferred",
   "edge_side_panel": {
     "preferred_width": 400
+  },
+  "file_handlers": [
+    {
+      "action": "/client-portal/documents",
+      "accept": {
+        "application/pdf": [".pdf"],
+        "image/*": [".jpg", ".jpeg", ".png", ".gif"],
+        "application/msword": [".doc"],
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"]
+      }
+    }
+  ],
+  "protocol_handlers": [
+    {
+      "protocol": "web+ststax",
+      "url": "/client-portal?action=%s"
+    }
+  ],
+  "share_target": {
+    "action": "/client-portal/documents",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "name",
+      "text": "description",
+      "url": "link",
+      "files": [
+        {
+          "name": "documents",
+          "accept": ["application/pdf", "image/*", ".pdf", ".jpg", ".jpeg", ".png"]
+        }
+      ]
+    }
   }
 }
