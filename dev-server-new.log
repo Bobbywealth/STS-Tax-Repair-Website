@@ -1,0 +1,57 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+Missing MySQL environment variables: MYSQL_HOST, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD
+Falling back to PostgreSQL if available, or app will fail on DB operations.
+[FTP-CONFIG] FTP_HOST="", FTP_USER="", FTP_PORT=21
+[EMAIL] ============================================
+[EMAIL] EMAIL SYSTEM STARTUP DIAGNOSTICS
+[EMAIL] ============================================
+[EMAIL] APP_URL: http://localhost:5000
+[EMAIL] FROM_EMAIL: ststaxrepair@gmail.com
+[EMAIL] SENDGRID_API_KEY configured: NO - EMAILS WILL NOT BE SENT!
+[EMAIL] NODE_ENV: development
+[EMAIL] RENDER_EXTERNAL_URL: not set
+[EMAIL] ============================================
+[EMAIL] WARNING: No SendGrid API key found! Password reset and notification emails will NOT work.
+[EMAIL] Please set the SENDGRID_API_KEY environment variable.
+MySQL migration error: AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7) {
+  code: 'ECONNREFUSED',
+  fatal: true,
+  [errors]: [
+    Error: connect ECONNREFUSED 127.0.0.1:3306
+        at createConnectionError (node:net:1678:14)
+        at afterConnectMultiple (node:net:1708:16) {
+      errno: -61,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 3306
+    },
+    Error: connect ECONNREFUSED ::1:3306
+        at createConnectionError (node:net:1678:14)
+        at afterConnectMultiple (node:net:1708:16) {
+      errno: -61,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '::1',
+      port: 3306
+    }
+  ]
+}
+Sun, 14 Dec 2025 17:18:02 GMT express-session deprecated req.secret; provide secret option at file:/Users/bobbyc/STS%20OFFICIAL%20WEBSITE%20DEC%2010/STS-Tax-Repair-Website/server/replitAuth.ts:1:1102
+Not running on Replit - Replit Auth disabled, using email/password auth only
+Uncaught Exception: Error: listen EADDRINUSE: address already in use 0.0.0.0:5000
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at node:net:2206:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -48,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 5000
+}

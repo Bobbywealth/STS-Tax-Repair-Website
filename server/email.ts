@@ -19,7 +19,7 @@ export interface OfficeBranding {
 
 const DEFAULT_BRANDING: OfficeBranding = {
   companyName: 'STS Tax Repair',
-  logoUrl: 'https://www.ststaxrepair.net/assets/sts-logo.png',
+  logoUrl: 'https://ststaxrepair.org/assets/sts-logo.png',
   primaryColor: '#1a4d2e',
   secondaryColor: '#4CAF50',
 };
