@@ -4169,8 +4169,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // FTP-based file upload for non-Replit environments (Render deployment)
   app.post("/api/documents/upload-ftp", isAuthenticated, async (req, res) => {
+    // #region agent log
+    const dbg = (message: string, data?: Record<string, any>) => {
+      try {
+        require("fs").appendFileSync(
+          "/Users/bobbyc/STS OFFICIAL WEBSITE DEC 10/STS-Tax-Repair-Website/.cursor/debug.log",
+          JSON.stringify({
+            location: "routes:/api/documents/upload-ftp",
+            message,
+            data,
+            timestamp: Date.now(),
+          }) + "\n"
+        );
+      } catch {}
+    };
+    // #endregion
     try {
       const contentType = req.headers['content-type'] || '';
+      dbg("start", { contentType, contentLength: req.headers['content-length'] });
       
       // Check content type to determine how to handle the upload
       if (!contentType.includes('multipart/form-data') && !contentType.includes('application/octet-stream')) {
@@ -4195,6 +4211,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const fileType = req.headers['x-file-type'] as string || 'application/octet-stream';
           const category = req.headers['x-category'] as string;
 
+          dbg("received body", { size: fileBuffer.length, clientId, fileName, fileType });
+
           if (!clientId || !fileName) {
             return res.status(400).json({ error: "x-client-id and x-file-name headers are required" });
           }
@@ -4215,6 +4233,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           );
 
           const { filePath, fileUrl } = await Promise.race([ftpUpload, timeoutPromise]);
+          dbg("upload success", { filePath, fileUrl });
 
           // Determine document type
           let documentType = category || "Other";
@@ -4254,17 +4273,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           res.status(201).json(document);
         } catch (uploadError: any) {
+          dbg("upload error", { errorMessage: uploadError?.message });
           console.error("[FTP] Upload error:", uploadError);
           res.status(500).json({ error: uploadError.message });
         }
       });
 
       req.on('error', (error: any) => {
+        dbg("request error", { errorMessage: error?.message });
         console.error("[FTP] Request error:", error);
         res.status(500).json({ error: error.message });
       });
 
     } catch (error: any) {
+      dbg("outer error", { errorMessage: error?.message });
       console.error("Error in FTP upload:", error);
       res.status(500).json({ error: error.message });
     }
