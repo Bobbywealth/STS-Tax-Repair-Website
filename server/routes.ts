@@ -4172,9 +4172,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // FTP-based file upload for non-Replit environments (Render deployment)
   app.post("/api/documents/upload-ftp", isAuthenticated, async (req, res) => {
+    let requestTimeout: NodeJS.Timeout | null = null;
+    let isResponseSent = false;
+
     try {
       const contentType = req.headers['content-type'] || '';
-      console.log(`[FTP] Upload request: contentType=${contentType}, contentLength=${req.headers['content-length']}`);
+      console.log(`[FTP] Upload request started: contentType=${contentType}, contentLength=${req.headers['content-length']}`);
       
       // Check content type to determine how to handle the upload
       if (!contentType.includes('multipart/form-data') && !contentType.includes('application/octet-stream')) {
@@ -4183,15 +4186,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Set a request-level timeout (120 seconds total for entire request)
+      // This ensures the upload doesn't hang indefinitely
+      requestTimeout = setTimeout(() => {
+        if (!isResponseSent && !res.headersSent) {
+          isResponseSent = true;
+          console.error('[FTP] Request timeout: Upload request exceeded 120 seconds');
+          res.status(408).json({ error: "Upload request timed out. Please try again with a smaller file." });
+        }
+      }, 120000); // 120 seconds
+
       // For raw binary uploads
       const chunks: Buffer[] = [];
+      let totalSize = 0;
       
       req.on('data', (chunk: Buffer) => {
+        totalSize += chunk.length;
         chunks.push(chunk);
+        console.log(`[FTP] Received chunk: ${chunk.length} bytes (total: ${totalSize})`);
       });
 
       req.on('end', async () => {
         try {
+          if (isResponseSent) {
+            console.log('[FTP] Response already sent, ignoring end event');
+            return;
+          }
+
           const fileBuffer = Buffer.concat(chunks);
           const clientId = req.headers['x-client-id'] as string;
           const rawFileName = req.headers['x-file-name'] as string;
@@ -4199,9 +4220,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const fileType = req.headers['x-file-type'] as string || 'application/octet-stream';
           const category = req.headers['x-category'] as string;
 
-          console.log(`[FTP] Received file: ${fileName} (${fileBuffer.length} bytes) for client ${clientId}`);
+          console.log(`[FTP] Received complete file: ${fileName} (${fileBuffer.length} bytes) for client ${clientId}`);
 
           if (!clientId || !fileName) {
+            isResponseSent = true;
             return res.status(400).json({ error: "x-client-id and x-file-name headers are required" });
           }
 
@@ -4260,21 +4282,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           console.log(`[FTP] Upload complete. Document ID: ${document.id}, Path: ${filePath}`);
 
+          isResponseSent = true;
+          if (requestTimeout) clearTimeout(requestTimeout);
           res.status(201).json(document);
         } catch (uploadError: any) {
           console.error("[FTP] Upload error:", uploadError);
+          isResponseSent = true;
+          if (requestTimeout) clearTimeout(requestTimeout);
           res.status(500).json({ error: uploadError.message });
         }
       });
 
       req.on('error', (error: any) => {
         console.error("[FTP] Request error:", error);
-        res.status(500).json({ error: error.message });
+        isResponseSent = true;
+        if (requestTimeout) clearTimeout(requestTimeout);
+        if (!res.headersSent) {
+          res.status(500).json({ error: error.message });
+        }
       });
 
     } catch (error: any) {
       console.error("Error in FTP upload:", error);
-      res.status(500).json({ error: error.message });
+      isResponseSent = true;
+      if (requestTimeout) clearTimeout(requestTimeout);
+      if (!res.headersSent) {
+        res.status(500).json({ error: error.message });
+      }
     }
   });
 
