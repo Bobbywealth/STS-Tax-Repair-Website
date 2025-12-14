@@ -484,6 +484,7 @@ export default function AgentManagement() {
                     variant={imageInputMode === 'upload' ? 'default' : 'outline'}
                     onClick={() => setImageInputMode('upload')}
                     className="flex-1"
+                    data-testid="button-mode-upload"
                   >
                     <Upload className="h-4 w-4 mr-1" />
                     Upload
@@ -494,6 +495,7 @@ export default function AgentManagement() {
                     variant={imageInputMode === 'url' ? 'default' : 'outline'}
                     onClick={() => setImageInputMode('url')}
                     className="flex-1"
+                    data-testid="button-mode-url"
                   >
                     <LinkIcon className="h-4 w-4 mr-1" />
                     URL
@@ -501,7 +503,7 @@ export default function AgentManagement() {
                 </div>
                 
                 {imageInputMode === 'upload' ? (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -509,30 +511,36 @@ export default function AgentManagement() {
                       onChange={onFileSelected}
                       className="hidden"
                       id="agent-photo-upload"
+                      data-testid="input-agent-file"
                     />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full"
+                    <div 
+                      className="border-2 border-dashed border-muted-foreground/30 rounded-lg p-4 text-center cursor-pointer hover:border-muted-foreground/50 transition-colors"
                       onClick={() => fileInputRef.current?.click()}
-                      disabled={isUploading}
-                      data-testid="button-upload-image"
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.currentTarget.classList.add('border-primary', 'bg-primary/5');
+                      }}
+                      onDragLeave={(e) => {
+                        e.currentTarget.classList.remove('border-primary', 'bg-primary/5');
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        e.currentTarget.classList.remove('border-primary', 'bg-primary/5');
+                        const file = e.dataTransfer.files?.[0];
+                        if (file) {
+                          const event = { target: { files: e.dataTransfer.files } } as any;
+                          onFileSelected(event);
+                        }
+                      }}
+                      data-testid="drop-zone-agent-photo"
                     >
-                      {isUploading ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Uploading...
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="h-4 w-4 mr-2" />
-                          {editingAgent ? 'Upload New Photo' : 'Select Photo'}
-                        </>
-                      )}
-                    </Button>
+                      <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-60" />
+                      <p className="text-sm font-medium">Drag image here or click to select</p>
+                      <p className="text-xs text-muted-foreground mt-1">PNG, JPG or GIF (max 5MB)</p>
+                    </div>
                     {!editingAgent && (
-                      <p className="text-xs text-muted-foreground">
-                        Save the agent first to upload the photo to storage
+                      <p className="text-xs text-amber-600 dark:text-amber-500 bg-amber-50 dark:bg-amber-950/30 rounded p-2">
+                        💡 Save the agent first, then you can upload a photo to the server
                       </p>
                     )}
                   </div>
@@ -542,41 +550,45 @@ export default function AgentManagement() {
                       id="imageUrl"
                       value={formData.imageUrl}
                       onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                      placeholder="https://example.com/photo.jpg or paste image URL"
-                      data-testid="input-agent-image"
+                      placeholder="https://example.com/photo.jpg"
+                      data-testid="input-agent-image-url"
                       readOnly={formData.imageUrl.startsWith('/ftp/') || formData.imageUrl.startsWith('/objects/')}
                       className={formData.imageUrl.startsWith('/ftp/') || formData.imageUrl.startsWith('/objects/') ? 'bg-muted' : ''}
                     />
                     {(formData.imageUrl.startsWith('/ftp/') || formData.imageUrl.startsWith('/objects/')) && (
-                      <p className="text-xs text-muted-foreground">
-                        ℹ️ Photo uploaded to server. This internal path is automatically converted to a public URL.
+                      <p className="text-xs text-green-600 dark:text-green-500 bg-green-50 dark:bg-green-950/30 rounded p-2">
+                        ✓ Photo uploaded to server (path locked)
                       </p>
                     )}
                   </div>
                 )}
                 
                 {formData.imageUrl && (
-                  <div className="flex items-center gap-2 mt-2 p-2 bg-muted rounded-md">
-                    <Avatar className="h-12 w-12">
-                      <AvatarImage 
-                        src={formData.imageUrl.startsWith('/objects/') || formData.imageUrl.startsWith('/ftp/') 
-                          ? `/api/agent-photos/${editingAgent?.id}?t=${Date.now()}` 
-                          : formData.imageUrl} 
-                        alt="Preview"
-                        onError={(e) => {
-                          console.error('Failed to load agent photo preview:', e);
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
-                      <AvatarFallback><ImageIcon className="h-5 w-5" /></AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">Image Preview</p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {formData.imageUrl.startsWith('/objects/') ? 'Stored in database' : 
-                         formData.imageUrl.startsWith('/ftp/') ? 'Stored on server' :
-                         formData.imageUrl.startsWith('data:') ? 'Preview only' : 'External URL'}
-                      </p>
+                  <div className="mt-3 border border-border rounded-lg p-3 space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground">Preview</p>
+                    <div className="flex items-start gap-3">
+                      <Avatar className="h-16 w-16 flex-shrink-0">
+                        <AvatarImage 
+                          src={formData.imageUrl.startsWith('/objects/') || formData.imageUrl.startsWith('/ftp/') 
+                            ? `/api/agent-photos/${editingAgent?.id}?t=${Date.now()}` 
+                            : formData.imageUrl} 
+                          alt="Preview"
+                          data-testid="img-agent-preview"
+                          onError={(e) => {
+                            console.error('Failed to load agent photo preview:', e);
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                        <AvatarFallback><ImageIcon className="h-6 w-6" /></AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0 text-xs">
+                        <p className="font-medium">
+                          {formData.imageUrl.startsWith('/objects/') ? '☁️ Cloud Storage' : 
+                           formData.imageUrl.startsWith('/ftp/') ? '🖥️ Server Storage' :
+                           formData.imageUrl.startsWith('data:') ? '👁️ Preview Only' : '🔗 External URL'}
+                        </p>
+                        <p className="text-muted-foreground truncate">{formData.imageUrl.substring(0, 50)}...</p>
+                      </div>
                     </div>
                   </div>
                 )}
