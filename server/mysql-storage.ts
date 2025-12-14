@@ -1144,7 +1144,8 @@ export class MySQLStorage implements IStorage {
     if (!existing) return undefined;
 
     const now = new Date();
-    const statusHistory = existing.statusHistory || [];
+    // Normalize statusHistory to an array to avoid runtime errors when legacy rows store non-array values
+    const statusHistory = Array.isArray(existing.statusHistory) ? existing.statusHistory : [];
     statusHistory.push({ status, date: now.toISOString(), note });
 
     const updates: Partial<TaxFiling> = {
