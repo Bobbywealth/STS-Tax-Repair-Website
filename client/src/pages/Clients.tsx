@@ -62,6 +62,16 @@ const filingStatusToDisplay: Record<FilingStatus, ClientTableData["status"]> = {
   paid: "Paid",
 };
 
+const displayStatusToFiling: Record<ClientTableData["status"], FilingStatus> = {
+  New: "new",
+  "Documents Pending": "documents_pending",
+  Review: "review",
+  Filed: "filed",
+  Accepted: "accepted",
+  Approved: "approved",
+  Paid: "paid",
+};
+
 const currentYear = new Date().getFullYear();
 const availableYears = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
@@ -203,6 +213,34 @@ export default function Clients() {
 
   const handleBulkAssign = (clientIds: string[], preparerId: string, preparerName: string) => {
     bulkAssignMutation.mutate({ clientIds, preparerId, preparerName });
+  };
+
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ clientId, newStatus }: { clientId: string; newStatus: ClientTableData["status"] }) => {
+      const filing = filingsByClientId.get(clientId);
+      if (!filing) {
+        throw new Error("No tax filing found for this client and year.");
+      }
+      const status = displayStatusToFiling[newStatus];
+      if (!status) {
+        throw new Error("Invalid status");
+      }
+      return apiRequest("PATCH", `/api/tax-filings/${filing.id}/status`, { status });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tax-filings", selectedYear] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Status Update Failed",
+        description: error?.message || "Unable to update client status. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleStatusChange = (clientId: string, newStatus: ClientTableData["status"]) => {
+    updateStatusMutation.mutate({ clientId, newStatus });
   };
 
   const handleAddClient = (e: React.FormEvent) => {
@@ -425,7 +463,7 @@ export default function Clients() {
           selectedYear={selectedYear}
           onViewClient={(id) => window.location.href = `/clients/${id}`}
           onEditClient={(id) => console.log('Edit client:', id)}
-          onStatusChange={(id, newStatus) => console.log(`Client ${id} status changed to ${newStatus}`)}
+          onStatusChange={handleStatusChange}
           onAssignClient={handleAssignClient}
           onBulkAssign={handleBulkAssign}
         />
