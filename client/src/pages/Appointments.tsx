@@ -51,6 +51,14 @@ export default function Appointments() {
 
   const { data: appointments, isLoading } = useQuery<Appointment[]>({
     queryKey: ['/api/appointments'],
+    onSuccess: (data) => {
+      console.log('Loaded appointments:', data);
+      console.log('Appointment dates:', data?.map(a => ({ 
+        id: a.id, 
+        date: a.appointmentDate, 
+        parsed: parseISO(a.appointmentDate as unknown as string) 
+      })));
+    },
   });
 
   const { data: clients } = useQuery<Client[]>({
@@ -174,9 +182,15 @@ export default function Appointments() {
   }) || [];
 
   const appointmentsForDate = (date: Date) => {
-    return filteredAppointments.filter(apt => 
-      isSameDay(parseISO(apt.appointmentDate as unknown as string), date)
-    );
+    return filteredAppointments.filter(apt => {
+      try {
+        const aptDate = parseISO(apt.appointmentDate as unknown as string);
+        return isSameDay(aptDate, date);
+      } catch (e) {
+        console.error('Error parsing appointment date:', apt.appointmentDate, e);
+        return false;
+      }
+    });
   };
 
   const selectedDateAppointments = selectedDate 
@@ -184,8 +198,13 @@ export default function Appointments() {
     : [];
 
   const todayAppointments = appointmentsForDate(new Date());
+  const now = new Date();
   const upcomingAppointments = filteredAppointments
-    .filter(apt => isFuture(parseISO(apt.appointmentDate as unknown as string)))
+    .filter(apt => {
+      const aptDate = parseISO(apt.appointmentDate as unknown as string);
+      // Include appointments from today onwards (not just future)
+      return aptDate >= startOfDay(now);
+    })
     .sort((a, b) => new Date(a.appointmentDate).getTime() - new Date(b.appointmentDate).getTime())
     .slice(0, 5);
 
