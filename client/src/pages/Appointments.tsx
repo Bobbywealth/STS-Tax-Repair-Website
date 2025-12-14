@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -49,21 +49,26 @@ export default function Appointments() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  const { data: appointments, isLoading } = useQuery<Appointment[]>({
+  const { data: appointments, isLoading, error } = useQuery<Appointment[]>({
     queryKey: ['/api/appointments'],
-    onSuccess: (data) => {
-      console.log('Loaded appointments:', data);
-      console.log('Appointment dates:', data?.map(a => ({ 
-        id: a.id, 
-        date: a.appointmentDate, 
-        parsed: parseISO(a.appointmentDate as unknown as string) 
-      })));
-    },
   });
 
-  const { data: clients } = useQuery<Client[]>({
+  const { data: clients, error: clientsError } = useQuery<Client[]>({
     queryKey: ['/api/users'],
   });
+
+  // Debug logging for appointments
+  useEffect(() => {
+    if (appointments) {
+      console.log('[APPOINTMENTS] Loaded:', appointments.length);
+      if (appointments.length > 0) {
+        console.log('[APPOINTMENTS] Sample:', appointments[0]);
+      }
+    }
+    if (error) {
+      console.error('[APPOINTMENTS] Error loading:', error);
+    }
+  }, [appointments, error]);
 
   const form = useForm<CreateAppointmentForm>({
     resolver: zodResolver(createAppointmentSchema),
@@ -307,6 +312,14 @@ export default function Appointments() {
 
       {isLoading ? (
         <div className="text-center py-12 text-muted-foreground">Loading appointments...</div>
+      ) : error ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+            <p className="text-destructive font-semibold mb-2">Failed to load appointments</p>
+            <p className="text-sm text-muted-foreground">{error instanceof Error ? error.message : 'Unknown error'}</p>
+          </CardContent>
+        </Card>
       ) : viewMode === "calendar" ? (
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Calendar */}
