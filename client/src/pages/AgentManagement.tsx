@@ -331,7 +331,12 @@ export default function AgentManagement() {
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar className="h-10 w-10">
-                            <AvatarImage src={agent.imageUrl || undefined} alt={agent.name} />
+                            <AvatarImage 
+                              src={agent.imageUrl && (agent.imageUrl.startsWith('/objects/') || agent.imageUrl.startsWith('/ftp/'))
+                                ? `/api/agent-photos/${agent.id}`
+                                : agent.imageUrl || undefined} 
+                              alt={agent.name} 
+                            />
                             <AvatarFallback>{getInitials(agent.name)}</AvatarFallback>
                           </Avatar>
                           <div>
@@ -546,9 +551,13 @@ export default function AgentManagement() {
                     <Avatar className="h-12 w-12">
                       <AvatarImage 
                         src={formData.imageUrl.startsWith('/objects/') || formData.imageUrl.startsWith('/ftp/') 
-                          ? `/api/agent-photos/${editingAgent?.id}` 
+                          ? `/api/agent-photos/${editingAgent?.id}?t=${Date.now()}` 
                           : formData.imageUrl} 
-                        alt="Preview" 
+                        alt="Preview"
+                        onError={(e) => {
+                          console.error('Failed to load agent photo preview:', e);
+                          e.currentTarget.style.display = 'none';
+                        }}
                       />
                       <AvatarFallback><ImageIcon className="h-5 w-5" /></AvatarFallback>
                     </Avatar>
