@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Calendar as CalendarIcon, Clock, MapPin, User, Plus, List, Grid, Phone, Mail, Check, X, AlertCircle } from "lucide-react";
-import { format, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, isToday, isFuture, parseISO } from "date-fns";
+import { format, isSameDay, startOfDay, startOfMonth, endOfMonth, eachDayOfInterval, isToday, isFuture, parseISO } from "date-fns";
 import type { Appointment } from "@shared/mysql-schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
