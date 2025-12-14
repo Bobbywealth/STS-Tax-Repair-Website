@@ -4169,24 +4169,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // FTP-based file upload for non-Replit environments (Render deployment)
   app.post("/api/documents/upload-ftp", isAuthenticated, async (req, res) => {
-    // #region agent log
-    const dbg = (message: string, data?: Record<string, any>) => {
-      try {
-        require("fs").appendFileSync(
-          "/Users/bobbyc/STS OFFICIAL WEBSITE DEC 10/STS-Tax-Repair-Website/.cursor/debug.log",
-          JSON.stringify({
-            location: "routes:/api/documents/upload-ftp",
-            message,
-            data,
-            timestamp: Date.now(),
-          }) + "\n"
-        );
-      } catch {}
-    };
-    // #endregion
     try {
       const contentType = req.headers['content-type'] || '';
-      dbg("start", { contentType, contentLength: req.headers['content-length'] });
+      console.log(`[FTP] Upload request: contentType=${contentType}, contentLength=${req.headers['content-length']}`);
       
       // Check content type to determine how to handle the upload
       if (!contentType.includes('multipart/form-data') && !contentType.includes('application/octet-stream')) {
@@ -4211,7 +4196,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const fileType = req.headers['x-file-type'] as string || 'application/octet-stream';
           const category = req.headers['x-category'] as string;
 
-          dbg("received body", { size: fileBuffer.length, clientId, fileName, fileType });
+          console.log(`[FTP] Received file: ${fileName} (${fileBuffer.length} bytes) for client ${clientId}`);
 
           if (!clientId || !fileName) {
             return res.status(400).json({ error: "x-client-id and x-file-name headers are required" });
@@ -4219,8 +4204,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           console.log(`[FTP] Uploading file for client ${clientId}: ${fileName} (${fileBuffer.length} bytes)`);
 
-          // Upload to GoDaddy via FTP with timeout to avoid hanging requests
-          const timeoutMs = 20000;
+          // Upload to GoDaddy via FTP (FTP service already has 60-second timeout)
           const ftpUpload = ftpStorageService.uploadFile(
             clientId,
             fileName,
@@ -4228,12 +4212,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             fileType
           );
 
+          // Allow 70 seconds for FTP operation (FTP service has 60s timeout + network buffer)
+          const timeoutMs = 70000;
           const timeoutPromise = new Promise<never>((_, reject) =>
             setTimeout(() => reject(new Error(`FTP upload timed out after ${timeoutMs}ms`)), timeoutMs)
           );
 
           const { filePath, fileUrl } = await Promise.race([ftpUpload, timeoutPromise]);
-          dbg("upload success", { filePath, fileUrl });
+          console.log(`[FTP] Upload success: ${fileUrl}`);
 
           // Determine document type
           let documentType = category || "Other";
@@ -4273,20 +4259,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           res.status(201).json(document);
         } catch (uploadError: any) {
-          dbg("upload error", { errorMessage: uploadError?.message });
           console.error("[FTP] Upload error:", uploadError);
           res.status(500).json({ error: uploadError.message });
         }
       });
 
       req.on('error', (error: any) => {
-        dbg("request error", { errorMessage: error?.message });
         console.error("[FTP] Request error:", error);
         res.status(500).json({ error: error.message });
       });
 
     } catch (error: any) {
-      dbg("outer error", { errorMessage: error?.message });
       console.error("Error in FTP upload:", error);
       res.status(500).json({ error: error.message });
     }
