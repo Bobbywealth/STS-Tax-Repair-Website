@@ -217,14 +217,28 @@ export default function Clients() {
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ clientId, newStatus }: { clientId: string; newStatus: ClientTableData["status"] }) => {
-      const filing = filingsByClientId.get(clientId);
-      if (!filing) {
-        throw new Error("No tax filing found for this client and year.");
-      }
       const status = displayStatusToFiling[newStatus];
       if (!status) {
         throw new Error("Invalid status");
       }
+
+      let filing = filingsByClientId.get(clientId);
+
+      // If no filing exists for this client/year, create one on the fly so status changes persist
+      if (!filing) {
+        const created = await apiRequest("POST", "/api/tax-filings", {
+          clientId,
+          taxYear: selectedYear,
+          status,
+        });
+        filing = created;
+
+        // If create succeeded but status already matches, we're done
+        if (filing?.status === status) {
+          return filing;
+        }
+      }
+
       return apiRequest("PATCH", `/api/tax-filings/${filing.id}/status`, { status });
     },
     onSuccess: () => {
