@@ -537,13 +537,22 @@ export default function AgentManagement() {
                     )}
                   </div>
                 ) : (
-                  <Input
-                    id="imageUrl"
-                    value={formData.imageUrl}
-                    onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                    placeholder="https://example.com/photo.jpg"
-                    data-testid="input-agent-image"
-                  />
+                  <div className="space-y-2">
+                    <Input
+                      id="imageUrl"
+                      value={formData.imageUrl}
+                      onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                      placeholder="https://example.com/photo.jpg or paste image URL"
+                      data-testid="input-agent-image"
+                      readOnly={formData.imageUrl.startsWith('/ftp/') || formData.imageUrl.startsWith('/objects/')}
+                      className={formData.imageUrl.startsWith('/ftp/') || formData.imageUrl.startsWith('/objects/') ? 'bg-muted' : ''}
+                    />
+                    {(formData.imageUrl.startsWith('/ftp/') || formData.imageUrl.startsWith('/objects/')) && (
+                      <p className="text-xs text-muted-foreground">
+                        ℹ️ Photo uploaded to server. This internal path is automatically converted to a public URL.
+                      </p>
+                    )}
+                  </div>
                 )}
                 
                 {formData.imageUrl && (
