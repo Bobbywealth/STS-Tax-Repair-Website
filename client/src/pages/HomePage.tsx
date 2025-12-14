@@ -393,17 +393,24 @@ export default function HomePage() {
 
   const agents = useMemo(() => {
     if (apiAgents.length > 0) {
-      return apiAgents.map(a => ({
-        id: a.id,
-        name: a.name,
-        role: a.title,
-        phone: a.phone,
-        email: a.email,
-        address: a.address || "",
-        image: a.imageUrl?.startsWith('/objects/') || a.imageUrl?.startsWith('/ftp/') 
-          ? `/api/agent-photos/${a.id}` 
-          : (a.imageUrl || ""),
-      }));
+      return apiAgents
+        .map((a) => {
+          if (!a.id) return null; // Avoid /api/agent-photos/undefined
+          const hasStoredImage = Boolean(
+            a.imageUrl &&
+            (a.imageUrl.startsWith('/objects/') || a.imageUrl.startsWith('/ftp/'))
+          );
+          return {
+            id: a.id,
+            name: a.name,
+            role: a.title,
+            phone: a.phone,
+            email: a.email,
+            address: a.address || "",
+            image: hasStoredImage ? `/api/agent-photos/${a.id}` : (a.imageUrl || ""),
+          };
+        })
+        .filter((a): a is NonNullable<typeof a> => Boolean(a));
     }
     return fallbackAgents.map((a, i) => ({ ...a, id: `fallback-${i}` }));
   }, [apiAgents]);
@@ -753,7 +760,7 @@ export default function HomePage() {
                 Reliable Tax Advisors
               </h1>
               <motion.p 
-                className="text-sts-gold font-semibold text-sm tracking-wide mt-2"
+                className="text-sts-gold font-semibold text-[30px] tracking-wide mt-2"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.5, delay: 0.2 }}

@@ -58,6 +58,11 @@ const roleConfig: Record<UserRole, { label: string; color: string; icon: typeof 
     color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
     icon: Shield
   },
+  super_admin: { 
+    label: "Super Admin (STS HQ)", 
+    color: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+    icon: Shield
+  },
 };
 
 const featureIcons: Record<string, typeof Users> = {
@@ -84,7 +89,8 @@ export default function Permissions() {
     client: {},
     agent: {},
     tax_office: {},
-    admin: {}
+    admin: {},
+    super_admin: {}
   });
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
@@ -106,7 +112,7 @@ export default function Permissions() {
   });
 
   const handleTogglePermission = (role: UserRole, slug: string, currentValue: boolean) => {
-    if (role === 'admin') return;
+    if (role === 'admin' || role === 'super_admin') return;
     
     setPendingChanges(prev => ({
       ...prev,
@@ -137,7 +143,7 @@ export default function Permissions() {
       }
     }
 
-    setPendingChanges({ client: {}, agent: {}, tax_office: {}, admin: {} });
+    setPendingChanges({ client: {}, agent: {}, tax_office: {}, admin: {}, super_admin: {} });
     setHasUnsavedChanges(false);
     toast({ 
       title: "Permissions Saved", 
@@ -146,7 +152,7 @@ export default function Permissions() {
   };
 
   const handleResetChanges = () => {
-    setPendingChanges({ client: {}, agent: {}, tax_office: {}, admin: {} });
+    setPendingChanges({ client: {}, agent: {}, tax_office: {}, admin: {}, super_admin: {} });
     setHasUnsavedChanges(false);
   };
 
@@ -180,7 +186,7 @@ export default function Permissions() {
   }
 
   const groupedPermissions = matrixData ? groupPermissionsByFeature(matrixData.permissions) : {};
-  const roles: UserRole[] = ['client', 'agent', 'tax_office', 'admin'];
+  const roles: UserRole[] = ['client', 'agent', 'tax_office', 'admin', 'super_admin'];
 
   return (
     <div className="p-6 space-y-6">
@@ -237,7 +243,7 @@ export default function Permissions() {
             Permission Matrix
           </CardTitle>
           <CardDescription>
-            Check or uncheck to grant or revoke permissions. Admin role always has full access.
+            Check or uncheck to grant or revoke permissions. Admin and Super Admin always have full access.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -252,7 +258,7 @@ export default function Permissions() {
                         <Badge className={roleConfig[role].color}>
                           {roleConfig[role].label}
                         </Badge>
-                        {role === 'admin' && (
+                        {(role === 'admin' || role === 'super_admin') && (
                           <span className="text-xs text-muted-foreground">(Full Access)</span>
                         )}
                       </div>
@@ -295,7 +301,7 @@ export default function Permissions() {
                         </TableCell>
                         {roles.map(role => {
                           const isChecked = getEffectiveValue(role, perm.slug);
-                          const isAdmin = role === 'admin';
+                          const isAdmin = role === 'admin' || role === 'super_admin';
                           const hasChange = pendingChanges[role]?.[perm.slug] !== undefined;
                           
                           return (
@@ -309,7 +315,7 @@ export default function Permissions() {
                                       </div>
                                     </TooltipTrigger>
                                     <TooltipContent>
-                                      Admin always has this permission
+                                      {role === 'super_admin' ? 'Super Admin inherits all permissions' : 'Admin always has this permission'}
                                     </TooltipContent>
                                   </Tooltip>
                                 ) : (
@@ -356,9 +362,10 @@ export default function Permissions() {
                   {role === 'agent' && "Can manage assigned clients"}
                   {role === 'tax_office' && "Full client and financial access"}
                   {role === 'admin' && "Complete system control"}
+                  {role === 'super_admin' && "STS HQ: global, multi-branch control"}
                 </p>
                 <div className="flex items-center gap-1 text-xs">
-                  {role === 'admin' ? (
+                  {role === 'admin' || role === 'super_admin' ? (
                     <>
                       <Unlock className="h-3 w-3 text-green-500" />
                       <span className="text-green-600">All permissions</span>

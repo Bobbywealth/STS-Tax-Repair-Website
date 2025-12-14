@@ -64,11 +64,12 @@ export class FTPStorageService {
     clientId: string,
     fileName: string,
     fileBuffer: Buffer,
-    mimeType?: string
+    mimeType?: string,
+    baseDir: string = UPLOADS_DIR
   ): Promise<{ filePath: string; fileUrl: string }> {
     // Wrap entire upload operation with a timeout
     return withTimeout(
-      this._uploadFileInternal(clientId, fileName, fileBuffer, mimeType),
+      this._uploadFileInternal(clientId, fileName, fileBuffer, mimeType, baseDir),
       FTP_OPERATION_TIMEOUT,
       'File upload'
     );
@@ -78,7 +79,8 @@ export class FTPStorageService {
     clientId: string,
     fileName: string,
     fileBuffer: Buffer,
-    mimeType?: string
+    mimeType?: string,
+    baseDir: string = UPLOADS_DIR
   ): Promise<{ filePath: string; fileUrl: string }> {
     const client = await this.getClient();
     
@@ -86,9 +88,10 @@ export class FTPStorageService {
       const sanitizedFileName = this.sanitizeFileName(fileName);
       const timestamp = Date.now();
       const uniqueFileName = `${timestamp}_${sanitizedFileName}`;
+      const normalizedBaseDir = baseDir.replace(/^\/+|\/+$/g, '');
       
       // Use relative path from FTP home directory
-      const remoteDirPath = `${BASE_PATH}/${UPLOADS_DIR}/${clientId}`;
+      const remoteDirPath = `${BASE_PATH}/${normalizedBaseDir}/${clientId}`;
       
       console.log(`[FTP] Preparing to upload file:`);
       console.log(`[FTP]   - Client ID: ${clientId}`);
@@ -120,7 +123,7 @@ export class FTPStorageService {
         console.error(`[FTP] WARNING: Could not verify file after upload:`, verifyError);
       }
       
-      const relativeFilePath = `${UPLOADS_DIR}/${clientId}/${uniqueFileName}`;
+      const relativeFilePath = `${normalizedBaseDir}/${clientId}/${uniqueFileName}`;
       const fileUrl = `/ftp/${relativeFilePath}`;
       
       console.log(`[FTP] Successfully uploaded. Returning fileUrl: ${fileUrl}`);

@@ -331,7 +331,12 @@ export default function AgentManagement() {
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar className="h-10 w-10">
-                            <AvatarImage src={agent.imageUrl || undefined} alt={agent.name} />
+                            <AvatarImage 
+                              src={agent.imageUrl && (agent.imageUrl.startsWith('/objects/') || agent.imageUrl.startsWith('/ftp/'))
+                                ? `/api/agent-photos/${agent.id}`
+                                : agent.imageUrl || undefined} 
+                              alt={agent.name} 
+                            />
                             <AvatarFallback>{getInitials(agent.name)}</AvatarFallback>
                           </Avatar>
                           <div>
@@ -532,13 +537,22 @@ export default function AgentManagement() {
                     )}
                   </div>
                 ) : (
-                  <Input
-                    id="imageUrl"
-                    value={formData.imageUrl}
-                    onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                    placeholder="https://example.com/photo.jpg"
-                    data-testid="input-agent-image"
-                  />
+                  <div className="space-y-2">
+                    <Input
+                      id="imageUrl"
+                      value={formData.imageUrl}
+                      onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                      placeholder="https://example.com/photo.jpg or paste image URL"
+                      data-testid="input-agent-image"
+                      readOnly={formData.imageUrl.startsWith('/ftp/') || formData.imageUrl.startsWith('/objects/')}
+                      className={formData.imageUrl.startsWith('/ftp/') || formData.imageUrl.startsWith('/objects/') ? 'bg-muted' : ''}
+                    />
+                    {(formData.imageUrl.startsWith('/ftp/') || formData.imageUrl.startsWith('/objects/')) && (
+                      <p className="text-xs text-muted-foreground">
+                        ℹ️ Photo uploaded to server. This internal path is automatically converted to a public URL.
+                      </p>
+                    )}
+                  </div>
                 )}
                 
                 {formData.imageUrl && (
@@ -546,9 +560,13 @@ export default function AgentManagement() {
                     <Avatar className="h-12 w-12">
                       <AvatarImage 
                         src={formData.imageUrl.startsWith('/objects/') || formData.imageUrl.startsWith('/ftp/') 
-                          ? `/api/agent-photos/${editingAgent?.id}` 
+                          ? `/api/agent-photos/${editingAgent?.id}?t=${Date.now()}` 
                           : formData.imageUrl} 
-                        alt="Preview" 
+                        alt="Preview"
+                        onError={(e) => {
+                          console.error('Failed to load agent photo preview:', e);
+                          e.currentTarget.style.display = 'none';
+                        }}
                       />
                       <AvatarFallback><ImageIcon className="h-5 w-5" /></AvatarFallback>
                     </Avatar>

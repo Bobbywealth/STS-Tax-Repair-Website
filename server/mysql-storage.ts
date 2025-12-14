@@ -2,6 +2,7 @@ import {
   type User, 
   type UpsertUser,
   type UserRole,
+  ALL_ROLES,
   type ThemePreference,
   type TaxDeadline,
   type InsertTaxDeadline,
@@ -58,6 +59,8 @@ import {
   type NotificationType,
   type HomePageAgent,
   type InsertHomePageAgent,
+  type NotificationPreferences,
+  type InsertNotificationPreferences,
   users as usersTable,
   homePageAgents as homePageAgentsTable,
   taxDeadlines as taxDeadlinesTable,
@@ -79,6 +82,7 @@ import {
   emailVerificationTokens as emailVerificationTokensTable,
   offices as officesTable,
   officeBranding as officeBrandingTable,
+  notificationPreferences as notificationPreferencesTable,
   agentClientAssignments as agentAssignmentsTable,
   ticketMessages as ticketMessagesTable,
   auditLogs as auditLogsTable,
@@ -931,15 +935,18 @@ export class MySQLStorage implements IStorage {
   }
 
   async getAllRolePermissions(): Promise<Record<UserRole, string[]>> {
-    const roles: UserRole[] = ['client', 'agent', 'tax_office', 'admin'];
-    const result: Record<UserRole, string[]> = {
-      client: [],
-      agent: [],
-      tax_office: [],
-      admin: []
-    };
+    const result = ALL_ROLES.reduce((acc, role) => {
+      acc[role] = [] as string[];
+      return acc;
+    }, {} as Record<UserRole, string[]>);
     
-    for (const role of roles) {
+    for (const role of ALL_ROLES) {
+      // Super Admin inherits everything implicitly; no DB check required
+      if (role === 'super_admin') {
+        const allPerms = await this.getPermissions();
+        result[role] = allPerms.map((p) => p.slug);
+        continue;
+      }
       result[role] = await this.getRolePermissions(role);
     }
     
@@ -1012,14 +1019,10 @@ export class MySQLStorage implements IStorage {
     matrix: Record<UserRole, Record<string, boolean>>;
   }> {
     const permissions = await this.getPermissions();
-    const roles: UserRole[] = ['client', 'agent', 'tax_office', 'admin'];
-    
-    const matrix: Record<UserRole, Record<string, boolean>> = {
-      client: {},
-      agent: {},
-      tax_office: {},
-      admin: {}
-    };
+    const matrix: Record<UserRole, Record<string, boolean>> = {} as Record<UserRole, Record<string, boolean>>;
+    for (const role of ALL_ROLES) {
+      matrix[role] = {};
+    }
 
     // Get all role permissions in one query
     const allRolePerms = await mysqlDb
@@ -1033,7 +1036,11 @@ export class MySQLStorage implements IStorage {
 
     // Build the matrix
     for (const perm of permissions) {
-      for (const role of roles) {
+      for (const role of ALL_ROLES) {
+        if (role === 'super_admin') {
+          matrix[role][perm.slug] = true;
+          continue;
+        }
         const match = allRolePerms.find(rp => rp.role === role && rp.slug === perm.slug);
         matrix[role][perm.slug] = match?.granted ?? false;
       }
@@ -1137,7 +1144,8 @@ export class MySQLStorage implements IStorage {
     if (!existing) return undefined;
 
     const now = new Date();
-    const statusHistory = existing.statusHistory || [];
+    // Normalize statusHistory to an array to avoid runtime errors when legacy rows store non-array values
+    const statusHistory = Array.isArray(existing.statusHistory) ? existing.statusHistory : [];
     statusHistory.push({ status, date: now.toISOString(), note });
 
     const updates: Partial<TaxFiling> = {
@@ -1560,6 +1568,7 @@ export class MySQLStorage implements IStorage {
       .values({
         id,
         ...office,
+        defaultTaxYear: office.defaultTaxYear ?? 2024,
         createdAt: new Date(),
         updatedAt: new Date()
       });
@@ -1783,13 +1792,27 @@ export class MySQLStorage implements IStorage {
     isGlobal?: boolean;
     clientId?: string;
   }): Promise<Ticket[]> {
+    // Join users to derive officeId since legacy tickets table may not have the column
     const [rows] = await mysqlPool.query(
-      `SELECT id, client_id as clientId, client_name as clientName, office_id as officeId,
-       subject, description, category, priority, status, 
-       assigned_to_id as assignedToId, assigned_to as assignedTo,
-       internal_notes as internalNotes, resolved_at as resolvedAt,
-       created_at as createdAt, updated_at as updatedAt
-       FROM tickets ORDER BY created_at DESC`
+      `SELECT 
+         t.id,
+         t.client_id AS clientId,
+         t.client_name AS clientName,
+         u.office_id AS officeId,
+         t.subject,
+         t.description,
+         t.category,
+         t.priority,
+         t.status,
+         t.assigned_to_id AS assignedToId,
+         t.assigned_to AS assignedTo,
+         t.internal_notes AS internalNotes,
+         t.resolved_at AS resolvedAt,
+         t.created_at AS createdAt,
+         t.updated_at AS updatedAt
+       FROM tickets t
+       LEFT JOIN users u ON u.id = t.client_id
+       ORDER BY t.created_at DESC`
     );
     let tickets = rows as Ticket[];
     
@@ -2102,6 +2125,61 @@ export class MySQLStorage implements IStorage {
       [userId]
     );
     return (result as any)[0]?.count || 0;
+  }
+
+  // ============================================================================
+  // NOTIFICATION PREFERENCES
+  // ============================================================================
+
+  async getNotificationPreferences(userId: string): Promise<NotificationPreferences | undefined> {
+    const [prefs] = await mysqlDb
+      .select()
+      .from(notificationPreferencesTable)
+      .where(eq(notificationPreferencesTable.userId, userId));
+    return prefs;
+  }
+
+  async upsertNotificationPreferences(
+    prefs: InsertNotificationPreferences
+  ): Promise<NotificationPreferences> {
+    const existing = await this.getNotificationPreferences(prefs.userId);
+    if (existing) {
+      await mysqlDb
+        .update(notificationPreferencesTable)
+        .set({
+          emailNotifications: prefs.emailNotifications ?? existing.emailNotifications,
+          documentAlerts: prefs.documentAlerts ?? existing.documentAlerts,
+          statusNotifications: prefs.statusNotifications ?? existing.statusNotifications,
+          messageAlerts: prefs.messageAlerts ?? existing.messageAlerts,
+          smsNotifications: prefs.smsNotifications ?? existing.smsNotifications,
+          updatedAt: new Date(),
+        })
+        .where(eq(notificationPreferencesTable.userId, prefs.userId));
+      const [updated] = await mysqlDb
+        .select()
+        .from(notificationPreferencesTable)
+        .where(eq(notificationPreferencesTable.userId, prefs.userId));
+      return updated;
+    }
+
+    const id = randomUUID();
+    await mysqlDb.insert(notificationPreferencesTable).values({
+      id,
+      userId: prefs.userId,
+      emailNotifications: prefs.emailNotifications ?? true,
+      documentAlerts: prefs.documentAlerts ?? true,
+      statusNotifications: prefs.statusNotifications ?? true,
+      messageAlerts: prefs.messageAlerts ?? true,
+      smsNotifications: prefs.smsNotifications ?? false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const [created] = await mysqlDb
+      .select()
+      .from(notificationPreferencesTable)
+      .where(eq(notificationPreferencesTable.userId, prefs.userId));
+    return created;
   }
 
   async markNotificationAsRead(id: string, userId: string): Promise<Notification | undefined> {

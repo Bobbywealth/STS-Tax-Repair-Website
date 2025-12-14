@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -49,13 +49,26 @@ export default function Appointments() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  const { data: appointments, isLoading } = useQuery<Appointment[]>({
+  const { data: appointments, isLoading, error } = useQuery<Appointment[]>({
     queryKey: ['/api/appointments'],
   });
 
-  const { data: clients } = useQuery<Client[]>({
+  const { data: clients, error: clientsError } = useQuery<Client[]>({
     queryKey: ['/api/users'],
   });
+
+  // Debug logging for appointments
+  useEffect(() => {
+    if (appointments) {
+      console.log('[APPOINTMENTS] Loaded:', appointments.length);
+      if (appointments.length > 0) {
+        console.log('[APPOINTMENTS] Sample:', appointments[0]);
+      }
+    }
+    if (error) {
+      console.error('[APPOINTMENTS] Error loading:', error);
+    }
+  }, [appointments, error]);
 
   const form = useForm<CreateAppointmentForm>({
     resolver: zodResolver(createAppointmentSchema),
@@ -74,9 +87,23 @@ export default function Appointments() {
 
   const createAppointmentMutation = useMutation({
     mutationFn: async (data: CreateAppointmentForm) => {
+      const clientTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const offsetMinutes = new Date().getTimezoneOffset();
+      const offsetHours = offsetMinutes / 60;
+      const offsetLabel = `UTC${offsetHours <= 0 ? "+" : "-"}${Math.abs(offsetHours).toString().padStart(2, "0")}:${Math.abs(offsetMinutes % 60)
+        .toString()
+        .padStart(2, "0")}`;
+      const notesWithTimezone = [
+        data.notes?.trim(),
+        `Client time zone: ${clientTimezone} (${offsetLabel})`,
+      ]
+        .filter(Boolean)
+        .join("\n");
+
       return apiRequest("POST", "/api/appointments", {
         ...data,
         appointmentDate: new Date(data.appointmentDate).toISOString(),
+        notes: notesWithTimezone,
       });
     },
     onSuccess: () => {
@@ -160,9 +187,15 @@ export default function Appointments() {
   }) || [];
 
   const appointmentsForDate = (date: Date) => {
-    return filteredAppointments.filter(apt => 
-      isSameDay(parseISO(apt.appointmentDate as unknown as string), date)
-    );
+    return filteredAppointments.filter(apt => {
+      try {
+        const aptDate = parseISO(apt.appointmentDate as unknown as string);
+        return isSameDay(aptDate, date);
+      } catch (e) {
+        console.error('Error parsing appointment date:', apt.appointmentDate, e);
+        return false;
+      }
+    });
   };
 
   const selectedDateAppointments = selectedDate 
@@ -170,8 +203,13 @@ export default function Appointments() {
     : [];
 
   const todayAppointments = appointmentsForDate(new Date());
+  const now = new Date();
   const upcomingAppointments = filteredAppointments
-    .filter(apt => isFuture(parseISO(apt.appointmentDate as unknown as string)))
+    .filter(apt => {
+      const aptDate = parseISO(apt.appointmentDate as unknown as string);
+      // Include appointments from today onwards (not just future)
+      return aptDate >= startOfDay(now);
+    })
     .sort((a, b) => new Date(a.appointmentDate).getTime() - new Date(b.appointmentDate).getTime())
     .slice(0, 5);
 
@@ -274,6 +312,14 @@ export default function Appointments() {
 
       {isLoading ? (
         <div className="text-center py-12 text-muted-foreground">Loading appointments...</div>
+      ) : error ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+            <p className="text-destructive font-semibold mb-2">Failed to load appointments</p>
+            <p className="text-sm text-muted-foreground">{error instanceof Error ? error.message : 'Unknown error'}</p>
+          </CardContent>
+        </Card>
       ) : viewMode === "calendar" ? (
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Calendar */}

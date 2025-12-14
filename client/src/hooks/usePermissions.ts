@@ -15,8 +15,8 @@ export function usePermissions() {
 
   const hasPermission = (permission: string): boolean => {
     if (!data?.permissions) return false;
-    // Admin always has all permissions
-    if (data.role === 'admin') return true;
+    // Admin and Super Admin always have all permissions
+    if (data.role === 'admin' || data.role === 'super_admin') return true;
     return data.permissions.includes(permission);
   };
 

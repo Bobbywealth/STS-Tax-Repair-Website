@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,16 +31,46 @@ interface BrandingData {
   officeSlug?: string;
 }
 
+interface Office {
+  id: string;
+  name: string;
+  slug?: string;
+}
+
 export default function Branding() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [selectedOfficeId, setSelectedOfficeId] = useState<string | undefined>(undefined);
   
-  const { data: user } = useQuery<User | null>({
+  const { data: user, isLoading: userLoading } = useQuery<User | null>({
     queryKey: ['/api/auth/user'],
   });
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+
+  useEffect(() => {
+    if (user?.officeId) {
+      setSelectedOfficeId(user.officeId);
+    }
+  }, [user?.officeId]);
+
+  const { data: offices, isLoading: officesLoading } = useQuery<Office[]>({
+    queryKey: ['/api/offices'],
+    queryFn: async () => {
+      const res = await fetch('/api/offices', { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to load offices');
+      return res.json();
+    },
+    enabled: isAdmin
+  });
+
+  useEffect(() => {
+    if (isAdmin && offices?.length && !selectedOfficeId) {
+      setSelectedOfficeId(offices[0].id);
+    }
+  }, [isAdmin, offices, selectedOfficeId]);
   
-  const officeId = user?.officeId;
+  const officeId = selectedOfficeId;
   
   const { data: branding, isLoading, refetch } = useQuery<BrandingData>({
     queryKey: ['/api/offices', officeId, 'branding'],
@@ -154,7 +184,39 @@ export default function Branding() {
     }
   };
   
-  if (!officeId) {
+  if (isAdmin && officesLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (userLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (isAdmin && offices && offices.length === 0) {
+    return (
+      <div className="p-8">
+        <Card className="max-w-2xl mx-auto">
+          <CardContent className="p-12 text-center space-y-3">
+            <Palette className="h-12 w-12 mx-auto text-muted-foreground" />
+            <h2 className="text-xl font-semibold">No offices yet</h2>
+            <p className="text-muted-foreground">
+              Create a Tax Office to start customizing branding for STS TaxRepair.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!officeId && !isAdmin) {
     return (
       <div className="p-8">
         <Card className="max-w-2xl mx-auto">
@@ -192,6 +254,31 @@ export default function Branding() {
             Customize your Tax Office's appearance and branding
           </p>
         </div>
+        
+        {isAdmin && offices?.length ? (
+          <div className="flex items-center gap-2">
+            <Label htmlFor="officeSelector" className="text-sm">Office</Label>
+            <Select
+              value={officeId}
+              onValueChange={(value) => {
+                setSelectedOfficeId(value);
+                setFormData({});
+                setLogoPreview(null);
+              }}
+            >
+              <SelectTrigger id="officeSelector" className="w-[220px]" data-testid="select-office">
+                <SelectValue placeholder="Select office" />
+              </SelectTrigger>
+              <SelectContent>
+                {offices.map((office) => (
+                  <SelectItem key={office.id} value={office.id}>
+                    {office.name} {office.slug ? `(${office.slug})` : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        ) : null}
         
         {branding?.isCustom && (
           <Button

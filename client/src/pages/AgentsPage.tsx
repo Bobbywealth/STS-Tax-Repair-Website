@@ -141,17 +141,24 @@ export default function AgentsPage() {
   });
 
   const agents = apiAgents.length > 0 
-    ? apiAgents.map(a => ({
-        id: a.id,
-        name: a.name,
-        title: a.title,
-        image: a.imageUrl?.startsWith('/objects/') || a.imageUrl?.startsWith('/ftp/') 
-          ? `/api/agent-photos/${a.id}` 
-          : (a.imageUrl || ""),
-        phone: a.phone,
-        email: a.email,
-        location: a.address || "",
-      }))
+    ? apiAgents
+        .map((a) => {
+          if (!a.id) return null; // Guard against malformed rows that would create /agent-photos/undefined
+          const hasStoredImage = Boolean(
+            a.imageUrl &&
+            (a.imageUrl.startsWith('/objects/') || a.imageUrl.startsWith('/ftp/'))
+          );
+          return {
+            id: a.id,
+            name: a.name,
+            title: a.title,
+            image: hasStoredImage ? `/api/agent-photos/${a.id}` : (a.imageUrl || ""),
+            phone: a.phone,
+            email: a.email,
+            location: a.address || "",
+          };
+        })
+        .filter((a): a is NonNullable<typeof a> => Boolean(a))
     : fallbackAgents.map((a, i) => ({ ...a, id: `fallback-${i}` }));
 
   const navLinks = [

@@ -37,6 +37,8 @@ const Settings = lazy(() => import("@/pages/Settings"));
 const Branding = lazy(() => import("@/pages/Branding"));
 const UserManagement = lazy(() => import("@/pages/UserManagement"));
 const Permissions = lazy(() => import("@/pages/Permissions"));
+const Marketing = lazy(() => import("@/pages/Marketing"));
+const Notifications = lazy(() => import("@/pages/Notifications"));
 const ClientLogin = lazy(() => import("@/pages/ClientLogin"));
 const AdminLogin = lazy(() => import("@/pages/AdminLogin"));
 const ClientPortal = lazy(() => import("@/pages/ClientPortal"));
@@ -66,7 +68,7 @@ function PageLoader() {
 
 import { usePermissions, PERMISSIONS } from "@/hooks/usePermissions";
 
-type UserRole = 'client' | 'agent' | 'tax_office' | 'admin';
+type UserRole = 'client' | 'agent' | 'tax_office' | 'admin' | 'super_admin';
 
 interface User {
   id: string;
@@ -113,7 +115,7 @@ function PermissionRoute({ component: Component, permission, adminOnly }: Permis
   }
   
   // Now check permissions after loading completes
-  if (adminOnly && role !== 'admin') {
+  if (adminOnly && role !== 'admin' && role !== 'super_admin') {
     return <Redirect to="/" />;
   }
   
@@ -201,6 +203,12 @@ function AdminRouter() {
         <Route path="/permissions">
           <PermissionRoute component={Permissions} adminOnly />
         </Route>
+        <Route path="/marketing">
+          <PermissionRoute component={Marketing} adminOnly />
+        </Route>
+        <Route path="/notifications">
+          <PermissionRoute component={Notifications} />
+        </Route>
         {/* Homepage Agent Management - Admin only */}
         <Route path="/homepage-agents">
           <PermissionRoute component={AgentManagement} adminOnly />
@@ -230,6 +238,7 @@ function AdminLayout() {
     };
     checkStoredAuth();
   }, [getStoredToken]);
+
 
   const sidebarStyle = {
     "--sidebar-width": "16rem",
@@ -395,6 +404,7 @@ function App() {
       setShowSplash(false);
     }
   }, [isPWA]);
+
 
   if (showSplash && isPWA) {
     return <SplashScreen onComplete={() => setShowSplash(false)} minimumDisplayTime={2500} />;

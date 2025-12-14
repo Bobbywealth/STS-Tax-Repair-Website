@@ -30,6 +30,12 @@ export default function ForgotPassword() {
     setNeedsSignup(false);
     setIsLoading(true);
 
+    if (!navigator.onLine) {
+      setError("You're offline. Please reconnect and try again.");
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const response = await fetch("/api/auth/forgot-password", {
         method: "POST",
@@ -50,7 +56,7 @@ export default function ForgotPassword() {
 
       setIsSubmitted(true);
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Unable to reach the server. Please try again.");
     } finally {
       setIsLoading(false);
     }

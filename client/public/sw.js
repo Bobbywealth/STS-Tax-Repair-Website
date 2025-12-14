@@ -1,6 +1,14 @@
-const CACHE_VERSION = 'v9';
+const CACHE_VERSION = 'v18';
 const CACHE_NAME = `sts-taxrepair-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `sts-runtime-${CACHE_VERSION}`;
+const RUNTIME_MAX_ENTRIES = 80;
+const RUNTIME_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const FETCH_TIMEOUT_MS = 7000;
+const SYNC_TAG = 'sync-data';
+const PERIODIC_SYNC_TAG = 'periodic-content-sync';
+const PERIODIC_SYNC_URLS = ['/api/notifications', '/api/auth/user'];
+const QUEUE_DB = 'sts-sync-queue';
+const QUEUE_STORE = 'requests';
 
 const STATIC_ASSETS = [
   '/',
@@ -17,8 +25,32 @@ const STATIC_ASSETS = [
   '/icons/icon-384x384.png',
   '/icons/icon-512x512.png',
   '/screenshots/mobile.png',
-  '/screenshots/desktop.png'
+  '/screenshots/desktop.png',
+  '/client-login',
+  '/client-portal',
+  '/client-portal/documents',
+  '/client-portal/messages'
 ];
+
+const APP_SHELL_ROUTES = [
+  '/',
+  '/client-login',
+  '/client-portal',
+  '/client-portal/documents',
+  '/client-portal/messages',
+  '/offline.html'
+];
+
+async function safeAddAll(cache, urls) {
+  const results = await Promise.allSettled(
+    urls.map((url) => cache.add(url))
+  );
+  results
+    .filter((result) => result.status === 'rejected')
+    .forEach((result, idx) => {
+      console.warn('[SW] Skipped caching asset (continuing install):', urls[idx], result.reason);
+    });
+}
 
 const CACHE_STRATEGIES = {
   networkFirst: ['api'],
@@ -29,9 +61,11 @@ const CACHE_STRATEGIES = {
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => {
+      .then(async (cache) => {
         console.log('[SW] Caching static assets');
-        return cache.addAll(STATIC_ASSETS);
+        await safeAddAll(cache, STATIC_ASSETS);
+        console.log('[SW] Caching app shell routes');
+        await safeAddAll(cache, APP_SHELL_ROUTES.filter(Boolean));
       })
       .then(() => self.skipWaiting())
   );
@@ -72,7 +106,16 @@ function shouldStaleWhileRevalidate(url) {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   
-  if (request.method !== 'GET') return;
+  // Bypass Service Worker for file uploads - let them go directly to server
+  if (request.method !== 'GET' && request.url.includes('/upload')) {
+    // Don't intercept - pass through to network
+    return;
+  }
+  
+  if (request.method !== 'GET') {
+    event.respondWith(handleNonGetRequest(request));
+    return;
+  }
 
   const url = new URL(request.url);
 
@@ -94,6 +137,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // JS / CSS - stale while revalidate so they're cached for offline after first load
+  if (request.destination === 'script' || request.destination === 'style') {
+    event.respondWith(staleWhileRevalidateStrategy(request));
+    return;
+  }
+
   // Images only - stale while revalidate
   if (shouldStaleWhileRevalidate(request.url)) {
     event.respondWith(staleWhileRevalidateStrategy(request));
@@ -102,6 +151,22 @@ self.addEventListener('fetch', (event) => {
 
   // Everything else (JS, CSS, HTML) - network first for freshness
   event.respondWith(networkFirstWithOfflineFallback(request));
+});
+
+self.addEventListener('sync', (event) => {
+  if (event.tag === SYNC_TAG) {
+    event.waitUntil(replayQueuedRequests());
+  }
+
+  if (event.tag === PERIODIC_SYNC_TAG) {
+    event.waitUntil(runPeriodicSync());
+  }
+});
+
+self.addEventListener('periodicsync', (event) => {
+  if (event.tag === PERIODIC_SYNC_TAG) {
+    event.waitUntil(runPeriodicSync());
+  }
 });
 
 async function networkFirstStrategy(request) {
@@ -134,6 +199,7 @@ async function cacheFirstStrategy(request) {
     if (response.ok) {
       const cache = await caches.open(RUNTIME_CACHE);
       cache.put(request, response.clone());
+      await enforceRuntimeCacheLimits(cache);
     }
     return response;
   } catch (error) {
@@ -147,9 +213,10 @@ async function staleWhileRevalidateStrategy(request) {
   const cachedResponse = await cache.match(request);
 
   const fetchPromise = fetch(request)
-    .then((response) => {
+    .then(async (response) => {
       if (response.ok && response.status !== 206) {
         cache.put(request, response.clone());
+        await enforceRuntimeCacheLimits(cache);
       }
       return response;
     })
@@ -166,6 +233,7 @@ async function networkFirstWithOfflineFallback(request) {
     const response = await fetch(request);
     const cache = await caches.open(RUNTIME_CACHE);
     cache.put(request, response.clone());
+    await enforceRuntimeCacheLimits(cache);
     return response;
   } catch (error) {
     console.log('[SW] Navigation offline, serving cached page');
@@ -254,3 +322,171 @@ self.addEventListener('message', (event) => {
     event.ports[0].postMessage({ version: CACHE_VERSION });
   }
 });
+
+async function handleNonGetRequest(request) {
+  const fetchClone = request.clone();
+  const queueClone = request.clone();
+
+  try {
+    // Add 30 second timeout to prevent infinite hanging
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+    
+    const response = await fetch(fetchClone, { signal: controller.signal });
+    clearTimeout(timeout);
+    
+    return response;
+  } catch (error) {
+    console.log('[SW] Queueing request for background sync:', request.url);
+    if (self.registration?.sync) {
+      await queueRequest(queueClone);
+      await self.registration.sync.register(SYNC_TAG);
+    }
+
+    return new Response(
+      JSON.stringify({
+        queued: true,
+        offline: true,
+        message: 'Request queued. We will retry when you are back online.'
+      }),
+      {
+        status: 202,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+  }
+}
+
+function openQueueDb() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(QUEUE_DB, 1);
+
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(QUEUE_STORE)) {
+        db.createObjectStore(QUEUE_STORE, { autoIncrement: true });
+      }
+    };
+
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function queueRequest(request) {
+  const db = await openQueueDb();
+  const bodyBuffer = request.method !== 'GET' && request.method !== 'HEAD'
+    ? await request.arrayBuffer()
+    : null;
+  const headers = Array.from(request.headers.entries());
+
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(QUEUE_STORE, 'readwrite');
+    const store = tx.objectStore(QUEUE_STORE);
+    const addRequest = store.add({
+      url: request.url,
+      method: request.method,
+      headers,
+      body: bodyBuffer ? Array.from(new Uint8Array(bodyBuffer)) : null,
+      timestamp: Date.now()
+    });
+
+    addRequest.onsuccess = () => resolve();
+    addRequest.onerror = () => reject(addRequest.error);
+    tx.oncomplete = () => db.close();
+  });
+}
+
+async function replayQueuedRequests() {
+  const db = await openQueueDb();
+  const tx = db.transaction(QUEUE_STORE, 'readwrite');
+  const store = tx.objectStore(QUEUE_STORE);
+  const queued = await readAllQueuedRequests(store);
+
+  for (const entry of queued) {
+    const { key, value } = entry;
+    const bodyBuffer = value.body ? new Uint8Array(value.body).buffer : undefined;
+    const headers = new Headers(value.headers || []);
+    const requestInit = {
+      method: value.method,
+      headers,
+      credentials: 'include'
+    };
+
+    if (bodyBuffer && value.method !== 'GET' && value.method !== 'HEAD') {
+      requestInit.body = bodyBuffer;
+    }
+
+    try {
+      await fetch(value.url, requestInit);
+      store.delete(key);
+    } catch (error) {
+      console.log('[SW] Retry failed for', value.url, error);
+    }
+  }
+
+  tx.oncomplete = () => db.close();
+}
+
+function readAllQueuedRequests(store) {
+  return new Promise((resolve, reject) => {
+    const items = [];
+    const cursor = store.openCursor();
+
+    cursor.onsuccess = () => {
+      const c = cursor.result;
+      if (c) {
+        items.push({ key: c.key, value: c.value });
+        c.continue();
+      } else {
+        resolve(items);
+      }
+    };
+
+    cursor.onerror = () => reject(cursor.error);
+  });
+}
+
+async function runPeriodicSync() {
+  for (const url of PERIODIC_SYNC_URLS) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+      const response = await fetch(url, { credentials: 'include', signal: controller.signal });
+      clearTimeout(timeout);
+
+      if (response.ok) {
+        const cache = await caches.open(RUNTIME_CACHE);
+        cache.put(url, response.clone());
+        await enforceRuntimeCacheLimits(cache);
+      }
+    } catch (error) {
+      console.log('[SW] Periodic sync failed for', url, error);
+    }
+  }
+}
+
+async function enforceRuntimeCacheLimits(cache) {
+  const keys = await cache.keys();
+  if (keys.length <= RUNTIME_MAX_ENTRIES) return;
+
+  const now = Date.now();
+  // Remove old entries first
+  for (const request of keys) {
+    const response = await cache.match(request);
+    const dateHeader = response?.headers.get('date');
+    if (dateHeader) {
+      const age = now - new Date(dateHeader).getTime();
+      if (age > RUNTIME_MAX_AGE_MS) {
+        await cache.delete(request);
+      }
+    }
+  }
+
+  // If still over limit, prune LRU order (oldest first)
+  const updatedKeys = await cache.keys();
+  if (updatedKeys.length > RUNTIME_MAX_ENTRIES) {
+    const excess = updatedKeys.length - RUNTIME_MAX_ENTRIES;
+    await Promise.all(updatedKeys.slice(0, excess).map((req) => cache.delete(req)));
+  }
+}

@@ -3,8 +3,10 @@ import { EmailType } from '@shared/mysql-schema';
 import crypto from 'crypto';
 
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
-const FROM_EMAIL = 'ststaxrepair@gmail.com';
-const FROM_NAME = 'STS Tax Repair';
+const FROM_EMAIL =
+  process.env.FROM_EMAIL ||
+  'ststaxrepair@gmail.com'; // requested SendGrid sender
+const FROM_NAME = process.env.FROM_NAME || 'STS Tax Repair';
 
 export interface OfficeBranding {
   companyName: string;
@@ -65,6 +67,7 @@ interface SendEmailParams {
   html: string;
   text?: string;
   branding?: OfficeBranding;
+  category?: string;
 }
 
 export async function sendEmail(params: SendEmailParams): Promise<EmailResult> {
@@ -90,6 +93,11 @@ export async function sendEmail(params: SendEmailParams): Promise<EmailResult> {
       html: params.html,
       text: params.text || params.html.replace(/<[^>]*>/g, ''),
     };
+
+    // Helps SendGrid reporting/deliverability tuning (esp. Yahoo/Gmail)
+    if (params.category) {
+      msg.categories = [params.category];
+    }
     
     if (params.branding?.replyToEmail) {
       msg.replyTo = {
@@ -152,7 +160,7 @@ function getEmailTemplate(type: EmailType, data: Record<string, any>, branding?:
   const footer = `
     <div class="footer">
       <p>${companyName} | Professional Tax Services</p>
-      <p>Phone: (555) 123-4567 | Email: ${brand.replyToEmail || 'support@ststaxrepair.org'}</p>
+      <p>Phone: (555) 123-4567 | Email: ${brand.replyToEmail || 'ststaxrepair@gmail.com'}</p>
       <p style="margin-top: 15px;">This is an automated message. Please do not reply directly to this email.</p>
       <div style="margin-top: 15px; padding: 12px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; text-align: left;">
         <p style="margin: 0; font-size: 12px; color: #856404;">
@@ -185,6 +193,8 @@ function getEmailTemplate(type: EmailType, data: Record<string, any>, branding?:
                 </div>
                 <p>If you didn't request this password reset, you can safely ignore this email. Your password will remain unchanged.</p>
                 <p>For security reasons, never share this link with anyone.</p>
+              <p style="font-size: 13px; color: #555;">If the button doesn't work, copy and paste this link into your browser:</p>
+              <p style="word-break: break-all; font-size: 12px; color: #006838;">${data.resetLink}</p>
               </div>
               ${footer}
             </div>
@@ -658,6 +668,7 @@ export async function sendPasswordResetEmail(
     subject: template.subject,
     html: template.html,
     branding,
+    category: 'password_reset',
   });
 }
 

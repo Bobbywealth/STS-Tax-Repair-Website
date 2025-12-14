@@ -157,7 +157,13 @@ export function ClientsTable({
                         </Avatar>
                         <span>{staff.name}</span>
                         <Badge variant="outline" className="text-[10px] px-1">
-                          {staff.role === 'admin' ? 'Admin' : staff.role === 'tax_office' ? 'Office' : 'Agent'}
+                          {staff.role === 'super_admin'
+                            ? 'Super Admin'
+                            : staff.role === 'admin'
+                              ? 'Admin'
+                              : staff.role === 'tax_office'
+                                ? 'Office'
+                                : 'Agent'}
                         </Badge>
                       </div>
                     </SelectItem>

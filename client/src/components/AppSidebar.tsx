@@ -1,4 +1,4 @@
-import { Home, Users, UserPlus, CheckSquare, Crown, Ticket, BookOpen, BarChart3, Settings, LogOut, Calendar, CalendarClock, DollarSign, FileText, FileSignature, Shield, Lock, Palette, UsersRound } from "lucide-react";
+import { Home, Users, UserPlus, CheckSquare, Crown, Ticket, BookOpen, BarChart3, Settings, LogOut, Calendar, CalendarClock, DollarSign, FileText, FileSignature, Shield, Lock, Palette, UsersRound, Megaphone } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import defaultLogoUrl from "@/assets/sts-logo.png";
 import {
@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { usePermissions, PERMISSIONS } from "@/hooks/usePermissions";
 import { useBranding } from "@/hooks/useBranding";
 
-type UserRole = 'client' | 'agent' | 'tax_office' | 'admin';
+type UserRole = 'client' | 'agent' | 'tax_office' | 'admin' | 'super_admin';
 
 interface MenuItem {
   title: string;
@@ -44,6 +44,7 @@ const menuItems: MenuItem[] = [
   { title: "Support Tickets", url: "/tickets", icon: Ticket, permission: PERMISSIONS.SUPPORT_VIEW },
   { title: "Knowledge Base", url: "/knowledge", icon: BookOpen, permission: PERMISSIONS.KNOWLEDGE_VIEW },
   { title: "Reports", url: "/reports", icon: BarChart3, permission: PERMISSIONS.REPORTS_VIEW },
+  { title: "Marketing", url: "/marketing", icon: Megaphone, adminOnly: true },
   { title: "Branding", url: "/branding", icon: Palette, permission: PERMISSIONS.BRANDING_MANAGE },
   { title: "User Management", url: "/users", icon: Shield, adminOnly: true },
   { title: "Homepage Agents", url: "/homepage-agents", icon: UsersRound, adminOnly: true },
@@ -85,14 +86,14 @@ export function AppSidebar({ user }: AppSidebarProps) {
     }
     return undefined;
   };
-  const isAdmin = userRole === 'admin';
+  const isAdmin = userRole === 'admin' || userRole === 'super_admin';
   
   const filteredMenuItems = menuItems.filter(item => {
     if (item.alwaysShow) return true;
     if (item.adminOnly) return isAdmin;
     
     if (isLoading) {
-      if (userRole === 'admin') return true;
+      if (userRole === 'admin' || userRole === 'super_admin') return true;
       if (userRole === 'tax_office') return !item.adminOnly;
       if (userRole === 'agent') return !item.adminOnly && item.permission !== PERMISSIONS.PAYMENTS_VIEW && item.permission !== PERMISSIONS.REPORTS_VIEW && item.permission !== PERMISSIONS.SETTINGS_VIEW;
       return false;
@@ -104,6 +105,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
 
   const getRoleBadgeVariant = (role: string) => {
     switch (role?.toLowerCase()) {
+      case 'super_admin': return 'destructive';
       case 'admin': return 'destructive';
       case 'tax_office': return 'default';
       case 'agent': return 'secondary';
@@ -113,6 +115,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
 
   const getRoleDisplayName = (role: string) => {
     switch (role?.toLowerCase()) {
+      case 'super_admin': return 'Super Admin';
       case 'admin': return 'Admin';
       case 'tax_office': return 'Tax Office';
       case 'agent': return 'Agent';

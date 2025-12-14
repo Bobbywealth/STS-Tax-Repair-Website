@@ -30,6 +30,7 @@ const ROLE_HIERARCHY: Record<UserRole, number> = {
   agent: 2,
   tax_office: 3,
   admin: 4,
+  super_admin: 5,
 };
 
 // Cache for agent's assigned client IDs (with TTL)
@@ -57,7 +58,7 @@ export function requireRole(...allowedRoles: UserRole[]) {
       return res.status(403).json({ error: "No role assigned" });
     }
 
-    if (allowedRoles.includes(userRole) || userRole === 'admin') {
+    if (allowedRoles.includes(userRole) || userRole === 'admin' || userRole === 'super_admin') {
       return next();
     }
 
@@ -93,7 +94,7 @@ export function requireMinRole(minimumRole: UserRole) {
 }
 
 export function requireAdmin() {
-  return requireRole('admin');
+  return requireRole('admin', 'super_admin');
 }
 
 export function requireStaff() {
@@ -174,7 +175,7 @@ export function requirePermission(...requiredPermissions: string[]) {
     }
 
     // Admin always has all permissions
-    if (userRole === 'admin') {
+    if (userRole === 'admin' || userRole === 'super_admin') {
       return next();
     }
 
@@ -213,6 +214,7 @@ export const roleDisplayNames: Record<UserRole, string> = {
   agent: 'Agent',
   tax_office: 'Tax Office',
   admin: 'Administrator',
+  super_admin: 'Super Admin',
 };
 
 export const roleDescriptions: Record<UserRole, string> = {
@@ -220,6 +222,7 @@ export const roleDescriptions: Record<UserRole, string> = {
   agent: 'Can manage assigned clients, upload documents, and track tasks',
   tax_office: 'Full access to office clients, financials, and analytics',
   admin: 'Complete system access including user management and settings',
+  super_admin: 'STS HQ with global control across all branches and offices',
 };
 
 // ============================================================================
@@ -293,8 +296,8 @@ export function isClientInScope(req: AuthenticatedRequest, clientId: string): bo
   const userRole = req.userRole as UserRole;
   const userId = req.userId || req.user?.claims?.sub;
   
-  // Admin has global access
-  if (userRole === 'admin') {
+  // Admin and Super Admin have global access
+  if (userRole === 'admin' || userRole === 'super_admin') {
     return true;
   }
   
@@ -331,8 +334,8 @@ export function requireClientScope(getClientId: (req: Request) => string | undef
     const userRole = req.userRole as UserRole;
     const userId = req.userId || req.user?.claims?.sub;
     
-    // Admin has global access
-    if (userRole === 'admin') {
+  // Admin and Super Admin have global access
+  if (userRole === 'admin' || userRole === 'super_admin') {
       return next();
     }
     
@@ -397,8 +400,8 @@ export function getScopeFilter(req: AuthenticatedRequest): {
 } {
   const userRole = req.userRole as UserRole;
   
-  // Admin has global access
-  if (userRole === 'admin') {
+  // Admin and Super Admin have global access
+  if (userRole === 'admin' || userRole === 'super_admin') {
     return { isGlobal: true };
   }
   

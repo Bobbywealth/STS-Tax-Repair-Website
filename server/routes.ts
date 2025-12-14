@@ -62,6 +62,8 @@ import {
   generateSecureToken,
   sendEmail
 } from "./email";
+import nodemailer from "nodemailer";
+import twilio from "twilio";
 import { randomUUID } from "crypto";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -120,13 +122,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // One-time setup endpoint to make a user admin by email
+  // One-time setup endpoint to make a user admin or super_admin by email
   app.post("/api/setup/make-admin", async (req, res) => {
     try {
-      const { email } = req.body;
+      const { email, role } = req.body;
       if (!email) {
         return res.status(400).json({ error: "Email required" });
       }
+
+      const targetRole = role === "super_admin" ? "super_admin" : "admin";
 
       // Find user by email
       const [rows] = await mysqlPool.query(
@@ -140,16 +144,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const user = rows[0] as any;
 
-      // Update role to admin
+      // Update role to admin/super_admin
       await mysqlPool.query("UPDATE users SET role = ? WHERE id = ?", [
-        "admin",
+        targetRole,
         user.id,
       ]);
 
       return res.json({
         success: true,
-        message: `User ${email} is now an admin`,
-        user: { id: user.id, email: user.email, role: "admin" },
+        message: `User ${email} is now an ${targetRole}`,
+        user: { id: user.id, email: user.email, role: targetRole },
       });
     } catch (error: any) {
       return res.status(500).json({ error: error.message });
@@ -779,6 +783,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error(`Error sending verification email to ${email}:`, err);
         });
 
+      // Notify admins about the new client signup (email + in-app), but don't block signup
+      try {
+        const admins = await mysqlStorage.getUsersByRole('admin');
+        const adminPortalUrl =
+          (process.env.APP_URL ||
+            process.env.RENDER_EXTERNAL_URL ||
+            'https://ststaxrepair.org') + '/clients';
+        const newClientName = `${firstName} ${lastName}`.trim() || 'New client';
+
+        for (const admin of admins) {
+          // In-app notification
+          await mysqlStorage.createNotification({
+            userId: admin.id,
+            type: 'client_signup',
+            title: 'New Client Signed Up',
+            message: `${newClientName} (${email}) created an account.`,
+            link: '/clients',
+            resourceType: 'client',
+            resourceId: user.id
+          });
+
+          // Email notification (best effort)
+          if (admin.email && admin.isActive !== false) {
+            await sendEmail({
+              to: admin.email,
+              subject: `New Client Signup: ${newClientName || email}`,
+              html: `
+                <p>Hello ${admin.firstName || 'Admin'},</p>
+                <p>A new client has signed up:</p>
+                <ul>
+                  <li>Name: ${newClientName}</li>
+                  <li>Email: ${email}</li>
+                </ul>
+                <p>You can review the client in the admin dashboard:</p>
+                <p><a href="${adminPortalUrl}" target="_blank">View Clients</a></p>
+              `,
+            });
+          }
+        }
+      } catch (notifError) {
+        console.error('[NOTIFICATION] Failed to send admin signup notifications:', notifError);
+      }
+
       return res.status(201).json({
         message: "Registration successful. Please check your email to verify your account.",
         userId: user.id,
@@ -1026,7 +1073,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin Test Email Endpoint - for verifying email configuration
-  app.post("/api/admin/test-email", isAuthenticated, requireAdmin, async (req: any, res) => {
+  app.post("/api/admin/test-email", isAuthenticated, requireAdmin(), async (req: any, res) => {
     try {
       const { email } = req.body;
       const userId = req.userId || req.user?.claims?.sub;
@@ -1373,13 +1420,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Not authenticated" });
       }
       const adminUser = await storage.getUser(userId);
-      if (!adminUser || adminUser.role !== "admin") {
+      if (!adminUser || (adminUser.role !== "admin" && adminUser.role !== "super_admin")) {
         return res.status(403).json({ error: "Admin access required" });
       }
 
       const { role, reason } = req.body;
-      if (!role || !["client", "agent", "tax_office", "admin"].includes(role)) {
+      if (!role || !["client", "agent", "tax_office", "admin", "super_admin"].includes(role)) {
         return res.status(400).json({ error: "Invalid role" });
+      }
+
+      // Only a super admin can grant or revoke super admin access
+      if (role === "super_admin" && adminUser.role !== "super_admin") {
+        return res.status(403).json({ error: "Super Admin access required to assign this role" });
       }
 
       const adminName =
@@ -1446,7 +1498,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Only admin, tax_office, or agent can update client profiles
       // Or users can update their own profile
       const targetUserId = req.params.id;
-      const isAdmin = currentUser.role === "admin";
+      const isAdmin = currentUser.role === "admin" || currentUser.role === "super_admin";
       const isStaff = currentUser.role === "tax_office" || currentUser.role === "agent";
       const isSelf = currentUserId === targetUserId;
       
@@ -1484,7 +1536,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req, res) => {
       try {
         const role = req.params.role as any;
-        if (!["client", "agent", "tax_office", "admin"].includes(role)) {
+        if (!["client", "agent", "tax_office", "admin", "super_admin"].includes(role)) {
           return res.status(400).json({ error: "Invalid role" });
         }
         const users = await storage.getUsersByRole(role);
@@ -1581,21 +1633,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "User not found" });
       }
 
-      // Get upload URL from object storage
-      const objectStorage = new ObjectStorageService();
-      const fileName = `profile-photo-${Date.now()}.jpg`;
-      const { uploadURL, objectPath } =
-        await objectStorage.getProfilePhotoUploadURL(userId, fileName);
+      const preferFtp = process.env.PROFILE_PHOTO_MODE === "ftp";
+      const hasObjectStorage = !preferFtp && !!process.env.PRIVATE_OBJECT_DIR;
 
-      res.json({
+      // Prefer object storage when configured and not forced to FTP
+      if (hasObjectStorage) {
+        try {
+          const objectStorage = new ObjectStorageService();
+          const fileName = `profile-photo-${Date.now()}.jpg`;
+          const { uploadURL, objectPath } =
+            await objectStorage.getProfilePhotoUploadURL(userId, fileName);
+
+          return res.json({
+            uploadURL,
+            objectPath,
+            mode: "object-storage",
+            message:
+              "Use the uploadURL to PUT the file, then call /api/profile/photo/confirm with the objectPath",
+          });
+        } catch (error) {
+          console.warn(
+            "[profile-photo] Object storage unavailable, falling back to FTP:",
+            error instanceof Error ? error.message : error,
+          );
+        }
+      }
+
+      // FTP fallback for environments without object storage
+      const sanitizedFileName = `profile-${Date.now()}.jpg`;
+      const objectPath = `/ftp/uploads/profile-photos/${userId}/${sanitizedFileName}`;
+      const uploadURL = `/api/profile/photo/upload-ftp?userId=${encodeURIComponent(
+        userId
+      )}&objectPath=${encodeURIComponent(objectPath)}&fileName=${encodeURIComponent(
+        sanitizedFileName
+      )}`;
+
+      return res.json({
         uploadURL,
         objectPath,
+        mode: "ftp",
         message:
-          "Use the uploadURL to PUT the file, then call /api/profile/photo/confirm with the objectPath",
+          "PUT the binary file to uploadURL, then call /api/profile/photo/confirm with the objectPath",
       });
     } catch (error: any) {
       console.error("Photo upload URL error:", error);
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // FTP upload endpoint for profile photos (binary PUT)
+  app.put("/api/profile/photo/upload-ftp", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.query.userId as string) || req.userId || req.session?.userId || req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const existingUser = await storage.getUser(userId);
+      if (!existingUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const fileName =
+        (req.query.fileName as string) ||
+        (req.headers["x-file-name"] as string) ||
+        `profile-${Date.now()}.jpg`;
+
+      let fileBuffer: Buffer | undefined = req.rawBody as Buffer;
+      if (!fileBuffer || fileBuffer.length === 0) {
+        // Fallback: collect stream (for image/jpeg, etc.)
+        const chunks: Buffer[] = [];
+        await new Promise<void>((resolve) => {
+          req.on("data", (chunk: Buffer) => chunks.push(chunk));
+          req.on("end", () => resolve());
+        });
+        fileBuffer = Buffer.concat(chunks);
+      }
+
+      if (!fileBuffer || fileBuffer.length === 0) {
+        return res.status(400).json({ error: "No file content provided" });
+      }
+
+      const uploadResult = await ftpStorageService.uploadFile(
+        userId,
+        fileName,
+        fileBuffer,
+        req.headers["content-type"] as string | undefined,
+        "uploads/profile-photos"
+      );
+
+      return res.json({
+        success: true,
+        objectPath: `/ftp/${uploadResult.filePath}`,
+        fileUrl: uploadResult.fileUrl,
+      });
+    } catch (error: any) {
+      console.error("FTP profile photo upload error:", error);
+      res.status(500).json({ error: error.message || "Upload failed" });
     }
   });
 
@@ -1654,7 +1788,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
-  // Serve profile photo from object storage
+  // Serve profile photo from storage (object storage or FTP)
   app.get("/api/profile/photo/:userId", async (req: any, res) => {
     try {
       const user = await storage.getUser(req.params.userId);
@@ -1662,14 +1796,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Photo not found" });
       }
 
-      // If the profile image URL is an external URL (e.g., from Replit Auth), redirect to it
-      if (user.profileImageUrl.startsWith("http")) {
-        return res.redirect(user.profileImageUrl);
+      const imageUrl = user.profileImageUrl;
+
+      // External URL
+      if (imageUrl.startsWith("http")) {
+        return res.redirect(imageUrl);
       }
 
-      // Otherwise, serve from object storage
+      // FTP-backed photo
+      if (imageUrl.startsWith("/ftp/")) {
+        const relativePath = imageUrl.replace("/ftp/", "");
+        const success = await ftpStorageService.streamFileToResponse(
+          relativePath,
+          res,
+          "profile-photo"
+        );
+        if (success) return;
+        return res.status(404).json({ error: "Photo not found on FTP" });
+      }
+
+      // Object storage
       const objectStorage = new ObjectStorageService();
-      const file = await objectStorage.getPrivateObject(user.profileImageUrl);
+      const file = await objectStorage.getPrivateObject(imageUrl);
       if (!file) {
         return res.status(404).json({ error: "Photo not found in storage" });
       }
@@ -2001,8 +2149,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "User not found" });
       }
 
-      // Admin has all permissions
-      if (user.role === "admin") {
+      // Admin and Super Admin have all permissions
+      if (user.role === "admin" || user.role === "super_admin") {
         const allPermissions = await storage.getPermissions();
         return res.json({
           role: user.role,
@@ -2028,10 +2176,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req, res) => {
       try {
         const role = req.params.role as any;
-        if (!["client", "agent", "tax_office", "admin"].includes(role)) {
+        if (!["client", "agent", "tax_office", "admin", "super_admin"].includes(role)) {
           return res.status(400).json({ error: "Invalid role" });
         }
-        const permissions = await storage.getRolePermissions(role);
+        const permissions = role === "super_admin" 
+          ? (await storage.getPermissions()).map((p) => p.slug)
+          : await storage.getRolePermissions(role);
         res.json(permissions);
       } catch (error: any) {
         res.status(500).json({ error: error.message });
@@ -2047,8 +2197,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req: any, res) => {
       try {
         const role = req.params.role as any;
-        if (!["client", "agent", "tax_office", "admin"].includes(role)) {
+        if (!["client", "agent", "tax_office", "admin", "super_admin"].includes(role)) {
           return res.status(400).json({ error: "Invalid role" });
+        }
+
+        if (role === "super_admin") {
+          return res.status(400).json({ error: "Super Admin permissions are implied and cannot be edited" });
         }
 
         const { permissions } = req.body;
@@ -2092,8 +2246,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req: any, res) => {
       try {
         const { role, slug } = req.params;
-        if (!["client", "agent", "tax_office", "admin"].includes(role)) {
+        if (!["client", "agent", "tax_office", "admin", "super_admin"].includes(role)) {
           return res.status(400).json({ error: "Invalid role" });
+        }
+
+        if (role === "super_admin") {
+          return res.status(400).json({ error: "Super Admin permissions are implied and cannot be edited" });
         }
 
         const { granted } = req.body;
@@ -4011,8 +4169,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // FTP-based file upload for non-Replit environments (Render deployment)
   app.post("/api/documents/upload-ftp", isAuthenticated, async (req, res) => {
+    // #region agent log
+    const dbg = (message: string, data?: Record<string, any>) => {
+      try {
+        require("fs").appendFileSync(
+          "/Users/bobbyc/STS OFFICIAL WEBSITE DEC 10/STS-Tax-Repair-Website/.cursor/debug.log",
+          JSON.stringify({
+            location: "routes:/api/documents/upload-ftp",
+            message,
+            data,
+            timestamp: Date.now(),
+          }) + "\n"
+        );
+      } catch {}
+    };
+    // #endregion
     try {
       const contentType = req.headers['content-type'] || '';
+      dbg("start", { contentType, contentLength: req.headers['content-length'] });
       
       // Check content type to determine how to handle the upload
       if (!contentType.includes('multipart/form-data') && !contentType.includes('application/octet-stream')) {
@@ -4037,19 +4211,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const fileType = req.headers['x-file-type'] as string || 'application/octet-stream';
           const category = req.headers['x-category'] as string;
 
+          dbg("received body", { size: fileBuffer.length, clientId, fileName, fileType });
+
           if (!clientId || !fileName) {
             return res.status(400).json({ error: "x-client-id and x-file-name headers are required" });
           }
 
           console.log(`[FTP] Uploading file for client ${clientId}: ${fileName} (${fileBuffer.length} bytes)`);
 
-          // Upload to GoDaddy via FTP
-          const { filePath, fileUrl } = await ftpStorageService.uploadFile(
+          // Upload to GoDaddy via FTP with timeout to avoid hanging requests
+          const timeoutMs = 20000;
+          const ftpUpload = ftpStorageService.uploadFile(
             clientId,
             fileName,
             fileBuffer,
             fileType
           );
+
+          const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error(`FTP upload timed out after ${timeoutMs}ms`)), timeoutMs)
+          );
+
+          const { filePath, fileUrl } = await Promise.race([ftpUpload, timeoutPromise]);
+          dbg("upload success", { filePath, fileUrl });
 
           // Determine document type
           let documentType = category || "Other";
@@ -4089,17 +4273,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           res.status(201).json(document);
         } catch (uploadError: any) {
+          dbg("upload error", { errorMessage: uploadError?.message });
           console.error("[FTP] Upload error:", uploadError);
           res.status(500).json({ error: uploadError.message });
         }
       });
 
       req.on('error', (error: any) => {
+        dbg("request error", { errorMessage: error?.message });
         console.error("[FTP] Request error:", error);
         res.status(500).json({ error: error.message });
       });
 
     } catch (error: any) {
+      dbg("outer error", { errorMessage: error?.message });
       console.error("Error in FTP upload:", error);
       res.status(500).json({ error: error.message });
     }
@@ -4615,7 +4802,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
-  // Notification preferences endpoint
+  // Notification preferences endpoints
+  app.get(
+    "/api/notifications/preferences",
+    isAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.userId || req.user?.claims?.sub;
+        if (!userId) {
+          return res.status(401).json({ error: "Unauthorized" });
+        }
+
+        const prefs = await storage.getNotificationPreferences(userId);
+        const defaults = {
+          emailNotifications: true,
+          documentAlerts: true,
+          statusNotifications: true,
+          messageAlerts: true,
+          smsNotifications: false,
+        };
+
+        res.json(prefs ? prefs : { userId, ...defaults });
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    },
+  );
+
   app.patch(
     "/api/notifications/preferences",
     isAuthenticated,
@@ -4634,18 +4847,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(401).json({ error: "Unauthorized" });
         }
 
-        // For now, we'll store preferences in user settings or a separate table
-        // This is a placeholder implementation - you may want to create a separate notifications_preferences table
+        const updated = await storage.upsertNotificationPreferences({
+          userId,
+          emailNotifications,
+          documentAlerts,
+          statusNotifications,
+          messageAlerts,
+          smsNotifications,
+        });
+
         res.json({
           success: true,
           message: "Notification preferences updated successfully",
-          preferences: {
-            emailNotifications,
-            documentAlerts,
-            statusNotifications,
-            messageAlerts,
-            smsNotifications,
-          },
+          preferences: updated,
         });
       } catch (error: any) {
         res.status(500).json({ error: error.message });
@@ -5280,6 +5494,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         slug
       } = req.body;
       
+      // Validate slug uniqueness if provided
+      if (slug !== undefined) {
+        if (!slug || typeof slug !== 'string' || !/^[a-z0-9-]+$/.test(slug)) {
+          return res.status(400).json({ error: 'Slug must contain only lowercase letters, numbers, or hyphens' });
+        }
+        
+        const existing = await storage.getOfficeBySlug(slug);
+        if (existing && existing.id !== id) {
+          return res.status(400).json({ error: 'Slug already in use' });
+        }
+      }
+      
       // Check for existing branding
       let branding = await storage.getOfficeBranding(id);
       
@@ -5330,6 +5556,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Upload office logo - returns presigned URL
+  app.post("/api/offices/:id/logo-upload", isAuthenticated, requirePermission('branding.manage'), async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { fileName } = req.body;
+      const userId = req.userId || req.user?.claims?.sub;
+      const user = await storage.getUser(userId);
+
+      if (!user || (user.role !== 'admin' && user.officeId !== id)) {
+        return res.status(403).json({ error: 'Unauthorized - cannot upload logo for this office' });
+      }
+
+      if (!fileName) {
+        return res.status(400).json({ error: 'fileName is required' });
+      }
+
+      const objectStorage = new ObjectStorageService();
+      const { uploadURL, objectPath } = await objectStorage.getOfficeLogoUploadURL(id, fileName);
+      res.json({ uploadURL, objectPath });
+    } catch (error: any) {
+      console.error('Office logo upload URL error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Confirm office logo upload and persist branding
+  app.post("/api/offices/:id/logo-confirm", isAuthenticated, requirePermission('branding.manage'), async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { objectPath } = req.body;
+      const userId = req.userId || req.user?.claims?.sub;
+      const user = await storage.getUser(userId);
+
+      if (!user || (user.role !== 'admin' && user.officeId !== id)) {
+        return res.status(403).json({ error: 'Unauthorized - cannot update logo for this office' });
+      }
+
+      if (!objectPath) {
+        return res.status(400).json({ error: 'objectPath is required' });
+      }
+
+      const office = await storage.getOffice(id);
+      if (!office) {
+        return res.status(404).json({ error: 'Office not found' });
+      }
+
+      let branding = await storage.getOfficeBranding(id);
+      if (branding) {
+        branding = await storage.updateOfficeBranding(id, {
+          logoUrl: objectPath,
+          logoObjectKey: objectPath,
+          updatedByUserId: userId,
+        });
+      } else {
+        branding = await storage.createOfficeBranding({
+          officeId: id,
+          companyName: office.name,
+          logoUrl: objectPath,
+          logoObjectKey: objectPath,
+          updatedByUserId: userId,
+        } as any);
+      }
+
+      res.json({
+        success: true,
+        branding,
+      });
+    } catch (error: any) {
+      console.error('Office logo confirm error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Serve office logo
+  app.get("/api/offices/:id/logo", async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const branding = await storage.getOfficeBranding(id);
+
+      if (!branding?.logoUrl) {
+        return res.status(404).json({ error: 'Logo not found' });
+      }
+
+      // External URL
+      if (branding.logoUrl.startsWith('http')) {
+        return res.redirect(branding.logoUrl);
+      }
+
+      const objectStorage = new ObjectStorageService();
+      const file = await objectStorage.getObjectEntityFile(branding.logoUrl);
+      await objectStorage.downloadObject(file, res, 3600);
+    } catch (error: any) {
+      console.error('Office logo fetch error:', error);
+      if (!res.headersSent) {
+        res.status(404).json({ error: 'Logo not found' });
+      }
     }
   });
 
@@ -5404,7 +5729,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ===========================================
 
   // Get all offices (admin only)
-  app.get("/api/offices", isAuthenticated, requireAdmin, async (req: any, res) => {
+  app.get("/api/offices", isAuthenticated, requireAdmin(), async (req: any, res) => {
     try {
       const offices = await storage.getOffices();
       res.json(offices);
@@ -5436,9 +5761,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create office (admin only)
-  app.post("/api/offices", isAuthenticated, requireAdmin, async (req: any, res) => {
+  app.post("/api/offices", isAuthenticated, requireAdmin(), async (req: any, res) => {
     try {
-      const { name, slug, address, phone, email } = req.body;
+      const { name, slug, address, city, state, zipCode, phone, email, defaultTaxYear } = req.body;
       
       if (!name) {
         return res.status(400).json({ error: 'Office name is required' });
@@ -5452,7 +5777,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      const office = await storage.createOffice({ name, slug, address, phone, email });
+      const office = await storage.createOffice({ name, slug, address, city, state, zipCode, phone, email, defaultTaxYear });
       res.status(201).json(office);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -5470,7 +5795,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: 'Unauthorized' });
       }
       
-      const { name, slug, address, phone, email, isActive } = req.body;
+      const { name, slug, address, city, state, zipCode, phone, email, defaultTaxYear, isActive } = req.body;
       
       // Check slug uniqueness if changing
       if (slug) {
@@ -5484,8 +5809,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name, 
         slug, 
         address, 
+        city,
+        state,
+        zipCode,
         phone, 
         email,
+        defaultTaxYear,
         isActive 
       });
       
@@ -5576,32 +5905,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send notification emails and in-app notifications to all admins
       try {
         const admins = await mysqlStorage.getUsersByRole('admin');
-        for (const admin of admins) {
-          if (admin.email && admin.isActive !== false) {
-            // Send email notification
-            await sendStaffRequestNotificationEmail(
-              admin.email,
-              `${admin.firstName || ''} ${admin.lastName || ''}`.trim() || 'Admin',
-              firstName,
-              lastName,
-              email,
-              roleRequested,
-              reason || 'No reason provided'
-            );
-            
-            // Create in-app notification
-            await mysqlStorage.createNotification({
-              userId: admin.id,
-              type: 'staff_request',
-              title: 'New Staff Request',
-              message: `${firstName} ${lastName} has requested to join as ${roleRequested}`,
-              link: '/manager?tab=requests',
-              resourceType: 'staff_request',
-              resourceId: staffRequest.id
-            });
-          }
+        const superAdmins = await mysqlStorage.getUsersByRole('super_admin');
+        const recipients = Array.from(
+          new Map(
+            [...admins, ...superAdmins]
+              .filter((user) => user.email && user.isActive !== false)
+              .map((user) => [user.id ?? user.email, user])
+          ).values()
+        );
+
+        for (const admin of recipients) {
+          // Send email notification
+          await sendStaffRequestNotificationEmail(
+            admin.email as string,
+            `${admin.firstName || ''} ${admin.lastName || ''}`.trim() || 'Admin',
+            firstName,
+            lastName,
+            email,
+            roleRequested,
+            reason || 'No reason provided'
+          );
+          
+          // Create in-app notification
+          await mysqlStorage.createNotification({
+            userId: admin.id,
+            type: 'staff_request',
+            title: 'New Staff Request',
+            message: `${firstName} ${lastName} has requested to join as ${roleRequested}`,
+            link: '/manager?tab=requests',
+            resourceType: 'staff_request',
+            resourceId: staffRequest.id
+          });
         }
-        console.log(`[EMAIL] Staff request notifications sent to ${admins.length} admin(s)`);
+        console.log(`[EMAIL] Staff request notifications sent to ${recipients.length} admin(s)`);
       } catch (emailError) {
         console.error('[EMAIL] Failed to send staff request notifications:', emailError);
       }
@@ -5891,7 +6227,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Build scope options based on role
-      let scopeOptions: any = { isGlobal: user.role === 'admin' };
+      let scopeOptions: any = { isGlobal: user.role === 'admin' || user.role === 'super_admin' };
       
       if (user.role === 'tax_office') {
         scopeOptions.officeId = user.officeId;
@@ -6142,6 +6478,107 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ===========================================
+  // MARKETING - Email (Gmail) and SMS (Twilio)
+  // ===========================================
+
+  const GMAIL_USER = process.env.GMAIL_USER;
+  const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD;
+  const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
+  const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
+  const TWILIO_FROM = process.env.TWILIO_FROM;
+
+  // Send marketing email via Gmail SMTP
+  app.post("/api/marketing/email", isAuthenticated, requireAdmin(), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { to, subject, message } = req.body || {};
+
+      if (!Array.isArray(to) || to.length === 0) {
+        return res.status(400).json({ error: "At least one recipient is required" });
+      }
+      if (!subject || !message) {
+        return res.status(400).json({ error: "Subject and message are required" });
+      }
+      if (!GMAIL_USER || !GMAIL_APP_PASSWORD) {
+        return res.status(500).json({ error: "Gmail credentials are not configured (GMAIL_USER, GMAIL_APP_PASSWORD)" });
+      }
+
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: GMAIL_USER,
+          pass: GMAIL_APP_PASSWORD,
+        },
+      });
+
+      let sent = 0;
+      const errors: string[] = [];
+
+      for (const recipient of to) {
+        try {
+          await transporter.sendMail({
+            from: `"STS Marketing" <${GMAIL_USER}>`,
+            to: recipient,
+            subject,
+            html: message,
+            text: message.replace(/<[^>]*>/g, ""),
+          });
+          sent += 1;
+        } catch (err: any) {
+          console.error(`[MARKETING][EMAIL] Failed for ${recipient}:`, err?.message || err);
+          errors.push(`${recipient}: ${err?.message || "Send failed"}`);
+        }
+      }
+
+      const failed = to.length - sent;
+      res.json({ success: failed === 0, sent, failed, errors });
+    } catch (error: any) {
+      console.error("[MARKETING][EMAIL] Error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Send marketing SMS via Twilio
+  app.post("/api/marketing/sms", isAuthenticated, requireAdmin(), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { to, message } = req.body || {};
+
+      if (!Array.isArray(to) || to.length === 0) {
+        return res.status(400).json({ error: "At least one recipient is required" });
+      }
+      if (!message) {
+        return res.status(400).json({ error: "Message is required" });
+      }
+      if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_FROM) {
+        return res.status(500).json({ error: "Twilio is not configured (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM)" });
+      }
+
+      const client = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
+      let sent = 0;
+      const errors: string[] = [];
+
+      for (const recipient of to) {
+        try {
+          await client.messages.create({
+            from: TWILIO_FROM,
+            to: recipient,
+            body: message,
+          });
+          sent += 1;
+        } catch (err: any) {
+          console.error(`[MARKETING][SMS] Failed for ${recipient}:`, err?.message || err);
+          errors.push(`${recipient}: ${err?.message || "Send failed"}`);
+        }
+      }
+
+      const failed = to.length - sent;
+      res.json({ success: failed === 0, sent, failed, errors });
+    } catch (error: any) {
+      console.error("[MARKETING][SMS] Error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // ============================================
   // Homepage Agents API (Public agents displayed on homepage)
   // ============================================
@@ -6150,6 +6587,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/homepage-agents", async (req, res) => {
     try {
       const agents = await mysqlStorage.getHomePageAgents();
+      console.log(`[HOMEPAGE-AGENTS] Returning ${agents.length} agents`);
+      agents.forEach(a => {
+        console.log(`[HOMEPAGE-AGENTS] Agent: ${a.name}, imageUrl: ${a.imageUrl || 'NONE'}`);
+      });
       res.json(agents);
     } catch (error: any) {
       console.error('Error fetching homepage agents:', error);
@@ -6158,7 +6599,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create a new homepage agent (admin only)
-  app.post("/api/homepage-agents", isAuthenticated, requireAdmin, async (req, res) => {
+  app.post("/api/homepage-agents", isAuthenticated, requireAdmin(), async (req, res) => {
     try {
       const agent = await mysqlStorage.createHomePageAgent(req.body);
       res.status(201).json(agent);
@@ -6169,7 +6610,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update a homepage agent (admin only)
-  app.patch("/api/homepage-agents/:id", isAuthenticated, requireAdmin, async (req, res) => {
+  app.patch("/api/homepage-agents/:id", isAuthenticated, requireAdmin(), async (req, res) => {
     try {
       const { id } = req.params;
       const agent = await mysqlStorage.updateHomePageAgent(id, req.body);
@@ -6184,7 +6625,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete a homepage agent (admin only)
-  app.delete("/api/homepage-agents/:id", isAuthenticated, requireAdmin, async (req, res) => {
+  app.delete("/api/homepage-agents/:id", isAuthenticated, requireAdmin(), async (req, res) => {
     try {
       const { id } = req.params;
       const deleted = await mysqlStorage.deleteHomePageAgent(id);
@@ -6199,7 +6640,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Reorder homepage agents (admin only)
-  app.post("/api/homepage-agents/reorder", isAuthenticated, requireAdmin, async (req, res) => {
+  app.post("/api/homepage-agents/reorder", isAuthenticated, requireAdmin(), async (req, res) => {
     try {
       const { agentIds } = req.body;
       if (!Array.isArray(agentIds)) {
@@ -6214,7 +6655,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get upload URL for agent photo (admin only)
-  app.post("/api/homepage-agents/:id/photo", isAuthenticated, requireAdmin, async (req, res) => {
+  app.post("/api/homepage-agents/:id/photo", isAuthenticated, requireAdmin(), async (req, res) => {
     try {
       const { id } = req.params;
       const { fileName } = req.body;
@@ -6244,7 +6685,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Confirm agent photo upload and update agent record (admin only)
-  app.post("/api/homepage-agents/:id/photo/confirm", isAuthenticated, requireAdmin, async (req, res) => {
+  app.post("/api/homepage-agents/:id/photo/confirm", isAuthenticated, requireAdmin(), async (req, res) => {
     try {
       const { id } = req.params;
       const { objectPath } = req.body;
@@ -6270,11 +6711,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // FTP upload for agent photos (non-Replit environments)
-  app.post("/api/homepage-agents/photo-ftp", isAuthenticated, requireAdmin, async (req: any, res) => {
+  app.post("/api/homepage-agents/photo-ftp", isAuthenticated, requireAdmin(), async (req: any, res) => {
+    let diagId = `ftp-agent-${Date.now()}`;
     try {
       const agentId = req.headers['x-agent-id'] as string;
       const rawFileName = req.headers['x-file-name'] as string;
       const fileName = rawFileName ? decodeURIComponent(rawFileName) : '';
+      const contentLength = Number(req.headers['content-length'] || 0);
+
+      // Check env configuration early for clearer errors
+      const missingEnv = ['FTP_HOST', 'FTP_USER', 'FTP_PASSWORD']
+        .filter((k) => !process.env[k]);
+      if (missingEnv.length > 0) {
+        console.error(`[${diagId}] Missing FTP env vars: ${missingEnv.join(', ')}`);
+        return res.status(500).json({ 
+          error: "FTP credentials not configured",
+          missingEnv,
+          diagId,
+        });
+      }
 
       if (!agentId || !fileName) {
         return res.status(400).json({ error: "x-agent-id and x-file-name headers are required" });
@@ -6290,18 +6745,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const fileBuffer = Buffer.isBuffer(req.body) ? req.body : (req.rawBody as Buffer);
       
       if (!fileBuffer || fileBuffer.length === 0) {
-        return res.status(400).json({ error: "No file data received" });
+        return res.status(400).json({ error: "No file data received", diagId, contentLength });
       }
       
       if (fileBuffer.length > 5 * 1024 * 1024) {
-        return res.status(400).json({ error: "File too large (max 5MB)" });
+        return res.status(400).json({ error: "File too large (max 5MB)", diagId, size: fileBuffer.length });
       }
 
-      // Upload to FTP in agent-photos directory
-      const result = await ftpStorageService.uploadFile(
-        `agent-photos/${agentId}`,
+      console.log(`[${diagId}] Uploading agent photo`, {
+        agentId,
         fileName,
-        fileBuffer
+        size: fileBuffer.length,
+        contentLength,
+      });
+
+      // Upload to FTP in WordPress uploads directory (so WordPress can serve it)
+      const result = await ftpStorageService.uploadFile(
+        agentId,
+        fileName,
+        fileBuffer,
+        undefined,
+        'wp-content/uploads/agent-photos'
       );
       
       // Update agent with new image URL
@@ -6312,11 +6776,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true, 
         filePath: result.filePath,
         fileUrl: result.fileUrl,
-        imageUrl
+        imageUrl,
+        diagId,
       });
     } catch (error: any) {
       console.error("Error in FTP agent photo upload:", error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: error.message, diagId });
     }
   });
 
@@ -6324,13 +6789,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/agent-photos/:id", async (req, res) => {
     try {
       const { id } = req.params;
+      console.log(`[AGENT-PHOTO] Request for agent ID: ${id}`);
       const agent = await mysqlStorage.getHomePageAgentById(id);
       
-      if (!agent || !agent.imageUrl) {
+      if (!agent) {
+        console.log(`[AGENT-PHOTO] Agent not found: ${id}`);
+        return res.status(404).json({ error: "Agent not found" });
+      }
+      
+      if (!agent.imageUrl) {
+        console.log(`[AGENT-PHOTO] Agent ${id} has no imageUrl`);
         return res.status(404).json({ error: "Agent photo not found" });
       }
       
       const imageUrl = agent.imageUrl;
+      console.log(`[AGENT-PHOTO] Agent ${id} imageUrl: ${imageUrl}`);
       
       // Handle different storage formats
       if (imageUrl.startsWith('/objects/public/')) {
@@ -6342,8 +6815,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         await objectStorageService.downloadObject(file, res);
       } else if (imageUrl.startsWith('/ftp/')) {
-        // FTP storage - redirect to the actual URL
-        const ftpPath = imageUrl.replace('/ftp/', '');
+        // FTP storage - redirect to the actual URL on WordPress site
+        // Remove /ftp/ prefix
+        let ftpPath = imageUrl.replace('/ftp/', '');
+        
+        // If path doesn't start with wp-content, it's an old upload - prepend wp-content/uploads
+        if (!ftpPath.startsWith('wp-content/')) {
+          ftpPath = `wp-content/uploads/${ftpPath}`;
+        }
+        
+        console.log(`[AGENT-PHOTO] Redirecting to: https://ststaxrepair.org/${ftpPath}`);
         return res.redirect(`https://ststaxrepair.org/${ftpPath}`);
       } else if (imageUrl.startsWith('http')) {
         // External URL - redirect
