@@ -327,12 +327,12 @@ export class FTPStorageService {
     // Files are in public_html, so they're directly accessible via the domain
     // Encode each path segment to handle special characters in filenames
     const encodedPath = filePath.split('/').map(segment => encodeURIComponent(segment)).join('/');
-    return `https://ststaxrepair.org/${encodedPath}`;
+    return `https://www.ststaxrepair.net/${encodedPath}`;
   }
 
   getDirectUrl(filePath: string): string {
     const encodedPath = filePath.split('/').map(segment => encodeURIComponent(segment)).join('/');
-    return `https://ststaxrepair.org/${encodedPath}`;
+    return `https://www.ststaxrepair.net/${encodedPath}`;
   }
 }
 
