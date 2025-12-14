@@ -6730,13 +6730,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         contentLength,
       });
 
-      // Upload to FTP in agent-photos directory (separate from client uploads)
+      // Upload to FTP in WordPress uploads directory (so WordPress can serve it)
       const result = await ftpStorageService.uploadFile(
         agentId,
         fileName,
         fileBuffer,
         undefined,
-        'agent-photos'
+        'wp-content/uploads/agent-photos'
       );
       
       // Update agent with new image URL
@@ -6786,8 +6786,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         await objectStorageService.downloadObject(file, res);
       } else if (imageUrl.startsWith('/ftp/')) {
-        // FTP storage - redirect to the actual URL
-        const ftpPath = imageUrl.replace('/ftp/', '');
+        // FTP storage - redirect to the actual URL on WordPress site
+        // Remove /ftp/ prefix
+        let ftpPath = imageUrl.replace('/ftp/', '');
+        
+        // If path doesn't start with wp-content, it's an old upload - prepend wp-content/uploads
+        if (!ftpPath.startsWith('wp-content/')) {
+          ftpPath = `wp-content/uploads/${ftpPath}`;
+        }
+        
+        console.log(`[AGENT-PHOTO] Redirecting to: https://ststaxrepair.org/${ftpPath}`);
         return res.redirect(`https://ststaxrepair.org/${ftpPath}`);
       } else if (imageUrl.startsWith('http')) {
         // External URL - redirect
