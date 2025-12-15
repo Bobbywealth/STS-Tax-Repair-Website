@@ -125,7 +125,7 @@ export function usePWA() {
 
       if (!registered && 'sync' in registration) {
         try {
-          await registration.sync.register(SYNC_TAG);
+          await (registration as any).sync.register(SYNC_TAG);
           registered = true;
         } catch (error) {
           console.warn('Background sync registration failed:', error);
@@ -145,7 +145,7 @@ export function usePWA() {
     try {
       const registration = await navigator.serviceWorker.ready;
       if ('sync' in registration) {
-        await registration.sync.register(SYNC_TAG);
+        await (registration as any).sync.register(SYNC_TAG);
         return true;
       }
     } catch (error) {

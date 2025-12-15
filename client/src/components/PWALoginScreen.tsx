@@ -17,6 +17,7 @@ import {
   Eye,
   EyeOff,
   Sparkles,
+  WifiOff,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";

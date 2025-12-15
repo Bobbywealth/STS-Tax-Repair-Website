@@ -10,6 +10,7 @@ import {
   type InsertAppointment,
   type Payment,
   type InsertPayment,
+  type PaymentStatus,
   type DocumentVersion,
   type InsertDocumentVersion,
   type ESignature,
@@ -51,6 +52,7 @@ import {
   type InsertTicketMessage,
   type AuditLog,
   type InsertAuditLog,
+  type AuditAction,
   type StaffRequest,
   type InsertStaffRequest,
   type StaffRequestStatus,
@@ -302,7 +304,7 @@ export class MySQLStorage implements IStorage {
       clientName: payment.clientName,
       serviceFee: payment.serviceFee,
       amountPaid: payment.amountPaid ?? "0.00",
-      paymentStatus: payment.paymentStatus ?? "pending",
+      paymentStatus: (payment.paymentStatus ?? "pending") as PaymentStatus,
       dueDate: payment.dueDate ?? null,
       paidDate: payment.paidDate ?? null,
       paymentMethod: payment.paymentMethod ?? null,
@@ -317,7 +319,10 @@ export class MySQLStorage implements IStorage {
   async updatePayment(id: string, payment: Partial<InsertPayment>): Promise<Payment | undefined> {
     const existing = await mysqlDb.select().from(paymentsTable).where(eq(paymentsTable.id, id));
     if (existing.length === 0) return undefined;
-    await mysqlDb.update(paymentsTable).set(payment).where(eq(paymentsTable.id, id));
+    const updateData = payment.paymentStatus 
+      ? { ...payment, paymentStatus: payment.paymentStatus as PaymentStatus }
+      : payment;
+    await mysqlDb.update(paymentsTable).set(updateData as any).where(eq(paymentsTable.id, id));
     const [updated] = await mysqlDb.select().from(paymentsTable).where(eq(paymentsTable.id, id));
     return updated;
   }
@@ -1638,13 +1643,19 @@ export class MySQLStorage implements IStorage {
 
   async createTicketMessage(message: InsertTicketMessage): Promise<TicketMessage> {
     const id = randomUUID();
+    const messageData = {
+      id,
+      ticketId: message.ticketId,
+      authorId: message.authorId,
+      authorName: message.authorName || null,
+      authorRole: (message.authorRole || null) as UserRole | null,
+      message: message.message,
+      isInternal: message.isInternal || false,
+      createdAt: new Date()
+    };
     await mysqlDb
       .insert(ticketMessagesTable)
-      .values({
-        id,
-        ...message,
-        createdAt: new Date()
-      });
+      .values(messageData);
     const [result] = await mysqlDb
       .select()
       .from(ticketMessagesTable)
@@ -1658,13 +1669,24 @@ export class MySQLStorage implements IStorage {
 
   async createAuditLog(log: InsertAuditLog): Promise<AuditLog> {
     const id = randomUUID();
+    const logData = {
+      id,
+      action: log.action as AuditAction,
+      userId: log.userId,
+      userName: log.userName || null,
+      userRole: (log.userRole || null) as UserRole | null,
+      officeId: log.officeId || null,
+      resourceType: log.resourceType || null,
+      resourceId: log.resourceId || null,
+      clientId: log.clientId || null,
+      details: log.details,
+      ipAddress: log.ipAddress || null,
+      userAgent: log.userAgent || null,
+      createdAt: new Date()
+    };
     await mysqlDb
       .insert(auditLogsTable)
-      .values({
-        id,
-        ...log,
-        createdAt: new Date()
-      });
+      .values(logData);
     const [result] = await mysqlDb
       .select()
       .from(auditLogsTable)
@@ -1950,14 +1972,22 @@ export class MySQLStorage implements IStorage {
 
   async createStaffRequest(request: InsertStaffRequest): Promise<StaffRequest> {
     const id = randomUUID();
+    const requestData = {
+      id,
+      firstName: request.firstName,
+      lastName: request.lastName,
+      email: request.email,
+      phone: request.phone || null,
+      roleRequested: request.roleRequested as UserRole,
+      officeId: request.officeId || null,
+      reason: request.reason || null,
+      experience: request.experience || null,
+      status: 'pending' as StaffRequestStatus,
+      createdAt: new Date()
+    };
     await mysqlDb
       .insert(staffRequestsTable)
-      .values({
-        id,
-        ...request,
-        status: 'pending',
-        createdAt: new Date()
-      });
+      .values(requestData);
     const [result] = await mysqlDb
       .select()
       .from(staffRequestsTable)
@@ -2059,18 +2089,19 @@ export class MySQLStorage implements IStorage {
 
   async createNotification(notification: InsertNotification): Promise<Notification> {
     const id = randomUUID();
+    const notifData = {
+      id,
+      userId: notification.userId,
+      type: notification.type as NotificationType,
+      title: notification.title,
+      message: notification.message,
+      resourceType: notification.resourceType || null,
+      resourceId: notification.resourceId || null,
+      link: notification.link || null
+    };
     await mysqlDb
       .insert(notificationsTable)
-      .values({
-        id,
-        userId: notification.userId,
-        type: notification.type,
-        title: notification.title,
-        message: notification.message,
-        resourceType: notification.resourceType || null,
-        resourceId: notification.resourceId || null,
-        link: notification.link || null
-      });
+      .values(notifData);
     const [result] = await mysqlDb
       .select()
       .from(notificationsTable)

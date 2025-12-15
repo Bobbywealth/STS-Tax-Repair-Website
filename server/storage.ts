@@ -45,6 +45,8 @@ import {
   type InsertOfficeBranding,
   type NotificationPreferences,
   type InsertNotificationPreferences,
+  type Notification,
+  type InsertNotification,
 } from "@shared/mysql-schema";
 
 export interface IStorage {
@@ -231,6 +233,9 @@ export interface IStorage {
   // Notification preferences
   getNotificationPreferences(userId: string): Promise<NotificationPreferences | undefined>;
   upsertNotificationPreferences(prefs: InsertNotificationPreferences): Promise<NotificationPreferences>;
+
+  // Notifications
+  createNotification(notification: InsertNotification): Promise<Notification>;
 
   // User theme preference
   updateUserThemePreference(userId: string, theme: ThemePreference): Promise<User | undefined>;

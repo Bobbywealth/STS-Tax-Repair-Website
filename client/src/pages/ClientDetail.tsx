@@ -31,6 +31,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -770,9 +772,9 @@ export default function ClientDetail() {
                 if (!selectedFiling) return;
                 const payload: Partial<TaxFiling> = {
                   status: filingEditForm.status,
-                  estimatedRefund: filingEditForm.estimatedRefund ? parseFloat(filingEditForm.estimatedRefund as any) : null,
-                  actualRefund: filingEditForm.actualRefund ? parseFloat(filingEditForm.actualRefund as any) : null,
-                  serviceFee: filingEditForm.serviceFee ? parseFloat(filingEditForm.serviceFee as any) : null,
+                  estimatedRefund: filingEditForm.estimatedRefund ? String(parseFloat(filingEditForm.estimatedRefund as any)) : null,
+                  actualRefund: filingEditForm.actualRefund ? String(parseFloat(filingEditForm.actualRefund as any)) : null,
+                  serviceFee: filingEditForm.serviceFee ? String(parseFloat(filingEditForm.serviceFee as any)) : null,
                   feePaid: filingEditForm.feePaid,
                   preparerName: filingEditForm.preparerName || null,
                   officeLocation: filingEditForm.officeLocation || null,

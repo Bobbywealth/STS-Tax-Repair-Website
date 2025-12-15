@@ -226,11 +226,12 @@ export default function Clients() {
 
       // If no filing exists for this client/year, create one on the fly so status changes persist
       if (!filing) {
-        const created = await apiRequest("POST", "/api/tax-filings", {
+        const response = await apiRequest("POST", "/api/tax-filings", {
           clientId,
           taxYear: selectedYear,
           status,
         });
+        const created = await response.json();
         filing = created;
 
         // If create succeeded but status already matches, we're done
@@ -239,7 +240,7 @@ export default function Clients() {
         }
       }
 
-      return apiRequest("PATCH", `/api/tax-filings/${filing.id}/status`, { status });
+      return apiRequest("PATCH", `/api/tax-filings/${filing!.id}/status`, { status });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/tax-filings", selectedYear] });
