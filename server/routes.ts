@@ -1139,6 +1139,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Temporary diagnostic endpoint to check user account status
+  app.get("/api/debug/user-status/:email", async (req, res) => {
+    try {
+      const email = decodeURIComponent(req.params.email);
+      const user = await storage.getUserByEmail(email);
+      
+      if (!user) {
+        return res.json({ 
+          found: false, 
+          message: "User not found in database",
+          email 
+        });
+      }
+      
+      res.json({
+        found: true,
+        email: user.email,
+        role: user.role,
+        isActive: user.isActive,
+        hasPasswordHash: !!user.passwordHash,
+        passwordHashLength: user.passwordHash?.length || 0,
+        emailVerified: !!user.emailVerifiedAt,
+        emailVerifiedAt: user.emailVerifiedAt,
+        createdAt: user.createdAt,
+        firstName: user.firstName,
+        lastName: user.lastName
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Temporary endpoint to manually verify a user's email
+  app.post("/api/debug/verify-email/:email", async (req, res) => {
+    try {
+      const email = decodeURIComponent(req.params.email);
+      const user = await storage.getUserByEmail(email);
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Update the user's emailVerifiedAt field
+      await storage.upsertUser({
+        ...user,
+        emailVerifiedAt: new Date()
+      });
+      
+      res.json({
+        success: true,
+        message: `Email verified for ${email}`,
+        email: user.email
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Client Login (email/password) - public endpoint
   app.post("/api/client-login", async (req: any, res) => {
     try {
