@@ -152,7 +152,9 @@ export default function AgentsPage() {
             id: a.id,
             name: a.name,
             title: a.title,
-            image: hasStoredImage ? `/api/agent-photos/${a.id}` : (a.imageUrl || ""),
+            image: hasStoredImage 
+              ? `/api/agent-photos/${a.id}` 
+              : (a.imageUrl?.startsWith('http') ? a.imageUrl : (a.imageUrl ? `https://${a.imageUrl}` : "")),
             phone: a.phone,
             email: a.email,
             location: a.address || "",
@@ -270,11 +272,14 @@ export default function AgentsPage() {
                 transition={{ delay: index * 0.1 }}
               >
                 <Card className="overflow-hidden hover:shadow-xl transition-shadow">
-                  <div className="aspect-square overflow-hidden">
+                  <div className="aspect-square overflow-hidden bg-gray-100 flex items-center justify-center">
                     <img 
-                      src={agent.image} 
+                      src={agent.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(agent.name)}&background=1a4d2e&color=fff&size=400`} 
                       alt={agent.name}
                       className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(agent.name)}&background=1a4d2e&color=fff&size=400`;
+                      }}
                     />
                   </div>
                   <div className="p-6">

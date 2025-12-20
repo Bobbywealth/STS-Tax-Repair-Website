@@ -6935,8 +6935,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ftpPath = `wp-content/uploads/${ftpPath}`;
         }
         
-        console.log(`[AGENT-PHOTO] Redirecting to: https://ststaxrepair.org/${ftpPath}`);
-        return res.redirect(`https://ststaxrepair.org/${ftpPath}`);
+        console.log(`[AGENT-PHOTO] Redirecting to: https://www.ststaxrepair.net/${ftpPath}`);
+        return res.redirect(`https://www.ststaxrepair.net/${ftpPath}`);
       } else if (imageUrl.startsWith('http')) {
         // External URL - redirect
         return res.redirect(imageUrl);

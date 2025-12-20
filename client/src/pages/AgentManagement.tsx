@@ -334,7 +334,7 @@ export default function AgentManagement() {
                             <AvatarImage 
                               src={agent.imageUrl && (agent.imageUrl.startsWith('/objects/') || agent.imageUrl.startsWith('/ftp/'))
                                 ? `/api/agent-photos/${agent.id}`
-                                : agent.imageUrl || undefined} 
+                                : (agent.imageUrl?.startsWith('http') ? agent.imageUrl : (agent.imageUrl ? `https://${agent.imageUrl}` : undefined))} 
                               alt={agent.name} 
                             />
                             <AvatarFallback>{getInitials(agent.name)}</AvatarFallback>
@@ -571,7 +571,7 @@ export default function AgentManagement() {
                         <AvatarImage 
                           src={formData.imageUrl.startsWith('/objects/') || formData.imageUrl.startsWith('/ftp/') 
                             ? `/api/agent-photos/${editingAgent?.id}?t=${Date.now()}` 
-                            : formData.imageUrl} 
+                            : (formData.imageUrl.startsWith('http') || formData.imageUrl.startsWith('data:') ? formData.imageUrl : (formData.imageUrl ? `https://${formData.imageUrl}` : undefined))} 
                           alt="Preview"
                           data-testid="img-agent-preview"
                           onError={(e) => {

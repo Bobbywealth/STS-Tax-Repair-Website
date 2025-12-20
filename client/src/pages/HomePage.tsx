@@ -407,7 +407,9 @@ export default function HomePage() {
             phone: a.phone,
             email: a.email,
             address: a.address || "",
-            image: hasStoredImage ? `/api/agent-photos/${a.id}` : (a.imageUrl || ""),
+            image: hasStoredImage 
+              ? `/api/agent-photos/${a.id}` 
+              : (a.imageUrl?.startsWith('http') ? a.imageUrl : (a.imageUrl ? `https://${a.imageUrl}` : "")),
           };
         })
         .filter((a): a is NonNullable<typeof a> => Boolean(a));
@@ -1426,9 +1428,9 @@ export default function HomePage() {
             {/* Row 1 - Slides Left */}
             <motion.div 
               className="flex gap-6 mb-6"
-              animate={{ x: [0, -1500] }}
+              animate={{ x: [0, -((agents.length || 1) * 312)] }}
               transition={{ 
-                duration: 30, 
+                duration: (agents.length || 1) * 5, 
                 repeat: Infinity, 
                 repeatType: "loop",
                 ease: "linear"
@@ -1440,11 +1442,14 @@ export default function HomePage() {
                   className="flex-shrink-0 w-72 p-5 bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 group"
                   data-testid={`card-agent-row1-${index}`}
                 >
-                  <div className="w-48 h-56 mx-auto mb-4 rounded-lg overflow-hidden shadow-lg group-hover:scale-105 transition-transform ring-4 ring-sts-primary/20">
+                  <div className="w-48 h-56 mx-auto mb-4 rounded-lg overflow-hidden shadow-lg group-hover:scale-105 transition-transform ring-4 ring-sts-primary/20 bg-gray-100 flex items-center justify-center">
                     <img 
-                      src={agent.image} 
+                      src={agent.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(agent.name)}&background=1a4d2e&color=fff&size=200`} 
                       alt={agent.name}
                       className="w-full h-full object-cover object-top"
+                      onError={(e) => {
+                        e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(agent.name)}&background=1a4d2e&color=fff&size=200`;
+                      }}
                     />
                   </div>
                   
@@ -1486,9 +1491,9 @@ export default function HomePage() {
             {/* Row 2 - Slides Right (opposite direction) */}
             <motion.div 
               className="flex gap-6"
-              animate={{ x: [-1500, 0] }}
+              animate={{ x: [-((agents.length || 1) * 312), 0] }}
               transition={{ 
-                duration: 35, 
+                duration: (agents.length || 1) * 6, 
                 repeat: Infinity, 
                 repeatType: "loop",
                 ease: "linear"
@@ -1500,11 +1505,14 @@ export default function HomePage() {
                   className="flex-shrink-0 w-72 p-5 bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 group"
                   data-testid={`card-agent-row2-${index}`}
                 >
-                  <div className="w-48 h-56 mx-auto mb-4 rounded-lg overflow-hidden shadow-lg group-hover:scale-105 transition-transform ring-4 ring-sts-primary/20">
+                  <div className="w-48 h-56 mx-auto mb-4 rounded-lg overflow-hidden shadow-lg group-hover:scale-105 transition-transform ring-4 ring-sts-primary/20 bg-gray-100 flex items-center justify-center">
                     <img 
-                      src={agent.image} 
+                      src={agent.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(agent.name)}&background=1a4d2e&color=fff&size=200`} 
                       alt={agent.name}
                       className="w-full h-full object-cover object-top"
+                      onError={(e) => {
+                        e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(agent.name)}&background=1a4d2e&color=fff&size=200`;
+                      }}
                     />
                   </div>
                   
