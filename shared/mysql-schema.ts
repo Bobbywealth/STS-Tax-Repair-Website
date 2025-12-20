@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { mysqlTable, text, varchar, timestamp, int, boolean, decimal, json, index } from "drizzle-orm/mysql-core";
+import { mysqlTable, text, varchar, timestamp, int, boolean, decimal, json, index, bigint } from "drizzle-orm/mysql-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -8,8 +8,8 @@ export const sessions = mysqlTable(
   "sessions",
   {
     sid: varchar("sid", { length: 255 }).primaryKey(),
-    sess: json("sess").notNull(),
-    expire: timestamp("expire").notNull(),
+    sess: text("sess").notNull(),
+    expire: bigint("expire", { mode: 'number' }).notNull(),
   },
   (table) => ({
     expireIdx: index("IDX_session_expire").on(table.expire),

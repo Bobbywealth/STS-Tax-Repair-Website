@@ -421,7 +421,7 @@ export async function runMySQLMigrations(): Promise<void> {
 
     // Final catch-all for remaining tables (minimal versions)
     const tablesToCreate: Record<string, string> = {
-      'sessions': `CREATE TABLE IF NOT EXISTS sessions (sid VARCHAR(255) PRIMARY KEY, sess JSON NOT NULL, expire TIMESTAMP NOT NULL, INDEX IDX_session_expire (expire))`,
+      'sessions': `CREATE TABLE IF NOT EXISTS sessions (sid VARCHAR(255) PRIMARY KEY, sess LONGTEXT NOT NULL, expire BIGINT NOT NULL, INDEX IDX_session_expire (expire))`,
       'tax_deadlines': `CREATE TABLE IF NOT EXISTS tax_deadlines (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), title TEXT NOT NULL, description TEXT, deadline_date TIMESTAMP NOT NULL, deadline_type VARCHAR(50) NOT NULL, tax_year INT NOT NULL, is_recurring BOOLEAN DEFAULT FALSE, notify_days_before INT DEFAULT 7, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
       'appointments': `CREATE TABLE IF NOT EXISTS appointments (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), client_id VARCHAR(36) NOT NULL, client_name TEXT NOT NULL, title TEXT NOT NULL, description TEXT, appointment_date TIMESTAMP NOT NULL, duration INT DEFAULT 60, status VARCHAR(50) DEFAULT 'scheduled', location TEXT, staff_id VARCHAR(36), staff_name TEXT, notes TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
       'payments': `CREATE TABLE IF NOT EXISTS payments (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), client_id VARCHAR(36) NOT NULL, client_name TEXT NOT NULL, service_fee DECIMAL(10, 2) NOT NULL, amount_paid DECIMAL(10, 2) DEFAULT 0.00, payment_status VARCHAR(50) DEFAULT 'pending', due_date TIMESTAMP, paid_date TIMESTAMP, payment_method VARCHAR(50), notes TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,

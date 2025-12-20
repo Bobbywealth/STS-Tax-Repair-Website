@@ -33,11 +33,11 @@ export function getSession() {
   const sessionStore = new (MySQLSessionStore as any)({
     createDatabaseTable: true,
     schema: {
-      tableName: 'express_sessions',
+      tableName: 'sessions', // Use unified sessions table
       columnNames: {
-        session_id: 'session_id',
-        expires: 'expires',
-        data: 'data'
+        session_id: 'sid',
+        expires: 'expire',
+        data: 'sess'
       }
     },
     expiration: sessionTtl,
