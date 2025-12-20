@@ -6,11 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "@/components/ui/resizable";
-import {
   Bot,
   FileText,
   Sparkles,
@@ -248,44 +243,39 @@ export default function AIAssistant() {
       </div>
       
       {/* Main content area */}
-      <Card className="overflow-hidden">
-        <ResizablePanelGroup
-          direction="horizontal"
-          className="min-h-[600px]"
-        >
+      <Card className="overflow-hidden border shadow-lg">
+        <div className="flex flex-col md:flex-row min-h-[600px]">
           {/* Document Panel */}
-          <ResizablePanel defaultSize={35} minSize={25} maxSize={50}>
+          <div className="w-full md:w-[350px] border-b md:border-b-0 md:border-r bg-muted/10">
             <DocumentAnalyzer
               documents={documents}
               onDocumentsChange={setDocuments}
               onAnalysisResult={handleAnalysisResult}
               className="h-full border-0 rounded-none shadow-none"
             />
-          </ResizablePanel>
-          
-          <ResizableHandle withHandle />
+          </div>
           
           {/* Chat Panel */}
-          <ResizablePanel defaultSize={65}>
-            <div className="h-full flex flex-col">
-              <div className="px-4 py-3 border-b flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium text-sm">Chat</span>
-                  {messages.length > 0 && (
-                    <Badge variant="secondary" className="text-xs">
-                      {messages.length} messages
-                    </Badge>
-                  )}
-                </div>
-                {documents.filter(d => d.extractedText).length > 0 && (
-                  <Badge variant="outline" className="text-xs gap-1">
-                    <FileText className="h-3 w-3" />
-                    {documents.filter(d => d.extractedText).length} docs in context
+          <div className="flex-1 flex flex-col min-h-[500px]">
+            <div className="px-4 py-3 border-b flex items-center justify-between bg-white">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4 text-emerald-600" />
+                <span className="font-semibold text-sm">AI Tax Assistant Chat</span>
+                {messages.length > 0 && (
+                  <Badge variant="secondary" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-100">
+                    {messages.length} messages
                   </Badge>
                 )}
               </div>
-              
+              {documents.filter(d => d.extractedText).length > 0 && (
+                <Badge variant="outline" className="text-xs gap-1 border-emerald-200 text-emerald-700 bg-emerald-50/50">
+                  <FileText className="h-3 w-3" />
+                  {documents.filter(d => d.extractedText).length} docs in context
+                </Badge>
+              )}
+            </div>
+            
+            <div className="flex-1 overflow-hidden bg-white">
               <AIChatInterface
                 messages={messages}
                 onSendMessage={handleSendMessage}
@@ -294,11 +284,11 @@ export default function AIAssistant() {
                 error={error}
                 documentContext={documents.filter(d => d.extractedText).map(d => d.extractedText!)}
                 placeholder="Ask about tax forms, deductions, or analyze uploaded documents..."
-                className="flex-1"
+                className="h-full"
               />
             </div>
-          </ResizablePanel>
-        </ResizablePanelGroup>
+          </div>
+        </div>
       </Card>
       
       {/* Footer info */}

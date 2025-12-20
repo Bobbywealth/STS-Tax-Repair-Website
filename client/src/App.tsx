@@ -1,9 +1,50 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, lazy, Suspense, Component, ErrorInfo, ReactNode } from "react";
 import { Switch, Route, useLocation, Redirect, Link } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+
+class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: Error | null }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error("Uncaught error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-background p-4">
+          <div className="max-w-md w-full bg-card border border-destructive/50 rounded-lg p-6 shadow-lg text-center">
+            <h2 className="text-2xl font-bold text-destructive mb-4">Something went wrong</h2>
+            <p className="text-muted-foreground mb-6">
+              An unexpected error occurred in the application.
+            </p>
+            <div className="bg-muted p-3 rounded text-left overflow-auto max-h-40 mb-6 font-mono text-xs">
+              {this.state.error?.message}
+            </div>
+            <button 
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+            >
+              Reload Application
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -386,7 +427,6 @@ function AdminLayout() {
           </main>
         </div>
         <MobileNav />
-        <AIChatWidget />
       </div>
     </SidebarProvider>
   );
@@ -418,58 +458,61 @@ function App() {
   }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <NavigationProgress />
-        <OfflineIndicator />
-        <Suspense fallback={<PageLoader />}>
-          {isHomePage ? (
-            <HomePage />
-          ) : isPublicPage ? (
-            <Switch>
-              <Route path="/services" component={ServicesPage} />
-              <Route path="/agents" component={AgentsPage} />
-              <Route path="/pricing" component={PricingPage} />
-              <Route path="/about" component={AboutPage} />
-              <Route path="/contact" component={ContactPage} />
-              <Route path="/faq" component={FAQPage} />
-              <Route path="/book-appointment" component={BookAppointmentPage} />
-              <Route path="/staff-signup" component={StaffSignup} />
-            </Switch>
-          ) : isAdminLoginRoute ? (
-            <Switch>
-              <Route path="/admin-login" component={AdminLogin} />
-              <Route path="/login" component={AdminLogin} />
-            </Switch>
-          ) : isClientRoute ? (
-            <Switch>
-              <Route path="/client-login" component={ClientLogin} />
-              <Route path="/client-portal" component={ClientPortal} />
-            </Switch>
-          ) : isPasswordResetRoute ? (
-            <Switch>
-              <Route path="/forgot-password" component={ForgotPassword} />
-              <Route path="/reset-password" component={ResetPassword} />
-            </Switch>
-          ) : isRedeemRoute ? (
-            <Switch>
-              <Route path="/redeem-invite" component={RedeemInvite} />
-            </Switch>
-          ) : isRegisterRoute ? (
-            <Switch>
-              <Route path="/register" component={Register} />
-            </Switch>
-          ) : isStaffRoute ? (
-            <AdminLayout />
-          ) : (
-            <AdminLayout />
-          )}
-        </Suspense>
-        <PWAInstallPrompt />
-        <UpdateNotification />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <NavigationProgress />
+          <OfflineIndicator />
+          <Suspense fallback={<PageLoader />}>
+            {isHomePage ? (
+              <HomePage />
+            ) : isPublicPage ? (
+              <Switch>
+                <Route path="/services" component={ServicesPage} />
+                <Route path="/agents" component={AgentsPage} />
+                <Route path="/pricing" component={PricingPage} />
+                <Route path="/about" component={AboutPage} />
+                <Route path="/contact" component={ContactPage} />
+                <Route path="/faq" component={FAQPage} />
+                <Route path="/book-appointment" component={BookAppointmentPage} />
+                <Route path="/staff-signup" component={StaffSignup} />
+              </Switch>
+            ) : isAdminLoginRoute ? (
+              <Switch>
+                <Route path="/admin-login" component={AdminLogin} />
+                <Route path="/login" component={AdminLogin} />
+              </Switch>
+            ) : isClientRoute ? (
+              <Switch>
+                <Route path="/client-login" component={ClientLogin} />
+                <Route path="/client-portal" component={ClientPortal} />
+              </Switch>
+            ) : isPasswordResetRoute ? (
+              <Switch>
+                <Route path="/forgot-password" component={ForgotPassword} />
+                <Route path="/reset-password" component={ResetPassword} />
+              </Switch>
+            ) : isRedeemRoute ? (
+              <Switch>
+                <Route path="/redeem-invite" component={RedeemInvite} />
+              </Switch>
+            ) : isRegisterRoute ? (
+              <Switch>
+                <Route path="/register" component={Register} />
+              </Switch>
+            ) : isStaffRoute ? (
+              <AdminLayout />
+            ) : (
+              <AdminLayout />
+            )}
+          </Suspense>
+          <PWAInstallPrompt />
+          <UpdateNotification />
+          <AIChatWidget />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

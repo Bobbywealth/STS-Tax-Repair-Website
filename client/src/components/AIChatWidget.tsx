@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { AIChatInterface, type Message } from "./AIChatInterface";
 import { apiRequest } from "@/lib/queryClient";
 import { Link } from "wouter";
+import { usePermissions, PERMISSIONS } from "@/hooks/usePermissions";
 
 interface AIStatus {
   configured: boolean;
@@ -28,10 +29,12 @@ export function AIChatWidget({ className }: AIChatWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const { hasPermission, isLoading: permissionsLoading } = usePermissions();
   
   // Check if AI is configured
   const { data: aiStatus } = useQuery<AIStatus>({
     queryKey: ['/api/ai/status'],
+    enabled: hasPermission(PERMISSIONS.AI_ASSISTANT_ACCESS),
     retry: false,
     staleTime: 5 * 60 * 1000,
   });
@@ -87,21 +90,25 @@ export function AIChatWidget({ className }: AIChatWidgetProps) {
   
   const isConfigured = aiStatus?.configured ?? false;
   
+  if (permissionsLoading || !hasPermission(PERMISSIONS.AI_ASSISTANT_ACCESS)) {
+    return null;
+  }
+
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
         <Button
           size="lg"
           className={cn(
-            "fixed bottom-20 md:bottom-6 right-4 md:right-6 z-50 h-14 w-14 rounded-full shadow-lg",
+            "fixed bottom-24 md:bottom-8 right-6 md:right-8 z-[9999] h-16 w-16 rounded-full shadow-2xl",
             "bg-gradient-to-br from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700",
-            "transition-all duration-300 hover:scale-110",
-            "animate-in fade-in slide-in-from-bottom-4",
+            "transition-all duration-300 hover:scale-110 active:scale-95 border-4 border-white/20",
+            "animate-in fade-in slide-in-from-bottom-8",
             className
           )}
           title="AI Tax Assistant"
         >
-          <Bot className="h-6 w-6 text-white" />
+          <Bot className="h-8 w-8 text-white drop-shadow-sm" />
           {messages.length > 0 && (
             <Badge
               variant="destructive"
