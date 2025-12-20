@@ -7,10 +7,20 @@ import type { AiDocumentAnalysis, AiAnalysisType } from '@shared/mysql-schema';
 import { eq, and } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Initialize OpenAI client lazily
+let openai: OpenAI | null = null;
+function getOpenAIClient() {
+  if (openai) return openai;
+  
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY is not configured. Please add it to your environment variables.');
+  }
+  
+  openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+  return openai;
+}
 
 // Default model to use
 const DEFAULT_MODEL = process.env.OPENAI_MODEL || 'gpt-4-turbo-preview';
@@ -145,7 +155,8 @@ ${extractedText}`;
   }
   
   try {
-    const completion = await openai.chat.completions.create({
+    const client = getOpenAIClient();
+    const completion = await client.chat.completions.create({
       model: DEFAULT_MODEL,
       messages: [
         { role: 'system', content: TAX_ASSISTANT_SYSTEM_PROMPT },
@@ -265,7 +276,8 @@ ${message}`;
   messages.push({ role: 'user', content: userMessage });
   
   try {
-    const completion = await openai.chat.completions.create({
+    const client = getOpenAIClient();
+    const completion = await client.chat.completions.create({
       model: DEFAULT_MODEL,
       messages,
       temperature: 0.7,
@@ -311,7 +323,8 @@ ${question}`;
   messages.push({ role: 'user', content: userMessage });
   
   try {
-    const completion = await openai.chat.completions.create({
+    const client = getOpenAIClient();
+    const completion = await client.chat.completions.create({
       model: DEFAULT_MODEL,
       messages,
       temperature: 0.7,
@@ -340,9 +353,10 @@ ${documentTexts.map((text, i) => `--- Document ${i + 1} ---\n${text}\n`).join('\
 
 Documents:
 ${documentTexts.map((text, i) => `--- Document ${i + 1} ---\n${text}\n`).join('\n')}`;
-
+  
   try {
-    const completion = await openai.chat.completions.create({
+    const client = getOpenAIClient();
+    const completion = await client.chat.completions.create({
       model: DEFAULT_MODEL,
       messages: [
         { role: 'system', content: TAX_ASSISTANT_SYSTEM_PROMPT },
