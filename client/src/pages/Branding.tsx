@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Palette, Upload, RotateCcw, Eye, Loader2, Check, AlertCircle, Building2 } from "lucide-react";
+import { Palette, Upload, RotateCcw, Eye, Loader2, Check, AlertCircle, Building2, Copy, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 
@@ -41,6 +41,8 @@ export default function Branding() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [selectedOfficeId, setSelectedOfficeId] = useState<string | undefined>(undefined);
   
   const { data: user, isLoading: userLoading } = useQuery<User | null>({
@@ -159,6 +161,7 @@ export default function Branding() {
       return;
     }
     
+    setSelectedFile(file);
     const reader = new FileReader();
     reader.onload = (event) => {
       setLogoPreview(event.target?.result as string);
@@ -168,14 +171,69 @@ export default function Branding() {
     toast({ title: 'Logo selected', description: 'Click Save Changes to upload the logo.' });
   };
   
-  const handleSubmit = () => {
-    const dataToSave = { ...formData };
-    
-    if (logoPreview && logoPreview.startsWith('data:')) {
-      dataToSave.logoUrl = logoPreview;
+  const handleSubmit = async () => {
+    setIsUploading(true);
+    try {
+      let finalLogoUrl = formData.logoUrl;
+
+      // Handle file upload if a new file was selected
+      if (selectedFile) {
+        // 1. Get signed upload URL
+        const uploadUrlRes = await apiRequest('POST', `/api/offices/${officeId}/logo-upload`, {
+          fileName: selectedFile.name
+        });
+        const { uploadURL, objectPath } = await uploadUrlRes.json();
+
+        // 2. Upload to storage
+        const uploadRes = await fetch(uploadURL, {
+          method: 'PUT',
+          body: selectedFile,
+          headers: { 'Content-Type': selectedFile.type }
+        });
+
+        if (!uploadRes.ok) throw new Error('Failed to upload logo to storage');
+
+        // 3. Confirm upload
+        const confirmRes = await apiRequest('POST', `/api/offices/${officeId}/logo-confirm`, {
+          objectPath
+        });
+        
+        if (!confirmRes.ok) throw new Error('Failed to confirm logo upload');
+        
+        // After confirmation, the branding is already updated with the new logoUrl
+        // but we still need to save other form data if any.
+      }
+
+      // Save other branding settings (colors, name, slug)
+      const dataToSave = { ...formData };
+      delete dataToSave.logoUrl; // Remove logoUrl as it's handled separately
+
+      if (Object.keys(dataToSave).length > 0) {
+        await saveBrandingMutation.mutateAsync(dataToSave);
+      } else if (selectedFile) {
+        // If only logo was uploaded, we still need to refresh
+        toast({ title: 'Logo updated', description: 'Your company logo has been saved.' });
+        queryClient.invalidateQueries({ queryKey: ['/api/offices', officeId, 'branding'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/branding'] });
+        setSelectedFile(null);
+        refetch();
+      }
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsUploading(false);
     }
-    
-    saveBrandingMutation.mutate(dataToSave);
+  };
+
+  const copyLoginLink = () => {
+    const slug = formData.officeSlug || branding?.officeSlug;
+    if (!slug) {
+      toast({ title: 'No slug set', description: 'Please set a subdomain slug first.', variant: 'destructive' });
+      return;
+    }
+    const url = `https://${slug}.ststaxrepair.org`;
+    navigator.clipboard.writeText(url);
+    toast({ title: 'Link copied', description: 'Custom login URL copied to clipboard.' });
   };
   
   const handleReset = () => {
@@ -325,11 +383,21 @@ export default function Branding() {
                   onChange={(e) => updateFormData('officeSlug' as any, e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
                   data-testid="input-slug"
                 />
-                <span className="text-sm text-muted-foreground">.ststaxrepair.org</span>
+                <span className="text-sm text-muted-foreground font-medium">.ststaxrepair.org</span>
               </div>
               <p className="text-xs text-muted-foreground">
-                Your custom login URL will be: https://[slug].ststaxrepair.org
+                Your custom login URL will be: <span className="text-primary font-mono select-all">https://{displayValue('officeSlug') || '[slug]'}.ststaxrepair.org</span>
               </p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full mt-2" 
+                onClick={copyLoginLink}
+                disabled={!displayValue('officeSlug')}
+              >
+                <Copy className="h-3 w-3 mr-2" />
+                Copy Login Link
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -497,6 +565,7 @@ export default function Branding() {
           onClick={() => {
             setFormData({});
             setLogoPreview(null);
+            setSelectedFile(null);
           }}
           data-testid="button-cancel-branding"
         >
@@ -505,10 +574,10 @@ export default function Branding() {
         
         <Button
           onClick={handleSubmit}
-          disabled={saveBrandingMutation.isPending}
+          disabled={saveBrandingMutation.isPending || isUploading}
           data-testid="button-save-branding"
         >
-          {saveBrandingMutation.isPending ? (
+          {saveBrandingMutation.isPending || isUploading ? (
             <Loader2 className="h-4 w-4 animate-spin mr-2" />
           ) : (
             <Check className="h-4 w-4 mr-2" />

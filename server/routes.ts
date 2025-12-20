@@ -5509,11 +5509,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Return office branding merged with defaults
-      res.json({
+      const responseBranding = {
         ...DEFAULT_BRANDING,
         ...(branding || {}),
         isCustom: !!branding
-      });
+      };
+
+      // Transform logoUrl to a proxy endpoint if it's an internal path
+      if (responseBranding.logoUrl && responseBranding.logoUrl.startsWith('/objects/') && responseBranding.officeId) {
+        responseBranding.logoUrl = `/api/offices/${responseBranding.officeId}/logo`;
+      }
+
+      res.json(responseBranding);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
@@ -5535,13 +5542,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const branding = await storage.getOfficeBranding(id);
       const office = await storage.getOffice(id);
       
-      res.json({
+      const responseBranding = {
         ...DEFAULT_BRANDING,
         ...(branding || {}),
         officeName: office?.name,
         officeSlug: office?.slug,
         isCustom: !!branding
-      });
+      };
+
+      // Transform logoUrl to a proxy endpoint if it's an internal path
+      if (responseBranding.logoUrl && responseBranding.logoUrl.startsWith('/objects/')) {
+        responseBranding.logoUrl = `/api/offices/${id}/logo`;
+      }
+      
+      res.json(responseBranding);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }

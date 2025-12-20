@@ -723,6 +723,364 @@ export async function runMySQLMigrations(): Promise<void> {
       await seedDefaultHomePageAgents(connection);
     }
     
+    // Create agent_client_assignments table
+    const [agentAssignmentsTable] = await connection.query(
+      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'agent_client_assignments'`,
+      [dbName]
+    );
+    
+    if (Array.isArray(agentAssignmentsTable) && agentAssignmentsTable.length === 0) {
+      console.log('Creating agent_client_assignments table...');
+      await connection.query(`
+        CREATE TABLE agent_client_assignments (
+          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+          agent_id VARCHAR(36) NOT NULL,
+          client_id VARCHAR(36) NOT NULL,
+          assigned_by VARCHAR(36),
+          assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          is_active BOOLEAN DEFAULT TRUE,
+          INDEX idx_agent_assignments_agent (agent_id),
+          INDEX idx_agent_assignments_client (client_id)
+        )
+      `);
+      console.log('agent_client_assignments table created successfully!');
+    }
+
+    // Create ticket_messages table
+    const [ticketMessagesTableResult] = await connection.query(
+      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'ticket_messages'`,
+      [dbName]
+    );
+    
+    if (Array.isArray(ticketMessagesTableResult) && ticketMessagesTableResult.length === 0) {
+      console.log('Creating ticket_messages table...');
+      await connection.query(`
+        CREATE TABLE ticket_messages (
+          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+          ticket_id VARCHAR(36) NOT NULL,
+          sender_id VARCHAR(36) NOT NULL,
+          sender_name TEXT,
+          message TEXT NOT NULL,
+          attachments JSON,
+          is_internal BOOLEAN DEFAULT FALSE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_ticket_messages_ticket (ticket_id),
+          INDEX idx_ticket_messages_internal (is_internal)
+        )
+      `);
+      console.log('ticket_messages table created successfully!');
+    }
+
+    // Create tax_deadlines table
+    const [taxDeadlinesTable] = await connection.query(
+      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'tax_deadlines'`,
+      [dbName]
+    );
+    if (Array.isArray(taxDeadlinesTable) && taxDeadlinesTable.length === 0) {
+      console.log('Creating tax_deadlines table...');
+      await connection.query(`
+        CREATE TABLE tax_deadlines (
+          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+          title TEXT NOT NULL,
+          description TEXT,
+          deadline_date TIMESTAMP NOT NULL,
+          deadline_type VARCHAR(50) NOT NULL,
+          tax_year INT NOT NULL,
+          is_recurring BOOLEAN DEFAULT FALSE,
+          notify_days_before INT DEFAULT 7,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      console.log('tax_deadlines table created successfully!');
+    }
+
+    // Create appointments table
+    const [appointmentsTable] = await connection.query(
+      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'appointments'`,
+      [dbName]
+    );
+    if (Array.isArray(appointmentsTable) && appointmentsTable.length === 0) {
+      console.log('Creating appointments table...');
+      await connection.query(`
+        CREATE TABLE appointments (
+          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+          client_id VARCHAR(36) NOT NULL,
+          client_name TEXT NOT NULL,
+          title TEXT NOT NULL,
+          description TEXT,
+          appointment_date TIMESTAMP NOT NULL,
+          duration INT DEFAULT 60,
+          status VARCHAR(50) DEFAULT 'scheduled',
+          location TEXT,
+          staff_id VARCHAR(36),
+          staff_name TEXT,
+          notes TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      console.log('appointments table created successfully!');
+    }
+
+    // Create payments table
+    const [paymentsTable] = await connection.query(
+      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'payments'`,
+      [dbName]
+    );
+    if (Array.isArray(paymentsTable) && paymentsTable.length === 0) {
+      console.log('Creating payments table...');
+      await connection.query(`
+        CREATE TABLE payments (
+          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+          client_id VARCHAR(36) NOT NULL,
+          client_name TEXT NOT NULL,
+          service_fee DECIMAL(10, 2) NOT NULL,
+          amount_paid DECIMAL(10, 2) DEFAULT 0.00,
+          payment_status VARCHAR(50) DEFAULT 'pending',
+          due_date TIMESTAMP,
+          paid_date TIMESTAMP,
+          payment_method VARCHAR(50),
+          notes TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      console.log('payments table created successfully!');
+    }
+
+    // Create document_versions table
+    const [documentVersionsTable] = await connection.query(
+      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'document_versions'`,
+      [dbName]
+    );
+    if (Array.isArray(documentVersionsTable) && documentVersionsTable.length === 0) {
+      console.log('Creating document_versions table...');
+      await connection.query(`
+        CREATE TABLE document_versions (
+          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+          client_id VARCHAR(36) NOT NULL,
+          document_name TEXT NOT NULL,
+          document_type VARCHAR(50) NOT NULL,
+          file_url TEXT NOT NULL,
+          version INT DEFAULT 1,
+          uploaded_by TEXT NOT NULL,
+          file_size INT,
+          mime_type VARCHAR(100),
+          notes TEXT,
+          uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      console.log('document_versions table created successfully!');
+    }
+
+    // Create e_signatures table
+    const [eSignaturesTable] = await connection.query(
+      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'e_signatures'`,
+      [dbName]
+    );
+    if (Array.isArray(eSignaturesTable) && eSignaturesTable.length === 0) {
+      console.log('Creating e_signatures table...');
+      await connection.query(`
+        CREATE TABLE e_signatures (
+          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+          client_id VARCHAR(36) NOT NULL,
+          client_name TEXT NOT NULL,
+          document_name TEXT NOT NULL,
+          document_type VARCHAR(50) DEFAULT 'form_8879',
+          signature_data TEXT,
+          form_data JSON,
+          ip_address VARCHAR(45),
+          user_agent TEXT,
+          signed_at TIMESTAMP,
+          status VARCHAR(50) DEFAULT 'pending',
+          document_url TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      console.log('e_signatures table created successfully!');
+    }
+
+    // Create email_logs table
+    const [emailLogsTable] = await connection.query(
+      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'email_logs'`,
+      [dbName]
+    );
+    if (Array.isArray(emailLogsTable) && emailLogsTable.length === 0) {
+      console.log('Creating email_logs table...');
+      await connection.query(`
+        CREATE TABLE email_logs (
+          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+          client_id VARCHAR(36),
+          to_email VARCHAR(255) NOT NULL,
+          from_email VARCHAR(255) NOT NULL,
+          subject TEXT NOT NULL,
+          body TEXT NOT NULL,
+          email_type VARCHAR(50),
+          status VARCHAR(50) DEFAULT 'sent',
+          sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      console.log('email_logs table created successfully!');
+    }
+
+    // Create document_request_templates table
+    const [templatesTable] = await connection.query(
+      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'document_request_templates'`,
+      [dbName]
+    );
+    if (Array.isArray(templatesTable) && templatesTable.length === 0) {
+      console.log('Creating document_request_templates table...');
+      await connection.query(`
+        CREATE TABLE document_request_templates (
+          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+          name TEXT NOT NULL,
+          subject TEXT NOT NULL,
+          body TEXT NOT NULL,
+          document_types JSON,
+          is_active BOOLEAN DEFAULT TRUE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      console.log('document_request_templates table created successfully!');
+    }
+
+    // Create sessions table
+    const [sessionsTable] = await connection.query(
+      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'sessions'`,
+      [dbName]
+    );
+    if (Array.isArray(sessionsTable) && sessionsTable.length === 0) {
+      console.log('Creating sessions table...');
+      await connection.query(`
+        CREATE TABLE sessions (
+          sid VARCHAR(255) PRIMARY KEY,
+          sess JSON NOT NULL,
+          expire TIMESTAMP NOT NULL,
+          INDEX IDX_session_expire (expire)
+        )
+      `);
+      console.log('sessions table created successfully!');
+    }
+
+    // Create email_verification_tokens table
+    const [emailVerificationTable] = await connection.query(
+      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'email_verification_tokens'`,
+      [dbName]
+    );
+    if (Array.isArray(emailVerificationTable) && emailVerificationTable.length === 0) {
+      console.log('Creating email_verification_tokens table...');
+      await connection.query(`
+        CREATE TABLE email_verification_tokens (
+          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+          user_id VARCHAR(36) NOT NULL,
+          token VARCHAR(64) NOT NULL UNIQUE,
+          expires_at TIMESTAMP NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_email_verification_user (user_id),
+          INDEX idx_email_verification_token (token)
+        )
+      `);
+      console.log('email_verification_tokens table created successfully!');
+    }
+
+    // Create notification_preferences table
+    const [notifPrefsTable] = await connection.query(
+      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'notification_preferences'`,
+      [dbName]
+    );
+    if (Array.isArray(notifPrefsTable) && notifPrefsTable.length === 0) {
+      console.log('Creating notification_preferences table...');
+      await connection.query(`
+        CREATE TABLE notification_preferences (
+          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+          user_id VARCHAR(36) NOT NULL UNIQUE,
+          email_enabled BOOLEAN DEFAULT TRUE,
+          in_app_enabled BOOLEAN DEFAULT TRUE,
+          sms_enabled BOOLEAN DEFAULT FALSE,
+          marketing_emails BOOLEAN DEFAULT FALSE,
+          security_alerts BOOLEAN DEFAULT TRUE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_notif_prefs_user (user_id)
+        )
+      `);
+      console.log('notification_preferences table created successfully!');
+    }
+
+    // Create AI-related tables
+    const [aiSessionsTable] = await connection.query(
+      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'ai_chat_sessions'`,
+      [dbName]
+    );
+    if (Array.isArray(aiSessionsTable) && aiSessionsTable.length === 0) {
+      console.log('Creating ai_chat_sessions table...');
+      await connection.query(`
+        CREATE TABLE ai_chat_sessions (
+          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+          user_id VARCHAR(36) NOT NULL,
+          title TEXT,
+          context_type VARCHAR(50),
+          context_id VARCHAR(36),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_ai_sessions_user (user_id)
+        )
+      `);
+      console.log('ai_chat_sessions table created successfully!');
+    }
+
+    const [aiMessagesTable] = await connection.query(
+      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'ai_chat_messages'`,
+      [dbName]
+    );
+    if (Array.isArray(aiMessagesTable) && aiMessagesTable.length === 0) {
+      console.log('Creating ai_chat_messages table...');
+      await connection.query(`
+        CREATE TABLE ai_chat_messages (
+          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+          session_id VARCHAR(36) NOT NULL,
+          role ENUM('user', 'assistant', 'system') NOT NULL,
+          content TEXT NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_ai_messages_session (session_id)
+        )
+      `);
+      console.log('ai_chat_messages table created successfully!');
+    }
+
+    const [aiAnalysisTable] = await connection.query(
+      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'ai_document_analysis'`,
+      [dbName]
+    );
+    if (Array.isArray(aiAnalysisTable) && aiAnalysisTable.length === 0) {
+      console.log('Creating ai_document_analysis table...');
+      await connection.query(`
+        CREATE TABLE ai_document_analysis (
+          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+          document_id VARCHAR(36) NOT NULL,
+          analysis_type VARCHAR(50) NOT NULL,
+          results JSON NOT NULL,
+          confidence DECIMAL(4,3),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_ai_analysis_document (document_id)
+        )
+      `);
+      console.log('ai_document_analysis table created successfully!');
+    }
+
     connection.release();
   } catch (error) {
     console.error('MySQL migration error:', error);
