@@ -1,6 +1,6 @@
 import mysql from 'mysql2/promise';
 import { drizzle } from 'drizzle-orm/mysql2';
-import * as schema from "@shared/schema";
+import * as schema from "@shared/mysql-schema";
 
 const requiredEnvVars = ['MYSQL_HOST', 'MYSQL_DATABASE', 'MYSQL_USER', 'MYSQL_PASSWORD'];
 const missingVars = requiredEnvVars.filter(v => !process.env[v]);
@@ -40,1216 +40,475 @@ export async function testMySQLConnection(): Promise<boolean> {
 }
 
 export async function runMySQLMigrations(): Promise<void> {
+  let connection;
   try {
-    const connection = await poolConnection.getConnection();
+    console.log('Starting MySQL migrations...');
+    connection = await poolConnection.getConnection();
     const dbName = process.env.MYSQL_DATABASE;
-    
-    // Check if form_data column exists in e_signatures table
-    const [columns] = await connection.query(
-      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'e_signatures' AND COLUMN_NAME = 'form_data'`,
-      [dbName]
-    );
-    
-    if (Array.isArray(columns) && columns.length === 0) {
-      console.log('Adding form_data column to e_signatures table...');
-      await connection.query(`ALTER TABLE e_signatures ADD COLUMN form_data JSON NULL`);
-      console.log('form_data column added successfully!');
-    }
-    
-    // Add role and is_active columns to users table
-    const [roleColumn] = await connection.query(
-      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'role'`,
-      [dbName]
-    );
-    
-    if (Array.isArray(roleColumn) && roleColumn.length === 0) {
-      console.log('Adding role column to users table...');
-      await connection.query(`ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'client'`);
-      console.log('role column added successfully!');
-    }
-    
-    const [isActiveColumn] = await connection.query(
-      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'is_active'`,
-      [dbName]
-    );
-    
-    if (Array.isArray(isActiveColumn) && isActiveColumn.length === 0) {
-      console.log('Adding is_active column to users table...');
-      await connection.query(`ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT TRUE`);
-      console.log('is_active column added successfully!');
-    }
-    
-    const [lastLoginColumn] = await connection.query(
-      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'last_login_at'`,
-      [dbName]
-    );
-    
-    if (Array.isArray(lastLoginColumn) && lastLoginColumn.length === 0) {
-      console.log('Adding last_login_at column to users table...');
-      await connection.query(`ALTER TABLE users ADD COLUMN last_login_at TIMESTAMP NULL`);
-      console.log('last_login_at column added successfully!');
-    }
-    
-    const [passwordHashColumn] = await connection.query(
-      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'password_hash'`,
-      [dbName]
-    );
-    
-    if (Array.isArray(passwordHashColumn) && passwordHashColumn.length === 0) {
-      console.log('Adding password_hash column to users table...');
-      await connection.query(`ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) NULL`);
-      console.log('password_hash column added successfully!');
-    }
-    
-    // Create role_audit_log table
-    const [roleAuditTable] = await connection.query(
-      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'role_audit_log'`,
-      [dbName]
-    );
-    
-    if (Array.isArray(roleAuditTable) && roleAuditTable.length === 0) {
-      console.log('Creating role_audit_log table...');
-      await connection.query(`
-        CREATE TABLE role_audit_log (
-          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-          user_id VARCHAR(36) NOT NULL,
-          user_name TEXT,
-          previous_role VARCHAR(20),
-          new_role VARCHAR(20) NOT NULL,
-          changed_by_id VARCHAR(36) NOT NULL,
-          changed_by_name TEXT,
-          reason TEXT,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
-      console.log('role_audit_log table created successfully!');
-    }
-    
-    // Create staff_invites table
-    const [staffInvitesTable] = await connection.query(
-      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'staff_invites'`,
-      [dbName]
-    );
-    
-    if (Array.isArray(staffInvitesTable) && staffInvitesTable.length === 0) {
-      console.log('Creating staff_invites table...');
-      await connection.query(`
-        CREATE TABLE staff_invites (
-          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-          email VARCHAR(255) NOT NULL,
-          role VARCHAR(20) NOT NULL,
-          invite_code VARCHAR(64) NOT NULL UNIQUE,
-          invited_by_id VARCHAR(36) NOT NULL,
-          invited_by_name TEXT,
-          expires_at TIMESTAMP NOT NULL,
-          used_at TIMESTAMP NULL,
-          used_by_id VARCHAR(36),
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
-      console.log('staff_invites table created successfully!');
-    }
-    
-    // Create permissions table
-    const [permissionsTable] = await connection.query(
-      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'permissions'`,
-      [dbName]
-    );
-    
-    if (Array.isArray(permissionsTable) && permissionsTable.length === 0) {
-      console.log('Creating permissions table...');
-      await connection.query(`
-        CREATE TABLE permissions (
-          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-          slug VARCHAR(100) NOT NULL UNIQUE,
-          label VARCHAR(255) NOT NULL,
-          description TEXT,
-          feature_group VARCHAR(100) NOT NULL,
-          sort_order INT DEFAULT 0,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          INDEX idx_permissions_group (feature_group),
-          INDEX idx_permissions_slug (slug)
-        )
-      `);
-      console.log('permissions table created successfully!');
-      
-      // Seed default permissions
-      await seedDefaultPermissions(connection);
-    }
-    
-    // Create role_permissions table
-    const [rolePermissionsTable] = await connection.query(
-      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'role_permissions'`,
-      [dbName]
-    );
-    
-    if (Array.isArray(rolePermissionsTable) && rolePermissionsTable.length === 0) {
-      console.log('Creating role_permissions table...');
-      await connection.query(`
-        CREATE TABLE role_permissions (
-          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-          role VARCHAR(20) NOT NULL,
-          permission_id VARCHAR(36) NOT NULL,
-          granted BOOLEAN DEFAULT TRUE,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          INDEX idx_role_permissions_role (role),
-          INDEX idx_role_permissions_permission (permission_id),
-          UNIQUE KEY unique_role_permission (role, permission_id)
-        )
-      `);
-      console.log('role_permissions table created successfully!');
-      
-      // Seed default role permissions
-      await seedDefaultRolePermissions(connection);
-    }
-    
-    // Create tax_filings table for per-year tax filing tracking
-    const [taxFilingsTable] = await connection.query(
-      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'tax_filings'`,
-      [dbName]
-    );
-    
-    if (Array.isArray(taxFilingsTable) && taxFilingsTable.length === 0) {
-      console.log('Creating tax_filings table...');
-      await connection.query(`
-        CREATE TABLE tax_filings (
-          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-          client_id VARCHAR(36) NOT NULL,
-          tax_year INT NOT NULL,
-          status ENUM('new', 'documents_pending', 'review', 'filed', 'accepted', 'approved', 'paid') DEFAULT 'new',
-          documents_received_at TIMESTAMP NULL,
-          submitted_at TIMESTAMP NULL,
-          accepted_at TIMESTAMP NULL,
-          approved_at TIMESTAMP NULL,
-          funded_at TIMESTAMP NULL,
-          estimated_refund DECIMAL(12,2) NULL,
-          actual_refund DECIMAL(12,2) NULL,
-          service_fee DECIMAL(12,2) NULL,
-          fee_paid BOOLEAN DEFAULT FALSE,
-          preparer_id VARCHAR(36) NULL,
-          preparer_name VARCHAR(255) NULL,
-          office_location VARCHAR(255) NULL,
-          filing_type ENUM('individual', 'joint', 'business') DEFAULT 'individual',
-          federal_status VARCHAR(50) NULL,
-          state_status VARCHAR(50) NULL,
-          states_filed TEXT NULL,
-          notes TEXT NULL,
-          status_history JSON NULL,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          INDEX idx_tax_filings_client (client_id),
-          INDEX idx_tax_filings_year (tax_year),
-          INDEX idx_tax_filings_status (status),
-          UNIQUE KEY unique_client_year (client_id, tax_year)
-        )
-      `);
-      console.log('tax_filings table created successfully!');
-    }
-    
-    // Create tasks table
-    const [tasksTable] = await connection.query(
-      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'tasks'`,
-      [dbName]
-    );
-    
-    if (Array.isArray(tasksTable) && tasksTable.length === 0) {
-      console.log('Creating tasks table...');
-      await connection.query(`
-        CREATE TABLE tasks (
-          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-          title TEXT NOT NULL,
-          description TEXT,
-          client_id VARCHAR(36),
-          client_name TEXT,
-          assigned_to_id VARCHAR(36),
-          assigned_to TEXT NOT NULL,
-          due_date TIMESTAMP NULL,
-          priority VARCHAR(20) DEFAULT 'medium',
-          status VARCHAR(20) DEFAULT 'todo',
-          category VARCHAR(50),
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          INDEX idx_tasks_assigned (assigned_to_id),
-          INDEX idx_tasks_status (status),
-          INDEX idx_tasks_client (client_id)
-        )
-      `);
-      console.log('tasks table created successfully!');
-    }
 
-    // Create tickets table for support ticketing
-    const [ticketsTable] = await connection.query(
-      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'tickets'`,
-      [dbName]
-    );
-    
-    if (Array.isArray(ticketsTable) && ticketsTable.length === 0) {
-      console.log('Creating tickets table...');
-      await connection.query(`
-        CREATE TABLE tickets (
-          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-          client_id VARCHAR(36),
-          client_name TEXT,
-          subject TEXT NOT NULL,
-          description TEXT,
-          category VARCHAR(50) DEFAULT 'general',
-          priority VARCHAR(20) DEFAULT 'medium',
-          status VARCHAR(20) DEFAULT 'open',
-          assigned_to_id VARCHAR(36),
-          assigned_to TEXT,
-          resolved_at TIMESTAMP NULL,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          INDEX idx_tickets_client (client_id),
-          INDEX idx_tickets_status (status),
-          INDEX idx_tickets_assigned (assigned_to_id)
-        )
-      `);
-      console.log('tickets table created successfully!');
-    }
-
-    // Create knowledge_base table
-    const [knowledgeTable] = await connection.query(
-      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'knowledge_base'`,
-      [dbName]
-    );
-    
-    if (Array.isArray(knowledgeTable) && knowledgeTable.length === 0) {
-      console.log('Creating knowledge_base table...');
-      await connection.query(`
-        CREATE TABLE knowledge_base (
-          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-          title TEXT NOT NULL,
-          content TEXT NOT NULL,
-          category VARCHAR(100),
-          tags TEXT,
-          author_id VARCHAR(36),
-          author_name TEXT,
-          is_published BOOLEAN DEFAULT TRUE,
-          view_count INT DEFAULT 0,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          INDEX idx_knowledge_category (category),
-          INDEX idx_knowledge_published (is_published)
-        )
-      `);
-      console.log('knowledge_base table created successfully!');
-    }
-
-    // Create staff_members table
-    const [staffMembersTable] = await connection.query(
-      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'staff_members'`,
-      [dbName]
-    );
-    
-    if (Array.isArray(staffMembersTable) && staffMembersTable.length === 0) {
-      console.log('Creating staff_members table...');
-      await connection.query(`
-        CREATE TABLE staff_members (
-          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-          user_id VARCHAR(36),
-          name TEXT NOT NULL,
-          email VARCHAR(255),
-          role VARCHAR(100) DEFAULT 'Tax Preparer',
-          department VARCHAR(100),
-          is_active BOOLEAN DEFAULT TRUE,
-          hire_date TIMESTAMP NULL,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          INDEX idx_staff_user (user_id),
-          INDEX idx_staff_active (is_active)
-        )
-      `);
-      console.log('staff_members table created successfully!');
-    }
-
-    // Create leads table
-    const [leadsTable] = await connection.query(
-      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'leads'`,
-      [dbName]
-    );
-    
-    if (Array.isArray(leadsTable) && leadsTable.length === 0) {
-      console.log('Creating leads table...');
-      await connection.query(`
-        CREATE TABLE leads (
-          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-          name VARCHAR(255) NOT NULL,
-          email VARCHAR(255),
-          phone VARCHAR(30),
-          company VARCHAR(255),
-          address TEXT,
-          city VARCHAR(100),
-          state VARCHAR(100),
-          zip_code VARCHAR(20),
-          country VARCHAR(100) DEFAULT 'United States',
-          source VARCHAR(100),
-          status ENUM('new', 'contacted', 'qualified', 'proposal', 'negotiation', 'converted', 'lost') DEFAULT 'new',
-          notes TEXT,
-          assigned_to_id VARCHAR(36),
-          assigned_to_name VARCHAR(255),
-          estimated_value DECIMAL(10,2),
-          last_contact_date TIMESTAMP NULL,
-          next_follow_up_date TIMESTAMP NULL,
-          converted_to_client_id VARCHAR(36),
-          converted_at TIMESTAMP NULL,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          INDEX idx_leads_status (status),
-          INDEX idx_leads_assigned (assigned_to_id),
-          INDEX idx_leads_email (email)
-        )
-      `);
-      console.log('leads table created successfully!');
-    }
-
-    // Create password_reset_tokens table
-    const [passwordResetTable] = await connection.query(
-      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'password_reset_tokens'`,
-      [dbName]
-    );
-    
-    if (Array.isArray(passwordResetTable) && passwordResetTable.length === 0) {
-      console.log('Creating password_reset_tokens table...');
-      await connection.query(`
-        CREATE TABLE password_reset_tokens (
-          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-          user_id VARCHAR(36) NOT NULL,
-          token VARCHAR(64) NOT NULL UNIQUE,
-          expires_at TIMESTAMP NOT NULL,
-          used_at TIMESTAMP NULL,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          INDEX idx_password_reset_user (user_id),
-          INDEX idx_password_reset_token (token),
-          INDEX idx_password_reset_expires (expires_at)
-        )
-      `);
-      console.log('password_reset_tokens table created successfully!');
-    }
-    
-    // Create offices table for Tax Office tenant isolation
-    const [officesTable] = await connection.query(
-      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'offices'`,
-      [dbName]
-    );
-    
-    if (Array.isArray(officesTable) && officesTable.length === 0) {
-      console.log('Creating offices table...');
-      await connection.query(`
-        CREATE TABLE offices (
-          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-          name VARCHAR(255) NOT NULL,
-          slug VARCHAR(100) UNIQUE,
-          address TEXT,
-          city VARCHAR(100),
-          state VARCHAR(100),
-          zip_code VARCHAR(20),
-          phone VARCHAR(20),
-          email VARCHAR(255),
-          is_active BOOLEAN DEFAULT TRUE,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          INDEX idx_offices_slug (slug),
-          INDEX idx_offices_active (is_active)
-        )
-      `);
-      console.log('offices table created successfully!');
-    } else {
-      // Add slug column to offices table if missing (for existing installations)
-      const [officeSlugColumn] = await connection.query(
-        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
-         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'offices' AND COLUMN_NAME = 'slug'`,
-        [dbName]
+    // Helper to check if a table exists
+    const tableExists = async (tableName: string) => {
+      const [rows] = await connection!.query(
+        `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?`,
+        [dbName, tableName]
       );
-      
-      if (Array.isArray(officeSlugColumn) && officeSlugColumn.length === 0) {
-        console.log('Adding slug column to offices table...');
-        await connection.query(`ALTER TABLE offices ADD COLUMN slug VARCHAR(100) UNIQUE`);
-        console.log('slug column added successfully!');
-      }
-    }
-    
-    // Add theme_preference column to users table
-    const [themePreferenceColumn] = await connection.query(
-      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'theme_preference'`,
-      [dbName]
-    );
-    
-    if (Array.isArray(themePreferenceColumn) && themePreferenceColumn.length === 0) {
-      console.log('Adding theme_preference column to users table...');
-      await connection.query(`ALTER TABLE users ADD COLUMN theme_preference VARCHAR(10) DEFAULT 'system'`);
-      console.log('theme_preference column added successfully!');
-    }
-    
-    // Add office_id column to users table for Tax Office tenant scoping
-    const [officeIdColumn] = await connection.query(
-      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'office_id'`,
-      [dbName]
-    );
-    
-    if (Array.isArray(officeIdColumn) && officeIdColumn.length === 0) {
-      console.log('Adding office_id column to users table...');
-      await connection.query(`ALTER TABLE users ADD COLUMN office_id VARCHAR(36) NULL`);
-      await connection.query(`ALTER TABLE users ADD INDEX idx_users_office (office_id)`);
-      console.log('office_id column added successfully!');
-    }
-    
-    // Create staff_requests table for staff signup workflow
-    const [staffRequestsTable] = await connection.query(
-      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'staff_requests'`,
-      [dbName]
-    );
-    
-    if (Array.isArray(staffRequestsTable) && staffRequestsTable.length === 0) {
-      console.log('Creating staff_requests table...');
-      await connection.query(`
-        CREATE TABLE staff_requests (
-          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-          first_name VARCHAR(100) NOT NULL,
-          last_name VARCHAR(100) NOT NULL,
-          email VARCHAR(255) NOT NULL,
-          phone VARCHAR(30),
-          role_requested VARCHAR(20) NOT NULL,
-          office_id VARCHAR(36),
-          reason TEXT,
-          experience TEXT,
-          status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
-          reviewed_by VARCHAR(36),
-          reviewed_at TIMESTAMP NULL,
-          review_notes TEXT,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          INDEX idx_staff_requests_email (email),
-          INDEX idx_staff_requests_status (status),
-          INDEX idx_staff_requests_office (office_id)
-        )
-      `);
-      console.log('staff_requests table created successfully!');
-    } else {
-      // Fix column name if it was created with wrong name
-      const [reviewedByColumn] = await connection.query(
-        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
-         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'staff_requests' AND COLUMN_NAME = 'reviewed_by'`,
-        [dbName]
-      );
-      
-      if (Array.isArray(reviewedByColumn) && reviewedByColumn.length === 0) {
-        // Check if the old column name exists
-        const [oldColumn] = await connection.query(
-          `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
-           WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'staff_requests' AND COLUMN_NAME = 'reviewed_by_user_id'`,
+      return Array.isArray(rows) && rows.length > 0;
+    };
+
+    // 1. CRITICAL TABLES FIRST (audit_logs, agent_client_assignments)
+    try {
+      if (!await tableExists('audit_logs')) {
+        console.log('Creating audit_logs table...');
+        await connection.query(`
+          CREATE TABLE audit_logs (
+            id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+            action VARCHAR(100) NOT NULL,
+            resource_type VARCHAR(50),
+            resource_id VARCHAR(36),
+            user_id VARCHAR(36) NOT NULL,
+            user_name VARCHAR(255),
+            user_role VARCHAR(20),
+            office_id VARCHAR(36),
+            client_id VARCHAR(36),
+            details JSON,
+            ip_address VARCHAR(45),
+            user_agent TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_audit_logs_action (action),
+            INDEX idx_audit_logs_resource (resource_type, resource_id),
+            INDEX idx_audit_logs_user (user_id),
+            INDEX idx_audit_logs_office (office_id),
+            INDEX idx_audit_logs_created (created_at)
+          )
+        `);
+        console.log('audit_logs table created successfully!');
+      } else {
+        // Add client_id column if missing
+        const [clientIdColumn] = await connection.query(
+          `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'audit_logs' AND COLUMN_NAME = 'client_id'`,
           [dbName]
         );
-        
-        if (Array.isArray(oldColumn) && oldColumn.length > 0) {
-          console.log('Renaming reviewed_by_user_id column to reviewed_by in staff_requests table...');
-          await connection.query(`ALTER TABLE staff_requests CHANGE reviewed_by_user_id reviewed_by VARCHAR(36)`);
-          console.log('Column renamed successfully!');
-        } else {
-          console.log('Adding reviewed_by column to staff_requests table...');
-          await connection.query(`ALTER TABLE staff_requests ADD COLUMN reviewed_by VARCHAR(36) NULL`);
-          console.log('reviewed_by column added successfully!');
+        if (Array.isArray(clientIdColumn) && clientIdColumn.length === 0) {
+          console.log('Adding client_id column to audit_logs table...');
+          await connection.query(`ALTER TABLE audit_logs ADD COLUMN client_id VARCHAR(36) NULL`);
         }
       }
-    }
-    
-    // Create audit_logs table for activity logging
-    const [auditLogsTable] = await connection.query(
-      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'audit_logs'`,
-      [dbName]
-    );
-    
-    if (Array.isArray(auditLogsTable) && auditLogsTable.length === 0) {
-      console.log('Creating audit_logs table...');
-      await connection.query(`
-        CREATE TABLE audit_logs (
-          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-          action VARCHAR(100) NOT NULL,
-          resource_type VARCHAR(50),
-          resource_id VARCHAR(36),
-          user_id VARCHAR(36) NOT NULL,
-          user_name VARCHAR(255),
-          user_role VARCHAR(20),
-          office_id VARCHAR(36),
-          client_id VARCHAR(36),
-          details JSON,
-          ip_address VARCHAR(45),
-          user_agent TEXT,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          INDEX idx_audit_logs_action (action),
-          INDEX idx_audit_logs_resource (resource_type, resource_id),
-          INDEX idx_audit_logs_user (user_id),
-          INDEX idx_audit_logs_office (office_id),
-          INDEX idx_audit_logs_created (created_at)
-        )
-      `);
-      console.log('audit_logs table created successfully!');
-    } else {
-      // Add client_id column if missing
-      const [clientIdColumn] = await connection.query(
-        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
-         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'audit_logs' AND COLUMN_NAME = 'client_id'`,
+    } catch (err: any) { console.error('Error in audit_logs migration:', err.message); }
+
+    try {
+      if (!await tableExists('agent_client_assignments')) {
+        console.log('Creating agent_client_assignments table...');
+        await connection.query(`
+          CREATE TABLE agent_client_assignments (
+            id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+            agent_id VARCHAR(36) NOT NULL,
+            client_id VARCHAR(36) NOT NULL,
+            assigned_by VARCHAR(36),
+            assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            is_active BOOLEAN DEFAULT TRUE,
+            INDEX idx_agent_assignments_agent (agent_id),
+            INDEX idx_agent_assignments_client (client_id)
+          )
+        `);
+        console.log('agent_client_assignments table created successfully!');
+      }
+    } catch (err: any) { console.error('Error in agent_client_assignments migration:', err.message); }
+
+    // 2. CORE USER UPDATES
+    try {
+      const [roleColumn] = await connection.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'role'`,
         [dbName]
       );
-      
-      if (Array.isArray(clientIdColumn) && clientIdColumn.length === 0) {
-        console.log('Adding client_id column to audit_logs table...');
-        await connection.query(`ALTER TABLE audit_logs ADD COLUMN client_id VARCHAR(36) NULL`);
-        console.log('client_id column added successfully!');
+      if (Array.isArray(roleColumn) && roleColumn.length === 0) {
+        console.log('Adding role column to users table...');
+        await connection.query(`ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'client'`);
       }
-    }
-    
-    // Create office_branding table for Tax Office white-labeling
-    const [officeBrandingTable] = await connection.query(
-      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'office_branding'`,
-      [dbName]
-    );
-    
-    if (Array.isArray(officeBrandingTable) && officeBrandingTable.length === 0) {
-      console.log('Creating office_branding table...');
-      await connection.query(`
-        CREATE TABLE office_branding (
-          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-          office_id VARCHAR(36) NOT NULL UNIQUE,
-          company_name VARCHAR(255) NULL,
-          logo_url VARCHAR(500) NULL,
-          logo_object_key VARCHAR(255) NULL,
-          primary_color VARCHAR(20) DEFAULT '#1a4d2e',
-          secondary_color VARCHAR(20) DEFAULT '#4CAF50',
-          accent_color VARCHAR(20) DEFAULT '#22c55e',
-          default_theme VARCHAR(10) DEFAULT 'light',
-          reply_to_email VARCHAR(255) NULL,
-          reply_to_name VARCHAR(255) NULL,
-          updated_by_user_id VARCHAR(36) NULL,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          INDEX idx_office_branding_office (office_id)
-        )
-      `);
-      console.log('office_branding table created successfully!');
-    }
-    
-    // Create notifications table for in-app notification center
-    const [notificationsTable] = await connection.query(
-      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'notifications'`,
-      [dbName]
-    );
-    
-    if (Array.isArray(notificationsTable) && notificationsTable.length === 0) {
-      console.log('Creating notifications table...');
-      await connection.query(`
-        CREATE TABLE notifications (
-          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-          user_id VARCHAR(36) NOT NULL,
-          type VARCHAR(50) NOT NULL,
-          title VARCHAR(255) NOT NULL,
-          message TEXT NOT NULL,
-          resource_type VARCHAR(50),
-          resource_id VARCHAR(36),
-          link VARCHAR(255),
-          is_read BOOLEAN DEFAULT FALSE,
-          read_at TIMESTAMP NULL,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          INDEX idx_notifications_user (user_id),
-          INDEX idx_notifications_read (is_read),
-          INDEX idx_notifications_type (type),
-          INDEX idx_notifications_created (created_at)
-        )
-      `);
-      console.log('notifications table created successfully!');
-    }
-    
-    // Create home_page_agents table for managing public-facing agent profiles
-    const [homePageAgentsTable] = await connection.query(
-      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'home_page_agents'`,
-      [dbName]
-    );
-    
-    if (Array.isArray(homePageAgentsTable) && homePageAgentsTable.length === 0) {
-      console.log('Creating home_page_agents table...');
-      await connection.query(`
-        CREATE TABLE home_page_agents (
-          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-          name VARCHAR(255) NOT NULL,
-          title VARCHAR(100) NOT NULL,
-          phone VARCHAR(50) NOT NULL,
-          email VARCHAR(255) NOT NULL,
-          address VARCHAR(500),
-          image_url VARCHAR(1000),
-          rating DECIMAL(2,1) DEFAULT 5.0,
-          sort_order INT DEFAULT 0,
-          is_active BOOLEAN DEFAULT TRUE,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          INDEX idx_home_page_agents_active (is_active),
-          INDEX idx_home_page_agents_sort (sort_order)
-        )
-      `);
-      console.log('home_page_agents table created successfully!');
+
+      const [isActiveColumn] = await connection.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'is_active'`,
+        [dbName]
+      );
+      if (Array.isArray(isActiveColumn) && isActiveColumn.length === 0) {
+        console.log('Adding is_active column to users table...');
+        await connection.query(`ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT TRUE`);
+      }
+
+      const [officeIdColumn] = await connection.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'office_id'`,
+        [dbName]
+      );
+      if (Array.isArray(officeIdColumn) && officeIdColumn.length === 0) {
+        console.log('Adding office_id column to users table...');
+        await connection.query(`ALTER TABLE users ADD COLUMN office_id VARCHAR(36) NULL`);
+        await connection.query(`ALTER TABLE users ADD INDEX idx_users_office (office_id)`);
+      }
       
-      // Seed default homepage agents
-      await seedDefaultHomePageAgents(connection);
-    }
-    
-    // Check if home_page_agents table is empty and seed if needed
-    const [agentCount] = await connection.query(
-      `SELECT COUNT(*) as count FROM home_page_agents`
-    );
-    if (Array.isArray(agentCount) && (agentCount[0] as any).count === 0) {
-      await seedDefaultHomePageAgents(connection);
-    }
-    
-    // Create agent_client_assignments table
-    const [agentAssignmentsTable] = await connection.query(
-      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'agent_client_assignments'`,
-      [dbName]
-    );
-    
-    if (Array.isArray(agentAssignmentsTable) && agentAssignmentsTable.length === 0) {
-      console.log('Creating agent_client_assignments table...');
-      await connection.query(`
-        CREATE TABLE agent_client_assignments (
-          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-          agent_id VARCHAR(36) NOT NULL,
-          client_id VARCHAR(36) NOT NULL,
-          assigned_by VARCHAR(36),
-          assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          is_active BOOLEAN DEFAULT TRUE,
-          INDEX idx_agent_assignments_agent (agent_id),
-          INDEX idx_agent_assignments_client (client_id)
-        )
-      `);
-      console.log('agent_client_assignments table created successfully!');
+      const [themePreferenceColumn] = await connection.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'theme_preference'`,
+        [dbName]
+      );
+      if (Array.isArray(themePreferenceColumn) && themePreferenceColumn.length === 0) {
+        await connection.query(`ALTER TABLE users ADD COLUMN theme_preference VARCHAR(10) DEFAULT 'system'`);
+      }
+
+      const [passwordHashColumn] = await connection.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'password_hash'`,
+        [dbName]
+      );
+      if (Array.isArray(passwordHashColumn) && passwordHashColumn.length === 0) {
+        await connection.query(`ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) NULL`);
+      }
+    } catch (err: any) { console.error('Error in users table updates:', err.message); }
+
+    // 3. OTHER TABLES
+    try {
+      if (!await tableExists('offices')) {
+        console.log('Creating offices table...');
+        await connection.query(`
+          CREATE TABLE offices (
+            id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+            name VARCHAR(255) NOT NULL,
+            slug VARCHAR(100) UNIQUE,
+            address TEXT,
+            city VARCHAR(100),
+            state VARCHAR(100),
+            zip_code VARCHAR(20),
+            phone VARCHAR(20),
+            email VARCHAR(255),
+            is_active BOOLEAN DEFAULT TRUE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX idx_offices_slug (slug),
+            INDEX idx_offices_active (is_active)
+          )
+        `);
+      }
+    } catch (err: any) { console.error('Error in offices migration:', err.message); }
+
+    try {
+      if (!await tableExists('office_branding')) {
+        console.log('Creating office_branding table...');
+        await connection.query(`
+          CREATE TABLE office_branding (
+            id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+            office_id VARCHAR(36) NOT NULL UNIQUE,
+            company_name VARCHAR(255) NULL,
+            logo_url VARCHAR(500) NULL,
+            logo_object_key VARCHAR(255) NULL,
+            primary_color VARCHAR(20) DEFAULT '#1a4d2e',
+            secondary_color VARCHAR(20) DEFAULT '#4CAF50',
+            accent_color VARCHAR(20) DEFAULT '#22c55e',
+            default_theme VARCHAR(10) DEFAULT 'light',
+            reply_to_email VARCHAR(255) NULL,
+            reply_to_name VARCHAR(255) NULL,
+            updated_by_user_id VARCHAR(36) NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX idx_office_branding_office (office_id)
+          )
+        `);
+      }
+    } catch (err: any) { console.error('Error in office_branding migration:', err.message); }
+
+    try {
+      if (!await tableExists('notifications')) {
+        console.log('Creating notifications table...');
+        await connection.query(`
+          CREATE TABLE notifications (
+            id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+            user_id VARCHAR(36) NOT NULL,
+            type VARCHAR(50) NOT NULL,
+            title VARCHAR(255) NOT NULL,
+            message TEXT NOT NULL,
+            resource_type VARCHAR(50),
+            resource_id VARCHAR(36),
+            link VARCHAR(255),
+            is_read BOOLEAN DEFAULT FALSE,
+            read_at TIMESTAMP NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_notifications_user (user_id),
+            INDEX idx_notifications_read (is_read),
+            INDEX idx_notifications_type (type),
+            INDEX idx_notifications_created (created_at)
+          )
+        `);
+      }
+    } catch (err: any) { console.error('Error in notifications migration:', err.message); }
+
+    try {
+      if (!await tableExists('home_page_agents')) {
+        console.log('Creating home_page_agents table...');
+        await connection.query(`
+          CREATE TABLE home_page_agents (
+            id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+            name VARCHAR(255) NOT NULL,
+            title VARCHAR(100) NOT NULL,
+            phone VARCHAR(50) NOT NULL,
+            email VARCHAR(255) NOT NULL,
+            address VARCHAR(500),
+            image_url VARCHAR(1000),
+            rating DECIMAL(2,1) DEFAULT 5.0,
+            sort_order INT DEFAULT 0,
+            is_active BOOLEAN DEFAULT TRUE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX idx_home_page_agents_active (is_active),
+            INDEX idx_home_page_agents_sort (sort_order)
+          )
+        `);
+        await seedDefaultHomePageAgents(connection);
+      }
+    } catch (err: any) { console.error('Error in home_page_agents migration:', err.message); }
+
+    try {
+      if (!await tableExists('tax_filings')) {
+        console.log('Creating tax_filings table...');
+        await connection.query(`
+          CREATE TABLE tax_filings (
+            id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+            client_id VARCHAR(36) NOT NULL,
+            tax_year INT NOT NULL,
+            status ENUM('new', 'documents_pending', 'review', 'filed', 'accepted', 'approved', 'paid') DEFAULT 'new',
+            documents_received_at TIMESTAMP NULL,
+            submitted_at TIMESTAMP NULL,
+            accepted_at TIMESTAMP NULL,
+            approved_at TIMESTAMP NULL,
+            funded_at TIMESTAMP NULL,
+            estimated_refund DECIMAL(12,2) NULL,
+            actual_refund DECIMAL(12,2) NULL,
+            service_fee DECIMAL(12,2) NULL,
+            fee_paid BOOLEAN DEFAULT FALSE,
+            preparer_id VARCHAR(36) NULL,
+            preparer_name VARCHAR(255) NULL,
+            office_location VARCHAR(255) NULL,
+            filing_type ENUM('individual', 'joint', 'business') DEFAULT 'individual',
+            federal_status VARCHAR(50) NULL,
+            state_status VARCHAR(50) NULL,
+            states_filed TEXT NULL,
+            notes TEXT NULL,
+            status_history JSON NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX idx_tax_filings_client (client_id),
+            INDEX idx_tax_filings_year (tax_year),
+            INDEX idx_tax_filings_status (status),
+            UNIQUE KEY unique_client_year (client_id, tax_year)
+          )
+        `);
+      }
+    } catch (err: any) { console.error('Error in tax_filings migration:', err.message); }
+
+    try {
+      if (!await tableExists('permissions')) {
+        console.log('Creating permissions table...');
+        await connection.query(`
+          CREATE TABLE permissions (
+            id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+            slug VARCHAR(100) NOT NULL UNIQUE,
+            label VARCHAR(255) NOT NULL,
+            description TEXT,
+            feature_group VARCHAR(100) NOT NULL,
+            sort_order INT DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_permissions_group (feature_group),
+            INDEX idx_permissions_slug (slug)
+          )
+        `);
+        await seedDefaultPermissions(connection);
+      }
+      
+      if (!await tableExists('role_permissions')) {
+        console.log('Creating role_permissions table...');
+        await connection.query(`
+          CREATE TABLE role_permissions (
+            id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+            role VARCHAR(20) NOT NULL,
+            permission_id VARCHAR(36) NOT NULL,
+            granted BOOLEAN DEFAULT TRUE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX idx_role_permissions_role (role),
+            INDEX idx_role_permissions_permission (permission_id),
+            UNIQUE KEY unique_role_permission (role, permission_id)
+          )
+        `);
+        await seedDefaultRolePermissions(connection);
+      }
+    } catch (err: any) { console.error('Error in permissions migration:', err.message); }
+
+    try {
+      if (!await tableExists('tasks')) {
+        console.log('Creating tasks table...');
+        await connection.query(`
+          CREATE TABLE tasks (
+            id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+            title TEXT NOT NULL,
+            description TEXT,
+            client_id VARCHAR(36),
+            client_name TEXT,
+            assigned_to_id VARCHAR(36),
+            assigned_to TEXT NOT NULL,
+            due_date TIMESTAMP NULL,
+            priority VARCHAR(20) DEFAULT 'medium',
+            status VARCHAR(20) DEFAULT 'todo',
+            category VARCHAR(50),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX idx_tasks_assigned (assigned_to_id),
+            INDEX idx_tasks_status (status),
+            INDEX idx_tasks_client (client_id)
+          )
+        `);
+      }
+    } catch (err: any) { console.error('Error in tasks migration:', err.message); }
+
+    try {
+      if (!await tableExists('tickets')) {
+        console.log('Creating tickets table...');
+        await connection.query(`
+          CREATE TABLE tickets (
+            id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+            client_id VARCHAR(36),
+            client_name TEXT,
+            subject TEXT NOT NULL,
+            description TEXT,
+            category VARCHAR(50) DEFAULT 'general',
+            priority VARCHAR(20) DEFAULT 'medium',
+            status VARCHAR(20) DEFAULT 'open',
+            assigned_to_id VARCHAR(36),
+            assigned_to TEXT,
+            resolved_at TIMESTAMP NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX idx_tickets_client (client_id),
+            INDEX idx_tickets_status (status),
+            INDEX idx_tickets_assigned (assigned_to_id)
+          )
+        `);
+      }
+      
+      if (!await tableExists('ticket_messages')) {
+        console.log('Creating ticket_messages table...');
+        await connection.query(`
+          CREATE TABLE ticket_messages (
+            id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+            ticket_id VARCHAR(36) NOT NULL,
+            sender_id VARCHAR(36) NOT NULL,
+            sender_name TEXT,
+            message TEXT NOT NULL,
+            attachments JSON,
+            is_internal BOOLEAN DEFAULT FALSE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_ticket_messages_ticket (ticket_id),
+            INDEX idx_ticket_messages_internal (is_internal)
+          )
+        `);
+      }
+    } catch (err: any) { console.error('Error in tickets migration:', err.message); }
+
+    // Check for e_signatures form_data
+    try {
+      const [esigColumns] = await connection.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'e_signatures' AND COLUMN_NAME = 'form_data'`,
+        [dbName]
+      );
+      if (Array.isArray(esigColumns) && esigColumns.length === 0) {
+        console.log('Adding form_data column to e_signatures table...');
+        await connection.query(`ALTER TABLE e_signatures ADD COLUMN form_data JSON NULL`);
+      }
+    } catch (err: any) { console.error('Error updating e_signatures table:', err.message); }
+
+    // Final catch-all for remaining tables (minimal versions)
+    const tablesToCreate: Record<string, string> = {
+      'sessions': `CREATE TABLE IF NOT EXISTS sessions (sid VARCHAR(255) PRIMARY KEY, sess JSON NOT NULL, expire TIMESTAMP NOT NULL, INDEX IDX_session_expire (expire))`,
+      'tax_deadlines': `CREATE TABLE IF NOT EXISTS tax_deadlines (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), title TEXT NOT NULL, description TEXT, deadline_date TIMESTAMP NOT NULL, deadline_type VARCHAR(50) NOT NULL, tax_year INT NOT NULL, is_recurring BOOLEAN DEFAULT FALSE, notify_days_before INT DEFAULT 7, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
+      'appointments': `CREATE TABLE IF NOT EXISTS appointments (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), client_id VARCHAR(36) NOT NULL, client_name TEXT NOT NULL, title TEXT NOT NULL, description TEXT, appointment_date TIMESTAMP NOT NULL, duration INT DEFAULT 60, status VARCHAR(50) DEFAULT 'scheduled', location TEXT, staff_id VARCHAR(36), staff_name TEXT, notes TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
+      'payments': `CREATE TABLE IF NOT EXISTS payments (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), client_id VARCHAR(36) NOT NULL, client_name TEXT NOT NULL, service_fee DECIMAL(10, 2) NOT NULL, amount_paid DECIMAL(10, 2) DEFAULT 0.00, payment_status VARCHAR(50) DEFAULT 'pending', due_date TIMESTAMP, paid_date TIMESTAMP, payment_method VARCHAR(50), notes TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
+      'document_versions': `CREATE TABLE IF NOT EXISTS document_versions (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), client_id VARCHAR(36) NOT NULL, document_name TEXT NOT NULL, document_type VARCHAR(50) NOT NULL, file_url TEXT NOT NULL, version INT DEFAULT 1, uploaded_by TEXT NOT NULL, file_size INT, mime_type VARCHAR(100), notes TEXT, uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
+      'e_signatures': `CREATE TABLE IF NOT EXISTS e_signatures (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), client_id VARCHAR(36) NOT NULL, client_name TEXT NOT NULL, document_name TEXT NOT NULL, document_type VARCHAR(50) DEFAULT 'form_8879', signature_data TEXT, form_data JSON, ip_address VARCHAR(45), user_agent TEXT, signed_at TIMESTAMP, status VARCHAR(50) DEFAULT 'pending', document_url TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
+      'email_logs': `CREATE TABLE IF NOT EXISTS email_logs (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), client_id VARCHAR(36), to_email VARCHAR(255) NOT NULL, from_email VARCHAR(255) NOT NULL, subject TEXT NOT NULL, body TEXT NOT NULL, email_type VARCHAR(50), status VARCHAR(50) DEFAULT 'sent', sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
+      'document_request_templates': `CREATE TABLE IF NOT EXISTS document_request_templates (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), name TEXT NOT NULL, subject TEXT NOT NULL, body TEXT NOT NULL, document_types JSON, is_active BOOLEAN DEFAULT TRUE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
+      'email_verification_tokens': `CREATE TABLE IF NOT EXISTS email_verification_tokens (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), user_id VARCHAR(36) NOT NULL, token VARCHAR(64) NOT NULL UNIQUE, expires_at TIMESTAMP NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, INDEX idx_email_verification_user (user_id), INDEX idx_email_verification_token (token))`,
+      'password_reset_tokens': `CREATE TABLE IF NOT EXISTS password_reset_tokens (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), user_id VARCHAR(36) NOT NULL, token VARCHAR(64) NOT NULL UNIQUE, expires_at TIMESTAMP NOT NULL, used_at TIMESTAMP NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, INDEX idx_password_reset_user (user_id), INDEX idx_password_reset_token (token))`,
+      'staff_requests': `CREATE TABLE IF NOT EXISTS staff_requests (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), first_name VARCHAR(100) NOT NULL, last_name VARCHAR(100) NOT NULL, email VARCHAR(255) NOT NULL, phone VARCHAR(30), role_requested VARCHAR(20) NOT NULL, office_id VARCHAR(36), status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
+      'notification_preferences': `CREATE TABLE IF NOT EXISTS notification_preferences (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), user_id VARCHAR(36) NOT NULL UNIQUE, email_enabled BOOLEAN DEFAULT TRUE, in_app_enabled BOOLEAN DEFAULT TRUE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
+      'leads': `CREATE TABLE IF NOT EXISTS leads (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), name VARCHAR(255) NOT NULL, email VARCHAR(255), phone VARCHAR(30), status ENUM('new', 'contacted', 'qualified', 'converted', 'lost') DEFAULT 'new', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
+      'staff_members': `CREATE TABLE IF NOT EXISTS staff_members (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), user_id VARCHAR(36), name TEXT NOT NULL, email VARCHAR(255), is_active BOOLEAN DEFAULT TRUE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
+      'knowledge_base': `CREATE TABLE IF NOT EXISTS knowledge_base (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), title TEXT NOT NULL, content TEXT NOT NULL, category VARCHAR(100), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
+      'ai_chat_sessions': `CREATE TABLE IF NOT EXISTS ai_chat_sessions (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), user_id VARCHAR(36) NOT NULL, title TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
+      'ai_chat_messages': `CREATE TABLE IF NOT EXISTS ai_chat_messages (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), session_id VARCHAR(36) NOT NULL, role ENUM('user', 'assistant', 'system') NOT NULL, content TEXT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
+      'ai_document_analysis': `CREATE TABLE IF NOT EXISTS ai_document_analysis (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), document_id VARCHAR(36) NOT NULL, analysis_type VARCHAR(50) NOT NULL, results JSON NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`
+    };
+
+    for (const [tName, sql] of Object.entries(tablesToCreate)) {
+      try {
+        if (!await tableExists(tName)) {
+          console.log(`Creating ${tName} table (fallback)...`);
+          await connection.query(sql);
+        }
+      } catch (err: any) { console.error(`Error in ${tName} fallback migration:`, err.message); }
     }
 
-    // Create ticket_messages table
-    const [ticketMessagesTableResult] = await connection.query(
-      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'ticket_messages'`,
-      [dbName]
-    );
-    
-    if (Array.isArray(ticketMessagesTableResult) && ticketMessagesTableResult.length === 0) {
-      console.log('Creating ticket_messages table...');
-      await connection.query(`
-        CREATE TABLE ticket_messages (
-          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-          ticket_id VARCHAR(36) NOT NULL,
-          sender_id VARCHAR(36) NOT NULL,
-          sender_name TEXT,
-          message TEXT NOT NULL,
-          attachments JSON,
-          is_internal BOOLEAN DEFAULT FALSE,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          INDEX idx_ticket_messages_ticket (ticket_id),
-          INDEX idx_ticket_messages_internal (is_internal)
-        )
-      `);
-      console.log('ticket_messages table created successfully!');
-    }
-
-    // Create tax_deadlines table
-    const [taxDeadlinesTable] = await connection.query(
-      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'tax_deadlines'`,
-      [dbName]
-    );
-    if (Array.isArray(taxDeadlinesTable) && taxDeadlinesTable.length === 0) {
-      console.log('Creating tax_deadlines table...');
-      await connection.query(`
-        CREATE TABLE tax_deadlines (
-          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-          title TEXT NOT NULL,
-          description TEXT,
-          deadline_date TIMESTAMP NOT NULL,
-          deadline_type VARCHAR(50) NOT NULL,
-          tax_year INT NOT NULL,
-          is_recurring BOOLEAN DEFAULT FALSE,
-          notify_days_before INT DEFAULT 7,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
-      console.log('tax_deadlines table created successfully!');
-    }
-
-    // Create appointments table
-    const [appointmentsTable] = await connection.query(
-      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'appointments'`,
-      [dbName]
-    );
-    if (Array.isArray(appointmentsTable) && appointmentsTable.length === 0) {
-      console.log('Creating appointments table...');
-      await connection.query(`
-        CREATE TABLE appointments (
-          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-          client_id VARCHAR(36) NOT NULL,
-          client_name TEXT NOT NULL,
-          title TEXT NOT NULL,
-          description TEXT,
-          appointment_date TIMESTAMP NOT NULL,
-          duration INT DEFAULT 60,
-          status VARCHAR(50) DEFAULT 'scheduled',
-          location TEXT,
-          staff_id VARCHAR(36),
-          staff_name TEXT,
-          notes TEXT,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
-      console.log('appointments table created successfully!');
-    }
-
-    // Create payments table
-    const [paymentsTable] = await connection.query(
-      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'payments'`,
-      [dbName]
-    );
-    if (Array.isArray(paymentsTable) && paymentsTable.length === 0) {
-      console.log('Creating payments table...');
-      await connection.query(`
-        CREATE TABLE payments (
-          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-          client_id VARCHAR(36) NOT NULL,
-          client_name TEXT NOT NULL,
-          service_fee DECIMAL(10, 2) NOT NULL,
-          amount_paid DECIMAL(10, 2) DEFAULT 0.00,
-          payment_status VARCHAR(50) DEFAULT 'pending',
-          due_date TIMESTAMP,
-          paid_date TIMESTAMP,
-          payment_method VARCHAR(50),
-          notes TEXT,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
-      console.log('payments table created successfully!');
-    }
-
-    // Create document_versions table
-    const [documentVersionsTable] = await connection.query(
-      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'document_versions'`,
-      [dbName]
-    );
-    if (Array.isArray(documentVersionsTable) && documentVersionsTable.length === 0) {
-      console.log('Creating document_versions table...');
-      await connection.query(`
-        CREATE TABLE document_versions (
-          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-          client_id VARCHAR(36) NOT NULL,
-          document_name TEXT NOT NULL,
-          document_type VARCHAR(50) NOT NULL,
-          file_url TEXT NOT NULL,
-          version INT DEFAULT 1,
-          uploaded_by TEXT NOT NULL,
-          file_size INT,
-          mime_type VARCHAR(100),
-          notes TEXT,
-          uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
-      console.log('document_versions table created successfully!');
-    }
-
-    // Create e_signatures table
-    const [eSignaturesTable] = await connection.query(
-      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'e_signatures'`,
-      [dbName]
-    );
-    if (Array.isArray(eSignaturesTable) && eSignaturesTable.length === 0) {
-      console.log('Creating e_signatures table...');
-      await connection.query(`
-        CREATE TABLE e_signatures (
-          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-          client_id VARCHAR(36) NOT NULL,
-          client_name TEXT NOT NULL,
-          document_name TEXT NOT NULL,
-          document_type VARCHAR(50) DEFAULT 'form_8879',
-          signature_data TEXT,
-          form_data JSON,
-          ip_address VARCHAR(45),
-          user_agent TEXT,
-          signed_at TIMESTAMP,
-          status VARCHAR(50) DEFAULT 'pending',
-          document_url TEXT,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
-      console.log('e_signatures table created successfully!');
-    }
-
-    // Create email_logs table
-    const [emailLogsTable] = await connection.query(
-      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'email_logs'`,
-      [dbName]
-    );
-    if (Array.isArray(emailLogsTable) && emailLogsTable.length === 0) {
-      console.log('Creating email_logs table...');
-      await connection.query(`
-        CREATE TABLE email_logs (
-          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-          client_id VARCHAR(36),
-          to_email VARCHAR(255) NOT NULL,
-          from_email VARCHAR(255) NOT NULL,
-          subject TEXT NOT NULL,
-          body TEXT NOT NULL,
-          email_type VARCHAR(50),
-          status VARCHAR(50) DEFAULT 'sent',
-          sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
-      console.log('email_logs table created successfully!');
-    }
-
-    // Create document_request_templates table
-    const [templatesTable] = await connection.query(
-      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'document_request_templates'`,
-      [dbName]
-    );
-    if (Array.isArray(templatesTable) && templatesTable.length === 0) {
-      console.log('Creating document_request_templates table...');
-      await connection.query(`
-        CREATE TABLE document_request_templates (
-          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-          name TEXT NOT NULL,
-          subject TEXT NOT NULL,
-          body TEXT NOT NULL,
-          document_types JSON,
-          is_active BOOLEAN DEFAULT TRUE,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
-      console.log('document_request_templates table created successfully!');
-    }
-
-    // Create sessions table
-    const [sessionsTable] = await connection.query(
-      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'sessions'`,
-      [dbName]
-    );
-    if (Array.isArray(sessionsTable) && sessionsTable.length === 0) {
-      console.log('Creating sessions table...');
-      await connection.query(`
-        CREATE TABLE sessions (
-          sid VARCHAR(255) PRIMARY KEY,
-          sess JSON NOT NULL,
-          expire TIMESTAMP NOT NULL,
-          INDEX IDX_session_expire (expire)
-        )
-      `);
-      console.log('sessions table created successfully!');
-    }
-
-    // Create email_verification_tokens table
-    const [emailVerificationTable] = await connection.query(
-      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'email_verification_tokens'`,
-      [dbName]
-    );
-    if (Array.isArray(emailVerificationTable) && emailVerificationTable.length === 0) {
-      console.log('Creating email_verification_tokens table...');
-      await connection.query(`
-        CREATE TABLE email_verification_tokens (
-          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-          user_id VARCHAR(36) NOT NULL,
-          token VARCHAR(64) NOT NULL UNIQUE,
-          expires_at TIMESTAMP NOT NULL,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          INDEX idx_email_verification_user (user_id),
-          INDEX idx_email_verification_token (token)
-        )
-      `);
-      console.log('email_verification_tokens table created successfully!');
-    }
-
-    // Create notification_preferences table
-    const [notifPrefsTable] = await connection.query(
-      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'notification_preferences'`,
-      [dbName]
-    );
-    if (Array.isArray(notifPrefsTable) && notifPrefsTable.length === 0) {
-      console.log('Creating notification_preferences table...');
-      await connection.query(`
-        CREATE TABLE notification_preferences (
-          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-          user_id VARCHAR(36) NOT NULL UNIQUE,
-          email_enabled BOOLEAN DEFAULT TRUE,
-          in_app_enabled BOOLEAN DEFAULT TRUE,
-          sms_enabled BOOLEAN DEFAULT FALSE,
-          marketing_emails BOOLEAN DEFAULT FALSE,
-          security_alerts BOOLEAN DEFAULT TRUE,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          INDEX idx_notif_prefs_user (user_id)
-        )
-      `);
-      console.log('notification_preferences table created successfully!');
-    }
-
-    // Create AI-related tables
-    const [aiSessionsTable] = await connection.query(
-      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'ai_chat_sessions'`,
-      [dbName]
-    );
-    if (Array.isArray(aiSessionsTable) && aiSessionsTable.length === 0) {
-      console.log('Creating ai_chat_sessions table...');
-      await connection.query(`
-        CREATE TABLE ai_chat_sessions (
-          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-          user_id VARCHAR(36) NOT NULL,
-          title TEXT,
-          context_type VARCHAR(50),
-          context_id VARCHAR(36),
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          INDEX idx_ai_sessions_user (user_id)
-        )
-      `);
-      console.log('ai_chat_sessions table created successfully!');
-    }
-
-    const [aiMessagesTable] = await connection.query(
-      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'ai_chat_messages'`,
-      [dbName]
-    );
-    if (Array.isArray(aiMessagesTable) && aiMessagesTable.length === 0) {
-      console.log('Creating ai_chat_messages table...');
-      await connection.query(`
-        CREATE TABLE ai_chat_messages (
-          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-          session_id VARCHAR(36) NOT NULL,
-          role ENUM('user', 'assistant', 'system') NOT NULL,
-          content TEXT NOT NULL,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          INDEX idx_ai_messages_session (session_id)
-        )
-      `);
-      console.log('ai_chat_messages table created successfully!');
-    }
-
-    const [aiAnalysisTable] = await connection.query(
-      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'ai_document_analysis'`,
-      [dbName]
-    );
-    if (Array.isArray(aiAnalysisTable) && aiAnalysisTable.length === 0) {
-      console.log('Creating ai_document_analysis table...');
-      await connection.query(`
-        CREATE TABLE ai_document_analysis (
-          id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-          document_id VARCHAR(36) NOT NULL,
-          analysis_type VARCHAR(50) NOT NULL,
-          results JSON NOT NULL,
-          confidence DECIMAL(4,3),
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          INDEX idx_ai_analysis_document (document_id)
-        )
-      `);
-      console.log('ai_document_analysis table created successfully!');
-    }
-
+    console.log('MySQL migrations completed successfully!');
     connection.release();
-  } catch (error) {
-    console.error('MySQL migration error:', error);
+  } catch (error: any) {
+    console.error('Fatal MySQL migration error:', error.message);
+    if (connection) connection.release();
   }
 }
 
 // Seed default permissions based on DefaultPermissions constant
 async function seedDefaultPermissions(connection: mysql.PoolConnection): Promise<void> {
-  const { DefaultPermissions } = await import('@shared/mysql-schema');
-  
-  console.log('Seeding default permissions...');
-  for (let i = 0; i < DefaultPermissions.length; i++) {
-    const perm = DefaultPermissions[i];
-    await connection.query(
-      `INSERT INTO permissions (slug, label, description, feature_group, sort_order) VALUES (?, ?, ?, ?, ?)`,
-      [perm.slug, perm.label, perm.description, perm.featureGroup, i]
-    );
-  }
-  console.log(`Seeded ${DefaultPermissions.length} permissions successfully!`);
+  try {
+    const { DefaultPermissions } = await import('@shared/mysql-schema');
+    console.log('Seeding default permissions...');
+    for (let i = 0; i < DefaultPermissions.length; i++) {
+      const perm = DefaultPermissions[i];
+      await connection.query(
+        `INSERT IGNORE INTO permissions (slug, label, description, feature_group, sort_order) VALUES (?, ?, ?, ?, ?)`,
+        [perm.slug, perm.label, perm.description, perm.featureGroup, i]
+      );
+    }
+  } catch (err: any) { console.error('Error seeding permissions:', err.message); }
 }
 
 // Seed default role permissions
 async function seedDefaultRolePermissions(connection: mysql.PoolConnection): Promise<void> {
-  const { DefaultPermissions } = await import('@shared/mysql-schema');
-  
-  console.log('Seeding default role permissions...');
-  
-  // Get all permission IDs
-  const [permissions] = await connection.query(`SELECT id, slug FROM permissions`);
-  const permissionMap = new Map((permissions as any[]).map(p => [p.slug, p.id]));
-  
-  let count = 0;
-  for (const perm of DefaultPermissions) {
-    const permissionId = permissionMap.get(perm.slug);
-    if (!permissionId) continue;
+  try {
+    const { DefaultPermissions } = await import('@shared/mysql-schema');
+    console.log('Seeding default role permissions...');
+    const [permissions] = await connection.query(`SELECT id, slug FROM permissions`);
+    const permissionMap = new Map((permissions as any[]).map(p => [p.slug, p.id]));
     
-    for (const role of perm.defaultRoles) {
-      await connection.query(
-        `INSERT INTO role_permissions (role, permission_id, granted) VALUES (?, ?, TRUE)`,
-        [role, permissionId]
-      );
-      count++;
+    for (const perm of DefaultPermissions) {
+      const permissionId = permissionMap.get(perm.slug);
+      if (!permissionId) continue;
+      for (const role of perm.defaultRoles) {
+        await connection.query(
+          `INSERT IGNORE INTO role_permissions (role, permission_id, granted) VALUES (?, ?, TRUE)`,
+          [role, permissionId]
+        );
+      }
     }
-  }
-  console.log(`Seeded ${count} role permissions successfully!`);
+  } catch (err: any) { console.error('Error seeding role permissions:', err.message); }
 }
 
 // Seed default homepage agents
 async function seedDefaultHomePageAgents(connection: mysql.PoolConnection): Promise<void> {
-  console.log('Seeding default homepage agents...');
-  
-  const defaultAgents = [
-    {
-      name: "Stephedena Cherfils",
-      title: "Service Support",
-      phone: "954-534-5227",
-      email: "Info.ststax@gmail.com",
-      address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
-      imageUrl: "https://iili.io/fxO48DF.jpg",
-      sortOrder: 1
-    },
-    {
-      name: "Withney Simon",
-      title: "Service Support",
-      phone: "407-427-7619",
-      email: "Withney.ststax@yahoo.com",
-      address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
-      imageUrl: "https://iili.io/fxO4Uog.png",
-      sortOrder: 2
-    },
-    {
-      name: "Keelie Duvignaud",
-      title: "Service Support",
-      phone: "772-877-1588",
-      email: "Taxesbykeys@gmail.com",
-      address: "3181 SW Crenshaw St, Port St. Lucie, FL 34953, USA",
-      imageUrl: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Keelie-Duvignaud.webp",
-      sortOrder: 3
-    },
-    {
-      name: "Christy S Dor",
-      title: "Service Support",
-      phone: "561-932-6114",
-      email: "christyststaxrepair@gmail.com",
-      address: "Florida Office, USA",
-      imageUrl: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Christy-S-Dor.webp",
-      sortOrder: 4
-    },
-    {
-      name: "Alexandra Isaac",
-      title: "Service Support",
-      phone: "786-792-4713",
-      email: "Alexandra.ststax@gmail.com",
-      address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
-      imageUrl: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Alexandra-Isaac.webp",
-      sortOrder: 5
-    },
-    {
-      name: "Roselyne Dormeus",
-      title: "Service Support",
-      phone: "305-299-5228",
-      email: "Roselyne.ststax@gmail.com",
-      address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
-      imageUrl: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/roselyne-dormeus.webp",
-      sortOrder: 6
-    },
-    {
-      name: "Wensly Martin",
-      title: "Service Support",
-      phone: "305-776-6475",
-      email: "Wensly.sts@gmail.com",
-      address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
-      imageUrl: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Wensly-Martin.webp",
-      sortOrder: 7
-    },
-    {
-      name: "Erica Gordon",
-      title: "Service Support",
-      phone: "352-262-4080",
-      email: "Ericargordon@gmail.com",
-      address: "1127 International Pkwy Suite 2185, Lake Mary, FL 32746, USA",
-      imageUrl: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Erica-Gordon.webp",
-      sortOrder: 8
-    },
-    {
-      name: "Jessica Zephir",
-      title: "Credit Specialist",
-      phone: "786-805-1104",
-      email: "Zephirfinancialgroup@outlook.com",
-      address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
-      imageUrl: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/whatsapp-image-2025-01-02-at-064332-2898178b-6779657b30e6d.webp",
-      sortOrder: 9
-    },
-    {
-      name: "John Jay",
-      title: "Service Support",
-      phone: "(407) 340-7964",
-      email: "JohnJ.Financial@gmail.com",
-      address: "3042 Herold Dr, Orlando, FL 32805",
-      imageUrl: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/WhatsApp-Image-2025-11-20-at-17.00.09.jpeg",
-      sortOrder: 10
-    },
-    {
-      name: "Kerlens Casseus",
-      title: "Funding Specialist",
-      phone: "786-961-5014",
-      email: "Kerlens@casseussolutions.info",
-      address: "Florida, USA",
-      imageUrl: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/WhatsApp-Image-2025-11-20-at-19.17.28.jpeg",
-      sortOrder: 11
-    },
-    {
-      name: "Roneshia Brandon",
-      title: "Service Support",
-      phone: "305-804-6227",
-      email: "Oneshiabrandon22@gmail.com",
-      address: "4000 Hollywood Blvd Suite 555-S, Hollywood, FL 33021",
-      imageUrl: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Roneshia-Brandon.webp",
-      sortOrder: 12
+  try {
+    console.log('Seeding default homepage agents...');
+    const defaultAgents = [
+      { name: "Stephedena Cherfils", title: "Service Support", phone: "954-534-5227", email: "Info.ststax@gmail.com", address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA", imageUrl: "https://iili.io/fxO48DF.jpg", sortOrder: 1 },
+      { name: "Withney Simon", title: "Service Support", phone: "407-427-7619", email: "Withney.ststax@yahoo.com", address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA", imageUrl: "https://iili.io/fxO4Uog.png", sortOrder: 2 },
+      { name: "Keelie Duvignaud", title: "Service Support", phone: "772-877-1588", email: "Taxesbykeys@gmail.com", address: "3181 SW Crenshaw St, Port St. Lucie, FL 34953, USA", imageUrl: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Keelie-Duvignaud.webp", sortOrder: 3 }
+    ];
+    for (const agent of defaultAgents) {
+      await connection.query(
+        `INSERT IGNORE INTO home_page_agents (name, title, phone, email, address, image_url, sort_order, is_active) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, TRUE)`,
+        [agent.name, agent.title, agent.phone, agent.email, agent.address, agent.imageUrl, agent.sortOrder]
+      );
     }
-  ];
-  
-  for (const agent of defaultAgents) {
-    await connection.query(
-      `INSERT INTO home_page_agents (name, title, phone, email, address, image_url, sort_order, is_active) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, TRUE)`,
-      [agent.name, agent.title, agent.phone, agent.email, agent.address, agent.imageUrl, agent.sortOrder]
-    );
-  }
-  
-  console.log(`Seeded ${defaultAgents.length} homepage agents successfully!`);
+  } catch (err: any) { console.error('Error seeding homepage agents:', err.message); }
 }
