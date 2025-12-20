@@ -65,6 +65,7 @@ import {
 import nodemailer from "nodemailer";
 import twilio from "twilio";
 import { randomUUID } from "crypto";
+import aiRoutes from "./ai-routes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Password reset endpoint - works for both Replit and Render
@@ -5931,19 +5932,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if email already exists as user
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
-        // Check if the user is verified
-        if (!existingUser.emailVerifiedAt) {
+        // If they are already staff or admin, block them
+        if (existingUser.role !== 'client') {
           return res.status(400).json({ 
-            error: 'An account with this email already exists but is not verified. Please check your email for the verification link, or go to the login page and request a new verification email.',
-            code: 'UNVERIFIED_ACCOUNT',
+            error: `An account with this email already exists with role: ${existingUser.role}. Please log in instead.`,
+            code: 'ACCOUNT_EXISTS',
             email: email
           });
         }
-        return res.status(400).json({ 
-          error: 'An account with this email already exists. Please log in instead.',
-          code: 'ACCOUNT_EXISTS',
-          email: email
-        });
+        
+        // If they are a client, we allow them to submit a staff request
+        // but we'll check if they are verified first to give a better message
+        if (!existingUser.emailVerifiedAt) {
+          // Fall through to allow them to submit, but the frontend will show 
+          // they need verification if we returned an error.
+          // For now, let's allow them to submit the request even if unverified,
+          // as they can verify later. Or we can block and ask for verification.
+          // The current frontend expects an error to show the verification box.
+          
+          return res.status(400).json({ 
+            error: 'An account with this email already exists but is not verified. Please check your email for the verification link, or go to the login page and request a new verification email.',
+            code: 'ACCOUNT_EXISTS_UNVERIFIED',
+            email: email
+          });
+        }
+        
+        // If they are a verified client, they can still submit a staff request.
+        // We'll proceed to check for pending requests.
       }
       
       // Check for pending request with same email
@@ -6137,21 +6152,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         reviewNotes
       );
       
-      // If approved, create user account with email invitation
+      // If approved, create user account or update existing one
       if (status === 'approved') {
-        // Generate a random password (user will need to reset)
+        // Check if user already exists
+        const existingUser = await storage.getUserByEmail(request.email);
+        
+        // Generate a random password if it's a new user (user will need to reset)
         const tempPassword = randomUUID().substring(0, 12);
         const hashedPassword = await bcrypt.hash(tempPassword, 10);
         
-        // Create the user
+        // Create or update the user
         await storage.upsertUser({
+          id: existingUser?.id, // If they exist, update them. If not, upsert will generate new ID.
           email: request.email,
           firstName: request.firstName,
           lastName: request.lastName,
           phone: request.phone || undefined,
           role: request.roleRequested,
           officeId: request.officeId || undefined,
-          passwordHash: hashedPassword,
+          passwordHash: existingUser?.passwordHash || hashedPassword,
           isActive: true
         });
         
@@ -6915,6 +6934,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: error.message });
     }
   });
+
+  // Register AI Assistant routes
+  app.use('/api/ai', aiRoutes);
 
   const httpServer = createServer(app);
   return httpServer;

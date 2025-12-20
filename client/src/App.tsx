@@ -16,6 +16,7 @@ import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { NavigationProgress } from "@/components/NavigationProgress";
 import { UpdateNotification } from "@/components/UpdateNotification";
+import { AIChatWidget } from "@/components/AIChatWidget";
 import { usePWA } from "@/hooks/usePWA";
 import { useAuthStorage } from "@/hooks/useAuthStorage";
 
@@ -56,6 +57,7 @@ const FAQPage = lazy(() => import("@/pages/FAQPage"));
 const BookAppointmentPage = lazy(() => import("@/pages/BookAppointmentPage"));
 const StaffSignup = lazy(() => import("@/pages/StaffSignup"));
 const AgentManagement = lazy(() => import("@/pages/AgentManagement"));
+const AIAssistant = lazy(() => import("@/pages/AIAssistant"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
 function PageLoader() {
@@ -212,6 +214,10 @@ function AdminRouter() {
         {/* Homepage Agent Management - Admin only */}
         <Route path="/homepage-agents">
           <PermissionRoute component={AgentManagement} adminOnly />
+        </Route>
+        {/* AI Tax Assistant */}
+        <Route path="/ai-assistant">
+          <PermissionRoute component={AIAssistant} permission={PERMISSIONS.AI_ASSISTANT_ACCESS} />
         </Route>
         <Route component={NotFound} />
       </Switch>
@@ -380,6 +386,7 @@ function AdminLayout() {
           </main>
         </div>
         <MobileNav />
+        <AIChatWidget />
       </div>
     </SidebarProvider>
   );

@@ -148,8 +148,16 @@ export default function StaffSignup() {
     },
     onError: (error: any) => {
       // Check for account exists error codes
-      if (error.code === 'ACCOUNT_EXISTS_VERIFIED' || error.code === 'ACCOUNT_EXISTS_UNVERIFIED') {
-        setAccountExistsError({ code: error.code, email: error.email || form.getValues("email") });
+      if (
+        error.code === 'ACCOUNT_EXISTS_VERIFIED' || 
+        error.code === 'ACCOUNT_EXISTS_UNVERIFIED' ||
+        error.code === 'UNVERIFIED_ACCOUNT' ||
+        error.code === 'ACCOUNT_EXISTS'
+      ) {
+        setAccountExistsError({ 
+          code: error.code === 'UNVERIFIED_ACCOUNT' ? 'ACCOUNT_EXISTS_UNVERIFIED' : (error.code === 'ACCOUNT_EXISTS' ? 'ACCOUNT_EXISTS_VERIFIED' : error.code), 
+          email: error.email || form.getValues("email") 
+        });
       } else {
         setAccountExistsError(null);
         toast({

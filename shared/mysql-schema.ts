@@ -618,6 +618,8 @@ export const PermissionGroups = {
   DEADLINES: 'deadlines',
   TASKS: 'tasks',
   SUPPORT: 'support',
+  KNOWLEDGE: 'knowledge',
+  AI: 'ai',
   REPORTS: 'reports',
   SETTINGS: 'settings',
   AGENTS: 'agents',
@@ -702,6 +704,9 @@ export const DefaultPermissions: Array<{
   { slug: 'knowledge.view', label: 'View Knowledge Base', description: 'Access knowledge base articles', featureGroup: 'knowledge', defaultRoles: ['client', 'agent', 'tax_office', 'admin'] },
   { slug: 'knowledge.create', label: 'Create Articles', description: 'Create knowledge base articles', featureGroup: 'knowledge', defaultRoles: ['agent', 'tax_office', 'admin'] },
   { slug: 'knowledge.edit', label: 'Edit Articles', description: 'Edit knowledge base articles', featureGroup: 'knowledge', defaultRoles: ['agent', 'tax_office', 'admin'] },
+  
+  // AI Assistant
+  { slug: 'ai.assistant_access', label: 'AI Tax Assistant', description: 'Access AI-powered tax assistant for document analysis and questions', featureGroup: 'ai', defaultRoles: ['agent', 'tax_office', 'admin'] },
   
   // Reports (Agent: scoped to assigned clients only, no export)
   { slug: 'reports.view', label: 'View Reports', description: 'Access reports and analytics (Agent: assigned clients only)', featureGroup: 'reports', defaultRoles: ['agent', 'tax_office', 'admin'] },
@@ -1069,3 +1074,87 @@ export const insertHomePageAgentSchema = createInsertSchema(homePageAgents).omit
 
 export type InsertHomePageAgent = z.infer<typeof insertHomePageAgentSchema>;
 export type HomePageAgent = typeof homePageAgents.$inferSelect;
+
+// AI Chat Sessions Table - tracks conversation history for AI Tax Assistant
+export const aiChatSessions = mysqlTable(
+  "ai_chat_sessions",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+    userId: varchar("user_id", { length: 36 }).notNull(),
+    title: varchar("title", { length: 255 }),
+    isActive: boolean("is_active").default(true),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => ({
+    userIdx: index("idx_ai_chat_sessions_user").on(table.userId),
+    activeIdx: index("idx_ai_chat_sessions_active").on(table.isActive),
+  }),
+);
+
+export const insertAiChatSessionSchema = createInsertSchema(aiChatSessions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertAiChatSession = z.infer<typeof insertAiChatSessionSchema>;
+export type AiChatSession = typeof aiChatSessions.$inferSelect;
+
+// AI Chat Message Roles
+export type AiMessageRole = 'user' | 'assistant' | 'system';
+
+// AI Chat Messages Table - individual messages within chat sessions
+export const aiChatMessages = mysqlTable(
+  "ai_chat_messages",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+    sessionId: varchar("session_id", { length: 36 }).notNull(),
+    role: varchar("role", { length: 20 }).notNull().$type<AiMessageRole>(),
+    content: text("content").notNull(),
+    documentRefs: json("document_refs").$type<string[]>(), // Array of document IDs referenced
+    tokenCount: int("token_count"),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => ({
+    sessionIdx: index("idx_ai_chat_messages_session").on(table.sessionId),
+    createdIdx: index("idx_ai_chat_messages_created").on(table.createdAt),
+  }),
+);
+
+export const insertAiChatMessageSchema = createInsertSchema(aiChatMessages).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertAiChatMessage = z.infer<typeof insertAiChatMessageSchema>;
+export type AiChatMessage = typeof aiChatMessages.$inferSelect;
+
+// AI Document Analysis Types
+export type AiAnalysisType = 'extraction' | 'validation' | 'comparison' | 'summary' | 'question';
+
+// AI Document Analysis Table - caches document analysis results
+export const aiDocumentAnalysis = mysqlTable(
+  "ai_document_analysis",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+    documentId: varchar("document_id", { length: 36 }).notNull(),
+    analysisType: varchar("analysis_type", { length: 50 }).notNull().$type<AiAnalysisType>(),
+    result: json("result"),
+    extractedText: text("extracted_text"), // Full text extracted from document
+    metadata: json("metadata"), // Additional metadata like form type, fields detected
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => ({
+    documentIdx: index("idx_ai_document_analysis_doc").on(table.documentId),
+    typeIdx: index("idx_ai_document_analysis_type").on(table.analysisType),
+  }),
+);
+
+export const insertAiDocumentAnalysisSchema = createInsertSchema(aiDocumentAnalysis).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertAiDocumentAnalysis = z.infer<typeof insertAiDocumentAnalysisSchema>;
+export type AiDocumentAnalysis = typeof aiDocumentAnalysis.$inferSelect;

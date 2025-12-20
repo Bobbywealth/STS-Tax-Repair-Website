@@ -1973,6 +1973,7 @@ export default function HomePage() {
               ©Copyright 2025 Ststaxrepair.com. All Rights Reserved
             </p>
             <div className="flex items-center gap-6 text-sm text-gray-500">
+              <Link href="/staff-signup" className="hover:text-white transition-colors">Join Our Team</Link>
               <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
               <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
             </div>

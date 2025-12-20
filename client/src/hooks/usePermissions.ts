@@ -111,6 +111,9 @@ export const PERMISSIONS = {
   KNOWLEDGE_CREATE: 'knowledge.create',
   KNOWLEDGE_EDIT: 'knowledge.edit',
   
+  // AI Assistant
+  AI_ASSISTANT_ACCESS: 'ai.assistant_access',
+  
   // Reports (Agent: scoped to assigned clients only, no export)
   REPORTS_VIEW: 'reports.view',
   REPORTS_EXPORT: 'reports.export',
