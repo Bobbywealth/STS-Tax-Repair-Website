@@ -7,18 +7,21 @@ import type { AiDocumentAnalysis, AiAnalysisType } from '@shared/mysql-schema';
 import { eq, and } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 
-// Initialize OpenAI client lazily
+// Initialize OpenAI client only if API key is provided
 let openai: OpenAI | null = null;
-function getOpenAIClient() {
-  if (openai) return openai;
-  
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error('OPENAI_API_KEY is not configured. Please add it to your environment variables.');
-  }
-  
+if (process.env.OPENAI_API_KEY) {
   openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
   });
+} else {
+  console.warn('[AI] OPENAI_API_KEY is missing. AI features will be disabled.');
+}
+
+// Helper to ensure OpenAI is configured
+function ensureOpenAI() {
+  if (!openai) {
+    throw new Error('AI service not configured. Please add OPENAI_API_KEY to environment variables.');
+  }
   return openai;
 }
 
@@ -155,8 +158,8 @@ ${extractedText}`;
   }
   
   try {
-    const client = getOpenAIClient();
-    const completion = await client.chat.completions.create({
+    const ai = ensureOpenAI();
+    const completion = await ai.chat.completions.create({
       model: DEFAULT_MODEL,
       messages: [
         { role: 'system', content: TAX_ASSISTANT_SYSTEM_PROMPT },
@@ -276,8 +279,8 @@ ${message}`;
   messages.push({ role: 'user', content: userMessage });
   
   try {
-    const client = getOpenAIClient();
-    const completion = await client.chat.completions.create({
+    const ai = ensureOpenAI();
+    const completion = await ai.chat.completions.create({
       model: DEFAULT_MODEL,
       messages,
       temperature: 0.7,
@@ -323,8 +326,8 @@ ${question}`;
   messages.push({ role: 'user', content: userMessage });
   
   try {
-    const client = getOpenAIClient();
-    const completion = await client.chat.completions.create({
+    const ai = ensureOpenAI();
+    const completion = await ai.chat.completions.create({
       model: DEFAULT_MODEL,
       messages,
       temperature: 0.7,
@@ -353,10 +356,10 @@ ${documentTexts.map((text, i) => `--- Document ${i + 1} ---\n${text}\n`).join('\
 
 Documents:
 ${documentTexts.map((text, i) => `--- Document ${i + 1} ---\n${text}\n`).join('\n')}`;
-  
+
   try {
-    const client = getOpenAIClient();
-    const completion = await client.chat.completions.create({
+    const ai = ensureOpenAI();
+    const completion = await ai.chat.completions.create({
       model: DEFAULT_MODEL,
       messages: [
         { role: 'system', content: TAX_ASSISTANT_SYSTEM_PROMPT },
