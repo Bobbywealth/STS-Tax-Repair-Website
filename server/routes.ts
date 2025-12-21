@@ -1291,6 +1291,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get referrers list for registration (public endpoint)
   // Returns staff grouped by Tax Office with role information
   app.get("/api/users/referrers", async (req, res) => {
+    const diagId = `referrers-${Date.now()}`;
     try {
       // Get all users and offices
       const users = await storage.getUsers();
@@ -1309,7 +1310,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return role !== "client" && isActive;
       });
       
-      console.log(`[Referrers API] Found ${staffMembers.length} staff members out of ${users.length} total users`);
+      console.log(`[${diagId}] Referrers API - Found ${staffMembers.length} staff members out of ${users.length} total users`);
       
       // Map staff with office and role info
       const referrers = staffMembers.map((u) => {
@@ -1371,11 +1372,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return (a.fullName || '').localeCompare(b.fullName || '');
       });
       
-      console.log(`[Referrers API] Returning ${referrers.length} referrers`);
+      console.log(`[${diagId}] Referrers API - Returning ${referrers.length} referrers`);
       res.json(referrers);
     } catch (error: any) {
-      console.error("Error fetching referrers:", error);
-      res.status(500).json({ message: "Failed to fetch referrers" });
+      console.error(`[${diagId}] Error fetching referrers:`, error);
+      // Do not block registration if referrers can't be fetched; return empty list gracefully
+      res.setHeader('X-Diag-Id', diagId);
+      res.status(200).json([]);
     }
   });
 
