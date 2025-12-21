@@ -758,10 +758,7 @@ export default function Register() {
                                         value={referrer.id}
                                         data-testid={`referrer-option-${referrer.id}`}
                                       >
-                                        <span className="flex items-center gap-2">
-                                          <span>{referrer.fullName}</span>
-                                          <span className="text-xs text-muted-foreground">({referrer.roleLabel})</span>
-                                        </span>
+                                        <span>{referrer.fullName}</span>
                                       </SelectItem>
                                     ))}
                                   </SelectGroup>
