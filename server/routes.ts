@@ -63,12 +63,54 @@ import {
   generateSecureToken,
   sendEmail
 } from "./email";
+import type { OfficeBranding as EmailBranding } from "./email";
 import nodemailer from "nodemailer";
 import twilio from "twilio";
 import { randomUUID } from "crypto";
 import aiRoutes from "./ai-routes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  const appUrl =
+    process.env.APP_URL ||
+    process.env.RENDER_EXTERNAL_URL ||
+    (process.env.NODE_ENV === "production" ? "https://ststaxrepair.org" : null) ||
+    "http://localhost:5000";
+
+  async function getEmailBrandingForOffice(officeId?: string | null): Promise<EmailBranding | undefined> {
+    if (!officeId) return undefined;
+    try {
+      const [office, branding] = await Promise.all([
+        storage.getOffice(officeId),
+        storage.getOfficeBranding(officeId),
+      ]);
+
+      const companyName = (branding as any)?.companyName || office?.name || "STS Tax Repair";
+      const hasLogo = Boolean((branding as any)?.logoUrl);
+
+      return {
+        companyName,
+        // Use the public logo endpoint so it renders in email clients
+        logoUrl: hasLogo ? `${appUrl}/api/offices/${officeId}/logo` : undefined,
+        primaryColor: (branding as any)?.primaryColor || "#1a4d2e",
+        secondaryColor: (branding as any)?.secondaryColor || "#4CAF50",
+        replyToEmail: (branding as any)?.replyToEmail || undefined,
+        replyToName: (branding as any)?.replyToName || undefined,
+      };
+    } catch (e) {
+      console.warn("[EMAIL] Failed to load office branding for email:", e);
+      return undefined;
+    }
+  }
+
+  async function getEmailBrandingForUser(userId?: string | null): Promise<EmailBranding | undefined> {
+    if (!userId) return undefined;
+    try {
+      const user = await storage.getUser(userId);
+      return await getEmailBrandingForOffice((user as any)?.officeId || null);
+    } catch {
+      return undefined;
+    }
+  }
   // Password reset endpoint - works for both Replit and Render
   // This resets the password hash fresh so it works in the current environment
   app.post("/api/setup/reset-password", async (req, res) => {
@@ -197,10 +239,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Send password reset email
       console.log(`[PASSWORD RESET] Attempting to send reset email to ${email} for user ${user.id}`);
+      const emailBranding = await getEmailBrandingForUser(user.id);
       const emailResult = await sendPasswordResetEmail(
         email,
         token,
-        user.firstName || undefined
+        user.firstName || undefined,
+        emailBranding
       );
 
       if (emailResult.success) {
@@ -881,7 +925,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       // Send verification email (non-blocking)
-      sendEmailVerificationEmail(email, verificationToken, firstName)
+      getEmailBrandingForOffice(clientOfficeId).then((emailBranding) =>
+        sendEmailVerificationEmail(email, verificationToken, firstName, emailBranding)
+      )
         .then(result => {
           if (result.success) {
             console.log(`Verification email sent to ${email}`);
@@ -1017,7 +1063,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (user && user.email) {
         // Send welcome email after verification (non-blocking)
-        sendWelcomeEmail(user.email, user.firstName || 'there', user.role || 'client')
+        getEmailBrandingForUser(user.id).then((emailBranding) =>
+          sendWelcomeEmail(user.email!, user.firstName || 'there', user.role || 'client', emailBranding)
+        )
           .then(result => {
             if (result.success) {
               console.log(`Welcome email sent to ${user.email} after verification`);
@@ -1077,7 +1125,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.incrementEmailVerificationResendCount(existingToken.token);
         
         // Resend verification email
-        const result = await sendEmailVerificationEmail(email, existingToken.token, user.firstName || undefined);
+        const emailBranding = await getEmailBrandingForUser(user.id);
+        const result = await sendEmailVerificationEmail(email, existingToken.token, user.firstName || undefined, emailBranding);
         
         if (result.success) {
           return res.json({ message: "Verification email has been resent. Please check your inbox." });
@@ -1098,7 +1147,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       // Send verification email
-      const result = await sendEmailVerificationEmail(email, newToken, user.firstName || undefined);
+      const emailBranding = await getEmailBrandingForUser(user.id);
+      const result = await sendEmailVerificationEmail(email, newToken, user.firstName || undefined, emailBranding);
       
       if (result.success) {
         return res.json({ message: "Verification email has been sent. Please check your inbox." });
@@ -2392,7 +2442,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       // Send verification email to staff member (non-blocking)
-      sendEmailVerificationEmail(invite.email, verificationToken, firstName)
+      getEmailBrandingForUser(user!.id).then((emailBranding) =>
+        sendEmailVerificationEmail(invite.email, verificationToken, firstName, emailBranding)
+      )
         .then(result => {
           if (result.success) {
             console.log(`Staff verification email sent to ${invite.email}`);
@@ -2913,6 +2965,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const client = await storage.getUser(result.data.clientId);
             if (client?.email) {
               const appointmentDate = new Date(result.data.appointmentDate);
+              const emailBranding = await getEmailBrandingForUser(client.id);
               await sendAppointmentConfirmationEmail(
                 client.email,
                 client.firstName || 'Client',
@@ -2920,7 +2973,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 appointmentDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
                 result.data.location || undefined,
                 undefined,
-                result.data.notes || undefined
+                result.data.notes || undefined,
+                emailBranding
               );
               console.log(`[EMAIL] Appointment confirmation sent to ${client.email}`);
             }
@@ -3051,13 +3105,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           try {
             const client = await storage.getUser(result.data.clientId);
             if (client?.email) {
+              const emailBranding = await getEmailBrandingForUser(client.id);
               await sendPaymentReceivedEmail(
                 client.email,
                 client.firstName || 'Client',
                 result.data.amountPaid?.toString() || '0',
                 new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
                 result.data.paymentMethod || undefined,
-                payment.id
+                payment.id,
+                emailBranding
               );
               console.log(`[EMAIL] Payment received notification sent to ${client.email}`);
             }
@@ -3323,13 +3379,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 'paid': 'Your refund has been paid! Please check your bank account.',
               };
               
+              const emailBranding = await getEmailBrandingForUser(client.id);
               await sendTaxFilingStatusEmail(
                 client.email,
                 client.firstName || 'Client',
                 filing.taxYear?.toString() || new Date().getFullYear().toString(),
                 status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' '),
                 statusMessages[status] || note || undefined,
-                filing.estimatedRefund?.toString() || filing.actualRefund?.toString() || undefined
+                filing.estimatedRefund?.toString() || filing.actualRefund?.toString() || undefined,
+                emailBranding
               );
               console.log(`[EMAIL] Tax filing status notification sent to ${client.email}`);
             }
@@ -3534,6 +3592,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const creator = creatorId ? await storage.getUser(creatorId) : null;
             
             if (assignedUser?.email) {
+              const emailBranding = await getEmailBrandingForUser(assignedUser.id);
               await sendTaskAssignmentEmail(
                 assignedUser.email,
                 assignedUser.firstName || assignedTo,
@@ -3542,7 +3601,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 dueDate ? new Date(dueDate).toLocaleDateString() : undefined,
                 priority || 'medium',
                 clientName || undefined,
-                creator ? `${creator.firstName} ${creator.lastName}` : undefined
+                creator ? `${creator.firstName} ${creator.lastName}` : undefined,
+                emailBranding
               );
               console.log(`[EMAIL] Task assignment notification sent to ${assignedUser.email}`);
             }
@@ -3974,11 +4034,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           try {
             const client = await storage.getUser(result.data.clientId);
             if (client?.email) {
+              const emailBranding = await getEmailBrandingForUser(client.id);
               await sendDocumentUploadConfirmationEmail(
                 client.email,
                 client.firstName || 'Client',
                 result.data.documentName || 'Document',
-                result.data.documentType || 'General'
+                result.data.documentType || 'General',
+                (result.data as any).uploadedBy || undefined,
+                emailBranding
               );
               console.log(`[EMAIL] Document upload confirmation sent to ${client.email}`);
             }
@@ -4114,10 +4177,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (client?.email) {
               const formData = result.data.formData as { taxYear?: string } | undefined;
               const taxYear = formData?.taxYear || new Date().getFullYear().toString();
+              const emailBranding = await getEmailBrandingForUser(client.id);
               await sendSignatureRequestEmail(
                 client.email,
                 client.firstName || 'Client',
-                taxYear
+                taxYear,
+                emailBranding
               );
               console.log(`[EMAIL] E-signature request notification sent to ${client.email}`);
             }
@@ -4162,11 +4227,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const client = await storage.getUser(signature.clientId);
           if (client?.email) {
             const taxYear = signature.formData?.taxYear || new Date().getFullYear().toString();
+            const emailBranding = await getEmailBrandingForUser(client.id);
             await sendSignatureCompletedEmail(
               client.email,
               client.firstName || 'Client',
               new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
-              taxYear
+              taxYear,
+              emailBranding
             );
             console.log(`[EMAIL] E-signature completed notification sent to ${client.email}`);
           }
@@ -5882,12 +5949,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           const client = await storage.getUser(clientId);
           if (client?.email) {
+            const emailBranding = await getEmailBrandingForUser(client.id);
             await sendSupportTicketCreatedEmail(
               client.email,
               client.firstName || 'Client',
               ticket.id,
               ticketData.subject || 'Support Request',
-              ticketData.priority || 'normal'
+              ticketData.priority || 'normal',
+              emailBranding
             );
             console.log(`[EMAIL] Support ticket created notification sent to ${client.email}`);
           }
@@ -5937,13 +6006,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const responder = responderId ? await storage.getUser(responderId) : null;
           
           if (client?.email) {
+            const emailBranding = await getEmailBrandingForUser(client.id);
             await sendSupportTicketResponseEmail(
               client.email,
               client.firstName || 'Client',
               ticket.id,
               ticket.subject || 'Support Request',
               req.body.response,
-              responder ? `${responder.firstName} ${responder.lastName}` : 'Support Team'
+              responder ? `${responder.firstName} ${responder.lastName}` : 'Support Team',
+              emailBranding
             );
             console.log(`[EMAIL] Support ticket response notification sent to ${client.email}`);
           }
@@ -6845,6 +6916,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         for (const admin of recipients) {
           // Send email notification
+          const emailBranding = await getEmailBrandingForOffice((staffRequest as any).officeId || null);
           await sendStaffRequestNotificationEmail(
             admin.email as string,
             `${admin.firstName || ''} ${admin.lastName || ''}`.trim() || 'Admin',
@@ -6852,7 +6924,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             lastName,
             email,
             roleRequested,
-            reason || 'No reason provided'
+            reason || 'No reason provided',
+            emailBranding
           );
           
           // Create in-app notification
