@@ -4255,6 +4255,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return !!(process.env.REPL_ID && process.env.REPLIT_DOMAINS);
   };
 
+  // Simple test upload endpoint (no FTP, just receive data)
+  app.post("/api/test-upload", isAuthenticated, async (req, res) => {
+    console.log('[TEST-UPLOAD] Request received');
+    console.log('[TEST-UPLOAD] Headers:', req.headers);
+    
+    let totalBytes = 0;
+    const chunks: Buffer[] = [];
+    
+    req.on('data', (chunk) => {
+      totalBytes += chunk.length;
+      chunks.push(chunk);
+      console.log(`[TEST-UPLOAD] Received chunk: ${chunk.length} bytes (total: ${totalBytes})`);
+    });
+    
+    req.on('end', () => {
+      console.log(`[TEST-UPLOAD] Upload complete: ${totalBytes} bytes`);
+      res.json({ 
+        success: true, 
+        bytesReceived: totalBytes,
+        message: 'Test upload successful'
+      });
+    });
+    
+    req.on('error', (error) => {
+      console.error('[TEST-UPLOAD] Request error:', error);
+      res.status(500).json({ error: error.message });
+    });
+  });
+
   // Test FTP connection endpoint
   app.get("/api/test-ftp", isAuthenticated, async (req, res) => {
     try {

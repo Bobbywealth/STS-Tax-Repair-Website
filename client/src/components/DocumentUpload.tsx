@@ -62,18 +62,30 @@ export function DocumentUpload({ clientId, onUpload }: DocumentUploadProps) {
 
         if (mode === 'ftp') {
           // FTP mode: Send file directly to our server which handles FTP upload
+          console.log('Converting file to buffer...');
           const fileBuffer = await file.arrayBuffer();
-          const ftpResponse = await fetch('/api/documents/upload-ftp', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/octet-stream',
-              'x-client-id': clientId,
-              'x-file-name': encodeURIComponent(file.name),
-              'x-file-type': file.type || 'application/octet-stream',
-            },
-            credentials: 'include',
-            body: fileBuffer,
-          });
+          console.log(`File buffer size: ${fileBuffer.byteLength} bytes`);
+          
+          const uploadUrl = '/api/documents/upload-ftp';
+          console.log(`Uploading to: ${window.location.origin}${uploadUrl}`);
+          
+          let ftpResponse;
+          try {
+            ftpResponse = await fetch(uploadUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/octet-stream',
+                'x-client-id': clientId,
+                'x-file-name': encodeURIComponent(file.name),
+                'x-file-type': file.type || 'application/octet-stream',
+              },
+              credentials: 'include',
+              body: fileBuffer,
+            });
+          } catch (fetchError) {
+            console.error('Fetch failed with error:', fetchError);
+            throw new Error(`Network error: ${fetchError.message}`);
+          }
 
           if (!ftpResponse.ok) {
             const errorData = await ftpResponse.json().catch(() => ({}));
