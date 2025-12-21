@@ -226,6 +226,11 @@ export default function Branding() {
       // Save other branding settings (colors, name, slug)
       const dataToSave = { ...formData };
       delete dataToSave.logoUrl; // Remove logoUrl as it's handled separately
+      // Backend expects `slug` (office table), UI stores it as `officeSlug`
+      if ((dataToSave as any).officeSlug !== undefined) {
+        (dataToSave as any).slug = (dataToSave as any).officeSlug;
+        delete (dataToSave as any).officeSlug;
+      }
 
       if (Object.keys(dataToSave).length > 0) {
         await saveBrandingMutation.mutateAsync(dataToSave);
