@@ -371,11 +371,6 @@
     height: 100%;
   }
 
-  /* Prevent double vertical scrollbars; individual layouts can manage their own scrolling */
-  body {
-    overflow: hidden;
-  }
-
   * {
     @apply border-border;
   }

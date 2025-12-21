@@ -57,7 +57,6 @@ import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { NavigationProgress } from "@/components/NavigationProgress";
 import { UpdateNotification } from "@/components/UpdateNotification";
-import { AIChatWidget } from "@/components/AIChatWidget";
 import { usePWA } from "@/hooks/usePWA";
 import { useAuthStorage } from "@/hooks/useAuthStorage";
 
@@ -509,7 +508,6 @@ function App() {
           </Suspense>
           <PWAInstallPrompt />
           <UpdateNotification />
-          <AIChatWidget />
         </TooltipProvider>
       </QueryClientProvider>
     </ErrorBoundary>
