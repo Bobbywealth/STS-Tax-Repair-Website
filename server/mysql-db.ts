@@ -325,7 +325,6 @@ export async function runMySQLMigrations(): Promise<void> {
             INDEX idx_permissions_slug (slug)
           )
         `);
-        await seedDefaultPermissions(connection);
       }
       
       if (!await tableExists('role_permissions')) {
@@ -343,8 +342,12 @@ export async function runMySQLMigrations(): Promise<void> {
             UNIQUE KEY unique_role_permission (role, permission_id)
           )
         `);
-        await seedDefaultRolePermissions(connection);
       }
+      
+      // Always (re)seed idempotently so new permissions/default roles get applied
+      // even when tables already exist (INSERT IGNORE prevents duplicates).
+      await seedDefaultPermissions(connection);
+      await seedDefaultRolePermissions(connection);
     } catch (err: any) { console.error('Error in permissions migration:', err.message); }
 
     try {
@@ -429,6 +432,58 @@ export async function runMySQLMigrations(): Promise<void> {
       }
     } catch (err: any) { console.error('Error updating e_signatures table:', err.message); }
 
+    // Ensure notification_preferences matches expected schema (older deployments used email_enabled/in_app_enabled)
+    try {
+      if (await tableExists('notification_preferences')) {
+        const desiredColumns: Array<{ name: string; alterSql: string }> = [
+          { name: 'email_notifications', alterSql: `ALTER TABLE notification_preferences ADD COLUMN email_notifications BOOLEAN DEFAULT TRUE` },
+          { name: 'document_alerts', alterSql: `ALTER TABLE notification_preferences ADD COLUMN document_alerts BOOLEAN DEFAULT TRUE` },
+          { name: 'status_notifications', alterSql: `ALTER TABLE notification_preferences ADD COLUMN status_notifications BOOLEAN DEFAULT TRUE` },
+          { name: 'message_alerts', alterSql: `ALTER TABLE notification_preferences ADD COLUMN message_alerts BOOLEAN DEFAULT TRUE` },
+          { name: 'sms_notifications', alterSql: `ALTER TABLE notification_preferences ADD COLUMN sms_notifications BOOLEAN DEFAULT FALSE` },
+          { name: 'updated_at', alterSql: `ALTER TABLE notification_preferences ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP` },
+        ];
+
+        for (const col of desiredColumns) {
+          const [rows] = await connection.query(
+            `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'notification_preferences' AND COLUMN_NAME = ?`,
+            [dbName, col.name],
+          );
+          if (Array.isArray(rows) && rows.length === 0) {
+            console.log(`Adding ${col.name} column to notification_preferences table...`);
+            await connection.query(col.alterSql);
+          }
+        }
+
+        // Backfill from legacy columns when present
+        const [legacyEmail] = await connection.query(
+          `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'notification_preferences' AND COLUMN_NAME = 'email_enabled'`,
+          [dbName],
+        );
+        const [legacyInApp] = await connection.query(
+          `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'notification_preferences' AND COLUMN_NAME = 'in_app_enabled'`,
+          [dbName],
+        );
+
+        if (Array.isArray(legacyEmail) && legacyEmail.length > 0) {
+          await connection.query(
+            `UPDATE notification_preferences SET email_notifications = email_enabled WHERE email_enabled IS NOT NULL`,
+          );
+        }
+        if (Array.isArray(legacyInApp) && legacyInApp.length > 0) {
+          await connection.query(
+            `UPDATE notification_preferences
+             SET document_alerts = in_app_enabled,
+                 status_notifications = in_app_enabled,
+                 message_alerts = in_app_enabled
+             WHERE in_app_enabled IS NOT NULL`,
+          );
+        }
+      }
+    } catch (err: any) {
+      console.error('Error updating notification_preferences table:', err.message);
+    }
+
     // Final catch-all for remaining tables (minimal versions)
     const tablesToCreate: Record<string, string> = {
       'sessions': `CREATE TABLE IF NOT EXISTS sessions (sid VARCHAR(255) PRIMARY KEY, sess LONGTEXT NOT NULL, expire BIGINT NOT NULL, INDEX IDX_session_expire (expire))`,
@@ -442,7 +497,7 @@ export async function runMySQLMigrations(): Promise<void> {
       'email_verification_tokens': `CREATE TABLE IF NOT EXISTS email_verification_tokens (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), user_id VARCHAR(36) NOT NULL, token VARCHAR(64) NOT NULL UNIQUE, expires_at TIMESTAMP NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, INDEX idx_email_verification_user (user_id), INDEX idx_email_verification_token (token))`,
       'password_reset_tokens': `CREATE TABLE IF NOT EXISTS password_reset_tokens (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), user_id VARCHAR(36) NOT NULL, token VARCHAR(64) NOT NULL UNIQUE, expires_at TIMESTAMP NOT NULL, used_at TIMESTAMP NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, INDEX idx_password_reset_user (user_id), INDEX idx_password_reset_token (token))`,
       'staff_requests': `CREATE TABLE IF NOT EXISTS staff_requests (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), first_name VARCHAR(100) NOT NULL, last_name VARCHAR(100) NOT NULL, email VARCHAR(255) NOT NULL, phone VARCHAR(30), role_requested VARCHAR(20) NOT NULL, office_id VARCHAR(36), status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
-      'notification_preferences': `CREATE TABLE IF NOT EXISTS notification_preferences (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), user_id VARCHAR(36) NOT NULL UNIQUE, email_enabled BOOLEAN DEFAULT TRUE, in_app_enabled BOOLEAN DEFAULT TRUE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
+      'notification_preferences': `CREATE TABLE IF NOT EXISTS notification_preferences (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), user_id VARCHAR(36) NOT NULL UNIQUE, email_notifications BOOLEAN DEFAULT TRUE, document_alerts BOOLEAN DEFAULT TRUE, status_notifications BOOLEAN DEFAULT TRUE, message_alerts BOOLEAN DEFAULT TRUE, sms_notifications BOOLEAN DEFAULT FALSE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)`,
       'leads': `CREATE TABLE IF NOT EXISTS leads (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), name VARCHAR(255) NOT NULL, email VARCHAR(255), phone VARCHAR(30), status ENUM('new', 'contacted', 'qualified', 'converted', 'lost') DEFAULT 'new', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
       'staff_members': `CREATE TABLE IF NOT EXISTS staff_members (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), user_id VARCHAR(36), name TEXT NOT NULL, email VARCHAR(255), is_active BOOLEAN DEFAULT TRUE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
       'knowledge_base': `CREATE TABLE IF NOT EXISTS knowledge_base (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), title TEXT NOT NULL, content TEXT NOT NULL, category VARCHAR(100), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
@@ -458,6 +513,16 @@ export async function runMySQLMigrations(): Promise<void> {
           await connection.query(sql);
         }
       } catch (err: any) { console.error(`Error in ${tName} fallback migration:`, err.message); }
+    }
+
+    // Ensure permissions are seeded even if tables were created via fallback section
+    try {
+      if (await tableExists('permissions') && await tableExists('role_permissions')) {
+        await seedDefaultPermissions(connection);
+        await seedDefaultRolePermissions(connection);
+      }
+    } catch (err: any) {
+      console.error('Error reseeding permissions after fallback migrations:', err.message);
     }
 
     console.log('MySQL migrations completed successfully!');
