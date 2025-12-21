@@ -56,7 +56,10 @@ export class FTPStorageService {
         port: FTP_PORT,
         username: FTP_USER,
         password: FTP_PASSWORD,
-        readyTimeout: 30000,
+        readyTimeout: 15000,
+        connTimeout: 15000,
+        keepaliveInterval: 10000,
+        keepaliveCountMax: 3,
       });
 
       console.log(`[FTP] Connected successfully at ${new Date().toISOString()}`);
@@ -100,7 +103,7 @@ export class FTPStorageService {
     console.log(`[FTP] _uploadFileInternal start @ ${new Date().toISOString()}`);
     console.log(`[FTP] Getting SFTP client...`);
     const client = await this.getClient();
-    console.log(`[FTP] Got SFTP client @ ${new Date().toISOString()}`);
+      console.log(`[FTP] Got SFTP client @ ${new Date().toISOString()}`);
     
     try {
       const sanitizedFileName = this.sanitizeFileName(fileName);
@@ -120,7 +123,7 @@ export class FTPStorageService {
 
       const remotePath = `${remoteDirPath}/${uniqueFileName}`;
       console.log(`[FTP] put start -> ${remotePath}`);
-      await client.put(Readable.from(fileBuffer), remotePath);
+      await client.put(fileBuffer, remotePath);
       console.log(`[FTP] put done in ${Date.now() - t0}ms`);
 
       // Verify file exists after upload

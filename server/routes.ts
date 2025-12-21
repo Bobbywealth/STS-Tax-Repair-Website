@@ -4485,7 +4485,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`[FTP] Upload completed successfully at ${new Date().toISOString()}`);
             return result;
           }).catch(error => {
-            console.error(`[FTP] Upload failed at ${new Date().toISOString()}:`, error.message);
+            console.error(`[FTP] Upload failed at ${new Date().toISOString()}:`, error);
             throw error;
           });
 
@@ -4495,6 +4495,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             setTimeout(() => reject(new Error(`FTP upload timed out after ${timeoutMs}ms`)), timeoutMs)
           );
 
+          console.log('[FTP] Awaiting upload race (ftpUpload vs timeout)');
           const { filePath, fileUrl } = await Promise.race([ftpUpload, timeoutPromise]);
           console.log(`[FTP] Upload success: ${fileUrl}`);
 
