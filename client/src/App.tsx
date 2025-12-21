@@ -119,6 +119,7 @@ interface User {
   lastName: string | null;
   role: UserRole;
   profileImageUrl: string | null;
+  officeId?: string | null;
 }
 
 function useCurrentUser() {
@@ -380,6 +381,7 @@ function AdminLayout() {
     role: user.role || 'client',
     avatar: user.profileImageUrl || undefined,
     id: user.id,
+    officeId: (user as any).officeId || null,
   };
 
   const getProfileImageUrl = () => {

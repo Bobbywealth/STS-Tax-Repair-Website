@@ -5930,7 +5930,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 1) Explicit officeId query
       // 2) Explicit slug query (used by login pages with ?_office=slug)
       // 3) Office resolved by middleware (subdomain or _office query)
-      // 4) Logged-in user office (so main-domain staff portal can still be white-labeled)
       if (officeId) {
         resolvedOfficeId = officeId;
         office = await storage.getOffice(officeId);
@@ -5945,17 +5944,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         resolvedOfficeId = req.officeId as string;
         office = await storage.getOffice(resolvedOfficeId);
         branding = await storage.getOfficeBranding(resolvedOfficeId);
-      } else {
-        const sessionUserId =
-          req.userId || req.user?.claims?.sub || req.session?.userId || null;
-        if (sessionUserId) {
-          const user = await storage.getUser(sessionUserId);
-          if (user?.officeId) {
-            resolvedOfficeId = user.officeId;
-            office = await storage.getOffice(user.officeId);
-            branding = await storage.getOfficeBranding(user.officeId);
-          }
-        }
       }
       
       // Return office branding merged with defaults

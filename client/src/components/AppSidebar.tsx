@@ -59,13 +59,16 @@ interface AppSidebarProps {
     role: string;
     avatar?: string;
     id?: string;
+    officeId?: string | null;
   };
 }
 
 export function AppSidebar({ user }: AppSidebarProps) {
   const [location] = useLocation();
   const { hasPermission, role: permissionRole, isLoading } = usePermissions();
-  const { branding } = useBranding();
+  // Use explicit officeId so the main STS domain keeps STS branding by default,
+  // while office staff still see their office branding inside the CRM.
+  const { branding } = useBranding(user?.officeId || undefined);
   const { setOpenMobile, isMobile } = useSidebar();
   const logoUrl = branding?.logoUrl || defaultLogoUrl;
   const companyName = branding?.companyName || 'STS TaxRepair';
