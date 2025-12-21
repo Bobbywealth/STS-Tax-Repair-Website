@@ -4255,6 +4255,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return !!(process.env.REPL_ID && process.env.REPLIT_DOMAINS);
   };
 
+  // Test FTP connection endpoint
+  app.get("/api/test-ftp", isAuthenticated, async (req, res) => {
+    try {
+      console.log('[FTP-TEST] Testing FTP connection...');
+      const testResult = await ftpStorageService.listDirectory('/');
+      console.log('[FTP-TEST] FTP connection successful, found', testResult.length, 'items');
+      res.json({ 
+        success: true, 
+        message: 'FTP connection working',
+        itemCount: testResult.length,
+        items: testResult.slice(0, 5) // First 5 items
+      });
+    } catch (error: any) {
+      console.error('[FTP-TEST] FTP connection failed:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: error.message,
+        stack: error.stack
+      });
+    }
+  });
+
   // Object Storage - File Upload (returns presigned URL for Replit, or indicates FTP mode)
   app.post("/api/objects/upload", isAuthenticated, async (req, res) => {
     try {
@@ -4305,15 +4327,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Set a request-level timeout (120 seconds total for entire request)
+      // Set a request-level timeout (5 minutes total for entire request)
       // This ensures the upload doesn't hang indefinitely
       requestTimeout = setTimeout(() => {
         if (!isResponseSent && !res.headersSent) {
           isResponseSent = true;
-          console.error('[FTP] Request timeout: Upload request exceeded 120 seconds');
+          console.error('[FTP] Request timeout: Upload request exceeded 5 minutes');
           res.status(408).json({ error: "Upload request timed out. Please try again with a smaller file." });
         }
-      }, 120000); // 120 seconds
+      }, 300000); // 5 minutes
 
       // For raw binary uploads
       const chunks: Buffer[] = [];
@@ -4347,6 +4369,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
 
           console.log(`[FTP] Uploading file for client ${clientId}: ${fileName} (${fileBuffer.length} bytes)`);
+          console.log(`[FTP] Starting FTP upload at ${new Date().toISOString()}`);
 
           // Upload to GoDaddy via FTP (FTP service already has 60-second timeout)
           const ftpUpload = ftpStorageService.uploadFile(
@@ -4354,10 +4377,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             fileName,
             fileBuffer,
             fileType
-          );
+          ).then(result => {
+            console.log(`[FTP] Upload completed successfully at ${new Date().toISOString()}`);
+            return result;
+          }).catch(error => {
+            console.error(`[FTP] Upload failed at ${new Date().toISOString()}:`, error.message);
+            throw error;
+          });
 
-          // Allow 70 seconds for FTP operation (FTP service has 60s timeout + network buffer)
-          const timeoutMs = 70000;
+          // Allow 4.5 minutes for FTP operation (FTP service has 4min timeout + network buffer)
+          const timeoutMs = 270000;
           const timeoutPromise = new Promise<never>((_, reject) =>
             setTimeout(() => reject(new Error(`FTP upload timed out after ${timeoutMs}ms`)), timeoutMs)
           );

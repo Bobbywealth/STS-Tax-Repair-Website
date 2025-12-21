@@ -6,8 +6,8 @@ const FTP_USER = process.env.FTP_USER || '';
 const FTP_PASSWORD = process.env.FTP_PASSWORD || '';
 const FTP_PORT = parseInt(process.env.FTP_PORT || '21');
 
-// Overall timeout for FTP operations (60 seconds)
-const FTP_OPERATION_TIMEOUT = 60000;
+// Overall timeout for FTP operations (4 minutes for file uploads)
+const FTP_OPERATION_TIMEOUT = 240000;
 
 // Debug: Log FTP config at startup
 console.log(`[FTP-CONFIG] FTP_HOST="${FTP_HOST}", FTP_USER="${FTP_USER}", FTP_PORT=${FTP_PORT}`);
@@ -43,19 +43,26 @@ export class FTPStorageService {
       throw new Error('FTP credentials not configured. Set FTP_HOST, FTP_USER, and FTP_PASSWORD environment variables.');
     }
     
-    console.log(`[FTP] Connecting to ${FTP_HOST}:${FTP_PORT} as ${FTP_USER}...`);
+    console.log(`[FTP] Connecting to ${FTP_HOST}:${FTP_PORT} as ${FTP_USER} at ${new Date().toISOString()}...`);
     
-    await client.access({
-      host: FTP_HOST,
-      user: FTP_USER,
-      password: FTP_PASSWORD,
-      port: FTP_PORT,
-      secure: false,
-    });
-    
-    // Log the current working directory after login
-    const pwd = await client.pwd();
-    console.log(`[FTP] Connected successfully. Current directory: ${pwd}`);
+    try {
+      await client.access({
+        host: FTP_HOST,
+        user: FTP_USER,
+        password: FTP_PASSWORD,
+        port: FTP_PORT,
+        secure: false,
+      });
+      
+      console.log(`[FTP] Connected successfully at ${new Date().toISOString()}`);
+      
+      // Log the current working directory after login
+      const pwd = await client.pwd();
+      console.log(`[FTP] Current directory: ${pwd}`);
+    } catch (connectError) {
+      console.error(`[FTP] Connection failed at ${new Date().toISOString()}:`, connectError);
+      throw connectError;
+    }
     
     return client;
   }
@@ -82,7 +89,10 @@ export class FTPStorageService {
     mimeType?: string,
     baseDir: string = UPLOADS_DIR
   ): Promise<{ filePath: string; fileUrl: string }> {
+    console.log(`[FTP] _uploadFileInternal called at ${new Date().toISOString()}`);
+    console.log(`[FTP] Getting FTP client...`);
     const client = await this.getClient();
+    console.log(`[FTP] Got FTP client at ${new Date().toISOString()}`);
     
     try {
       const sanitizedFileName = this.sanitizeFileName(fileName);
