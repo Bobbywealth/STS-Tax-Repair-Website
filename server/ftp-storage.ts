@@ -57,7 +57,6 @@ export class FTPStorageService {
         username: FTP_USER,
         password: FTP_PASSWORD,
         readyTimeout: 15000,
-        connTimeout: 15000,
         keepaliveInterval: 10000,
         keepaliveCountMax: 3,
       });
@@ -210,11 +209,16 @@ export class FTPStorageService {
   }
 
   private async ensureDirectory(client: SftpClient, dirPath: string): Promise<void> {
-    const parts = dirPath.split('/').filter(p => p);
-    let currentPath = '';
-    
+    // IMPORTANT:
+    // - GoDaddy SFTP users are typically chrooted to their home directory.
+    // - Using absolute paths like "/ststaxrepair.org" tries to create dirs at filesystem root
+    //   and will fail with "Permission denied".
+    // Therefore we always work with paths relative to the user's home.
+    const parts = dirPath.split("/").filter(Boolean);
+    let currentPath = "";
+
     for (const part of parts) {
-      currentPath += (currentPath.endsWith('/') ? '' : '/') + part;
+      currentPath = currentPath ? `${currentPath}/${part}` : part; // no leading slash
       const exists = await client.exists(currentPath);
       if (!exists) {
         console.log(`[FTP] Creating directory: ${currentPath}`);
@@ -230,6 +234,22 @@ export class FTPStorageService {
       .substring(0, 200);
   }
 
+  private getMimeType(fileExt: string): string {
+    const mimeTypes: Record<string, string> = {
+      pdf: 'application/pdf',
+      png: 'image/png',
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      gif: 'image/gif',
+      doc: 'application/msword',
+      docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      xls: 'application/vnd.ms-excel',
+      xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      txt: 'text/plain',
+    };
+    return mimeTypes[fileExt] || 'application/octet-stream';
+  }
+
   // List files in a directory on FTP server (for debugging)
   async listDirectory(dirPath: string): Promise<{ name: string; type: string; size: number }[]> {
     const client = await this.getClient();
@@ -239,7 +259,7 @@ export class FTPStorageService {
       console.log(`[FTP] Listing directory: ${fullPath}`);
       
       const list = await client.list(fullPath);
-      return list.map(item => ({
+      return list.map((item: any) => ({
         name: item.name,
         type: item.type === 'd' ? 'directory' : 'file',
         size: item.size
