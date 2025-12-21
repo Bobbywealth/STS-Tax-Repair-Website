@@ -4428,15 +4428,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Set a request-level timeout (5 minutes total for entire request)
-      // This ensures the upload doesn't hang indefinitely
+      // Set a request-level timeout (60 seconds total for entire request)
+      // Keep tight to avoid long-hanging pending requests
       requestTimeout = setTimeout(() => {
         if (!isResponseSent && !res.headersSent) {
           isResponseSent = true;
-          console.error('[FTP] Request timeout: Upload request exceeded 5 minutes');
+          console.error('[FTP] Request timeout: Upload request exceeded 60 seconds');
           res.status(408).json({ error: "Upload request timed out. Please try again with a smaller file." });
         }
-      }, 300000); // 5 minutes
+      }, 60000); // 60 seconds
+
+      // Also set socket timeout to ensure LB cuts sooner
+      req.socket.setTimeout(65000);
 
       // For raw binary uploads
       const chunks: Buffer[] = [];
@@ -4486,8 +4489,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             throw error;
           });
 
-          // Allow 4.5 minutes for FTP operation (FTP service has 4min timeout + network buffer)
-          const timeoutMs = 270000;
+      // Allow 70 seconds for FTP operation (SFTP has its own 60s timeout + small buffer)
+      const timeoutMs = 70000;
           const timeoutPromise = new Promise<never>((_, reject) =>
             setTimeout(() => reject(new Error(`FTP upload timed out after ${timeoutMs}ms`)), timeoutMs)
           );

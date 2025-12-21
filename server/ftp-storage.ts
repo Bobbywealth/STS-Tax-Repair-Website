@@ -8,7 +8,7 @@ const FTP_PASSWORD = process.env.FTP_PASSWORD || "";
 const FTP_PORT = parseInt(process.env.FTP_PORT || "22");
 
 // Overall timeout for transfer operations (4 minutes for uploads)
-const FTP_OPERATION_TIMEOUT = 240000;
+const FTP_OPERATION_TIMEOUT = 60000;
 
 // Debug: Log FTP config at startup
 console.log(
