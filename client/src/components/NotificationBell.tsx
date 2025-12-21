@@ -47,6 +47,7 @@ interface Notification {
   isRead: boolean;
   readAt?: string;
   createdAt: string;
+  createdAtMs?: number | null;
 }
 
 const notificationIcons: Record<NotificationType, typeof Bell> = {
@@ -258,9 +259,12 @@ export function NotificationBell() {
     }
   }, [open, refetchNotifications]);
 
-  const formatTime = (dateStr: string) => {
+  const formatTime = (notification: Notification) => {
     try {
-      const d = parseApiDate(dateStr);
+      // Prefer epoch ms from API to avoid timezone parsing issues
+      const d = notification.createdAtMs
+        ? new Date(notification.createdAtMs)
+        : parseApiDate(notification.createdAt);
       return d ? formatDistanceToNow(d, { addSuffix: true }) : 'recently';
     } catch {
       return 'recently';
@@ -384,7 +388,7 @@ export function NotificationBell() {
                         {notification.message}
                       </p>
                       <p className="text-xs text-muted-foreground/70 mt-1">
-                        {formatTime(notification.createdAt)}
+                        {formatTime(notification)}
                       </p>
                     </div>
                   </div>

@@ -2142,29 +2142,65 @@ export class MySQLStorage implements IStorage {
     limit?: number;
     offset?: number;
   } = {}): Promise<Notification[]> {
-    const conditions = [eq(notificationsTable.userId, userId)];
-    
+    // IMPORTANT: Return createdAtMs/readAtMs from MySQL to avoid timezone / Date parsing
+    // discrepancies across environments/browsers.
+    const where: string[] = [`user_id = ?`];
+    const params: any[] = [userId];
+
     if (options.unreadOnly) {
-      conditions.push(eq(notificationsTable.isRead, false));
+      where.push(`is_read = false`);
     }
     if (options.type) {
-      conditions.push(eq(notificationsTable.type, options.type));
+      where.push(`type = ?`);
+      params.push(options.type);
     }
-    
-    let query = mysqlDb
-      .select()
-      .from(notificationsTable)
-      .where(and(...conditions))
-      .orderBy(desc(notificationsTable.createdAt));
-    
-    if (options.limit) {
-      query = query.limit(options.limit) as any;
-    }
-    if (options.offset) {
-      query = query.offset(options.offset) as any;
-    }
-    
-    return await query;
+
+    const limit = Number.isFinite(options.limit as any) ? Number(options.limit) : 50;
+    const offset = Number.isFinite(options.offset as any) ? Number(options.offset) : 0;
+
+    params.push(limit);
+    params.push(offset);
+
+    const [rows] = await mysqlPool.query(
+      `
+        SELECT
+          id,
+          user_id as userId,
+          type,
+          title,
+          message,
+          resource_type as resourceType,
+          resource_id as resourceId,
+          link,
+          is_read as isRead,
+          read_at as readAt,
+          created_at as createdAt,
+          (UNIX_TIMESTAMP(created_at) * 1000) as createdAtMs,
+          (CASE WHEN read_at IS NULL THEN NULL ELSE (UNIX_TIMESTAMP(read_at) * 1000) END) as readAtMs
+        FROM notifications
+        WHERE ${where.join(" AND ")}
+        ORDER BY created_at DESC
+        LIMIT ? OFFSET ?
+      `,
+      params,
+    );
+
+    return (rows as any[]).map((r) => ({
+      id: r.id,
+      userId: r.userId,
+      type: r.type,
+      title: r.title,
+      message: r.message,
+      resourceType: r.resourceType ?? null,
+      resourceId: r.resourceId ?? null,
+      link: r.link ?? null,
+      isRead: Boolean(r.isRead),
+      readAt: r.readAt ?? null,
+      createdAt: r.createdAt ?? null,
+      // Extra fields used by the frontend for accurate relative time display
+      createdAtMs: r.createdAtMs != null ? Number(r.createdAtMs) : null,
+      readAtMs: r.readAtMs != null ? Number(r.readAtMs) : null,
+    })) as any;
   }
 
   async getUnreadNotificationCount(userId: string): Promise<number> {

@@ -36,6 +36,7 @@ interface Notification {
   isRead: boolean;
   readAt?: string;
   createdAt: string;
+  createdAtMs?: number | null;
 }
 
 const typeLabels: Record<NotificationType, string> = {
@@ -149,9 +150,9 @@ export default function Notifications() {
     setLocation(target);
   };
 
-  const formatTime = (dateStr: string) => {
+  const formatTime = (notification: Notification) => {
     try {
-      const d = parseApiDate(dateStr);
+      const d = notification.createdAtMs ? new Date(notification.createdAtMs) : parseApiDate(notification.createdAt);
       return d ? formatDistanceToNow(d, { addSuffix: true }) : "recently";
     } catch {
       return "recently";
@@ -249,7 +250,7 @@ export default function Notifications() {
                             {notification.message}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {formatTime(notification.createdAt)}
+                            {formatTime(notification)}
                           </p>
                         </div>
                         <div className="flex flex-col items-end gap-2">
