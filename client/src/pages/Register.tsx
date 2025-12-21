@@ -79,7 +79,7 @@ const registerSchema = z.object({
   irsUsername: z.string().optional(),
   irsPassword: z.string().optional(),
   ssn: z.string().optional(),
-  referredById: z.string().optional(),
+  referredById: z.string().min(1, "Please select who referred you"),
   directDepositBank: z.string().optional(),
   bankRoutingNumber: z.string().optional(),
   bankAccountNumber: z.string().optional(),
@@ -224,6 +224,9 @@ export default function Register() {
     const values = form.getValues();
     if (currentStep === 1) {
       return values.firstName && values.lastName && values.email && values.password && values.confirmPassword;
+    }
+    if (currentStep === 3) {
+      return !!values.referredById;
     }
     return true;
   };
@@ -736,7 +739,9 @@ export default function Register() {
                         name="referredById"
                         render={({ field }) => (
                           <FormItem className="md:col-span-2">
-                            <FormLabel>Who Referred You? (optional)</FormLabel>
+                            <FormLabel>
+                              <span className="text-destructive">*</span> Who Referred You?
+                            </FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                               <FormControl>
                                 <SelectTrigger data-testid="select-referrer">
@@ -745,7 +750,6 @@ export default function Register() {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent className="max-h-[300px]">
-                                <SelectItem value="none">No referral</SelectItem>
                                 {Object.entries(referrersByOffice).map(([officeName, officeReferrers]) => (
                                   <SelectGroup key={officeName}>
                                     <SelectLabel className="font-semibold text-primary flex items-center gap-2 py-2">

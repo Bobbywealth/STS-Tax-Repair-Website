@@ -685,12 +685,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } = req.body;
 
       // Validate required fields
-      if (!firstName || !lastName || !email || !password || !fullName) {
+      if (!firstName || !lastName || !email || !password || !fullName || !referredById) {
         return res
           .status(400)
           .json({
             message:
-              "Required fields missing: firstName, lastName, email, password, fullName",
+              "Required fields missing: firstName, lastName, email, password, fullName, referredById",
           });
       }
 
@@ -759,6 +759,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         assignedTo: assignedTo,
         referralSource: referralSourceText,
       });
+
+      // Notify referrer if selected
+      if (assignedTo) {
+        try {
+          await mysqlStorage.createNotification({
+            userId: assignedTo,
+            type: 'new_client',
+            title: 'You were selected as a referrer',
+            message: `${firstName} ${lastName} (${email}) selected you as their referrer.`,
+            link: '/clients',
+            resourceType: 'client',
+            resourceId: user.id
+          });
+        } catch (refNotifErr) {
+          console.error(`[register] Failed to notify referrer ${assignedTo}:`, refNotifErr);
+        }
+      }
 
       // Create email verification token (expires in 24 hours)
       const verificationToken = generateSecureToken();
