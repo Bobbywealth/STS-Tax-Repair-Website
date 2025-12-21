@@ -12,7 +12,7 @@ Since your application is deployed on ststaxrepair.org (not on Replit), it uses 
 FTP_HOST=198.12.220.248
 FTP_USER=i28qwzd7d2dt
 FTP_PASSWORD=your_ftp_password_here  # Set this to your actual FTP password
-FTP_PORT=21
+FTP_PORT=22  # Use SFTP on port 22 (recommended)
 ```
 
 ## Setup Steps

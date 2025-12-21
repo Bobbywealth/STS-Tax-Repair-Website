@@ -1,16 +1,19 @@
-import * as ftp from 'basic-ftp';
-import { Readable, PassThrough } from 'stream';
+import { Readable } from "stream";
+import SftpClient from "ssh2-sftp-client";
 
-const FTP_HOST = process.env.FTP_HOST || '';
-const FTP_USER = process.env.FTP_USER || '';
-const FTP_PASSWORD = process.env.FTP_PASSWORD || '';
-const FTP_PORT = parseInt(process.env.FTP_PORT || '21');
+const FTP_HOST = process.env.FTP_HOST || "";
+const FTP_USER = process.env.FTP_USER || "";
+const FTP_PASSWORD = process.env.FTP_PASSWORD || "";
+// Default to SFTP port 22 (supported by GoDaddy). Override with FTP_PORT if needed.
+const FTP_PORT = parseInt(process.env.FTP_PORT || "22");
 
-// Overall timeout for FTP operations (4 minutes for file uploads)
+// Overall timeout for transfer operations (4 minutes for uploads)
 const FTP_OPERATION_TIMEOUT = 240000;
 
 // Debug: Log FTP config at startup
-console.log(`[FTP-CONFIG] FTP_HOST="${FTP_HOST}", FTP_USER="${FTP_USER}", FTP_PORT=${FTP_PORT}`);
+console.log(
+  `[FTP-CONFIG] FTP_HOST="${FTP_HOST}", FTP_USER="${FTP_USER}", FTP_PORT=${FTP_PORT}`
+);
 
 // Helper function to wrap any async operation with a timeout (properly cleans up timer)
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, operationName: string): Promise<T> {
@@ -29,41 +32,46 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, operationName: s
   });
 }
 
-// The FTP user lands in /home/i28qwzd7d2dt/ so paths are relative to that
+// The SFTP user lands in /home/i28qwzd7d2dt/ so paths are relative to that
 // ststaxrepair.org is a folder directly in home, NOT inside public_html
-const BASE_PATH = 'ststaxrepair.org';
-const UPLOADS_DIR = 'uploads/clients';
+const BASE_PATH = "ststaxrepair.org";
+const UPLOADS_DIR = "uploads/clients";
 
 export class FTPStorageService {
-  private async getClient(): Promise<ftp.Client> {
-    const client = new ftp.Client(30000); // 30 second timeout for operations
-    client.ftp.verbose = true; // Enable verbose logging
-    
+  private async getClient(): Promise<SftpClient> {
     if (!FTP_HOST || !FTP_USER || !FTP_PASSWORD) {
-      throw new Error('FTP credentials not configured. Set FTP_HOST, FTP_USER, and FTP_PASSWORD environment variables.');
+      throw new Error(
+        "FTP credentials not configured. Set FTP_HOST, FTP_USER, and FTP_PASSWORD environment variables."
+      );
     }
-    
-    console.log(`[FTP] Connecting to ${FTP_HOST}:${FTP_PORT} as ${FTP_USER} at ${new Date().toISOString()}...`);
-    
+
+    const client = new SftpClient();
+    console.log(
+      `[FTP] Connecting via SFTP to ${FTP_HOST}:${FTP_PORT} as ${FTP_USER} at ${new Date().toISOString()}...`
+    );
+
     try {
-      await client.access({
+      await client.connect({
         host: FTP_HOST,
-        user: FTP_USER,
-        password: FTP_PASSWORD,
         port: FTP_PORT,
-        secure: false,
+        username: FTP_USER,
+        password: FTP_PASSWORD,
+        readyTimeout: 30000,
       });
-      
+
       console.log(`[FTP] Connected successfully at ${new Date().toISOString()}`);
-      
+
       // Log the current working directory after login
-      const pwd = await client.pwd();
+      const pwd = await client.cwd();
       console.log(`[FTP] Current directory: ${pwd}`);
     } catch (connectError) {
-      console.error(`[FTP] Connection failed at ${new Date().toISOString()}:`, connectError);
+      console.error(
+        `[FTP] Connection failed at ${new Date().toISOString()}:`,
+        connectError
+      );
       throw connectError;
     }
-    
+
     return client;
   }
 
@@ -78,7 +86,7 @@ export class FTPStorageService {
     return withTimeout(
       this._uploadFileInternal(clientId, fileName, fileBuffer, mimeType, baseDir),
       FTP_OPERATION_TIMEOUT,
-      'File upload'
+      "File upload"
     );
   }
 
@@ -90,9 +98,9 @@ export class FTPStorageService {
     baseDir: string = UPLOADS_DIR
   ): Promise<{ filePath: string; fileUrl: string }> {
     console.log(`[FTP] _uploadFileInternal called at ${new Date().toISOString()}`);
-    console.log(`[FTP] Getting FTP client...`);
+    console.log(`[FTP] Getting SFTP client...`);
     const client = await this.getClient();
-    console.log(`[FTP] Got FTP client at ${new Date().toISOString()}`);
+    console.log(`[FTP] Got SFTP client at ${new Date().toISOString()}`);
     
     try {
       const sanitizedFileName = this.sanitizeFileName(fileName);
@@ -100,7 +108,7 @@ export class FTPStorageService {
       const uniqueFileName = `${timestamp}_${sanitizedFileName}`;
       const normalizedBaseDir = baseDir.replace(/^\/+|\/+$/g, '');
       
-      // Use relative path from FTP home directory
+      // Use relative path from home directory
       const remoteDirPath = `${BASE_PATH}/${normalizedBaseDir}/${clientId}`;
       
       console.log(`[FTP] Preparing to upload file:`);
@@ -110,43 +118,29 @@ export class FTPStorageService {
       console.log(`[FTP]   - Remote directory: ${remoteDirPath}`);
       console.log(`[FTP]   - File size: ${fileBuffer.length} bytes`);
       
-      // Navigate to the target directory (this also creates it if needed)
       await this.ensureDirectory(client, remoteDirPath);
-      
-      // We're now IN the target directory, so just upload with the filename
-      const pwdAfterMkdir = await client.pwd();
-      console.log(`[FTP] Current directory after ensureDirectory: ${pwdAfterMkdir}`);
-      console.log(`[FTP] Uploading file as: ${uniqueFileName} (filename only, since we're in the target dir)`);
-      
-      const stream = Readable.from(fileBuffer);
-      // Upload using just the filename since we're already in the target directory
-      const uploadResponse = await client.uploadFrom(stream, uniqueFileName);
-      
-      console.log(`[FTP] Upload response code: ${uploadResponse.code}`);
-      console.log(`[FTP] Upload response message: ${uploadResponse.message}`);
-      
+
+      const remotePath = `${remoteDirPath}/${uniqueFileName}`;
+      await client.put(Readable.from(fileBuffer), remotePath);
+      console.log(`[FTP] Upload successful to ${remotePath}`);
+
       // Verify file exists after upload
       try {
-        const fileSize = await client.size(uniqueFileName);
-        console.log(`[FTP] Verified file exists with size: ${fileSize} bytes`);
+        const stat = await client.stat(remotePath);
+        console.log(`[FTP] Verified file exists with size: ${stat.size} bytes`);
       } catch (verifyError) {
         console.error(`[FTP] WARNING: Could not verify file after upload:`, verifyError);
       }
       
-      const relativeFilePath = `${normalizedBaseDir}/${clientId}/${uniqueFileName}`;
-      const fileUrl = `/ftp/${relativeFilePath}`;
+      const filePath = `${normalizedBaseDir}/${clientId}/${uniqueFileName}`;
+      const fileUrl = `/ftp/${filePath}`;
       
-      console.log(`[FTP] Successfully uploaded. Returning fileUrl: ${fileUrl}`);
-      
-      return {
-        filePath: relativeFilePath,
-        fileUrl,
-      };
+      return { filePath, fileUrl };
     } catch (uploadError) {
-      console.error(`[FTP] Upload failed with error:`, uploadError);
+      console.error(`[FTP] Upload failed:`, uploadError);
       throw uploadError;
     } finally {
-      client.close();
+      client.end();
     }
   }
 
@@ -155,14 +149,14 @@ export class FTPStorageService {
     
     try {
       const fullPath = `${BASE_PATH}/${filePath}`;
-      await client.remove(fullPath);
+      await client.delete(fullPath);
       console.log(`[FTP] Deleted file: ${fullPath}`);
       return true;
     } catch (error) {
       console.error(`[FTP] Failed to delete file:`, error);
       return false;
     } finally {
-      client.close();
+      client.end();
     }
   }
 
@@ -171,16 +165,12 @@ export class FTPStorageService {
     
     try {
       const fullPath = `${BASE_PATH}/${filePath}`;
-      const lastSlash = fullPath.lastIndexOf('/');
-      const dirPath = fullPath.substring(0, lastSlash);
-      const fileName = fullPath.substring(lastSlash + 1);
-      
-      const files = await client.list(dirPath);
-      return files.some(f => f.name === fileName && !f.isDirectory);
+      const exists = await client.exists(fullPath);
+      return !!exists;
     } catch {
       return false;
     } finally {
-      client.close();
+      client.end();
     }
   }
 
@@ -188,167 +178,43 @@ export class FTPStorageService {
     const client = await this.getClient();
     
     try {
-      console.log(`[FTP-STREAM] Requested path: ${filePath}`);
-      
-      // Helper to list directory and find a file
-      const findFileInDir = async (dirPath: string, targetFileName?: string): Promise<{ name: string; size: number } | null> => {
-        try {
-          const files = await client.list(dirPath);
-          const fileList = files.filter(f => !f.isDirectory);
-          console.log(`[FTP-STREAM] Listed ${fileList.length} files in ${dirPath}`);
-          
-          // Try exact match first
-          if (targetFileName) {
-            const exactMatch = fileList.find(f => f.name === targetFileName);
-            if (exactMatch) {
-              console.log(`[FTP-STREAM] Found exact match: ${targetFileName}`);
-              return { name: exactMatch.name, size: exactMatch.size };
-            }
-            console.log(`[FTP-STREAM] No exact match for: ${targetFileName}`);
-          }
-          
-          // Fall back to first image file
-          const imageFiles = fileList.filter(f => /\.(jpg|jpeg|png|gif|pdf)$/i.test(f.name));
-          if (imageFiles.length > 0) {
-            console.log(`[FTP-STREAM] Using first available image: ${imageFiles[0].name}`);
-            return { name: imageFiles[0].name, size: imageFiles[0].size };
-          }
-          
-          // Fall back to any file
-          if (fileList.length > 0) {
-            console.log(`[FTP-STREAM] Using first available file: ${fileList[0].name}`);
-            return { name: fileList[0].name, size: fileList[0].size };
-          }
-          
-          console.error(`[FTP-STREAM] Directory is empty: ${dirPath}`);
-          return null;
-        } catch (error: any) {
-          console.error(`[FTP-STREAM] Failed to list directory ${dirPath}: ${error.message}`);
-          return null;
-        }
-      };
-      
-      let fullPath = `${BASE_PATH}/${filePath}`;
-      let foundFile: { name: string; size: number } | null = null;
-      let dirPath = fullPath.substring(0, fullPath.lastIndexOf('/'));
-      let fileName = fullPath.substring(fullPath.lastIndexOf('/') + 1);
-      
-      // Pattern 1: Try exact file path as given
-      console.log(`[FTP-STREAM] Trying exact path: ${dirPath}/${fileName}`);
-      foundFile = await findFileInDir(dirPath, fileName);
-      
-      // Pattern 2: If not found and path contains uploads/customers, convert to uploads/clients
-      // This handles legacy Perfex paths being converted to new structure
-      if (!foundFile && filePath.includes('uploads/customers/')) {
-        const match = filePath.match(/uploads\/customers\/(\d+)\/(.*)/);
-        if (match) {
-          const clientId = match[1];
-          const filename = match[2];
-          const clientPath = `uploads/clients/${clientId}/${filename}`;
-          const clientFullPath = `${BASE_PATH}/${clientPath}`;
-          const clientDir = clientFullPath.substring(0, clientFullPath.lastIndexOf('/'));
-          console.log(`[FTP-STREAM] Trying converted clients path: ${clientDir}`);
-          foundFile = await findFileInDir(clientDir, filename);
-          if (foundFile) {
-            fullPath = `${clientDir}/${foundFile.name}`;
-          }
-        }
-      }
-      
-      if (!foundFile) {
-        console.error(`[FTP-STREAM] File not found: ${filePath}`);
-        client.close();
+      const fullPath = `${BASE_PATH}/${filePath}`;
+      const exists = await client.exists(fullPath);
+      if (!exists) {
+        console.error(`[FTP] File not found: ${fullPath}`);
         return false;
       }
+
+      const buffer = (await client.get(fullPath)) as Buffer;
+
+      // Determine content type
+      const fileExt = documentName.split('.').pop()?.toLowerCase();
+      const mimeType = this.getMimeType(fileExt || '');
       
-      // Use the found file path
-      if (foundFile.name !== fileName) {
-        fullPath = `${dirPath}/${foundFile.name}`;
-      }
+      res.setHeader('Content-Type', mimeType);
+      res.setHeader('Content-Disposition', `inline; filename="${documentName}"`);
+      res.send(buffer);
       
-      console.log(`[FTP-STREAM] File found: ${fullPath} (size: ${foundFile.size} bytes). Now streaming...`);
-      
-      try {
-        // Determine content type from documentName (not the actual filename on FTP)
-        const ext = documentName.toLowerCase().split('.').pop() || '';
-        const mimeTypes: Record<string, string> = {
-          'pdf': 'application/pdf',
-          'jpg': 'image/jpeg',
-          'jpeg': 'image/jpeg',
-          'png': 'image/png',
-          'gif': 'image/gif',
-          'doc': 'application/msword',
-          'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          'xls': 'application/vnd.ms-excel',
-          'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          'txt': 'text/plain',
-        };
-        
-        const contentType = mimeTypes[ext] || 'application/octet-stream';
-        
-        // Set response headers
-        res.setHeader('Content-Type', contentType);
-        res.setHeader('Content-Length', foundFile.size);
-        res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(documentName)}"`);
-        
-        // Stream directly from FTP to HTTP response
-        const passThrough = new PassThrough();
-        passThrough.pipe(res);
-        
-        // Download directly to the PassThrough stream
-        await client.downloadTo(passThrough, fullPath);
-        
-        console.log(`[FTP-STREAM] Streaming complete for: ${fullPath}`);
-        return true;
-      } catch (streamError) {
-        console.error(`[FTP-STREAM] Error during file streaming: ${streamError}`);
-        // Headers already sent, cannot send error response
-        if (!res.headersSent) {
-          res.status(500).json({ error: "Error streaming file" });
-        } else {
-          res.end();
-        }
-        return false;
-      }
+      console.log(`[FTP] Stream completed for ${fullPath}`);
+      return true;
     } catch (error) {
-      console.error(`[FTP-STREAM] Stream failed:`, error);
+      console.error(`[FTP] Failed to stream file ${filePath}:`, error);
       return false;
     } finally {
-      client.close();
+      client.end();
     }
   }
 
-  private async ensureDirectory(client: ftp.Client, dirPath: string): Promise<void> {
+  private async ensureDirectory(client: SftpClient, dirPath: string): Promise<void> {
     const parts = dirPath.split('/').filter(p => p);
     let currentPath = '';
     
     for (const part of parts) {
       currentPath += (currentPath.endsWith('/') ? '' : '/') + part;
-      console.log(`[FTP] Checking/creating directory: ${currentPath}`);
-      try {
-        await client.cd(currentPath);
-      } catch (err: any) {
-        console.log(`[FTP] Directory ${currentPath} not found, attempting to create. Error: ${err.message}`);
-        try {
-          // Try relative MKD first
-          await client.send(`MKD ${part}`);
-          console.log(`[FTP] Created directory (relative): ${part}`);
-          await client.cd(part);
-        } catch (mkdError: any) {
-          // If relative fails, try absolute
-          try {
-            await client.send(`MKD ${currentPath}`);
-            console.log(`[FTP] Created directory (absolute): ${currentPath}`);
-            await client.cd(currentPath);
-          } catch (absMkdError: any) {
-            if (!absMkdError.message?.includes('550') && !absMkdError.message?.includes('exists')) {
-              console.error(`[FTP] Failed to create directory ${currentPath}:`, absMkdError);
-              throw absMkdError;
-            }
-            // If it exists, just try to CD one more time
-            await client.cd(currentPath);
-          }
-        }
+      const exists = await client.exists(currentPath);
+      if (!exists) {
+        console.log(`[FTP] Creating directory: ${currentPath}`);
+        await client.mkdir(currentPath, true);
       }
     }
   }
@@ -371,14 +237,14 @@ export class FTPStorageService {
       const list = await client.list(fullPath);
       return list.map(item => ({
         name: item.name,
-        type: item.isDirectory ? 'directory' : 'file',
+        type: item.type === 'd' ? 'directory' : 'file',
         size: item.size
       }));
     } catch (error) {
       console.error(`[FTP] Error listing directory:`, error);
       throw error;
     } finally {
-      client.close();
+      client.end();
     }
   }
 
