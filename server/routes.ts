@@ -7134,21 +7134,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         await objectStorageService.downloadObject(file, res);
       } else if (imageUrl.startsWith('/ftp/')) {
-        // FTP storage - redirect to the actual URL
-        // Remove /ftp/ prefix
-        let ftpPath = imageUrl.replace('/ftp/', '');
-        
-        // Ensure path starts with wp-content/uploads if it's a legacy or agent photo
-        if (!ftpPath.startsWith('wp-content/')) {
-          ftpPath = `wp-content/uploads/${ftpPath}`;
+        // FTP/SFTP storage - stream via SFTP instead of redirecting.
+        // Redirecting to https://ststaxrepair.org/wp-content/... hits Render (this app),
+        // not the GoDaddy filesystem, so it 404s. Streaming ensures images always load.
+        const ftpPath = imageUrl.replace('/ftp/', '');
+        const fileName = ftpPath.split('/').pop() || 'agent-photo';
+
+        // Avoid caching while editing/refreshing images
+        res.setHeader('Cache-Control', 'no-store, max-age=0');
+
+        const ok = await ftpStorageService.streamFileToResponse(ftpPath, res, fileName);
+        if (!ok) {
+          console.error(`[${diagId}] Failed to stream agent photo from FTP: ${ftpPath}`);
+          return res.status(404).json({ error: "Agent photo not found", diagId });
         }
-        
-        // Try to determine the best domain for the redirect
-        const host = req.hostname || 'ststaxrepair.org';
-        const redirectUrl = `https://${host}/${ftpPath}`;
-        
-        console.log(`[${diagId}] Redirecting to: ${redirectUrl}`);
-        return res.redirect(redirectUrl);
+        return;
       } else if (imageUrl.startsWith('http')) {
         // External URL - redirect
         return res.redirect(imageUrl);
