@@ -4255,6 +4255,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return !!(process.env.REPL_ID && process.env.REPLIT_DOMAINS);
   };
 
+  // Test network connectivity to FTP server
+  app.get("/api/test-ftp-network", isAuthenticated, async (req, res) => {
+    const net = require('net');
+    const host = process.env.FTP_HOST || '198.12.220.248';
+    const port = parseInt(process.env.FTP_PORT || '21');
+    
+    console.log(`[FTP-NETWORK-TEST] Testing connection to ${host}:${port}`);
+    
+    const client = new net.Socket();
+    let responded = false;
+    
+    const timeout = setTimeout(() => {
+      if (!responded) {
+        responded = true;
+        client.destroy();
+        console.log('[FTP-NETWORK-TEST] Connection timeout');
+        res.json({ 
+          success: false, 
+          error: 'Connection timeout', 
+          host, 
+          port,
+          message: 'Cannot reach FTP server - likely blocked by Render firewall' 
+        });
+      }
+    }, 5000);
+    
+    client.connect(port, host, () => {
+      if (!responded) {
+        responded = true;
+        clearTimeout(timeout);
+        client.end();
+        console.log('[FTP-NETWORK-TEST] Connection successful');
+        res.json({ 
+          success: true, 
+          message: 'TCP connection successful', 
+          host, 
+          port 
+        });
+      }
+    });
+    
+    client.on('error', (err) => {
+      if (!responded) {
+        responded = true;
+        clearTimeout(timeout);
+        console.log('[FTP-NETWORK-TEST] Connection error:', err.message);
+        res.json({ 
+          success: false, 
+          error: err.message, 
+          host, 
+          port,
+          message: 'Cannot connect to FTP server' 
+        });
+      }
+    });
+  });
+
   // Simple test upload endpoint (no FTP, just receive data)
   app.post("/api/test-upload", isAuthenticated, async (req, res) => {
     console.log('[TEST-UPLOAD] Request received');
@@ -4284,11 +4341,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Test FTP connection endpoint
+  // Test FTP connection endpoint with timeout
   app.get("/api/test-ftp", isAuthenticated, async (req, res) => {
     try {
       console.log('[FTP-TEST] Testing FTP connection...');
-      const testResult = await ftpStorageService.listDirectory('/');
+      console.log('[FTP-TEST] Environment:', {
+        host: process.env.FTP_HOST,
+        user: process.env.FTP_USER,
+        hasPassword: !!process.env.FTP_PASSWORD
+      });
+      
+      // Try with a shorter timeout to fail faster
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('FTP connection timeout after 10 seconds')), 10000)
+      );
+      
+      const testResult = await Promise.race([
+        ftpStorageService.listDirectory('/'),
+        timeoutPromise
+      ]);
+      
       console.log('[FTP-TEST] FTP connection successful, found', testResult.length, 'items');
       res.json({ 
         success: true, 
@@ -4297,11 +4369,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         items: testResult.slice(0, 5) // First 5 items
       });
     } catch (error: any) {
-      console.error('[FTP-TEST] FTP connection failed:', error);
+      console.error('[FTP-TEST] FTP connection failed:', error.message);
       res.status(500).json({ 
         success: false, 
         error: error.message,
-        stack: error.stack
+        details: error.code || 'No error code'
       });
     }
   });
