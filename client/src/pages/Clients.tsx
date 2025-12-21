@@ -39,6 +39,7 @@ interface ClientTableData {
   state?: string;
   estimatedRefund?: string;
   preparerName?: string;
+  createdAt: string;
 }
 
 const statusFilters: { label: string; value: StatusFilter; color: string }[] = [
@@ -105,6 +106,8 @@ export default function Clients() {
   const deferredSearch = useDeferredValue(searchQuery);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [newClientForm, setNewClientForm] = useState<NewClientForm>(initialFormState);
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
   
   const { data: users, isLoading: usersLoading, error: usersError } = useQuery<User[]>({
     queryKey: ["/api/users"],
@@ -301,22 +304,40 @@ export default function Clients() {
           state: user.state || undefined,
           estimatedRefund: filing?.estimatedRefund || undefined,
           preparerName: filing?.preparerName || undefined,
+          createdAt: user.createdAt ? new Date(user.createdAt).toISOString() : new Date().toISOString(),
         };
       });
   }, [users, filingsByClientId, selectedYear]);
 
   const searchedClients = useMemo(() => {
-    if (!deferredSearch.trim()) return allClients;
-    
-    const query = deferredSearch.toLowerCase().trim();
-    return allClients.filter(client => 
-      client.name.toLowerCase().includes(query) ||
-      client.email.toLowerCase().includes(query) ||
-      client.phone.toLowerCase().includes(query) ||
-      (client.city && client.city.toLowerCase().includes(query)) ||
-      (client.state && client.state.toLowerCase().includes(query))
-    );
-  }, [allClients, deferredSearch]);
+    let filtered = allClients;
+
+    // Search query filter
+    if (deferredSearch.trim()) {
+      const query = deferredSearch.toLowerCase().trim();
+      filtered = filtered.filter(client => 
+        client.name.toLowerCase().includes(query) ||
+        client.email.toLowerCase().includes(query) ||
+        client.phone.toLowerCase().includes(query) ||
+        (client.city && client.city.toLowerCase().includes(query)) ||
+        (client.state && client.state.toLowerCase().includes(query))
+      );
+    }
+
+    // Date range filter
+    if (startDate) {
+      const start = new Date(startDate);
+      filtered = filtered.filter(client => new Date(client.createdAt) >= start);
+    }
+    if (endDate) {
+      const end = new Date(endDate);
+      // Set end date to end of day
+      end.setHours(23, 59, 59, 999);
+      filtered = filtered.filter(client => new Date(client.createdAt) <= end);
+    }
+
+    return filtered;
+  }, [allClients, deferredSearch, startDate, endDate]);
 
   const clients = activeFilter === "all" 
     ? searchedClients 
@@ -411,26 +432,61 @@ export default function Clients() {
         </div>
       </div>
 
-      {/* Search Bar - Full Width */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          type="text"
-          placeholder="Search name, email, phone..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10 pr-10"
-          data-testid="input-search-clients"
-        />
-        {searchQuery && (
-          <button
-            onClick={() => setSearchQuery("")}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-            data-testid="button-clear-search"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        )}
+      {/* Search and Date Filter Bar */}
+      <div className="flex flex-col md:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Search name, email, phone..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 pr-10"
+            data-testid="input-search-clients"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              data-testid="button-clear-search"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+        
+        <div className="flex flex-col sm:flex-row gap-2 items-end sm:items-center bg-card border rounded-lg p-2 md:p-1 md:px-3">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Label htmlFor="startDate" className="text-xs text-muted-foreground whitespace-nowrap">From:</Label>
+            <Input
+              id="startDate"
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="h-8 text-xs w-full sm:w-[130px]"
+            />
+          </div>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Label htmlFor="endDate" className="text-xs text-muted-foreground whitespace-nowrap">To:</Label>
+            <Input
+              id="endDate"
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="h-8 text-xs w-full sm:w-[130px]"
+            />
+          </div>
+          {(startDate || endDate) && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-8 px-2 text-xs" 
+              onClick={() => { setStartDate(""); setEndDate(""); }}
+            >
+              Clear
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Status Filters - Horizontal Scroll on Mobile */}

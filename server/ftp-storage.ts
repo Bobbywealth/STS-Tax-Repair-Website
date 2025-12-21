@@ -313,16 +313,30 @@ export class FTPStorageService {
     let currentPath = '';
     
     for (const part of parts) {
-      currentPath += '/' + part;
+      currentPath += (currentPath.endsWith('/') ? '' : '/') + part;
+      console.log(`[FTP] Checking/creating directory: ${currentPath}`);
       try {
         await client.cd(currentPath);
-      } catch {
+      } catch (err: any) {
+        console.log(`[FTP] Directory ${currentPath} not found, attempting to create. Error: ${err.message}`);
         try {
-          await client.send(`MKD ${currentPath}`);
-          console.log(`[FTP] Created directory: ${currentPath}`);
+          // Try relative MKD first
+          await client.send(`MKD ${part}`);
+          console.log(`[FTP] Created directory (relative): ${part}`);
+          await client.cd(part);
         } catch (mkdError: any) {
-          if (!mkdError.message?.includes('550') && !mkdError.message?.includes('exists')) {
-            throw mkdError;
+          // If relative fails, try absolute
+          try {
+            await client.send(`MKD ${currentPath}`);
+            console.log(`[FTP] Created directory (absolute): ${currentPath}`);
+            await client.cd(currentPath);
+          } catch (absMkdError: any) {
+            if (!absMkdError.message?.includes('550') && !absMkdError.message?.includes('exists')) {
+              console.error(`[FTP] Failed to create directory ${currentPath}:`, absMkdError);
+              throw absMkdError;
+            }
+            // If it exists, just try to CD one more time
+            await client.cd(currentPath);
           }
         }
       }

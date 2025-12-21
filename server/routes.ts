@@ -4194,8 +4194,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Check if Replit Object Storage is available
   const isReplitEnvironment = (): boolean => {
-    // Check for REPL_ID (primary indicator of Replit)
-    return !!process.env.REPL_ID;
+    // Check for REPL_ID and REPLIT_DOMAINS (indicator of Replit)
+    return !!(process.env.REPL_ID && process.env.REPLIT_DOMAINS);
   };
 
   // Object Storage - File Upload (returns presigned URL for Replit, or indicates FTP mode)
@@ -6853,9 +6853,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Use body from express.raw() middleware for application/octet-stream
-      const fileBuffer = Buffer.isBuffer(req.body) ? req.body : (req.rawBody as Buffer);
+      let fileBuffer: Buffer | null = null;
+      if (Buffer.isBuffer(req.body)) {
+        fileBuffer = req.body;
+      } else if (req.rawBody && Buffer.isBuffer(req.rawBody)) {
+        fileBuffer = req.rawBody as Buffer;
+      }
       
       if (!fileBuffer || fileBuffer.length === 0) {
+        console.error(`[${diagId}] No file data received`, { 
+          hasBody: !!req.body, 
+          bodyType: typeof req.body, 
+          isBodyBuffer: Buffer.isBuffer(req.body),
+          hasRawBody: !!req.rawBody,
+          rawBodyType: typeof req.rawBody,
+          isRawBodyBuffer: req.rawBody ? Buffer.isBuffer(req.rawBody) : false
+        });
         return res.status(400).json({ error: "No file data received", diagId, contentLength });
       }
       
@@ -6898,23 +6911,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Serve agent photos from object storage
   app.get("/api/agent-photos/:id", async (req, res) => {
+    let diagId = `serve-photo-${Date.now()}`;
     try {
       const { id } = req.params;
-      console.log(`[AGENT-PHOTO] Request for agent ID: ${id}`);
-      const agent = await mysqlStorage.getHomePageAgentById(id);
+      console.log(`[${diagId}] Request for agent ID: ${id}`);
+      
+      // Clean ID in case of browser quirks
+      const cleanId = id.split('?')[0].split(':')[0];
+      const agent = await mysqlStorage.getHomePageAgentById(cleanId);
       
       if (!agent) {
-        console.log(`[AGENT-PHOTO] Agent not found: ${id}`);
-        return res.status(404).json({ error: "Agent not found" });
+        console.error(`[${diagId}] Agent not found in DB: ${cleanId}`);
+        return res.status(404).json({ error: "Agent not found", diagId });
       }
       
       if (!agent.imageUrl) {
-        console.log(`[AGENT-PHOTO] Agent ${id} has no imageUrl`);
-        return res.status(404).json({ error: "Agent photo not found" });
+        console.warn(`[${diagId}] Agent ${cleanId} has no imageUrl`);
+        return res.status(404).json({ error: "Agent photo not found", diagId });
       }
       
       const imageUrl = agent.imageUrl;
-      console.log(`[AGENT-PHOTO] Agent ${id} imageUrl: ${imageUrl}`);
+      console.log(`[${diagId}] Agent ${cleanId} imageUrl in DB: ${imageUrl}`);
       
       // Handle different storage formats
       if (imageUrl.startsWith('/objects/public/')) {
@@ -6922,30 +6939,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const objectStorageService = new ObjectStorageService();
         const file = await objectStorageService.getPublicObjectFile(imageUrl);
         if (!file) {
-          return res.status(404).json({ error: "Photo file not found" });
+          console.error(`[${diagId}] Replit object file not found: ${imageUrl}`);
+          return res.status(404).json({ error: "Photo file not found", diagId });
         }
         await objectStorageService.downloadObject(file, res);
       } else if (imageUrl.startsWith('/ftp/')) {
-        // FTP storage - redirect to the actual URL on WordPress site
+        // FTP storage - redirect to the actual URL
         // Remove /ftp/ prefix
         let ftpPath = imageUrl.replace('/ftp/', '');
         
-        // If path doesn't start with wp-content, it's an old upload - prepend wp-content/uploads
+        // Ensure path starts with wp-content/uploads if it's a legacy or agent photo
         if (!ftpPath.startsWith('wp-content/')) {
           ftpPath = `wp-content/uploads/${ftpPath}`;
         }
         
-        console.log(`[AGENT-PHOTO] Redirecting to: https://www.ststaxrepair.net/${ftpPath}`);
-        return res.redirect(`https://www.ststaxrepair.net/${ftpPath}`);
+        // Try to determine the best domain for the redirect
+        const host = req.hostname || 'ststaxrepair.org';
+        const redirectUrl = `https://${host}/${ftpPath}`;
+        
+        console.log(`[${diagId}] Redirecting to: ${redirectUrl}`);
+        return res.redirect(redirectUrl);
       } else if (imageUrl.startsWith('http')) {
         // External URL - redirect
         return res.redirect(imageUrl);
       } else {
-        return res.status(404).json({ error: "Unknown image format" });
+        console.error(`[${diagId}] Unknown image format for agent ${cleanId}: ${imageUrl}`);
+        return res.status(404).json({ error: "Unknown image format", diagId });
       }
     } catch (error: any) {
-      console.error("Error serving agent photo:", error);
-      res.status(500).json({ error: error.message });
+      console.error(`[${diagId}] Error serving agent photo:`, error);
+      res.status(500).json({ error: error.message, diagId });
     }
   });
 

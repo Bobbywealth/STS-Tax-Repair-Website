@@ -24,6 +24,7 @@ interface Client {
   status: "New" | "Documents Pending" | "Review" | "Filed" | "Accepted" | "Approved" | "Paid";
   taxYear: string;
   assignedTo: string;
+  createdAt?: string;
 }
 
 interface StaffMember {
@@ -239,7 +240,12 @@ export function ClientsTable({
                         <div className="text-muted-foreground">{client.phone}</div>
                       )}
                       <div className="flex items-center justify-between pt-2 border-t">
-                        <span className="text-xs text-muted-foreground">Tax Year {client.taxYear}</span>
+                        <div className="flex flex-col">
+                          <span className="text-xs text-muted-foreground">Tax Year {client.taxYear}</span>
+                          {client.createdAt && (
+                            <span className="text-[10px] text-muted-foreground">Enrolled: {new Date(client.createdAt).toLocaleDateString()}</span>
+                          )}
+                        </div>
                         <span className="text-xs">
                           {client.assignedTo && client.assignedTo !== "Unassigned" ? (
                             <Badge variant="outline" className="text-xs">{client.assignedTo}</Badge>
@@ -273,6 +279,7 @@ export function ClientsTable({
                 <th className="text-left p-3 font-medium">Client</th>
                 <th className="text-left p-3 font-medium">Contact</th>
                 <th className="text-left p-3 font-medium">Status</th>
+                <th className="text-left p-3 font-medium">Enrolled</th>
                 <th className="text-left p-3 font-medium">Tax Year</th>
                 <th className="text-left p-3 font-medium">Assigned To</th>
                 <th className="text-right p-3 font-medium">Actions</th>
@@ -374,6 +381,9 @@ export function ClientsTable({
                         </SelectItem>
                       </SelectContent>
                     </Select>
+                  </td>
+                  <td className="p-3 text-sm whitespace-nowrap">
+                    {client.createdAt ? new Date(client.createdAt).toLocaleDateString() : "-"}
                   </td>
                   <td className="p-3 text-sm">{client.taxYear}</td>
                   <td className="p-3">

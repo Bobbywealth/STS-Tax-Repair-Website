@@ -334,7 +334,7 @@ export default function AgentManagement() {
                             <AvatarImage 
                               src={agent.imageUrl && (agent.imageUrl.startsWith('/objects/') || agent.imageUrl.startsWith('/ftp/'))
                                 ? `/api/agent-photos/${agent.id}`
-                                : (agent.imageUrl?.startsWith('http') ? agent.imageUrl : (agent.imageUrl ? `https://${agent.imageUrl}` : undefined))} 
+                                : (agent.imageUrl?.startsWith('http') ? agent.imageUrl : undefined)} 
                               alt={agent.name} 
                             />
                             <AvatarFallback>{getInitials(agent.name)}</AvatarFallback>
