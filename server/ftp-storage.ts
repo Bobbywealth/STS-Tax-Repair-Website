@@ -97,10 +97,10 @@ export class FTPStorageService {
     mimeType?: string,
     baseDir: string = UPLOADS_DIR
   ): Promise<{ filePath: string; fileUrl: string }> {
-    console.log(`[FTP] _uploadFileInternal called at ${new Date().toISOString()}`);
+    console.log(`[FTP] _uploadFileInternal start @ ${new Date().toISOString()}`);
     console.log(`[FTP] Getting SFTP client...`);
     const client = await this.getClient();
-    console.log(`[FTP] Got SFTP client at ${new Date().toISOString()}`);
+    console.log(`[FTP] Got SFTP client @ ${new Date().toISOString()}`);
     
     try {
       const sanitizedFileName = this.sanitizeFileName(fileName);
@@ -111,23 +111,23 @@ export class FTPStorageService {
       // Use relative path from home directory
       const remoteDirPath = `${BASE_PATH}/${normalizedBaseDir}/${clientId}`;
       
-      console.log(`[FTP] Preparing to upload file:`);
-      console.log(`[FTP]   - Client ID: ${clientId}`);
-      console.log(`[FTP]   - Original filename: ${fileName}`);
-      console.log(`[FTP]   - Sanitized filename: ${uniqueFileName}`);
-      console.log(`[FTP]   - Remote directory: ${remoteDirPath}`);
-      console.log(`[FTP]   - File size: ${fileBuffer.length} bytes`);
+      console.log(`[FTP] Preparing upload: client=${clientId}, file=${fileName}, sanitized=${uniqueFileName}, dir=${remoteDirPath}, size=${fileBuffer.length}`);
       
+      const t0 = Date.now();
+      console.log(`[FTP] ensureDirectory start`);
       await this.ensureDirectory(client, remoteDirPath);
+      console.log(`[FTP] ensureDirectory done in ${Date.now() - t0}ms`);
 
       const remotePath = `${remoteDirPath}/${uniqueFileName}`;
+      console.log(`[FTP] put start -> ${remotePath}`);
       await client.put(Readable.from(fileBuffer), remotePath);
-      console.log(`[FTP] Upload successful to ${remotePath}`);
+      console.log(`[FTP] put done in ${Date.now() - t0}ms`);
 
       // Verify file exists after upload
       try {
+        console.log(`[FTP] stat start -> ${remotePath}`);
         const stat = await client.stat(remotePath);
-        console.log(`[FTP] Verified file exists with size: ${stat.size} bytes`);
+        console.log(`[FTP] stat done size=${stat.size} in ${Date.now() - t0}ms`);
       } catch (verifyError) {
         console.error(`[FTP] WARNING: Could not verify file after upload:`, verifyError);
       }
@@ -140,6 +140,7 @@ export class FTPStorageService {
       console.error(`[FTP] Upload failed:`, uploadError);
       throw uploadError;
     } finally {
+      console.log(`[FTP] Closing SFTP client`);
       client.end();
     }
   }
