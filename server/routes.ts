@@ -3504,7 +3504,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get(
     "/api/documents/:clientId",
     isAuthenticated,
-    requirePermission("documents.view"),
+    requireClientScope((req) => (req as any).params?.clientId),
     async (req, res) => {
       const { documentType } = req.query;
 
@@ -3524,7 +3524,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post(
     "/api/documents",
     isAuthenticated,
-    requirePermission("documents.upload"),
+    requireClientScope((req) => (req as any).body?.clientId),
     async (req, res) => {
       try {
         const result = insertDocumentVersionSchema.safeParse(req.body);
@@ -4379,7 +4379,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Object Storage - File Upload (returns presigned URL for Replit, or indicates FTP mode)
-  app.post("/api/objects/upload", isAuthenticated, async (req, res) => {
+  app.post(
+    "/api/objects/upload",
+    isAuthenticated,
+    requireClientScope((req) => (req as any).body?.clientId),
+    async (req, res) => {
     try {
       const { clientId, fileName, fileType, fileSize } = req.body;
 
@@ -4410,7 +4414,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // FTP-based file upload for non-Replit environments (Render deployment)
-  app.post("/api/documents/upload-ftp", isAuthenticated, async (req, res) => {
+  app.post(
+    "/api/documents/upload-ftp",
+    isAuthenticated,
+    requireClientScope((req) => req.headers["x-client-id"] as string | undefined),
+    async (req, res) => {
     let requestTimeout: NodeJS.Timeout | null = null;
     let isResponseSent = false;
 
@@ -4550,7 +4558,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Save document metadata after upload
-  app.post("/api/objects/confirm", isAuthenticated, async (req, res) => {
+  app.post(
+    "/api/objects/confirm",
+    isAuthenticated,
+    requireClientScope((req) => (req as any).body?.clientId),
+    async (req, res) => {
     try {
       const { clientId, objectPath, fileName, fileType, fileSize, category } =
         req.body;
