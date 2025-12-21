@@ -176,6 +176,7 @@ export async function runMySQLMigrations(): Promise<void> {
             zip_code VARCHAR(20),
             phone VARCHAR(20),
             email VARCHAR(255),
+            default_tax_year INT DEFAULT 2024,
             is_active BOOLEAN DEFAULT TRUE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -183,6 +184,15 @@ export async function runMySQLMigrations(): Promise<void> {
             INDEX idx_offices_active (is_active)
           )
         `);
+      } else {
+        const [defaultTaxYearColumn] = await connection.query(
+          `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'offices' AND COLUMN_NAME = 'default_tax_year'`,
+          [dbName]
+        );
+        if (Array.isArray(defaultTaxYearColumn) && defaultTaxYearColumn.length === 0) {
+          console.log('Adding default_tax_year column to offices table...');
+          await connection.query(`ALTER TABLE offices ADD COLUMN default_tax_year INT DEFAULT 2024`);
+        }
       }
     } catch (err: any) { console.error('Error in offices migration:', err.message); }
 
