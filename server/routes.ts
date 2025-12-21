@@ -6615,6 +6615,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'Logo not found' });
       }
 
+      // Cache aggressively but allow fast revalidation when changed.
+      // This endpoint is safe to cache publicly (logos are not sensitive).
+      // Use an ETag derived from logoUrl + updatedAt so browsers can 304 quickly.
+      const updatedAt =
+        (branding as any).updatedAt instanceof Date
+          ? (branding as any).updatedAt
+          : (branding as any).updatedAt
+            ? new Date((branding as any).updatedAt)
+            : null;
+      const etag = `W/"office-logo:${id}:${branding.logoUrl}:${updatedAt ? updatedAt.getTime() : '0'}"`;
+      res.setHeader('ETag', etag);
+      res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400');
+      if (req.headers['if-none-match'] === etag) {
+        return res.status(304).end();
+      }
+
       // External URL
       if (branding.logoUrl.startsWith('http')) {
         return res.redirect(branding.logoUrl);
@@ -6624,7 +6640,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (branding.logoUrl.startsWith('/ftp/')) {
         const ftpPath = branding.logoUrl.replace('/ftp/', '');
         const fileName = ftpPath.split('/').pop() || 'logo';
-        res.setHeader('Cache-Control', 'no-store, max-age=0');
+        // Allow caching (ETag above will force revalidation on change)
         const ok = await ftpStorageService.streamFileToResponse(ftpPath, res, fileName);
         if (!ok && !res.headersSent) {
           return res.status(404).json({ error: 'Logo not found' });
