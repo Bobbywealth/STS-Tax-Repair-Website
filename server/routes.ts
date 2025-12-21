@@ -632,6 +632,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes - supports both Replit Auth and client/admin session login
   app.get("/api/auth/user", async (req: any, res) => {
     try {
+      const slugify = (value: string) =>
+        value
+          .toLowerCase()
+          .trim()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/(^-|-$)/g, "")
+          .slice(0, 60);
+
+      const ensureTaxOfficeHasOffice = async (user: any) => {
+        if (!user || user.role !== "tax_office" || user.officeId) return user;
+
+        const baseName =
+          `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
+          (user.email ? user.email.split("@")[0] : "") ||
+          "Tax Office";
+        const officeName = `${baseName} Tax Office`;
+
+        const baseSlug = slugify(user.email ? user.email.split("@")[0] : officeName) || "office";
+        let slug = baseSlug;
+        for (let i = 0; i < 5; i++) {
+          const existing = await storage.getOfficeBySlug(slug);
+          if (!existing) break;
+          slug = `${baseSlug}-${randomUUID().slice(0, 6)}`;
+        }
+
+        const office = await storage.createOffice({
+          name: officeName,
+          slug,
+          email: user.email || null,
+          phone: user.phone || null,
+        });
+
+        // IMPORTANT: storage.upsertUser overwrites fields, so we must merge with the existing user
+        const updated = await storage.upsertUser({
+          ...user,
+          officeId: office.id,
+        });
+
+        try {
+          await mysqlStorage.createAuditLog({
+            action: "office.create",
+            userId: user.id,
+            userName: `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email || null,
+            userRole: user.role,
+            officeId: office.id,
+            resourceType: "office",
+            resourceId: office.id,
+            details: { autoCreated: true },
+            ipAddress: req.ip,
+            userAgent: req.headers["user-agent"],
+          });
+        } catch {
+          // non-blocking
+        }
+
+        return updated;
+      };
+
       // Check for session-based login (both client and admin)
       if (
         req.session?.userId &&
@@ -639,14 +697,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ) {
         const user = await storage.getUser(req.session.userId);
         if (user) {
-          return res.json(user);
+          const ensured = await ensureTaxOfficeHasOffice(user);
+          return res.json(ensured);
         }
       }
 
       // Fall back to Replit Auth
       if (req.user?.claims?.sub) {
         const user = await storage.getUser(req.user.claims.sub);
-        return res.json(user);
+        const ensured = await ensureTaxOfficeHasOffice(user);
+        return res.json(ensured);
       }
 
       // Not authenticated

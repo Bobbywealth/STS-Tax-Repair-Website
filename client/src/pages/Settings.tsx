@@ -24,20 +24,23 @@ export default function Settings() {
     queryKey: ["/api/auth/user"],
   });
 
-  const isAdminOrOffice =
-    user?.role === "admin" || user?.role === "super_admin" || user?.role === "tax_office";
+  const isAdmin = user?.role === "admin" || user?.role === "super_admin";
 
   // If admin without officeId, get first available office as fallback
   const { data: fallbackOffices } = useQuery<Office[]>({
     queryKey: ["/api/offices"],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/offices");
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body?.error || body?.message || "Failed to load offices");
+      }
       return response.json();
     },
-    enabled: !!isAdminOrOffice && !user?.officeId,
+    enabled: !!isAdmin && !user?.officeId,
   });
 
-  const officeIdForSettings = user?.officeId || fallbackOffices?.[0]?.id;
+  const officeIdForSettings = user?.officeId || (isAdmin ? fallbackOffices?.[0]?.id : undefined);
 
   const { data: office, isLoading: isLoadingOffice } = useQuery<Office>({
     queryKey: ["/api/offices", officeIdForSettings],
