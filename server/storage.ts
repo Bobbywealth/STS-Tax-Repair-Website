@@ -79,6 +79,7 @@ export interface IStorage {
 
   // Appointments
   getAppointments(): Promise<Appointment[]>;
+  getAppointment(id: string): Promise<Appointment | undefined>;
   getAppointmentsByClient(clientId: string): Promise<Appointment[]>;
   getAppointmentsByDateRange(start: Date, end: Date): Promise<Appointment[]>;
   createAppointment(appointment: InsertAppointment): Promise<Appointment>;

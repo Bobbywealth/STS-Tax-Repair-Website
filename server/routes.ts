@@ -2603,6 +2603,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         appointmentDate,
         duration,
         status,
+        officeSlug,
       } = req.body;
 
       if (!clientName || !email || !title || !appointmentDate) {
@@ -2617,9 +2618,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create a temporary client ID for public bookings
       const tempClientId = `public-${Date.now()}`;
 
+      // Resolve office context for public booking (subdomain / ?_office= / body officeSlug)
+      let officeId: string | null = (req as any).officeId || null;
+      const slugFromQuery = (req.query?._office as string) || null;
+      const resolvedSlug = (officeSlug as string) || slugFromQuery || null;
+      if (!officeId && resolvedSlug) {
+        const office = await storage.getOfficeBySlug(resolvedSlug);
+        officeId = office?.id || null;
+      }
+
       const appointment = await storage.createAppointment({
         clientId: tempClientId,
         clientName,
+        officeId,
         title,
         description:
           description || `Email: ${email}, Phone: ${phone || "Not provided"}`,
@@ -2629,8 +2640,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         location: null,
         staffId: null,
         staffName: null,
-        notes: `Public booking - Email: ${email}, Phone: ${phone || "Not provided"}`,
+        notes: `Public booking - Email: ${email}, Phone: ${phone || "Not provided"}${officeId ? `, Office: ${officeId}` : ''}`,
       });
+
+      // Notify the relevant office team (best-effort)
+      try {
+        const allUsers = await mysqlStorage.getUsers();
+        const roleOf = (u: any) => (u.role || '').toLowerCase();
+        const isActive = (u: any) => u.isActive !== false;
+        const recipients = officeId
+          ? allUsers.filter((u: any) => {
+              const r = roleOf(u);
+              if (!isActive(u)) return false;
+              if (r === 'super_admin') return true;
+              return (u.officeId === officeId) && (r === 'tax_office' || r === 'admin');
+            })
+          : await mysqlStorage.getUsersByRole('admin');
+
+        for (const staff of recipients as any[]) {
+          await mysqlStorage.createNotification({
+            userId: staff.id,
+            type: 'appointment_request',
+            title: 'New Appointment Request',
+            message: `${clientName} requested an appointment: ${title}`,
+            link: '/appointments',
+            resourceType: 'appointment',
+            resourceId: appointment.id,
+          });
+        }
+      } catch (notifErr) {
+        console.error('[NOTIFICATION] Failed to send appointment request notifications:', notifErr);
+      }
 
       res.status(201).json(appointment);
     } catch (error: any) {
@@ -2647,25 +2687,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req, res) => {
       const { clientId, start, end } = req.query;
 
+      const userRole = ((req as any).userRole || 'client').toLowerCase();
+      const userId = (req as any).userId || (req as any).user?.claims?.sub;
+      const officeId = (req as any).officeId || null;
+
       if (clientId) {
-        const appointments = await storage.getAppointmentsByClient(
-          clientId as string,
-        );
+        // Scope-check this clientId before returning anything
+        const requestedClientId = clientId as string;
+        if (!(userRole === 'admin' || userRole === 'super_admin')) {
+          if (userRole === 'client') {
+            if (!userId || userId !== requestedClientId) {
+              return res.status(403).json({ error: "Access denied" });
+            }
+          } else if (userRole === 'agent') {
+            if (!userId) return res.status(403).json({ error: "Access denied" });
+            const assigned = await mysqlStorage.getAgentAssignedClientIds(userId);
+            if (!assigned.includes(requestedClientId)) {
+              return res.status(403).json({ error: "Access denied" });
+            }
+          } else if (userRole === 'tax_office') {
+            if (!officeId) return res.status(403).json({ error: "Access denied" });
+            const client = await mysqlStorage.getUser(requestedClientId);
+            if (client?.officeId !== officeId) {
+              return res.status(403).json({ error: "Access denied" });
+            }
+          }
+        }
+
+        const appointments = await storage.getAppointmentsByClient(requestedClientId);
         return res.json(appointments);
       }
 
       if (start && end) {
         const startDate = new Date(start as string);
         const endDate = new Date(end as string);
-        const appointments = await storage.getAppointmentsByDateRange(
-          startDate,
-          endDate,
-        );
-        return res.json(appointments);
+        const appointments = await storage.getAppointmentsByDateRange(startDate, endDate);
+
+        // Scope filter
+        if (userRole === 'admin' || userRole === 'super_admin') return res.json(appointments);
+        if (userRole === 'client') return res.json((appointments as any[]).filter(a => a.clientId === userId));
+        if ((userRole === 'tax_office' || userRole === 'agent') && officeId) {
+          return res.json((appointments as any[]).filter(a => (a as any).officeId === officeId));
+        }
+        return res.json([]);
       }
 
       const appointments = await storage.getAppointments();
-      res.json(appointments);
+      if (userRole === 'admin' || userRole === 'super_admin') return res.json(appointments);
+      if (userRole === 'client') return res.json((appointments as any[]).filter(a => a.clientId === userId));
+      if ((userRole === 'tax_office' || userRole === 'agent') && officeId) {
+        return res.json((appointments as any[]).filter(a => (a as any).officeId === officeId));
+      }
+      return res.json([]);
     },
   );
 
@@ -2679,7 +2752,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!result.success) {
           return res.status(400).json({ error: result.error.message });
         }
-        const appointment = await storage.createAppointment(result.data);
+        // Enforce client scope when scheduling for a specific client
+        const currentRole = ((req as any).userRole || 'client').toLowerCase();
+        const currentUserId = (req as any).userId || (req as any).user?.claims?.sub;
+        const currentOfficeId = (req as any).officeId || null;
+        const targetClientId = result.data.clientId;
+        if (!(currentRole === 'admin' || currentRole === 'super_admin')) {
+          if (currentRole === 'agent') {
+            const assigned = await mysqlStorage.getAgentAssignedClientIds(currentUserId);
+            if (!assigned.includes(targetClientId)) {
+              return res.status(403).json({ error: "Access denied" });
+            }
+          } else if (currentRole === 'tax_office') {
+            const client = await mysqlStorage.getUser(targetClientId);
+            if (!currentOfficeId || client?.officeId !== currentOfficeId) {
+              return res.status(403).json({ error: "Access denied" });
+            }
+          } else {
+            return res.status(403).json({ error: "Access denied" });
+          }
+        }
+
+        // Assign appointment to the client's office (preferred), else current staff office
+        const client = await storage.getUser(targetClientId);
+        const officeIdForAppointment = (client as any)?.officeId || currentOfficeId || null;
+
+        const appointment = await storage.createAppointment({
+          ...(result.data as any),
+          officeId: officeIdForAppointment,
+        });
         
         // Send email notification to client
         if (result.data.clientId) {
@@ -2716,6 +2817,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     requirePermission("appointments.edit"),
     async (req, res) => {
       try {
+        // Scope enforcement: office staff can only edit appointments in their scope
+        const userRole = ((req as any).userRole || 'client').toLowerCase();
+        const userId = (req as any).userId || (req as any).user?.claims?.sub;
+        const officeId = (req as any).officeId || null;
+        const existing = await storage.getAppointment(req.params.id);
+        if (!existing) {
+          return res.status(404).json({ error: "Appointment not found" });
+        }
+        if (!(userRole === 'admin' || userRole === 'super_admin')) {
+          if (userRole === 'client') {
+            if (!userId || existing.clientId !== userId) {
+              return res.status(403).json({ error: "Access denied" });
+            }
+          } else if ((userRole === 'tax_office' || userRole === 'agent') && officeId) {
+            if ((existing as any).officeId !== officeId) {
+              return res.status(403).json({ error: "Access denied" });
+            }
+          } else {
+            return res.status(403).json({ error: "Access denied" });
+          }
+        }
+
         const appointment = await storage.updateAppointment(
           req.params.id,
           req.body,
@@ -2735,11 +2858,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     isAuthenticated,
     requirePermission("appointments.delete"),
     async (req, res) => {
-      const success = await storage.deleteAppointment(req.params.id);
-      if (!success) {
-        return res.status(404).json({ error: "Appointment not found" });
+      try {
+        const userRole = ((req as any).userRole || 'client').toLowerCase();
+        const userId = (req as any).userId || (req as any).user?.claims?.sub;
+        const officeId = (req as any).officeId || null;
+        const existing = await storage.getAppointment(req.params.id);
+        if (!existing) {
+          return res.status(404).json({ error: "Appointment not found" });
+        }
+        if (!(userRole === 'admin' || userRole === 'super_admin')) {
+          if (userRole === 'client') {
+            if (!userId || existing.clientId !== userId) {
+              return res.status(403).json({ error: "Access denied" });
+            }
+          } else if ((userRole === 'tax_office' || userRole === 'agent') && officeId) {
+            if ((existing as any).officeId !== officeId) {
+              return res.status(403).json({ error: "Access denied" });
+            }
+          } else {
+            return res.status(403).json({ error: "Access denied" });
+          }
+        }
+
+        const success = await storage.deleteAppointment(req.params.id);
+        if (!success) {
+          return res.status(404).json({ error: "Appointment not found" });
+        }
+        res.status(204).send();
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
       }
-      res.status(204).send();
     },
   );
 

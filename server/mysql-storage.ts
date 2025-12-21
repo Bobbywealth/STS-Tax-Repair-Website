@@ -235,6 +235,11 @@ export class MySQLStorage implements IStorage {
     return await mysqlDb.select().from(appointmentsTable).orderBy(asc(appointmentsTable.appointmentDate));
   }
 
+  async getAppointment(id: string): Promise<Appointment | undefined> {
+    const [result] = await mysqlDb.select().from(appointmentsTable).where(eq(appointmentsTable.id, id));
+    return result;
+  }
+
   async getAppointmentsByClient(clientId: string): Promise<Appointment[]> {
     return await mysqlDb.select().from(appointmentsTable)
       .where(eq(appointmentsTable.clientId, clientId))
@@ -256,6 +261,7 @@ export class MySQLStorage implements IStorage {
       id,
       clientId: appointment.clientId,
       clientName: appointment.clientName,
+      officeId: (appointment as any).officeId ?? null,
       title: appointment.title,
       description: appointment.description ?? null,
       appointmentDate: appointment.appointmentDate,
@@ -267,7 +273,18 @@ export class MySQLStorage implements IStorage {
       notes: appointment.notes ?? null,
       createdAt: new Date()
     };
-    await mysqlDb.insert(appointmentsTable).values(appointmentData);
+    // Backward-compatible insert: if the DB schema hasn't been migrated yet, retry without officeId
+    try {
+      await mysqlDb.insert(appointmentsTable).values(appointmentData as any);
+    } catch (e: any) {
+      const msg = String(e?.message || e);
+      if (msg.includes('Unknown column') && msg.includes('office_id')) {
+        const { officeId: _omit, ...legacy } = appointmentData as any;
+        await mysqlDb.insert(appointmentsTable).values(legacy);
+      } else {
+        throw e;
+      }
+    }
     const [inserted] = await mysqlDb.select().from(appointmentsTable).where(eq(appointmentsTable.id, id));
     return inserted;
   }

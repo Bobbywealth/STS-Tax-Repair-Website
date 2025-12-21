@@ -16,7 +16,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, CalendarDays, Clock, User, Mail, Phone, CheckCircle2, FileText, Building } from "lucide-react";
-import stsLogo from "@/assets/sts-logo.png";
+import defaultLogoUrl from "@/assets/sts-logo.png";
+import { useBranding } from "@/hooks/useBranding";
 
 const bookingSchema = z.object({
   firstName: z.string().min(2, "First name is required"),
@@ -59,6 +60,10 @@ export default function BookAppointmentPage() {
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [bookingDetails, setBookingDetails] = useState<{date: Date; time: string; name: string} | null>(null);
+  const officeSlug = new URLSearchParams(window.location.search).get('_office') || undefined;
+  const { branding } = useBranding();
+  const logoUrl = branding?.logoUrl || defaultLogoUrl;
+  const companyName = branding?.companyName || 'STS TaxRepair';
 
   const form = useForm<BookingFormData>({
     resolver: zodResolver(bookingSchema),
@@ -97,6 +102,7 @@ export default function BookAppointmentPage() {
         appointmentDate: appointmentDate.toISOString(),
         duration: 60,
         status: "pending",
+        officeSlug: officeSlug || undefined,
       });
     },
     onSuccess: (_, variables) => {
@@ -143,7 +149,7 @@ export default function BookAppointmentPage() {
         <header className="bg-white border-b sticky top-0 z-50">
           <div className="container mx-auto px-4 py-4 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
-              <img src={stsLogo} alt="STS Tax Repair" className="h-10" />
+              <img src={logoUrl} alt={`${companyName} Logo`} className="h-10" />
             </Link>
           </div>
         </header>
@@ -180,7 +186,12 @@ export default function BookAppointmentPage() {
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Back to Home
                 </Button>
-                <Button onClick={() => navigate("/client-login")} className="bg-sts-green hover:bg-sts-dark">
+                <Button
+                  onClick={() =>
+                    navigate(officeSlug ? `/client-login?_office=${encodeURIComponent(officeSlug)}` : "/client-login")
+                  }
+                  className="bg-sts-green hover:bg-sts-dark"
+                >
                   Client Login
                 </Button>
               </div>
@@ -196,7 +207,7 @@ export default function BookAppointmentPage() {
       <header className="bg-white border-b sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <img src={stsLogo} alt="STS Tax Repair" className="h-10" />
+            <img src={logoUrl} alt={`${companyName} Logo`} className="h-10" />
           </Link>
           <Button variant="ghost" onClick={() => navigate("/")} data-testid="button-back-home">
             <ArrowLeft className="w-4 h-4 mr-2" />

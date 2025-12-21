@@ -189,6 +189,8 @@ export const appointments = mysqlTable("appointments", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
   clientId: varchar("client_id", { length: 36 }).notNull(),
   clientName: text("client_name").notNull(),
+  // Optional tenant scoping (used for office-branded public booking + office calendars)
+  officeId: varchar("office_id", { length: 36 }),
   title: text("title").notNull(),
   description: text("description"),
   appointmentDate: timestamp("appointment_date").notNull(),
