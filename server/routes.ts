@@ -1301,11 +1301,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const officeMap = new Map(offices.map((o: any) => [o.id, o.name]));
       
       // Filter to only staff members (not clients)
-      // We're being very inclusive: anyone whose role is not explicitly 'client'
       const staffMembers = users.filter((u) => {
         const role = (u.role || '').toLowerCase();
-        // Check activity status robustly
-        const isActive = u.isActive === true || u.isActive === 1 || u.isActive === null || u.isActive === undefined;
+        // Check activity status robustly - handle boolean, null, and potential numeric values from MySQL
+        const isActive = u.isActive !== false;
         // Include everyone who is not a client and is active
         return role !== "client" && isActive;
       });
