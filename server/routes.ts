@@ -650,7 +650,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Not authenticated
-      return res.status(401).json({ message: "Not authenticated" });
+      return res.json(null);
     } catch (error) {
       console.error("Error fetching user:", error);
       return res.status(500).json({ message: "Failed to fetch user" });
@@ -2204,7 +2204,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (!userId) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.json({ role: 'guest', permissions: [] });
       }
       const user = await storage.getUser(userId);
       if (!user) {
