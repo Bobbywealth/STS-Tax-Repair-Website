@@ -9,6 +9,12 @@ interface SoundOptions {
 
 const SOUND_ENABLED_KEY = 'sts-sound-enabled';
 
+const hasUserActivatedAudio = () => {
+  if (typeof navigator === 'undefined') return false;
+  const userActivation = (navigator as any)?.userActivation;
+  return Boolean(userActivation?.isActive || userActivation?.hasBeenActive);
+};
+
 export function useSound(options: SoundOptions = {}) {
   const { volume = 0.3, enabled = true } = options;
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -21,7 +27,11 @@ export function useSound(options: SoundOptions = {}) {
     }
   }, []);
 
-  const getAudioContext = useCallback(() => {
+  const getAudioContext = useCallback((): AudioContext | null => {
+    if (!hasUserActivatedAudio()) {
+      return null;
+    }
+
     if (!audioContextRef.current) {
       audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
     }
@@ -39,6 +49,8 @@ export function useSound(options: SoundOptions = {}) {
 
     try {
       const ctx = getAudioContext();
+      if (!ctx) return;
+
       if (ctx.state === 'suspended') {
         ctx.resume();
       }
@@ -72,6 +84,8 @@ export function useSound(options: SoundOptions = {}) {
 
     try {
       const ctx = getAudioContext();
+      if (!ctx) return;
+
       if (ctx.state === 'suspended') {
         ctx.resume();
       }
@@ -107,6 +121,8 @@ export function useSound(options: SoundOptions = {}) {
 
     try {
       const ctx = getAudioContext();
+      if (!ctx) return;
+
       if (ctx.state === 'suspended') {
         ctx.resume();
       }
@@ -142,6 +158,8 @@ export function useSound(options: SoundOptions = {}) {
 
     try {
       const ctx = getAudioContext();
+      if (!ctx) return;
+
       if (ctx.state === 'suspended') {
         ctx.resume();
       }
@@ -177,6 +195,8 @@ export function useSound(options: SoundOptions = {}) {
 
     try {
       const ctx = getAudioContext();
+      if (!ctx) return;
+
       if (ctx.state === 'suspended') {
         ctx.resume();
       }
@@ -245,24 +265,37 @@ let globalSoundInstance: ReturnType<typeof useSound> | null = null;
 
 export function getGlobalSound() {
   if (!globalSoundInstance) {
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    let audioContext: AudioContext | null = null;
+
+    const ensureAudioContext = () => {
+      if (!hasUserActivatedAudio()) {
+        return null;
+      }
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+      return audioContext;
+    };
     
     const playTone = (frequency: number, duration: number, type: OscillatorType = 'sine', vol = 0.3) => {
       try {
-        if (audioContext.state === 'suspended') {
-          audioContext.resume();
-        }
-        const osc = audioContext.createOscillator();
-        const gain = audioContext.createGain();
+        const ctx = ensureAudioContext();
+        if (!ctx) return;
+
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
         osc.connect(gain);
-        gain.connect(audioContext.destination);
+        gain.connect(ctx.destination);
         osc.type = type;
-        osc.frequency.setValueAtTime(frequency, audioContext.currentTime);
-        gain.gain.setValueAtTime(0, audioContext.currentTime);
-        gain.gain.linearRampToValueAtTime(vol, audioContext.currentTime + 0.01);
-        gain.gain.linearRampToValueAtTime(0, audioContext.currentTime + duration - 0.05);
-        osc.start(audioContext.currentTime);
-        osc.stop(audioContext.currentTime + duration);
+        osc.frequency.setValueAtTime(frequency, ctx.currentTime);
+        gain.gain.setValueAtTime(0, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(vol, ctx.currentTime + 0.01);
+        gain.gain.linearRampToValueAtTime(0, ctx.currentTime + duration - 0.05);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + duration);
       } catch (e) {
         console.warn('Sound failed:', e);
       }

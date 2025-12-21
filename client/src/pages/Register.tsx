@@ -47,7 +47,8 @@ import {
   AlertCircle,
   Lock
 } from "lucide-react";
-import logoUrl from "@/assets/sts-logo.png";
+import defaultLogoUrl from "@/assets/sts-logo.png";
+import { useBranding } from "@/hooks/useBranding";
 
 const US_STATES = [
   "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut",
@@ -104,6 +105,12 @@ export default function Register() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [accountExistsEmail, setAccountExistsEmail] = useState<string | null>(null);
+  const officeSlug = new URLSearchParams(window.location.search).get('_office') || undefined;
+
+  // Office branding for white-label customization
+  const { branding } = useBranding();
+  const logoUrl = branding?.logoUrl || defaultLogoUrl;
+  const companyName = branding?.companyName || 'STS TaxRepair';
 
   // Referrer type with office and role info
   interface Referrer {
@@ -118,10 +125,11 @@ export default function Register() {
   }
 
   const { data: referrers = [] } = useQuery<Referrer[]>({
-    queryKey: ["/api/users/referrers"],
+    queryKey: ["/api/users/referrers", officeSlug || ""],
     queryFn: async () => {
       try {
-        const res = await fetch("/api/users/referrers", { credentials: "include" });
+        const url = officeSlug ? `/api/users/referrers?_office=${encodeURIComponent(officeSlug)}` : "/api/users/referrers";
+        const res = await fetch(url, { credentials: "include" });
         if (!res.ok) {
           console.warn(`[Register] Referrers request failed with status ${res.status}`);
           return [];
@@ -184,14 +192,17 @@ export default function Register() {
   const registerMutation = useMutation({
     mutationFn: async (data: RegisterForm) => {
       const { confirmPassword, ...submitData } = data;
-      return apiRequest("POST", "/api/auth/register", submitData);
+      return apiRequest("POST", "/api/auth/register", {
+        ...submitData,
+        officeSlug: officeSlug || undefined,
+      });
     },
     onSuccess: () => {
       toast({
         title: "Registration Successful!",
         description: "Your account has been created. Please log in to continue.",
       });
-      navigate("/client-login");
+      navigate(officeSlug ? `/client-login?_office=${encodeURIComponent(officeSlug)}` : "/client-login");
     },
     onError: (error: any) => {
       // Handle account exists error
@@ -265,7 +276,7 @@ export default function Register() {
             <Button 
               variant="outline" 
               className="w-full"
-              onClick={() => navigate("/client-login")}
+              onClick={() => navigate(officeSlug ? `/client-login?_office=${encodeURIComponent(officeSlug)}` : "/client-login")}
               data-testid="button-login"
             >
               Back to Login
@@ -283,7 +294,7 @@ export default function Register() {
         <div className="text-center space-y-4">
           <img 
             src={logoUrl} 
-            alt="STS TaxRepair Logo" 
+            alt={`${companyName} Logo`} 
             className="h-16 w-auto object-contain mx-auto"
           />
           <div>

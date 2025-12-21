@@ -256,7 +256,15 @@ export default function Dashboard() {
     queryKey: ["/api/audit-logs?limit=10"],
   });
 
-  const totalClients = clients?.length || 0;
+  // `/api/users` can include staff for assignment dropdowns; dashboard "clients"
+  // metrics should count *only* client-role users (or legacy rows with null role).
+  const clientUsers =
+    clients?.filter((u) => {
+      const role = (u.role || "").toLowerCase();
+      return role === "" || role === "client";
+    }) || [];
+
+  const totalClients = clientUsers.length;
   const totalDocuments = documents?.length || 0;
   
   const activeLeads = leads?.filter(l => 
@@ -269,7 +277,7 @@ export default function Dashboard() {
 
   const isLoading = clientsLoading || documentsLoading || leadsLoading || tasksLoading;
 
-  const recentClients = clients?.slice(0, 5) || [];
+  const recentClients = clientUsers.slice(0, 5);
 
   const documentsByType = documents?.reduce((acc, doc) => {
     acc[doc.documentType] = (acc[doc.documentType] || 0) + 1;

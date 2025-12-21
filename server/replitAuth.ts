@@ -46,9 +46,19 @@ export function getSession() {
   }, mysqlPool); // Pass existing pool to prevent separate connections
 
   const isProduction = process.env.NODE_ENV === 'production';
+  const sessionSecret =
+    process.env.SESSION_SECRET ||
+    (!isProduction ? "dev-session-secret-change-me" : undefined);
+
+  // In production, an undefined SESSION_SECRET breaks session auth/cookies.
+  if (!sessionSecret) {
+    throw new Error(
+      "SESSION_SECRET environment variable must be set in production",
+    );
+  }
   
   return session({
-    secret: process.env.SESSION_SECRET!,
+    secret: sessionSecret,
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
@@ -245,6 +255,10 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
       if (user) {
         req.userRole = user.role || 'client';
         req.userId = user.id;
+        // Load office context for scope enforcement (tax_office users)
+        if (user.officeId) {
+          req.officeId = user.officeId;
+        }
         return next();
       }
     } catch (error) {
@@ -291,6 +305,10 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
       if (dbUser) {
         req.userRole = dbUser.role || 'client';
         req.userId = userId;
+        // Load office context for scope enforcement (tax_office users)
+        if ((dbUser as any).officeId) {
+          req.officeId = (dbUser as any).officeId;
+        }
       }
     }
   } catch (error) {

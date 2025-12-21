@@ -82,9 +82,11 @@ export function DocumentUpload({ clientId, onUpload }: DocumentUploadProps) {
               credentials: 'include',
               body: fileBuffer,
             });
-          } catch (fetchError) {
+          } catch (fetchError: unknown) {
             console.error('Fetch failed with error:', fetchError);
-            throw new Error(`Network error: ${fetchError.message}`);
+            const message =
+              fetchError instanceof Error ? fetchError.message : String(fetchError);
+            throw new Error(`Network error: ${message}`);
           }
 
           if (!ftpResponse.ok) {

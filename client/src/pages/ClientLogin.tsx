@@ -64,6 +64,8 @@ export default function ClientLogin() {
   const [isLoading, setIsLoading] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isPWA, setIsPWA] = useState(false);
+  const officeSlug = new URLSearchParams(window.location.search).get('_office') || undefined;
+  const registerHref = officeSlug ? `/register?_office=${encodeURIComponent(officeSlug)}` : "/register";
   
   
   // Office branding for white-label customization
@@ -613,7 +615,7 @@ export default function ClientLogin() {
                 <p className="text-sm text-gray-400">
                   New client?{" "}
                   <Link
-                    href="/register"
+                    href={registerHref}
                     className="text-emerald-400 hover:text-emerald-300 font-medium transition-colors"
                   >
                     Register here

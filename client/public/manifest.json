@@ -112,35 +112,10 @@
     }
   ],
   "scope_extensions": [
-    { "origin": "https://ststaxrepair.org", "scope": "/" },
-    { "origin": "https://app.ststaxrepair.org", "scope": "/" },
-    { "origin": "https://ststaxrepair.net", "scope": "/" }
+    { "origin": "https://ststaxrepair.org", "scope": "/", "type": "navigation" },
+    { "origin": "https://app.ststaxrepair.org", "scope": "/", "type": "navigation" },
+    { "origin": "https://ststaxrepair.net", "scope": "/", "type": "navigation" }
   ],
-  "file_handlers": [
-    {
-      "action": "/open-file",
-      "accept": {
-        "application/pdf": [".pdf"],
-        "text/csv": [".csv"]
-      }
-    }
-  ],
-  "protocol_handlers": [
-    {
-      "protocol": "mailto",
-      "url": "/contact?email=%s"
-    }
-  ],
-  "share_target": {
-    "action": "/share",
-    "method": "POST",
-    "enctype": "multipart/form-data",
-    "params": {
-      "title": "title",
-      "text": "text",
-      "url": "url"
-    }
-  },
   "widgets": [
     {
       "name": "Tax Deadline Widget",
@@ -181,6 +156,13 @@
   },
   "file_handlers": [
     {
+      "action": "/open-file",
+      "accept": {
+        "application/pdf": [".pdf"],
+        "text/csv": [".csv"]
+      }
+    },
+    {
       "action": "/client-portal/documents",
       "accept": {
         "application/pdf": [".pdf"],
@@ -191,6 +173,10 @@
     }
   ],
   "protocol_handlers": [
+    {
+      "protocol": "mailto",
+      "url": "/contact?email=%s"
+    },
     {
       "protocol": "web+ststax",
       "url": "/client-portal?action=%s"

@@ -29,6 +29,7 @@ import {
   insertOfficeBrandingSchema,
   type Form8879Data,
   type FilingStatus,
+  type Office,
   type OfficeBranding,
   type ThemePreference,
 } from "@shared/mysql-schema";
@@ -742,6 +743,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         directDepositBank,
         bankRoutingNumber,
         bankAccountNumber,
+        officeSlug,
       } = req.body;
 
       // Validate required fields
@@ -783,16 +785,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? encrypt(bankAccountNumber)
         : null;
 
-      // If client selected a referrer, get the referrer's office and assign the client
-      let clientOfficeId: string | null = null;
+      // Resolve office context from:
+      // - subdomain middleware (req.officeId)
+      // - query param `_office` (if caller passes it through)
+      // - request body `officeSlug` (used by main-domain signup links)
+      let contextOfficeId: string | null = (req.officeId as string) || null;
+      const queryOfficeSlug = (req.query?._office as string) || null;
+      const bodyOfficeSlug = (officeSlug as string) || null;
+      const resolvedSlug = bodyOfficeSlug || queryOfficeSlug || null;
+
+      if (!contextOfficeId && resolvedSlug) {
+        const office = await storage.getOfficeBySlug(resolvedSlug);
+        contextOfficeId = office?.id || null;
+      }
+
+      // If client selected a referrer, capture assignment + referral text.
+      // Office assignment is forced by contextOfficeId when present (white-label signup).
+      let clientOfficeId: string | null = contextOfficeId;
       let assignedTo: string | null = null;
       let referralSourceText: string | null = null;
       
       if (referredById && referredById !== 'none') {
         const referrer = await storage.getUser(referredById);
         if (referrer) {
-          // Assign client to referrer's office
-          clientOfficeId = referrer.officeId || null;
+          // If we don't have an explicit office context, fall back to the referrer's office.
+          if (!clientOfficeId) {
+            clientOfficeId = referrer.officeId || null;
+          }
           // Set referrer as the client's assigned agent
           assignedTo = referrer.id;
           // Store referral source text
@@ -861,22 +880,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error(`Error sending verification email to ${email}:`, err);
         });
 
-      // Notify admins about the new client signup (email + in-app), but don't block signup
+      // Notify the *right* team about the new signup (email + in-app), but don't block signup.
+      // If this was a white-labeled signup (office context), notify that office's Tax Office/Admin + Super Admins.
       try {
-        const admins = await mysqlStorage.getUsersByRole('admin');
+        const allUsersForNotif = await mysqlStorage.getUsers();
+        const roleOf = (u: any) => (u.role || '').toLowerCase();
+        const isActive = (u: any) => u.isActive !== false;
+
+        let officeNameForEmail: string | null = null;
+        if (clientOfficeId) {
+          const office = await storage.getOffice(clientOfficeId);
+          officeNameForEmail = office?.name || null;
+        }
+
+        let recipients: any[] = [];
+        if (clientOfficeId) {
+          recipients = allUsersForNotif.filter((u: any) => {
+            const r = roleOf(u);
+            if (!isActive(u)) return false;
+            if (r === 'super_admin') return true;
+            return (u.officeId === clientOfficeId) && (r === 'tax_office' || r === 'admin');
+          });
+          // Safety fallback: if no office recipients exist, notify global admins
+          if (recipients.length === 0) {
+            recipients = await mysqlStorage.getUsersByRole('admin');
+          }
+        } else {
+          recipients = await mysqlStorage.getUsersByRole('admin');
+        }
+
         const adminPortalUrl =
           (process.env.APP_URL ||
             process.env.RENDER_EXTERNAL_URL ||
             'https://ststaxrepair.org') + '/clients';
         const newClientName = `${firstName} ${lastName}`.trim() || 'New client';
 
-        for (const admin of admins) {
+        for (const admin of recipients as any[]) {
           // In-app notification
           await mysqlStorage.createNotification({
             userId: admin.id,
             type: 'client_signup',
             title: 'New Client Signed Up',
-            message: `${newClientName} (${email}) created an account.`,
+            message: `${newClientName} (${email}) created an account.${clientOfficeId ? ' (Assigned to your office)' : ''}`,
             link: '/clients',
             resourceType: 'client',
             resourceId: user.id
@@ -893,6 +938,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 <ul>
                   <li>Name: ${newClientName}</li>
                   <li>Email: ${email}</li>
+                  ${
+                    clientOfficeId
+                      ? `<li>Office: ${officeNameForEmail || clientOfficeId}</li>`
+                      : ''
+                  }
                 </ul>
                 <p>You can review the client in the admin dashboard:</p>
                 <p><a href="${adminPortalUrl}" target="_blank">View Clients</a></p>
@@ -1370,6 +1420,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/users/referrers", async (req, res) => {
     const diagId = `referrers-${Date.now()}`;
     try {
+      // If registration is happening in an office context (subdomain or `?_office=`),
+      // only show staff for that office (plus Super Admins).
+      let contextOfficeId: string | null = (req as any).officeId || null;
+      if (!contextOfficeId && req.query?._office) {
+        const office = await storage.getOfficeBySlug(req.query._office as string);
+        contextOfficeId = office?.id || null;
+      }
+
       // Get all users (fallback to mysqlStorage if storage fails)
       let users: any[] = [];
       try {
@@ -1393,13 +1451,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const officeMap = new Map(offices.map((o: any) => [o.id, o.name]));
       
       // Filter to only staff members (not clients)
-      const staffMembers = users.filter((u) => {
+      let staffMembers = users.filter((u) => {
         const role = (u.role || '').toLowerCase();
         // Check activity status robustly - handle boolean, null, and potential numeric values from MySQL
         const isActive = u.isActive !== false;
         // Include everyone who is not a client and is active
         return role !== "client" && isActive;
       });
+
+      // If office-scoped, keep only that office staff (and Super Admins)
+      if (contextOfficeId) {
+        staffMembers = staffMembers.filter((u) => {
+          const role = (u.role || '').toLowerCase();
+          if (role === 'super_admin') return true;
+          return u.officeId === contextOfficeId;
+        });
+      }
       
       console.log(`[${diagId}] Referrers API - Found ${staffMembers.length} staff members out of ${users.length} total users`);
       
@@ -3553,8 +3620,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     requirePermission("documents.view"),
     async (req, res) => {
       try {
-        const documents = await storage.getAllDocuments();
-        res.json(documents);
+        const userRole = (req as any).userRole?.toLowerCase?.() || 'client';
+        const userId = (req as any).userId || (req as any).user?.claims?.sub;
+
+        // Admin/Super Admin: global access
+        if (userRole === 'admin' || userRole === 'super_admin') {
+          const documents = await storage.getAllDocuments();
+          return res.json(documents);
+        }
+
+        // Client: only their own documents
+        if (userRole === 'client') {
+          if (!userId) return res.json([]);
+          const documents = await storage.getDocumentVersions(userId);
+          return res.json(documents);
+        }
+
+        // Agent: only assigned clients' documents
+        if (userRole === 'agent') {
+          if (!userId) return res.json([]);
+          const assignedClientIds = await mysqlStorage.getAgentAssignedClientIds(userId);
+          if (!assignedClientIds || assignedClientIds.length === 0) return res.json([]);
+          const assignedSet = new Set(assignedClientIds);
+          const allDocs = await storage.getAllDocuments();
+          return res.json(allDocs.filter((d: any) => d.clientId && assignedSet.has(d.clientId)));
+        }
+
+        // Tax Office: only clients in their office
+        if (userRole === 'tax_office') {
+          const officeId = (req as any).officeId || null;
+          if (!officeId) return res.json([]);
+          const officeClients = await mysqlStorage.getOfficeClients(officeId);
+          const clientSet = new Set(officeClients.map((c) => c.id));
+          const allDocs = await storage.getAllDocuments();
+          return res.json(allDocs.filter((d: any) => d.clientId && clientSet.has(d.clientId)));
+        }
+
+        // Default deny
+        return res.json([]);
       } catch (error: any) {
         res.status(500).json({ error: error.message });
       }
@@ -3642,11 +3745,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     isAuthenticated,
     requirePermission("documents.delete"),
     async (req, res) => {
-      const success = await storage.deleteDocumentVersion(req.params.id);
-      if (!success) {
-        return res.status(404).json({ error: "Document not found" });
+      try {
+        const userRole = (req as any).userRole?.toLowerCase?.() || 'client';
+        const userId = (req as any).userId || (req as any).user?.claims?.sub;
+        const officeId = (req as any).officeId || null;
+
+        const document = await storage.getDocumentVersion(req.params.id);
+        if (!document) {
+          return res.status(404).json({ error: "Document not found" });
+        }
+
+        const clientId = (document as any).clientId as string | undefined;
+        if (!clientId) {
+          return res.status(403).json({ error: "Access denied" });
+        }
+
+        // Enforce scope
+        if (!(userRole === 'admin' || userRole === 'super_admin')) {
+          if (userRole === 'client') {
+            if (!userId || userId !== clientId) {
+              return res.status(403).json({ error: "Access denied" });
+            }
+          } else if (userRole === 'agent') {
+            if (!userId) return res.status(403).json({ error: "Access denied" });
+            const assigned = await mysqlStorage.getAgentAssignedClientIds(userId);
+            if (!assigned.includes(clientId)) {
+              return res.status(403).json({ error: "Access denied" });
+            }
+          } else if (userRole === 'tax_office') {
+            if (!officeId) return res.status(403).json({ error: "Access denied" });
+            const client = await mysqlStorage.getUser(clientId);
+            if (client?.officeId !== officeId) {
+              return res.status(403).json({ error: "Access denied" });
+            }
+          } else {
+            return res.status(403).json({ error: "Access denied" });
+          }
+        }
+
+        const success = await storage.deleteDocumentVersion(req.params.id);
+        if (!success) {
+          return res.status(404).json({ error: "Document not found" });
+        }
+        res.status(204).send();
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
       }
-      res.status(204).send();
     },
   );
 
@@ -4692,14 +4836,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Download/view a document - uses FTP to fetch from GoDaddy
-  app.get("/api/documents/:id/download", isAuthenticated, async (req, res) => {
+  // Download/view a document - scope enforced
+  app.get("/api/documents/:id/download", isAuthenticated, requirePermission("documents.view"), async (req, res) => {
     try {
       const documentId = req.params.id;
       const document = await storage.getDocumentVersion(documentId);
       
       if (!document) {
         return res.status(404).json({ error: "Document not found" });
+      }
+
+      // Enforce scope before serving the file
+      const userRole = (req as any).userRole?.toLowerCase?.() || 'client';
+      const userId = (req as any).userId || (req as any).user?.claims?.sub;
+      const officeId = (req as any).officeId || null;
+      const clientId = (document as any).clientId as string | undefined;
+      if (!clientId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      if (!(userRole === 'admin' || userRole === 'super_admin')) {
+        if (userRole === 'client') {
+          if (!userId || userId !== clientId) {
+            return res.status(403).json({ error: "Access denied" });
+          }
+        } else if (userRole === 'agent') {
+          if (!userId) return res.status(403).json({ error: "Access denied" });
+          const assigned = await mysqlStorage.getAgentAssignedClientIds(userId);
+          if (!assigned.includes(clientId)) {
+            return res.status(403).json({ error: "Access denied" });
+          }
+        } else if (userRole === 'tax_office') {
+          if (!officeId) return res.status(403).json({ error: "Access denied" });
+          const client = await mysqlStorage.getUser(clientId);
+          if (client?.officeId !== officeId) {
+            return res.status(403).json({ error: "Access denied" });
+          }
+        } else {
+          return res.status(403).json({ error: "Access denied" });
+        }
       }
 
       const fileUrl = document.fileUrl;
@@ -5748,13 +5923,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const slug = req.query.slug as string;
       
       let branding: OfficeBranding | undefined;
+      let office: Office | undefined;
+      let resolvedOfficeId: string | undefined;
       
+      // Priority:
+      // 1) Explicit officeId query
+      // 2) Explicit slug query (used by login pages with ?_office=slug)
+      // 3) Office resolved by middleware (subdomain or _office query)
+      // 4) Logged-in user office (so main-domain staff portal can still be white-labeled)
       if (officeId) {
+        resolvedOfficeId = officeId;
+        office = await storage.getOffice(officeId);
         branding = await storage.getOfficeBranding(officeId);
       } else if (slug) {
-        const office = await storage.getOfficeBySlug(slug);
+        office = await storage.getOfficeBySlug(slug);
         if (office) {
+          resolvedOfficeId = office.id;
           branding = await storage.getOfficeBranding(office.id);
+        }
+      } else if (req.officeId) {
+        resolvedOfficeId = req.officeId as string;
+        office = await storage.getOffice(resolvedOfficeId);
+        branding = await storage.getOfficeBranding(resolvedOfficeId);
+      } else {
+        const sessionUserId =
+          req.userId || req.user?.claims?.sub || req.session?.userId || null;
+        if (sessionUserId) {
+          const user = await storage.getUser(sessionUserId);
+          if (user?.officeId) {
+            resolvedOfficeId = user.officeId;
+            office = await storage.getOffice(user.officeId);
+            branding = await storage.getOfficeBranding(user.officeId);
+          }
         }
       }
       
@@ -5762,6 +5962,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const responseBranding = {
         ...DEFAULT_BRANDING,
         ...(branding || {}),
+        officeName: office?.name,
+        officeSlug: office?.slug,
+        officeId: resolvedOfficeId || (branding as any)?.officeId,
         isCustom: !!branding
       };
 

@@ -250,7 +250,9 @@ export default function Branding() {
       toast({ title: 'No slug set', description: 'Please set a subdomain slug first.', variant: 'destructive' });
       return;
     }
-    const url = `https://${slug}.ststaxrepair.org`;
+    // Use a URL that works immediately without DNS/wildcard subdomains.
+    // The server supports office context via `?_office=slug` and the UI reads it as well.
+    const url = `https://ststaxrepair.org/client-login?_office=${slug}`;
     navigator.clipboard.writeText(url);
     toast({ title: 'Link copied', description: 'Custom login URL copied to clipboard.' });
   };
@@ -405,7 +407,7 @@ export default function Branding() {
                 <span className="text-sm text-muted-foreground font-medium">.ststaxrepair.org</span>
               </div>
               <p className="text-xs text-muted-foreground">
-                Your custom login URL will be: <span className="text-primary font-mono select-all">https://{displayValue('officeSlug') || '[slug]'}.ststaxrepair.org</span>
+                Your custom login URL will be: <span className="text-primary font-mono select-all">https://ststaxrepair.org/client-login?_office={displayValue('officeSlug') || '[slug]'}</span>
               </p>
               <Button 
                 variant="outline" 

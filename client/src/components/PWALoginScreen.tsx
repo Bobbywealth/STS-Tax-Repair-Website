@@ -22,8 +22,9 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { useAuthStorage } from "@/hooks/useAuthStorage";
-import stsLogo from "@/assets/sts-logo.png";
+import defaultLogoUrl from "@/assets/sts-logo.png";
 import { usePWA } from "@/hooks/usePWA";
+import { useBranding } from "@/hooks/useBranding";
 
 interface PWALoginScreenProps {
   onLoginSuccess: () => void;
@@ -34,6 +35,11 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
   const [, navigate] = useLocation();
   const { saveAuthToken, saveCredentials } = useAuthStorage();
   const { isOnline, requestManualSync } = usePWA();
+  const { branding } = useBranding();
+  const logoUrl = branding?.logoUrl || defaultLogoUrl;
+  const companyName = branding?.companyName || "STS TaxRepair";
+  const officeSlug = new URLSearchParams(window.location.search).get('_office') || undefined;
+  const registerHref = officeSlug ? `/register?_office=${encodeURIComponent(officeSlug)}` : "/register";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
@@ -167,6 +173,9 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
     }
   };
 
+  // NOTE: The rest of this component renders the header/logo in the JSX below.
+  // Swap the static STS logo for dynamic office branding.
+
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
       {!isOnline && (
@@ -218,8 +227,8 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
             transition={{ duration: 2, repeat: Infinity }}
           >
             <img
-              src={stsLogo}
-              alt="STS TaxRepair"
+              src={logoUrl}
+              alt={`${companyName} Logo`}
               className="w-32 h-32 md:w-40 md:h-40 object-contain"
             />
           </motion.div>
@@ -230,9 +239,7 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
           >
-            <span className="text-white">STS</span>
-            <span className="text-[#4CAF50]"> Tax</span>
-            <span className="text-[#FDB913]">Repair</span>
+            <span className="text-white">{companyName}</span>
           </motion.h1>
         </motion.div>
 
@@ -342,7 +349,7 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
               <p className="text-sm text-gray-400">
                 New client?{" "}
                 <a
-                  href="/register"
+                  href={registerHref}
                   className="text-[#4CAF50] hover:text-[#45a049] font-medium transition-colors"
                 >
                   Create account

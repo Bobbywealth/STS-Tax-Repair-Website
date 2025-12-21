@@ -141,7 +141,7 @@ router.post('/compare-documents', isAuthenticated, requireStaff, requireAIConfig
 // Check AI service status
 router.get('/status', isAuthenticated, requireStaff, (req: AuthenticatedRequest, res: Response) => {
   const isConfigured = !!process.env.OPENAI_API_KEY;
-  const model = process.env.OPENAI_MODEL || 'gpt-4-turbo-preview';
+  const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
   
   res.json({
     configured: isConfigured,

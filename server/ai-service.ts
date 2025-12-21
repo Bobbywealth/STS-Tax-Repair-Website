@@ -26,7 +26,8 @@ function ensureOpenAI() {
 }
 
 // Default model to use
-const DEFAULT_MODEL = process.env.OPENAI_MODEL || 'gpt-4-turbo-preview';
+// NOTE: Prefer a currently-available default; can be overridden via OPENAI_MODEL.
+const DEFAULT_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 
 // Tax-specific system prompt for the AI assistant
 const TAX_ASSISTANT_SYSTEM_PROMPT = `You are an expert AI Tax Assistant for STS TaxRepair, a professional tax preparation service. You help tax office agents and staff with:

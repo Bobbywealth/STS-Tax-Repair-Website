@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Shield, Mail, Lock, AlertCircle, UserPlus, FileQuestion } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
-import logoUrl from "@/assets/sts-logo.png";
+import defaultLogoUrl from "@/assets/sts-logo.png";
+import { useBranding } from "@/hooks/useBranding";
 
 export default function AdminLogin() {
   const { toast } = useToast();
@@ -15,6 +16,9 @@ export default function AdminLogin() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const { branding } = useBranding();
+  const logoUrl = branding?.logoUrl || defaultLogoUrl;
+  const companyName = branding?.companyName || "STS TaxRepair";
 
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,7 +66,7 @@ export default function AdminLogin() {
           <div className="flex justify-center">
             <img 
               src={logoUrl} 
-              alt="STS Tax Repair" 
+              alt={`${companyName} Logo`}
               className="h-16 w-auto"
             />
           </div>

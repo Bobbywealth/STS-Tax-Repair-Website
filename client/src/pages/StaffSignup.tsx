@@ -594,7 +594,14 @@ export default function StaffSignup() {
           </p>
           <p>
             Looking to file your taxes?{" "}
-            <Link href="/register" className="text-primary hover:underline" data-testid="link-register">
+            <Link
+              href={(() => {
+                const slug = new URLSearchParams(window.location.search).get('_office');
+                return slug ? `/register?_office=${encodeURIComponent(slug)}` : "/register";
+              })()}
+              className="text-primary hover:underline"
+              data-testid="link-register"
+            >
               Register as a client
             </Link>
           </p>

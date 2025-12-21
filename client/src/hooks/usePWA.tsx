@@ -112,14 +112,25 @@ export function usePWA() {
       const registration = await navigator.serviceWorker.ready;
       let registered = false;
 
+      const permissions = (navigator as any).permissions;
+
       if ('periodicSync' in registration) {
         try {
-          await (registration as any).periodicSync.register(PERIODIC_SYNC_TAG, {
-            minInterval: 12 * 60 * 60 * 1000, // 12 hours
-          });
-          registered = true;
+          // Only attempt if permission is already granted; otherwise it throws NotAllowedError
+          const status = permissions?.query
+            ? await permissions.query({ name: 'periodic-background-sync' } as any)
+            : null;
+
+          const allowed = !status || status.state === 'granted';
+
+          if (allowed) {
+            await (registration as any).periodicSync.register(PERIODIC_SYNC_TAG, {
+              minInterval: 12 * 60 * 60 * 1000, // 12 hours
+            });
+            registered = true;
+          }
         } catch (error) {
-          console.warn('Periodic sync registration failed:', error);
+          console.warn('Periodic sync unavailable (falling back to one-shot sync):', error);
         }
       }
 
