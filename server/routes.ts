@@ -2176,7 +2176,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Redeem staff invite (PUBLIC - allows new staff to create their account)
   app.post("/api/staff-invites/redeem", async (req: any, res) => {
     try {
-      const { inviteCode, firstName, lastName, password } = req.body;
+      const {
+        inviteCode,
+        firstName,
+        lastName,
+        password,
+        // Tax Office onboarding fields (optional, but used to prefill branding)
+        officeName,
+        officeSlug,
+        primaryColor,
+        secondaryColor,
+        accentColor,
+        replyToEmail,
+        replyToName,
+        defaultTheme,
+      } = req.body;
       
       if (!inviteCode) {
         return res.status(400).json({ error: "Invite code required" });
@@ -2250,6 +2264,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isActive: true,
           // Email NOT auto-verified - staff must verify to ensure proper email delivery
         });
+      }
+
+      // If this is a Tax Office signup, create/update their office + branding now
+      try {
+        if ((invite.role || '').toLowerCase() === 'tax_office' && user) {
+          const slugify = (s: string) =>
+            String(s || '')
+              .toLowerCase()
+              .trim()
+              .replace(/[^a-z0-9]+/g, '-')
+              .replace(/(^-|-$)/g, '')
+              .slice(0, 60);
+
+          let officeIdToUse: string | null = (user as any).officeId || null;
+          let desiredOfficeName: string =
+            (typeof officeName === 'string' && officeName.trim()) ||
+            `${(firstName || '').trim()} ${(lastName || '').trim()}`.trim() ||
+            (invite.email ? invite.email.split('@')[0] : '') ||
+            'Tax Office';
+
+          desiredOfficeName = desiredOfficeName.endsWith('Tax Office')
+            ? desiredOfficeName
+            : `${desiredOfficeName} Tax Office`;
+
+          // Validate/resolve slug
+          let desiredSlug =
+            (typeof officeSlug === 'string' && officeSlug.trim()) ? officeSlug.trim().toLowerCase() : '';
+          desiredSlug = desiredSlug.replace(/[^a-z0-9-]/g, '').replace(/--+/g, '-');
+          if (!desiredSlug) {
+            desiredSlug = slugify(invite.email ? invite.email.split('@')[0] : desiredOfficeName) || 'office';
+          }
+          if (!/^[a-z0-9-]+$/.test(desiredSlug)) {
+            desiredSlug = slugify(desiredSlug) || 'office';
+          }
+
+          const ensureUniqueSlug = async (baseSlug: string) => {
+            let slug = baseSlug;
+            for (let i = 0; i < 6; i++) {
+              const existing = await storage.getOfficeBySlug(slug);
+              if (!existing || existing.id === officeIdToUse) return slug;
+              slug = `${baseSlug}-${randomUUID().slice(0, 6)}`;
+            }
+            return `${baseSlug}-${randomUUID().slice(0, 6)}`;
+          };
+
+          desiredSlug = await ensureUniqueSlug(desiredSlug);
+
+          if (!officeIdToUse) {
+            const office = await storage.createOffice({
+              name: desiredOfficeName,
+              slug: desiredSlug,
+              email: invite.email || null,
+              phone: (user as any).phone || null,
+            });
+            officeIdToUse = office.id;
+
+            // Attach user to the office
+            await storage.upsertUser({
+              ...(user as any),
+              officeId: officeIdToUse,
+            });
+          } else {
+            // Update office name/slug (best effort)
+            await storage.updateOffice(officeIdToUse, { name: desiredOfficeName, slug: desiredSlug } as any);
+          }
+
+          // Persist branding (create or update)
+          const brandingDefaults = {
+            primaryColor: '#1a4d2e',
+            secondaryColor: '#4CAF50',
+            accentColor: '#22c55e',
+            defaultTheme: 'light' as const,
+          };
+
+          const brandingUpdate: any = {
+            officeId: officeIdToUse,
+            companyName: desiredOfficeName,
+            logoUrl: null,
+            logoObjectKey: null,
+            primaryColor: (typeof primaryColor === 'string' && primaryColor) || brandingDefaults.primaryColor,
+            secondaryColor: (typeof secondaryColor === 'string' && secondaryColor) || brandingDefaults.secondaryColor,
+            accentColor: (typeof accentColor === 'string' && accentColor) || brandingDefaults.accentColor,
+            defaultTheme: (defaultTheme === 'dark' ? 'dark' : 'light'),
+            replyToEmail: (typeof replyToEmail === 'string' && replyToEmail.trim()) ? replyToEmail.trim() : null,
+            replyToName: (typeof replyToName === 'string' && replyToName.trim()) ? replyToName.trim() : null,
+            updatedByUserId: user.id,
+          };
+
+          const existingBranding = await storage.getOfficeBranding(officeIdToUse);
+          if (existingBranding) {
+            await storage.updateOfficeBranding(officeIdToUse, brandingUpdate);
+          } else {
+            await storage.createOfficeBranding(brandingUpdate);
+          }
+        }
+      } catch (officeSetupErr) {
+        // Non-blocking: don't prevent account creation if branding setup fails
+        console.error('[staff-invites/redeem] Tax office onboarding failed:', officeSetupErr);
       }
 
       // Mark invite as used

@@ -25,6 +25,15 @@ export default function RedeemInvite() {
   const [lastName, setLastName] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  // Tax Office onboarding (captured at signup so Branding is prefilled)
+  const [officeName, setOfficeName] = useState("");
+  const [officeSlug, setOfficeSlug] = useState("");
+  const [primaryColor, setPrimaryColor] = useState("#1a4d2e");
+  const [secondaryColor, setSecondaryColor] = useState("#4CAF50");
+  const [accentColor, setAccentColor] = useState("#22c55e");
+  const [replyToEmail, setReplyToEmail] = useState("");
+  const [replyToName, setReplyToName] = useState("");
+  const [defaultTheme, setDefaultTheme] = useState<"light" | "dark">("light");
   const [status, setStatus] = useState<"loading" | "form" | "success" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
   const [inviteData, setInviteData] = useState<InviteValidation | null>(null);
@@ -66,11 +75,24 @@ export default function RedeemInvite() {
 
   const redeemMutation = useMutation({
     mutationFn: async () => {
+      const isTaxOffice = (inviteData?.role || "").toLowerCase() === "tax_office";
       return await apiRequest('POST', '/api/staff-invites/redeem', { 
         inviteCode, 
         firstName, 
         lastName, 
-        password 
+        password,
+        ...(isTaxOffice
+          ? {
+              officeName: officeName.trim(),
+              officeSlug: officeSlug.trim(),
+              primaryColor,
+              secondaryColor,
+              accentColor,
+              replyToEmail: replyToEmail.trim() || undefined,
+              replyToName: replyToName.trim() || undefined,
+              defaultTheme,
+            }
+          : {}),
       });
     },
     onSuccess: (data: any) => {
@@ -102,6 +124,26 @@ export default function RedeemInvite() {
         variant: "destructive",
       });
       return;
+    }
+
+    const isTaxOffice = (inviteData?.role || "").toLowerCase() === "tax_office";
+    if (isTaxOffice) {
+      if (!officeName.trim()) {
+        toast({
+          title: "Office setup required",
+          description: "Please enter your company/office name.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!officeSlug.trim()) {
+        toast({
+          title: "Office setup required",
+          description: "Please choose a subdomain slug (letters, numbers, hyphens).",
+          variant: "destructive",
+        });
+        return;
+      }
     }
     
     if (password.length < 8) {
@@ -175,6 +217,141 @@ export default function RedeemInvite() {
                   <p><strong>Invited by:</strong> {inviteData.invitedBy}</p>
                 )}
               </div>
+
+              {(inviteData.role || "").toLowerCase() === "tax_office" && (
+                <div className="rounded-lg border p-4 space-y-4" data-testid="tax-office-onboarding">
+                  <p className="text-sm font-medium">Office Setup</p>
+                  <p className="text-xs text-muted-foreground">
+                    These details will pre-fill your Branding settings and power your custom login links.
+                  </p>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="officeName">Company / Office Name</Label>
+                    <Input
+                      id="officeName"
+                      value={officeName}
+                      onChange={(e) => setOfficeName(e.target.value)}
+                      placeholder="Acme Tax Office"
+                      required
+                      data-testid="input-office-name"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="officeSlug">Subdomain Slug</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="officeSlug"
+                        value={officeSlug}
+                        onChange={(e) =>
+                          setOfficeSlug(
+                            e.target.value
+                              .toLowerCase()
+                              .replace(/[^a-z0-9-]/g, "")
+                              .replace(/--+/g, "-"),
+                          )
+                        }
+                        placeholder="acmetax"
+                        required
+                        data-testid="input-office-slug"
+                      />
+                      <span className="text-xs text-muted-foreground">.ststaxrepair.org</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Your login link will be:{" "}
+                      <span className="font-mono select-all">https://ststaxrepair.org/client-login?_office={officeSlug || "[slug]"}</span>
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="primaryColor">Primary</Label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          id="primaryColor"
+                          type="color"
+                          value={primaryColor}
+                          onChange={(e) => setPrimaryColor(e.target.value)}
+                          className="h-10 w-10 rounded border"
+                        />
+                        <Input value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="secondaryColor">Secondary</Label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          id="secondaryColor"
+                          type="color"
+                          value={secondaryColor}
+                          onChange={(e) => setSecondaryColor(e.target.value)}
+                          className="h-10 w-10 rounded border"
+                        />
+                        <Input value={secondaryColor} onChange={(e) => setSecondaryColor(e.target.value)} />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="accentColor">Accent</Label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          id="accentColor"
+                          type="color"
+                          value={accentColor}
+                          onChange={(e) => setAccentColor(e.target.value)}
+                          className="h-10 w-10 rounded border"
+                        />
+                        <Input value={accentColor} onChange={(e) => setAccentColor(e.target.value)} />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="replyToEmail">Reply-To Email (optional)</Label>
+                      <Input
+                        id="replyToEmail"
+                        type="email"
+                        value={replyToEmail}
+                        onChange={(e) => setReplyToEmail(e.target.value)}
+                        placeholder="support@youroffice.com"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="replyToName">Reply-To Name (optional)</Label>
+                      <Input
+                        id="replyToName"
+                        value={replyToName}
+                        onChange={(e) => setReplyToName(e.target.value)}
+                        placeholder="Acme Tax Support"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="defaultTheme">Default Theme</Label>
+                    <div className="flex items-center gap-3">
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name="defaultTheme"
+                          checked={defaultTheme === "light"}
+                          onChange={() => setDefaultTheme("light")}
+                        />
+                        Light
+                      </label>
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name="defaultTheme"
+                          checked={defaultTheme === "dark"}
+                          onChange={() => setDefaultTheme("dark")}
+                        />
+                        Dark
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
