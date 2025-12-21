@@ -13,6 +13,9 @@ interface User {
   id: string;
   role: string;
   officeId?: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
 }
 
 interface BrandingData {
@@ -49,6 +52,10 @@ export default function Branding() {
     queryKey: ['/api/auth/user'],
   });
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+  const loggedInLabel =
+    user
+      ? `${[user.firstName, user.lastName].filter(Boolean).join(' ').trim() || user.email || user.id} (${user.role})`
+      : '';
 
   useEffect(() => {
     if (user?.officeId) {
@@ -337,6 +344,17 @@ export default function Branding() {
           <p className="text-muted-foreground mt-1">
             Customize your Tax Office's appearance and branding
           </p>
+          {user ? (
+            <p className="text-xs text-muted-foreground mt-2">
+              Logged in as: <span className="font-medium text-foreground">{loggedInLabel}</span>
+              {branding?.officeName ? (
+                <>
+                  {" "}• Editing office:{" "}
+                  <span className="font-medium text-foreground">{branding.officeName}</span>
+                </>
+              ) : null}
+            </p>
+          ) : null}
         </div>
         
         {isAdmin && offices?.length ? (
