@@ -1293,10 +1293,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/users/referrers", async (req, res) => {
     const diagId = `referrers-${Date.now()}`;
     try {
-      // Get all users and offices
-      const users = await storage.getUsers();
+      // Get all users (fallback to mysqlStorage if storage fails)
+      let users: any[] = [];
+      try {
+        users = await storage.getUsers();
+      } catch (err) {
+        console.warn(`[${diagId}] storage.getUsers failed, falling back to mysqlStorage`, err);
+        users = await mysqlStorage.getUsers();
+      }
+
       // Ensure offices is an array even if storage method is missing
-      const offices = typeof storage.getOffices === 'function' ? await storage.getOffices() : [];
+      let offices: any[] = [];
+      if (typeof storage.getOffices === "function") {
+        try {
+          offices = await storage.getOffices();
+        } catch (err) {
+          console.warn(`[${diagId}] storage.getOffices failed; continuing without offices`, err);
+        }
+      }
       
       // Create office lookup map
       const officeMap = new Map(offices.map((o: any) => [o.id, o.name]));
