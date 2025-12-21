@@ -463,7 +463,7 @@ export default function Clients() {
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="h-8 text-xs w-full sm:w-[130px]"
+              className="h-8 text-xs w-full sm:w-[150px] px-2 pr-1 cursor-pointer"
             />
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -473,7 +473,7 @@ export default function Clients() {
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="h-8 text-xs w-full sm:w-[130px]"
+              className="h-8 text-xs w-full sm:w-[150px] px-2 pr-1 cursor-pointer"
             />
           </div>
           {(startDate || endDate) && (
