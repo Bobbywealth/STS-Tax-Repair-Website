@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { parseApiDate } from "@/lib/dates";
 import { Check, CheckCheck, ExternalLink, RefreshCw, Trash2 } from "lucide-react";
 
 type NotificationType =
@@ -150,7 +151,8 @@ export default function Notifications() {
 
   const formatTime = (dateStr: string) => {
     try {
-      return formatDistanceToNow(new Date(dateStr), { addSuffix: true });
+      const d = parseApiDate(dateStr);
+      return d ? formatDistanceToNow(d, { addSuffix: true }) : "recently";
     } catch {
       return "recently";
     }

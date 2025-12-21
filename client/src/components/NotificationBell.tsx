@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatDistanceToNow } from "date-fns";
 import { useLocation } from "wouter";
+import { parseApiDate } from "@/lib/dates";
 import {
   Tooltip,
   TooltipContent,
@@ -259,7 +260,8 @@ export function NotificationBell() {
 
   const formatTime = (dateStr: string) => {
     try {
-      return formatDistanceToNow(new Date(dateStr), { addSuffix: true });
+      const d = parseApiDate(dateStr);
+      return d ? formatDistanceToNow(d, { addSuffix: true }) : 'recently';
     } catch {
       return 'recently';
     }
