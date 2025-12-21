@@ -4296,7 +4296,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
     
-    client.on('error', (err) => {
+    client.on('error', (err: any) => {
       if (!responded) {
         responded = true;
         clearTimeout(timeout);
@@ -4356,10 +4356,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         setTimeout(() => reject(new Error('FTP connection timeout after 10 seconds')), 10000)
       );
       
-      const testResult = await Promise.race([
+      const testResult = (await Promise.race([
         ftpStorageService.listDirectory('/'),
         timeoutPromise
-      ]);
+      ])) as any[];
       
       console.log('[FTP-TEST] FTP connection successful, found', testResult.length, 'items');
       res.json({ 
@@ -4422,9 +4422,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[FTP] Upload request started: contentType=${contentType}, contentLength=${req.headers['content-length']}`);
       
       // Check content type to determine how to handle the upload
-      if (!contentType.includes('multipart/form-data') && !contentType.includes('application/octet-stream')) {
+      if (!contentType.includes('application/octet-stream')) {
         return res.status(400).json({ 
-          error: "Invalid content type. Use multipart/form-data or application/octet-stream" 
+          error: "Invalid content type. Use application/octet-stream" 
         });
       }
 
@@ -4441,63 +4441,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Also set socket timeout to ensure LB cuts sooner
       req.socket.setTimeout(65000);
 
-      // For raw binary uploads
-      const chunks: Buffer[] = [];
-      let totalSize = 0;
-      
-      req.on('data', (chunk: Buffer) => {
-        totalSize += chunk.length;
-        chunks.push(chunk);
-        console.log(`[FTP] Received chunk: ${chunk.length} bytes (total: ${totalSize})`);
+      // IMPORTANT: express.raw() middleware (server/index.ts) already consumes the stream for
+      // application/octet-stream, so req.on('data'/'end') will NOT fire here.
+      // The full binary payload is available as req.body (Buffer).
+      const bodyBuf =
+        Buffer.isBuffer(req.body) ? req.body :
+        (Buffer.isBuffer((req as any).rawBody) ? (req as any).rawBody : null);
+
+      if (!bodyBuf) {
+        // Should not happen for application/octet-stream when express.raw is enabled.
+        return res.status(400).json({ error: "Upload body was not received by server" });
+      }
+
+      const clientId = req.headers['x-client-id'] as string;
+      const rawFileName = req.headers['x-file-name'] as string;
+      const fileName = rawFileName ? decodeURIComponent(rawFileName) : '';
+      const fileType = (req.headers['x-file-type'] as string) || 'application/octet-stream';
+      const category = req.headers['x-category'] as string;
+
+      console.log(`[FTP] Parsed body buffer: ${bodyBuf.length} bytes`);
+      console.log(`[FTP] Received complete file: ${fileName} (${bodyBuf.length} bytes) for client ${clientId}`);
+
+      if (!clientId || !fileName) {
+        isResponseSent = true;
+        if (requestTimeout) clearTimeout(requestTimeout);
+        return res.status(400).json({ error: "x-client-id and x-file-name headers are required" });
+      }
+
+      console.log(`[FTP] Uploading file for client ${clientId}: ${fileName} (${bodyBuf.length} bytes)`);
+      console.log(`[FTP] Starting FTP upload at ${new Date().toISOString()}`);
+
+      const ftpUpload = ftpStorageService.uploadFile(
+        clientId,
+        fileName,
+        bodyBuf,
+        fileType
+      ).then(result => {
+        console.log(`[FTP] Upload completed successfully at ${new Date().toISOString()}`);
+        return result;
+      }).catch(error => {
+        console.error(`[FTP] Upload failed at ${new Date().toISOString()}:`, error);
+        throw error;
       });
-
-      req.on('end', async () => {
-        try {
-          if (isResponseSent) {
-            console.log('[FTP] Response already sent, ignoring end event');
-            return;
-          }
-
-          const fileBuffer = Buffer.concat(chunks);
-          const clientId = req.headers['x-client-id'] as string;
-          const rawFileName = req.headers['x-file-name'] as string;
-          const fileName = rawFileName ? decodeURIComponent(rawFileName) : '';
-          const fileType = req.headers['x-file-type'] as string || 'application/octet-stream';
-          const category = req.headers['x-category'] as string;
-
-          console.log(`[FTP] Received complete file: ${fileName} (${fileBuffer.length} bytes) for client ${clientId}`);
-
-          if (!clientId || !fileName) {
-            isResponseSent = true;
-            return res.status(400).json({ error: "x-client-id and x-file-name headers are required" });
-          }
-
-          console.log(`[FTP] Uploading file for client ${clientId}: ${fileName} (${fileBuffer.length} bytes)`);
-          console.log(`[FTP] Starting FTP upload at ${new Date().toISOString()}`);
-
-          // Upload to GoDaddy via FTP (FTP service already has 60-second timeout)
-          const ftpUpload = ftpStorageService.uploadFile(
-            clientId,
-            fileName,
-            fileBuffer,
-            fileType
-          ).then(result => {
-            console.log(`[FTP] Upload completed successfully at ${new Date().toISOString()}`);
-            return result;
-          }).catch(error => {
-            console.error(`[FTP] Upload failed at ${new Date().toISOString()}:`, error);
-            throw error;
-          });
 
       // Allow 70 seconds for FTP operation (SFTP has its own 60s timeout + small buffer)
       const timeoutMs = 70000;
-          const timeoutPromise = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error(`FTP upload timed out after ${timeoutMs}ms`)), timeoutMs)
-          );
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error(`FTP upload timed out after ${timeoutMs}ms`)), timeoutMs)
+      );
 
-          console.log('[FTP] Awaiting upload race (ftpUpload vs timeout)');
-          const { filePath, fileUrl } = await Promise.race([ftpUpload, timeoutPromise]);
-          console.log(`[FTP] Upload success: ${fileUrl}`);
+      console.log('[FTP] Awaiting upload race (ftpUpload vs timeout)');
+      const { filePath, fileUrl } = await Promise.race([ftpUpload, timeoutPromise]);
+
+      if (isResponseSent) {
+        console.log('[FTP] Response already sent (timeout). Aborting post-upload steps.');
+        return;
+      }
+
+      console.log(`[FTP] Upload success: ${fileUrl}`);
 
           // Determine document type
           let documentType = category || "Other";
@@ -4528,7 +4529,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             fileUrl: fileUrl, // Store the /ftp/... path
             version: newVersion,
             uploadedBy: "staff",
-            fileSize: fileBuffer.length,
+            fileSize: bodyBuf.length,
             mimeType: fileType,
             notes: null,
           });
@@ -4538,25 +4539,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isResponseSent = true;
           if (requestTimeout) clearTimeout(requestTimeout);
           res.status(201).json(document);
-        } catch (uploadError: any) {
-          console.error("[FTP] Upload error:", uploadError);
-          isResponseSent = true;
-          if (requestTimeout) clearTimeout(requestTimeout);
-          res.status(500).json({ error: uploadError.message });
-        }
-      });
-
-      req.on('error', (error: any) => {
-        console.error("[FTP] Request error:", error);
-        isResponseSent = true;
-        if (requestTimeout) clearTimeout(requestTimeout);
-        if (!res.headersSent) {
-          res.status(500).json({ error: error.message });
-        }
-      });
-
     } catch (error: any) {
-      console.error("Error in FTP upload:", error);
+      console.error("[FTP] Upload error:", error);
       isResponseSent = true;
       if (requestTimeout) clearTimeout(requestTimeout);
       if (!res.headersSent) {
