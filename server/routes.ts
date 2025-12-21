@@ -1292,17 +1292,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Returns staff grouped by Tax Office with role information
   app.get("/api/users/referrers", async (req, res) => {
     try {
-      // Get all active users who could be referrers (staff members)
+      // Get all users and offices
       const users = await storage.getUsers();
-      const offices = await storage.getOffices ? await storage.getOffices() : [];
+      // Ensure offices is an array even if storage method is missing
+      const offices = typeof storage.getOffices === 'function' ? await storage.getOffices() : [];
       
       // Create office lookup map
       const officeMap = new Map(offices.map((o: any) => [o.id, o.name]));
       
       // Filter to only staff members (not clients)
-      const staffMembers = users.filter((u) => 
-        u.role !== "client" && u.isActive !== false
-      );
+      // We're being very inclusive: anyone whose role is not explicitly 'client'
+      const staffMembers = users.filter((u) => {
+        const role = (u.role || '').toLowerCase();
+        // Check activity status robustly
+        const isActive = u.isActive === true || u.isActive === 1 || u.isActive === null || u.isActive === undefined;
+        // Include everyone who is not a client and is active
+        return role !== "client" && isActive;
+      });
+      
+      console.log(`[Referrers API] Found ${staffMembers.length} staff members out of ${users.length} total users`);
       
       // Map staff with office and role info
       const referrers = staffMembers.map((u) => {
@@ -1311,20 +1319,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Format role for display
         const roleLabels: Record<string, string> = {
+          'super_admin': 'STS HQ',
           'admin': 'Admin',
-          'manager': 'Manager',
-          'staff': 'Staff',
+          'tax_office': 'Tax Office',
           'agent': 'Tax Preparer',
           'tax_office_admin': 'Office Admin',
+          'manager': 'Manager',
+          'staff': 'Staff',
           'owner': 'Owner'
         };
-        const roleLabel = roleLabels[u.role?.toLowerCase() || ''] || u.role || 'Staff';
+        
+        const rawRole = (u.role || '').toLowerCase();
+        const roleLabel = roleLabels[rawRole] || u.role || 'Staff';
         
         return {
           id: u.id,
           firstName: u.firstName,
           lastName: u.lastName,
-          fullName: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email,
+          fullName: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email || 'Anonymous Staff',
           role: u.role,
           roleLabel,
           officeId: u.officeId,
@@ -1338,17 +1350,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (a.officeName !== b.officeName) {
           return a.officeName.localeCompare(b.officeName);
         }
-        // Then by role priority (admin/owner first)
-        const rolePriority: Record<string, number> = { 'admin': 1, 'owner': 2, 'tax_office_admin': 3, 'manager': 4, 'staff': 5, 'agent': 6 };
+        // Then by role priority (HQ first)
+        const rolePriority: Record<string, number> = { 
+          'super_admin': 1,
+          'admin': 2, 
+          'owner': 3, 
+          'tax_office': 4,
+          'tax_office_admin': 5, 
+          'manager': 6, 
+          'staff': 7, 
+          'agent': 8 
+        };
         const aPriority = rolePriority[a.role?.toLowerCase() || ''] || 10;
         const bPriority = rolePriority[b.role?.toLowerCase() || ''] || 10;
+        
         if (aPriority !== bPriority) {
           return aPriority - bPriority;
         }
-        // Then by name (fullName is guaranteed to be non-null string from line 1167)
+        
+        // Then by name
         return (a.fullName || '').localeCompare(b.fullName || '');
       });
       
+      console.log(`[Referrers API] Returning ${referrers.length} referrers`);
       res.json(referrers);
     } catch (error: any) {
       console.error("Error fetching referrers:", error);

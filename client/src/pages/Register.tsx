@@ -121,6 +121,13 @@ export default function Register() {
     queryKey: ["/api/users/referrers"],
   });
 
+  // Log referrers for debugging
+  useEffect(() => {
+    if (referrers.length > 0) {
+      console.log(`[Register] Loaded ${referrers.length} referrers`);
+    }
+  }, [referrers]);
+
   // Group referrers by office for display
   const referrersByOffice = referrers.reduce((acc, referrer) => {
     const office = referrer.officeName || 'STS TaxRepair';
