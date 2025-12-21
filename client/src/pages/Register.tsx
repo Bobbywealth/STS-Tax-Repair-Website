@@ -221,12 +221,47 @@ export default function Register() {
     },
   });
 
-  const onSubmit = (data: RegisterForm) => {
+  const onSubmit = async (data: RegisterForm) => {
+    // Final gate: validate all required fields across the whole wizard
+    const ok = await form.trigger(undefined, { shouldFocus: true });
+    if (!ok) {
+      toast({
+        title: "Registration incomplete",
+        description: "Please finish all required fields before completing registration.",
+        variant: "destructive",
+      });
+      return;
+    }
     registerMutation.mutate(data);
   };
 
-  const nextStep = () => {
-    if (currentStep < 4) setCurrentStep(currentStep + 1);
+  const stepRequiredFields: Record<number, Array<keyof RegisterForm>> = {
+    1: ["firstName", "lastName", "email", "password", "confirmPassword", "fullName"],
+    2: [],
+    3: ["referredById"],
+    4: [],
+  };
+
+  const validateStep = async (step: number) => {
+    const fields = stepRequiredFields[step] || [];
+    if (fields.length === 0) return true;
+
+    const ok = await form.trigger(fields as any, { shouldFocus: true });
+    if (!ok) {
+      toast({
+        title: "Missing required information",
+        description: "Please complete the required fields before continuing.",
+        variant: "destructive",
+      });
+    }
+    return ok;
+  };
+
+  const nextStep = async () => {
+    if (currentStep >= 4) return;
+    const ok = await validateStep(currentStep);
+    if (!ok) return;
+    setCurrentStep(currentStep + 1);
   };
 
   const prevStep = () => {
@@ -234,9 +269,17 @@ export default function Register() {
   };
 
   const canProceed = () => {
+    // Used only for quick UI checks; real blocking happens in validateStep()
     const values = form.getValues();
     if (currentStep === 1) {
-      return values.firstName && values.lastName && values.email && values.password && values.confirmPassword;
+      return (
+        values.firstName &&
+        values.lastName &&
+        values.email &&
+        values.password &&
+        values.confirmPassword &&
+        values.fullName
+      );
     }
     if (currentStep === 3) {
       return !!values.referredById;
@@ -312,7 +355,19 @@ export default function Register() {
               <div key={step.id} className="flex items-center">
                 <button
                   type="button"
-                  onClick={() => setCurrentStep(step.id)}
+                  onClick={async () => {
+                    // Allow going backward freely; block skipping forward past incomplete required fields
+                    if (step.id <= currentStep) {
+                      setCurrentStep(step.id);
+                      return;
+                    }
+                    // Validate each step on the way forward
+                    for (let s = currentStep; s < step.id; s++) {
+                      const ok = await validateStep(s);
+                      if (!ok) return;
+                    }
+                    setCurrentStep(step.id);
+                  }}
                   className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-all ${
                     currentStep === step.id 
                       ? "bg-primary/10 text-primary" 
