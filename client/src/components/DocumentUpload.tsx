@@ -52,10 +52,13 @@ export function DocumentUpload({ clientId, onUpload }: DocumentUploadProps) {
         });
 
         if (!uploadResponse.ok) {
-          throw new Error('Failed to get upload URL');
+          const errorText = await uploadResponse.text();
+          console.error('Upload URL request failed:', uploadResponse.status, errorText);
+          throw new Error(`Failed to get upload URL: ${uploadResponse.status} ${errorText}`);
         }
 
         const { uploadURL, objectPath, mode } = await uploadResponse.json();
+        console.log('Upload mode:', mode, 'Upload URL:', uploadURL);
 
         if (mode === 'ftp') {
           // FTP mode: Send file directly to our server which handles FTP upload
@@ -74,7 +77,8 @@ export function DocumentUpload({ clientId, onUpload }: DocumentUploadProps) {
 
           if (!ftpResponse.ok) {
             const errorData = await ftpResponse.json().catch(() => ({}));
-            throw new Error(errorData.error || 'Failed to upload file via FTP');
+            console.error('FTP upload failed:', ftpResponse.status, errorData);
+            throw new Error(errorData.error || `Failed to upload file via FTP: ${ftpResponse.status}`);
           }
         } else {
           // Object Storage mode (Replit): Upload directly to presigned URL

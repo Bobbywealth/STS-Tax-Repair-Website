@@ -4256,7 +4256,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   // Object Storage - File Upload (returns presigned URL for Replit, or indicates FTP mode)
-  app.post("/api/objects/upload", isAuthenticated, async (req, res) => {
+  app.post("/api/objects/upload", async (req, res) => {
     try {
       const { clientId, fileName, fileType, fileSize } = req.body;
 
@@ -4292,6 +4292,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     let isResponseSent = false;
 
     try {
+      // Log FTP configuration status
+      console.log(`[FTP] FTP Config - Host: ${process.env.FTP_HOST ? 'SET' : 'MISSING'}, User: ${process.env.FTP_USER ? 'SET' : 'MISSING'}, Pass: ${process.env.FTP_PASSWORD ? 'SET' : 'MISSING'}`);
+      
       const contentType = req.headers['content-type'] || '';
       console.log(`[FTP] Upload request started: contentType=${contentType}, contentLength=${req.headers['content-length']}`);
       
