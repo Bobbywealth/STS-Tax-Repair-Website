@@ -15,6 +15,7 @@ import { PullToRefresh } from "@/components/PullToRefresh";
 import { queryClient } from "@/lib/queryClient";
 import type { User, DocumentVersion, AuditLog } from "@shared/mysql-schema";
 import { format, formatDistanceToNow, differenceInDays } from "date-fns";
+import { useBranding } from "@/hooks/useBranding";
 
 function FloatingParticles() {
   return (
@@ -235,6 +236,9 @@ export default function Dashboard() {
   const { data: currentUser } = useQuery<User>({
     queryKey: ["/api/auth/user"],
   });
+
+  const { branding } = useBranding(currentUser?.officeId || undefined);
+  const portalCompanyName = branding?.companyName || "STS TaxRepair";
 
   const { data: clients, isLoading: clientsLoading } = useQuery<User[]>({
     queryKey: ["/api/users"],
@@ -673,7 +677,7 @@ export default function Dashboard() {
                     </h1>
                   </div>
                   <p className="text-emerald-100 mt-1 text-lg">
-                    Welcome to your STS TaxRepair command center
+                    Welcome to your {portalCompanyName} command center
                   </p>
                 </div>
                 <LiveClockWidget />
