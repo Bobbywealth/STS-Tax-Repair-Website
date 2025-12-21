@@ -1,4 +1,5 @@
-const CACHE_VERSION = 'v18';
+// Bump to invalidate any previously cached HTML/JS mismatches after deploys
+const CACHE_VERSION = 'v19';
 const CACHE_NAME = `sts-taxrepair-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `sts-runtime-${CACHE_VERSION}`;
 const RUNTIME_MAX_ENTRIES = 80;
@@ -11,7 +12,6 @@ const QUEUE_DB = 'sts-sync-queue';
 const QUEUE_STORE = 'requests';
 
 const STATIC_ASSETS = [
-  '/',
   '/offline.html',
   '/manifest.json',
   '/favicon.png',
@@ -25,21 +25,12 @@ const STATIC_ASSETS = [
   '/icons/icon-384x384.png',
   '/icons/icon-512x512.png',
   '/screenshots/mobile.png',
-  '/screenshots/desktop.png',
-  '/client-login',
-  '/client-portal',
-  '/client-portal/documents',
-  '/client-portal/messages'
+  '/screenshots/desktop.png'
 ];
 
-const APP_SHELL_ROUTES = [
-  '/',
-  '/client-login',
-  '/client-portal',
-  '/client-portal/documents',
-  '/client-portal/messages',
-  '/offline.html'
-];
+// Do NOT precache HTML routes (/, /client-portal, etc). The HTML references hashed chunk
+// filenames that change every deploy; caching it leads to stale HTML requesting missing
+// JS chunks and "Failed to fetch dynamically imported module" loops.
 
 async function safeAddAll(cache, urls) {
   const results = await Promise.allSettled(
@@ -64,8 +55,6 @@ self.addEventListener('install', (event) => {
       .then(async (cache) => {
         console.log('[SW] Caching static assets');
         await safeAddAll(cache, STATIC_ASSETS);
-        console.log('[SW] Caching app shell routes');
-        await safeAddAll(cache, APP_SHELL_ROUTES.filter(Boolean));
       })
       .then(() => self.skipWaiting())
   );
@@ -210,14 +199,42 @@ async function cacheFirstStrategy(request) {
 
 async function staleWhileRevalidateStrategy(request) {
   const cache = await caches.open(RUNTIME_CACHE);
-  const cachedResponse = await cache.match(request);
+  let cachedResponse = await cache.match(request);
+  // If we ever cached HTML under a JS/CSS URL (e.g. server fallback), purge it.
+  if (cachedResponse) {
+    const cachedType = (cachedResponse.headers.get('content-type') || '').toLowerCase();
+    if (
+      (request.destination === 'script' && cachedType.includes('text/html')) ||
+      (request.destination === 'style' && cachedType.includes('text/html'))
+    ) {
+      await cache.delete(request);
+      cachedResponse = undefined;
+    }
+  }
 
   const fetchPromise = fetch(request)
     .then(async (response) => {
-      if (response.ok && response.status !== 206) {
-        cache.put(request, response.clone());
-        await enforceRuntimeCacheLimits(cache);
+      if (!response.ok || response.status === 206) return response;
+
+      const contentType = (response.headers.get('content-type') || '').toLowerCase();
+
+      // Never cache HTML responses for JS/CSS requests; this is what causes infinite
+      // dynamic-import failures when /assets/*.js returns index.html.
+      if (request.destination === 'script') {
+        const isJs =
+          contentType.includes('javascript') ||
+          contentType.includes('ecmascript') ||
+          request.url.includes('.js');
+        if (!isJs || contentType.includes('text/html')) return response;
       }
+
+      if (request.destination === 'style') {
+        const isCss = contentType.includes('text/css') || request.url.includes('.css');
+        if (!isCss || contentType.includes('text/html')) return response;
+      }
+
+      cache.put(request, response.clone());
+      await enforceRuntimeCacheLimits(cache);
       return response;
     })
     .catch((error) => {
@@ -231,9 +248,13 @@ async function staleWhileRevalidateStrategy(request) {
 async function networkFirstWithOfflineFallback(request) {
   try {
     const response = await fetch(request);
-    const cache = await caches.open(RUNTIME_CACHE);
-    cache.put(request, response.clone());
-    await enforceRuntimeCacheLimits(cache);
+    // Only cache successful HTML navigations (avoid caching 4xx/5xx error pages)
+    const contentType = (response.headers.get('content-type') || '').toLowerCase();
+    if (response.ok && contentType.includes('text/html')) {
+      const cache = await caches.open(RUNTIME_CACHE);
+      cache.put(request, response.clone());
+      await enforceRuntimeCacheLimits(cache);
+    }
     return response;
   } catch (error) {
     console.log('[SW] Navigation offline, serving cached page');
@@ -245,10 +266,6 @@ async function networkFirstWithOfflineFallback(request) {
     const offlinePage = await caches.match('/offline.html');
     if (offlinePage) {
       return offlinePage;
-    }
-    const rootPage = await caches.match('/');
-    if (rootPage) {
-      return rootPage;
     }
     return new Response('You are offline. Please check your connection.', { 
       status: 503, 

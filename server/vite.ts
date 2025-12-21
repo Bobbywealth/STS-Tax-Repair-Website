@@ -70,6 +70,7 @@ export async function setupVite(app: Express, server: Server) {
 
 export function serveStatic(app: Express) {
   const distPath = path.resolve(import.meta.dirname, "public");
+  const assetsPath = path.resolve(distPath, "assets");
 
   if (!fs.existsSync(distPath)) {
     throw new Error(
@@ -77,7 +78,31 @@ export function serveStatic(app: Express) {
     );
   }
 
-  app.use(express.static(distPath));
+  // Serve built assets explicitly. Missing assets should 404 (NOT fall back to index.html),
+  // otherwise browsers/service-workers can cache HTML under a JS URL causing infinite
+  // "Failed to fetch dynamically imported module" errors after deploys.
+  if (fs.existsSync(assetsPath)) {
+    app.use(
+      "/assets",
+      express.static(assetsPath, {
+        fallthrough: false,
+        immutable: true,
+        maxAge: "365d",
+      }),
+    );
+  }
+
+  // Serve other static files (manifest, icons, etc). Avoid caching HTML so users always
+  // receive the newest index.html that references the latest hashed chunks.
+  app.use(
+    express.static(distPath, {
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith(".html")) {
+          res.setHeader("Cache-Control", "no-store");
+        }
+      },
+    }),
+  );
 
   // fall through to index.html if the file doesn't exist
   app.use("*", (_req, res) => {
