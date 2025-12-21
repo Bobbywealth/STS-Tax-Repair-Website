@@ -5706,7 +5706,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       // Transform logoUrl to a proxy endpoint if it's an internal path
-      if (responseBranding.logoUrl && responseBranding.logoUrl.startsWith('/objects/') && responseBranding.officeId) {
+      if (
+        responseBranding.logoUrl &&
+        responseBranding.officeId &&
+        (responseBranding.logoUrl.startsWith('/objects/') || responseBranding.logoUrl.startsWith('/ftp/'))
+      ) {
         responseBranding.logoUrl = `/api/offices/${responseBranding.officeId}/logo`;
       }
 
@@ -5741,7 +5745,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       // Transform logoUrl to a proxy endpoint if it's an internal path
-      if (responseBranding.logoUrl && responseBranding.logoUrl.startsWith('/objects/')) {
+      if (
+        responseBranding.logoUrl &&
+        (responseBranding.logoUrl.startsWith('/objects/') || responseBranding.logoUrl.startsWith('/ftp/'))
+      ) {
         responseBranding.logoUrl = `/api/offices/${id}/logo`;
       }
       
@@ -5842,7 +5849,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Upload office logo - returns presigned URL
+  // Upload office logo - returns presigned URL (Replit) OR indicates FTP/SFTP mode (Render)
   app.post("/api/offices/:id/logo-upload", isAuthenticated, requirePermission('branding.manage'), async (req: any, res) => {
     try {
       const { id } = req.params;
@@ -5858,9 +5865,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'fileName is required' });
       }
 
-      const objectStorage = new ObjectStorageService();
-      const { uploadURL, objectPath } = await objectStorage.getOfficeLogoUploadURL(id, fileName);
-      res.json({ uploadURL, objectPath });
+      // If on Replit, use Object Storage presigned URL
+      if (isReplitEnvironment()) {
+        const objectStorage = new ObjectStorageService();
+        const { uploadURL, objectPath } = await objectStorage.getOfficeLogoUploadURL(id, fileName);
+        return res.json({ uploadURL, objectPath, mode: 'object-storage' });
+      }
+
+      // Otherwise, use FTP/SFTP upload endpoint (like documents + agent photos)
+      return res.json({
+        uploadURL: '/api/offices/logo-ftp',
+        objectPath: null,
+        mode: 'ftp',
+        officeId: id,
+      });
     } catch (error: any) {
       console.error('Office logo upload URL error:', error);
       res.status(500).json({ error: error.message });
@@ -5915,6 +5933,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // FTP/SFTP upload for office logos (non-Replit environments)
+  app.post("/api/offices/logo-ftp", isAuthenticated, requirePermission('branding.manage'), async (req: any, res) => {
+    const diagId = `ftp-office-logo-${Date.now()}`;
+    try {
+      const officeId = req.headers['x-office-id'] as string;
+      const rawFileName = req.headers['x-file-name'] as string;
+      const fileName = rawFileName ? decodeURIComponent(rawFileName) : '';
+      const fileType = (req.headers['x-file-type'] as string) || 'application/octet-stream';
+
+      const userId = req.userId || req.user?.claims?.sub;
+      const user = await storage.getUser(userId);
+
+      if (!officeId || !fileName) {
+        return res.status(400).json({ error: "x-office-id and x-file-name headers are required", diagId });
+      }
+
+      if (!user || (user.role !== 'admin' && user.officeId !== officeId)) {
+        return res.status(403).json({ error: 'Unauthorized - cannot upload logo for this office', diagId });
+      }
+
+      // Body is provided by express.raw() middleware for application/octet-stream
+      const fileBuffer: Buffer | null =
+        Buffer.isBuffer(req.body) ? req.body :
+        (req.rawBody && Buffer.isBuffer(req.rawBody) ? (req.rawBody as Buffer) : null);
+
+      if (!fileBuffer || fileBuffer.length === 0) {
+        return res.status(400).json({ error: "No file data received", diagId });
+      }
+
+      // Keep logos small (matches frontend check)
+      if (fileBuffer.length > 512 * 1024) {
+        return res.status(400).json({ error: "Logo too large (max 512KB)", diagId, size: fileBuffer.length });
+      }
+
+      console.log(`[${diagId}] Uploading office logo`, { officeId, fileName, size: fileBuffer.length });
+
+      // Store under ststaxrepair.org/uploads/offices/logos/<officeId>/...
+      const result = await ftpStorageService.uploadFile(
+        officeId,
+        fileName,
+        fileBuffer,
+        fileType,
+        'uploads/offices/logos'
+      );
+
+      const logoUrl = `/ftp/${result.filePath}`;
+
+      // Persist branding logoUrl
+      const office = await storage.getOffice(officeId);
+      if (!office) {
+        return res.status(404).json({ error: 'Office not found', diagId });
+      }
+
+      let branding = await storage.getOfficeBranding(officeId);
+      if (branding) {
+        branding = await storage.updateOfficeBranding(officeId, {
+          logoUrl,
+          logoObjectKey: logoUrl,
+          updatedByUserId: userId,
+        });
+      } else {
+        branding = await storage.createOfficeBranding({
+          officeId,
+          companyName: office.name,
+          logoUrl,
+          logoObjectKey: logoUrl,
+          updatedByUserId: userId,
+        } as any);
+      }
+
+      return res.json({ success: true, logoUrl, branding, diagId });
+    } catch (error: any) {
+      console.error(`[${diagId}] Office logo FTP upload error:`, error);
+      return res.status(500).json({ error: error.message, diagId });
+    }
+  });
+
   // Serve office logo
   app.get("/api/offices/:id/logo", async (req: any, res) => {
     try {
@@ -5930,6 +6025,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.redirect(branding.logoUrl);
       }
 
+      // FTP/SFTP stored logo
+      if (branding.logoUrl.startsWith('/ftp/')) {
+        const ftpPath = branding.logoUrl.replace('/ftp/', '');
+        const fileName = ftpPath.split('/').pop() || 'logo';
+        res.setHeader('Cache-Control', 'no-store, max-age=0');
+        const ok = await ftpStorageService.streamFileToResponse(ftpPath, res, fileName);
+        if (!ok && !res.headersSent) {
+          return res.status(404).json({ error: 'Logo not found' });
+        }
+        return;
+      }
+
+      // Object storage stored logo
       const objectStorage = new ObjectStorageService();
       const file = await objectStorage.getObjectEntityFile(branding.logoUrl);
       await objectStorage.downloadObject(file, res, 3600);

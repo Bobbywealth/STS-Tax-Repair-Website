@@ -182,23 +182,42 @@ export default function Branding() {
         const uploadUrlRes = await apiRequest('POST', `/api/offices/${officeId}/logo-upload`, {
           fileName: selectedFile.name
         });
-        const { uploadURL, objectPath } = await uploadUrlRes.json();
+        const { uploadURL, objectPath, mode } = await uploadUrlRes.json();
 
-        // 2. Upload to storage
-        const uploadRes = await fetch(uploadURL, {
-          method: 'PUT',
-          body: selectedFile,
-          headers: { 'Content-Type': selectedFile.type }
-        });
+        if (mode === 'ftp') {
+          // Upload directly to our server (which uploads to SFTP)
+          const arrayBuffer = await selectedFile.arrayBuffer();
+          const ftpRes = await fetch(uploadURL, {
+            method: 'POST',
+            body: arrayBuffer,
+            headers: {
+              'Content-Type': 'application/octet-stream',
+              'x-office-id': officeId!,
+              'x-file-name': encodeURIComponent(selectedFile.name),
+              'x-file-type': selectedFile.type || 'application/octet-stream',
+            },
+            credentials: 'include',
+          });
+          if (!ftpRes.ok) {
+            const err = await ftpRes.json().catch(() => ({}));
+            throw new Error(err.error || 'Failed to upload logo via FTP/SFTP');
+          }
+        } else {
+          // Object storage mode (Replit): upload to presigned URL then confirm
+          const uploadRes = await fetch(uploadURL, {
+            method: 'PUT',
+            body: selectedFile,
+            headers: { 'Content-Type': selectedFile.type }
+          });
 
-        if (!uploadRes.ok) throw new Error('Failed to upload logo to storage');
+          if (!uploadRes.ok) throw new Error('Failed to upload logo to storage');
 
-        // 3. Confirm upload
-        const confirmRes = await apiRequest('POST', `/api/offices/${officeId}/logo-confirm`, {
-          objectPath
-        });
-        
-        if (!confirmRes.ok) throw new Error('Failed to confirm logo upload');
+          const confirmRes = await apiRequest('POST', `/api/offices/${officeId}/logo-confirm`, {
+            objectPath
+          });
+          
+          if (!confirmRes.ok) throw new Error('Failed to confirm logo upload');
+        }
         
         // After confirmation, the branding is already updated with the new logoUrl
         // but we still need to save other form data if any.
