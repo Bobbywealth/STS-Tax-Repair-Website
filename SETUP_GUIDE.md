@@ -9,9 +9,9 @@ Since your application is deployed on ststaxrepair.org (not on Replit), it uses 
 
 ```bash
 # FTP Configuration (GoDaddy)
-FTP_HOST=ftp.ststaxrepair.net
+FTP_HOST=198.12.220.248
 FTP_USER=i28qwzd7d2dt
-FTP_PASSWORD=your_ftp_password_here  # You need to set/reset this in GoDaddy cPanel
+FTP_PASSWORD=your_ftp_password_here  # Set this to your actual FTP password
 FTP_PORT=21
 ```
 
@@ -28,7 +28,7 @@ FTP_PORT=21
 #### For Local Development:
 Create a `.env` file in the root directory with:
 ```bash
-FTP_HOST=ftp.ststaxrepair.net
+FTP_HOST=198.12.220.248
 FTP_USER=i28qwzd7d2dt
 FTP_PASSWORD=your_actual_password_here
 FTP_PORT=21
