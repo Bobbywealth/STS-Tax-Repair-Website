@@ -38,8 +38,32 @@ export default function AIAssistant() {
   const [error, setError] = useState<string | null>(null);
   
   // Check if AI is configured
-  const { data: aiStatus, isLoading: statusLoading } = useQuery<AIStatus>({
+  const {
+    data: aiStatus,
+    isLoading: statusLoading,
+    isError: statusError,
+    error: statusErrorObj,
+    refetch: refetchStatus,
+  } = useQuery<AIStatus>({
     queryKey: ['/api/ai/status'],
+    queryFn: async () => {
+      // Prevent infinite spinner if the server/proxy stalls
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 12_000);
+      try {
+        const res = await fetch('/api/ai/status', {
+          credentials: 'include',
+          signal: controller.signal,
+        });
+        const text = await res.text();
+        if (!res.ok) {
+          throw new Error(`${res.status}: ${text || res.statusText}`);
+        }
+        return JSON.parse(text) as AIStatus;
+      } finally {
+        window.clearTimeout(timeout);
+      }
+    },
     retry: false,
     staleTime: 5 * 60 * 1000,
   });
@@ -127,6 +151,56 @@ export default function AIAssistant() {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-200px)]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (statusError) {
+    const msg = (statusErrorObj as Error)?.message || 'Failed to load AI status';
+    const isUnauthorized = msg.startsWith('401') || msg.startsWith('403');
+    const isNotConfigured = msg.startsWith('503');
+
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">AI Tax Assistant</h1>
+          <p className="text-muted-foreground mt-1">
+            Intelligent document analysis and tax guidance
+          </p>
+        </div>
+
+        <Card className="max-w-2xl mx-auto">
+          <CardContent className="p-10 text-center space-y-3">
+            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto">
+              <Bot className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h2 className="text-xl font-semibold">
+              {isUnauthorized ? 'Staff login required' : isNotConfigured ? 'AI Not Configured' : 'Unable to load AI Assistant'}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {isUnauthorized
+                ? 'This page is available to staff only. Please sign in with a staff account and ensure you have AI Assistant access.'
+                : isNotConfigured
+                  ? 'The AI service is not configured on the server yet (missing OPENAI_API_KEY).'
+                  : 'Something went wrong while checking AI status.'}
+            </p>
+
+            <div className="text-xs text-muted-foreground bg-muted/50 rounded-md p-3 text-left overflow-auto">
+              {msg}
+            </div>
+
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <Button variant="outline" onClick={() => refetchStatus()} data-testid="button-ai-retry">
+                Retry
+              </Button>
+              {isUnauthorized && (
+                <Button onClick={() => (window.location.href = '/admin-login')} data-testid="button-ai-login">
+                  Go to Staff Login
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
