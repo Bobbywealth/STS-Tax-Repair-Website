@@ -119,6 +119,21 @@ export default function Register() {
 
   const { data: referrers = [] } = useQuery<Referrer[]>({
     queryKey: ["/api/users/referrers"],
+    queryFn: async () => {
+      try {
+        const res = await fetch("/api/users/referrers", { credentials: "include" });
+        if (!res.ok) {
+          console.warn(`[Register] Referrers request failed with status ${res.status}`);
+          return [];
+        }
+        return await res.json();
+      } catch (err) {
+        console.error("[Register] Referrers request error", err);
+        return [];
+      }
+    },
+    staleTime: 60_000,
+    retry: 1,
   });
 
   // Log referrers for debugging
