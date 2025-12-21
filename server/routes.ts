@@ -805,19 +805,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let assignedTo: string | null = null;
       let referralSourceText: string | null = null;
       
-      if (referredById && referredById !== 'none') {
-        const referrer = await storage.getUser(referredById);
-        if (referrer) {
-          // If we don't have an explicit office context, fall back to the referrer's office.
-          if (!clientOfficeId) {
-            clientOfficeId = referrer.officeId || null;
-          }
-          // Set referrer as the client's assigned agent
-          assignedTo = referrer.id;
-          // Store referral source text
-          referralSourceText = `${referrer.firstName || ''} ${referrer.lastName || ''}`.trim();
+      // Referral is mandatory. Reject any missing/placeholder values.
+      if (!referredById || referredById === 'none') {
+        return res.status(400).json({ message: "Please select who referred you", code: "REFERRER_REQUIRED" });
+      }
+
+      const referrer = await storage.getUser(referredById);
+      if (!referrer) {
+        return res.status(400).json({ message: "Selected referrer not found", code: "REFERRER_NOT_FOUND" });
+      }
+
+      // If we're in an office context, ensure the referrer belongs to that office (or is a super admin).
+      if (contextOfficeId) {
+        const refRole = (referrer.role || '').toLowerCase();
+        if (refRole !== 'super_admin' && referrer.officeId !== contextOfficeId) {
+          return res.status(400).json({ message: "Selected referrer is not in this office", code: "REFERRER_OFFICE_MISMATCH" });
         }
       }
+
+      // If we don't have an explicit office context, fall back to the referrer's office.
+      if (!clientOfficeId) {
+        clientOfficeId = referrer.officeId || null;
+      }
+      // Set referrer as the client's assigned agent
+      assignedTo = referrer.id;
+      // Store referral source text
+      referralSourceText = `${referrer.firstName || ''} ${referrer.lastName || ''}`.trim();
 
       // Create user with basic profile fields (extended fields stored separately if needed)
       const user = await storage.upsertUser({

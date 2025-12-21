@@ -161,6 +161,8 @@ export default function Register() {
     return acc;
   }, {} as Record<string, Referrer[]>);
 
+  const hasReferrers = referrers.length > 0;
+
   const form = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -753,11 +755,15 @@ export default function Register() {
                             <FormLabel>
                               <span className="text-destructive">*</span> Who Referred You?
                             </FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                            disabled={!hasReferrers}
+                          >
                               <FormControl>
                                 <SelectTrigger data-testid="select-referrer">
                                   <Users className="h-4 w-4 mr-2 text-muted-foreground" />
-                                  <SelectValue placeholder="Select a referrer" />
+                                <SelectValue placeholder={hasReferrers ? "Select a referrer" : "No referrers available"} />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent className="max-h-[300px]">
@@ -780,6 +786,11 @@ export default function Register() {
                                 ))}
                               </SelectContent>
                             </Select>
+                          {!hasReferrers && (
+                            <p className="text-xs text-muted-foreground mt-2">
+                              No staff referrers are configured{officeSlug ? " for this office" : ""}. Please contact support to complete signup.
+                            </p>
+                          )}
                             <FormMessage />
                           </FormItem>
                         )}
