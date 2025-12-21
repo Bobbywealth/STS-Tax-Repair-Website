@@ -4256,7 +4256,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   // Object Storage - File Upload (returns presigned URL for Replit, or indicates FTP mode)
-  app.post("/api/objects/upload", async (req, res) => {
+  app.post("/api/objects/upload", isAuthenticated, async (req, res) => {
     try {
       const { clientId, fileName, fileType, fileSize } = req.body;
 
