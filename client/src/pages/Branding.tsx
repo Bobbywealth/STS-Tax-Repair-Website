@@ -334,317 +334,413 @@ export default function Branding() {
   const currentLogo = logoPreview || displayValue('logoUrl');
   
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2" data-testid="text-branding-title">
-            <Palette className="h-8 w-8 text-primary" />
-            Office Branding
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Customize your Tax Office's appearance and branding
-          </p>
-          {user ? (
-            <p className="text-xs text-muted-foreground mt-2">
-              Logged in as: <span className="font-medium text-foreground">{loggedInLabel}</span>
-              {branding?.officeName ? (
-                <>
-                  {" "}• Editing office:{" "}
-                  <span className="font-medium text-foreground">{branding.officeName}</span>
-                </>
-              ) : null}
-            </p>
-          ) : null}
-        </div>
-        
-        {isAdmin && offices?.length ? (
-          <div className="flex items-center gap-2">
-            <Label htmlFor="officeSelector" className="text-sm">Office</Label>
-            <Select
-              value={officeId}
-              onValueChange={(value) => {
-                setSelectedOfficeId(value);
-                setFormData({});
-                setLogoPreview(null);
-              }}
-            >
-              <SelectTrigger id="officeSelector" className="w-[220px]" data-testid="select-office">
-                <SelectValue placeholder="Select office" />
-              </SelectTrigger>
-              <SelectContent>
-                {offices.map((office) => (
-                  <SelectItem key={office.id} value={office.id}>
-                    {office.name} {office.slug ? `(${office.slug})` : ''}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        ) : null}
-        
-        {branding?.isCustom && (
-          <Button
-            variant="outline"
-            onClick={handleReset}
-            disabled={resetBrandingMutation.isPending}
-            data-testid="button-reset-branding"
-          >
-            {resetBrandingMutation.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            ) : (
-              <RotateCcw className="h-4 w-4 mr-2" />
-            )}
-            Reset to Defaults
-          </Button>
-        )}
-      </div>
-      
-      <div className="grid md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Company Information</CardTitle>
-            <CardDescription>Your office's display name and subdomain</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="companyName">Company Name</Label>
-              <Input
-                id="companyName"
-                placeholder="Acme Tax Services"
-                value={displayValue('companyName')}
-                onChange={(e) => updateFormData('companyName', e.target.value)}
-                data-testid="input-company-name"
-              />
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+        {/* Page Header */}
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold flex items-center gap-2 sm:gap-3" data-testid="text-branding-title">
+                <Palette className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
+                Office Branding
+              </h1>
+              <p className="text-sm sm:text-base text-muted-foreground">
+                Customize your Tax Office's appearance and branding
+              </p>
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="slug">Subdomain Slug</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="slug"
-                  placeholder="acmetax"
-                  value={displayValue('officeSlug') || ''}
-                  onChange={(e) => updateFormData('officeSlug' as any, e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
-                  data-testid="input-slug"
-                />
-                <span className="text-sm text-muted-foreground font-medium">.ststaxrepair.org</span>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Your custom login URL will be: <span className="text-primary font-mono select-all">https://ststaxrepair.org/client-login?_office={displayValue('officeSlug') || '[slug]'}</span>
-              </p>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full mt-2" 
-                onClick={copyLoginLink}
-                disabled={!displayValue('officeSlug')}
+            {branding?.isCustom && (
+              <Button
+                variant="outline"
+                onClick={handleReset}
+                disabled={resetBrandingMutation.isPending}
+                data-testid="button-reset-branding"
+                className="self-start sm:self-center"
               >
-                <Copy className="h-3 w-3 mr-2" />
-                Copy Login Link
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Logo</CardTitle>
-            <CardDescription>Upload your company logo (max 512KB, PNG/SVG/JPEG)</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-4">
-              <div className="w-24 h-24 border rounded-lg flex items-center justify-center bg-muted/50 overflow-hidden">
-                {currentLogo ? (
-                  <img src={currentLogo} alt="Logo preview" className="max-w-full max-h-full object-contain" />
+                {resetBrandingMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
                 ) : (
-                  <Palette className="h-8 w-8 text-muted-foreground" />
+                  <RotateCcw className="h-4 w-4 mr-2" />
                 )}
+                Reset to Defaults
+              </Button>
+            )}
+          </div>
+          
+          {/* Context Banner */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            {user && (
+              <Card className="flex-1 bg-muted/50 border-muted">
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex items-start gap-2">
+                    <Building2 className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium text-muted-foreground">Logged in as</p>
+                      <p className="text-sm font-semibold truncate">{loggedInLabel}</p>
+                      {branding?.officeName && (
+                        <>
+                          <p className="text-xs text-muted-foreground mt-1">Editing office</p>
+                          <p className="text-sm font-medium truncate">{branding.officeName}</p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            
+            {isAdmin && offices?.length ? (
+              <Card className="sm:w-80 bg-primary/5 border-primary/20">
+                <CardContent className="p-3 sm:p-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="officeSelector" className="text-xs font-medium text-muted-foreground">
+                      Select Office to Edit
+                    </Label>
+                    <Select
+                      value={officeId}
+                      onValueChange={(value) => {
+                        setSelectedOfficeId(value);
+                        setFormData({});
+                        setLogoPreview(null);
+                      }}
+                    >
+                      <SelectTrigger id="officeSelector" className="w-full" data-testid="select-office">
+                        <SelectValue placeholder="Choose an office" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {offices.map((office) => (
+                          <SelectItem key={office.id} value={office.id}>
+                            {office.name} {office.slug ? `(${office.slug})` : ''}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : null}
+          </div>
+        </div>
+      
+        {/* Form Sections */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Company Information */}
+          <Card className="shadow-md hover:shadow-lg transition-shadow">
+            <CardHeader className="space-y-1 pb-4">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Building2 className="h-4 w-4 text-primary" />
+                </div>
+                <CardTitle className="text-lg">Company Information</CardTitle>
+              </div>
+              <CardDescription>Your office's display name and subdomain</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="companyName" className="text-sm font-medium">
+                  Company Name
+                </Label>
+                <Input
+                  id="companyName"
+                  placeholder="Acme Tax Services"
+                  value={displayValue('companyName')}
+                  onChange={(e) => updateFormData('companyName', e.target.value)}
+                  data-testid="input-company-name"
+                  className="h-11"
+                />
+              </div>
+              
+              <div className="space-y-3">
+                <Label htmlFor="slug" className="text-sm font-medium">
+                  Subdomain Slug
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="slug"
+                    placeholder="acmetax"
+                    value={displayValue('officeSlug') || ''}
+                    onChange={(e) => updateFormData('officeSlug' as any, e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                    data-testid="input-slug"
+                    className="h-11"
+                  />
+                  <span className="text-sm text-muted-foreground font-medium whitespace-nowrap">.ststaxrepair.org</span>
+                </div>
+                <div className="p-3 rounded-lg bg-muted/50 border">
+                  <p className="text-xs text-muted-foreground mb-1">Your custom login URL:</p>
+                  <p className="text-xs font-mono text-primary break-all">
+                    https://ststaxrepair.org/client-login?_office={displayValue('officeSlug') || '[slug]'}
+                  </p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full" 
+                  onClick={copyLoginLink}
+                  disabled={!displayValue('officeSlug')}
+                >
+                  <Copy className="h-3 w-3 mr-2" />
+                  Copy Login Link
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        
+          {/* Logo Upload */}
+          <Card className="shadow-md hover:shadow-lg transition-shadow">
+            <CardHeader className="space-y-1 pb-4">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Upload className="h-4 w-4 text-primary" />
+                </div>
+                <CardTitle className="text-lg">Logo</CardTitle>
+              </div>
+              <CardDescription>Upload your company logo (max 512KB, PNG/SVG/JPEG)</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-col sm:flex-row items-center gap-4">
+                <div className="w-28 h-28 border-2 border-dashed rounded-xl flex items-center justify-center bg-muted/30 overflow-hidden hover:bg-muted/50 transition-colors">
+                  {currentLogo ? (
+                    <img src={currentLogo} alt="Logo preview" className="max-w-full max-h-full object-contain p-2" />
+                  ) : (
+                    <Palette className="h-10 w-10 text-muted-foreground" />
+                  )}
+                </div>
+                
+                <div className="space-y-3 flex-1 text-center sm:text-left">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept=".png,.svg,.jpeg,.jpg,image/png,image/svg+xml,image/jpeg"
+                    onChange={handleLogoUpload}
+                    className="hidden"
+                  />
+                  <Button
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    data-testid="button-upload-logo"
+                    className="w-full sm:w-auto"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    {currentLogo ? 'Change Logo' : 'Upload Logo'}
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    Recommended: Square format, 256×256px or larger<br/>
+                    Logo will also be used as favicon
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        
+          {/* Brand Colors */}
+          <Card className="shadow-md hover:shadow-lg transition-shadow lg:col-span-2">
+            <CardHeader className="space-y-1 pb-4">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Palette className="h-4 w-4 text-primary" />
+                </div>
+                <CardTitle className="text-lg">Brand Colors</CardTitle>
+              </div>
+              <CardDescription>Choose colors for your branded experience</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid sm:grid-cols-3 gap-6">
+                <div className="space-y-3">
+                  <Label htmlFor="primaryColor" className="text-sm font-medium">
+                    Primary Color
+                  </Label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      id="primaryColor"
+                      value={displayValue('primaryColor') || '#1a4d2e'}
+                      onChange={(e) => updateFormData('primaryColor', e.target.value)}
+                      className="w-14 h-14 rounded-lg cursor-pointer border-2 border-border hover:border-primary transition-colors"
+                      data-testid="input-primary-color"
+                    />
+                    <Input
+                      value={displayValue('primaryColor') || '#1a4d2e'}
+                      onChange={(e) => updateFormData('primaryColor', e.target.value)}
+                      className="font-mono text-sm h-11"
+                      placeholder="#1a4d2e"
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <Label htmlFor="secondaryColor" className="text-sm font-medium">
+                    Secondary Color
+                  </Label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      id="secondaryColor"
+                      value={displayValue('secondaryColor') || '#4CAF50'}
+                      onChange={(e) => updateFormData('secondaryColor', e.target.value)}
+                      className="w-14 h-14 rounded-lg cursor-pointer border-2 border-border hover:border-primary transition-colors"
+                      data-testid="input-secondary-color"
+                    />
+                    <Input
+                      value={displayValue('secondaryColor') || '#4CAF50'}
+                      onChange={(e) => updateFormData('secondaryColor', e.target.value)}
+                      className="font-mono text-sm h-11"
+                      placeholder="#4CAF50"
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <Label htmlFor="accentColor" className="text-sm font-medium">
+                    Accent Color
+                  </Label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      id="accentColor"
+                      value={displayValue('accentColor') || '#22c55e'}
+                      onChange={(e) => updateFormData('accentColor', e.target.value)}
+                      className="w-14 h-14 rounded-lg cursor-pointer border-2 border-border hover:border-primary transition-colors"
+                      data-testid="input-accent-color"
+                    />
+                    <Input
+                      value={displayValue('accentColor') || '#22c55e'}
+                      onChange={(e) => updateFormData('accentColor', e.target.value)}
+                      className="font-mono text-sm h-11"
+                      placeholder="#22c55e"
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        
+          {/* Email Settings */}
+          <Card className="shadow-md hover:shadow-lg transition-shadow lg:col-span-2">
+            <CardHeader className="space-y-1 pb-4">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <ExternalLink className="h-4 w-4 text-primary" />
+                </div>
+                <CardTitle className="text-lg">Email Settings</CardTitle>
+              </div>
+              <CardDescription>Customize email sender information</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="grid sm:grid-cols-2 gap-5">
+                <div className="space-y-2">
+                  <Label htmlFor="replyToEmail" className="text-sm font-medium">
+                    Reply-To Email
+                  </Label>
+                  <Input
+                    id="replyToEmail"
+                    type="email"
+                    placeholder="support@yourdomain.com"
+                    value={displayValue('replyToEmail')}
+                    onChange={(e) => updateFormData('replyToEmail', e.target.value)}
+                    data-testid="input-reply-to-email"
+                    className="h-11"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="replyToName" className="text-sm font-medium">
+                    Reply-To Name
+                  </Label>
+                  <Input
+                    id="replyToName"
+                    placeholder="Acme Tax Support"
+                    value={displayValue('replyToName')}
+                    onChange={(e) => updateFormData('replyToName', e.target.value)}
+                    data-testid="input-reply-to-name"
+                    className="h-11"
+                  />
+                </div>
               </div>
               
               <div className="space-y-2">
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  accept=".png,.svg,.jpeg,.jpg,image/png,image/svg+xml,image/jpeg"
-                  onChange={handleLogoUpload}
-                  className="hidden"
-                />
-                <Button
-                  variant="outline"
-                  onClick={() => fileInputRef.current?.click()}
-                  data-testid="button-upload-logo"
+                <Label htmlFor="defaultTheme" className="text-sm font-medium">
+                  Default Theme
+                </Label>
+                <Select
+                  value={displayValue('defaultTheme') || 'light'}
+                  onValueChange={(value) => updateFormData('defaultTheme', value)}
                 >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Upload Logo
-                </Button>
-                <p className="text-xs text-muted-foreground">
-                  Logo will also be used as favicon
+                  <SelectTrigger data-testid="select-default-theme" className="h-11">
+                    <SelectValue placeholder="Select theme" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="light">Light Mode</SelectItem>
+                    <SelectItem value="dark">Dark Mode</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      
+        {/* Status Alert */}
+        {branding?.isCustom && (
+          <Card className="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 border-blue-200 dark:border-blue-800 shadow-md">
+            <CardContent className="p-4 sm:p-5 flex items-start gap-3">
+              <div className="h-10 w-10 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+                <Check className="h-5 w-5 text-blue-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                  Custom Branding Active
+                </p>
+                <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                  Your clients will see your branding at login. Custom emails will include your logo and colors.
                 </p>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
         
-        <Card>
-          <CardHeader>
-            <CardTitle>Brand Colors</CardTitle>
-            <CardDescription>Choose colors for your branded experience</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="primaryColor">Primary</Label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    id="primaryColor"
-                    value={displayValue('primaryColor') || '#1a4d2e'}
-                    onChange={(e) => updateFormData('primaryColor', e.target.value)}
-                    className="w-12 h-10 rounded cursor-pointer border"
-                    data-testid="input-primary-color"
-                  />
-                  <Input
-                    value={displayValue('primaryColor') || '#1a4d2e'}
-                    onChange={(e) => updateFormData('primaryColor', e.target.value)}
-                    className="font-mono text-xs"
-                    placeholder="#1a4d2e"
-                  />
-                </div>
+        {/* Action Buttons */}
+        <Card className="sticky bottom-4 shadow-xl border-2">
+          <CardContent className="p-4 sm:p-5">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
+              <p className="text-sm text-muted-foreground">
+                Make sure to save your changes before leaving this page
+              </p>
+              <div className="flex gap-3 w-full sm:w-auto">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setFormData({});
+                    setLogoPreview(null);
+                    setSelectedFile(null);
+                  }}
+                  data-testid="button-cancel-branding"
+                  className="flex-1 sm:flex-none"
+                >
+                  Cancel
+                </Button>
+                
+                <Button
+                  onClick={handleSubmit}
+                  disabled={saveBrandingMutation.isPending || isUploading}
+                  data-testid="button-save-branding"
+                  className="flex-1 sm:flex-none min-w-[140px]"
+                >
+                  {saveBrandingMutation.isPending || isUploading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="h-4 w-4 mr-2" />
+                      Save Changes
+                    </>
+                  )}
+                </Button>
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="secondaryColor">Secondary</Label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    id="secondaryColor"
-                    value={displayValue('secondaryColor') || '#4CAF50'}
-                    onChange={(e) => updateFormData('secondaryColor', e.target.value)}
-                    className="w-12 h-10 rounded cursor-pointer border"
-                    data-testid="input-secondary-color"
-                  />
-                  <Input
-                    value={displayValue('secondaryColor') || '#4CAF50'}
-                    onChange={(e) => updateFormData('secondaryColor', e.target.value)}
-                    className="font-mono text-xs"
-                    placeholder="#4CAF50"
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="accentColor">Accent</Label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    id="accentColor"
-                    value={displayValue('accentColor') || '#22c55e'}
-                    onChange={(e) => updateFormData('accentColor', e.target.value)}
-                    className="w-12 h-10 rounded cursor-pointer border"
-                    data-testid="input-accent-color"
-                  />
-                  <Input
-                    value={displayValue('accentColor') || '#22c55e'}
-                    onChange={(e) => updateFormData('accentColor', e.target.value)}
-                    className="font-mono text-xs"
-                    placeholder="#22c55e"
-                  />
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Email Settings</CardTitle>
-            <CardDescription>Customize email sender information</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="replyToEmail">Reply-To Email</Label>
-              <Input
-                id="replyToEmail"
-                type="email"
-                placeholder="support@yourdomain.com"
-                value={displayValue('replyToEmail')}
-                onChange={(e) => updateFormData('replyToEmail', e.target.value)}
-                data-testid="input-reply-to-email"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="replyToName">Reply-To Name</Label>
-              <Input
-                id="replyToName"
-                placeholder="Acme Tax Support"
-                value={displayValue('replyToName')}
-                onChange={(e) => updateFormData('replyToName', e.target.value)}
-                data-testid="input-reply-to-name"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="defaultTheme">Default Theme</Label>
-              <Select
-                value={displayValue('defaultTheme') || 'light'}
-                onValueChange={(value) => updateFormData('defaultTheme', value)}
-              >
-                <SelectTrigger data-testid="select-default-theme">
-                  <SelectValue placeholder="Select theme" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="light">Light</SelectItem>
-                  <SelectItem value="dark">Dark</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </CardContent>
         </Card>
       </div>
-      
-      <div className="flex justify-end gap-3">
-        <Button
-          variant="outline"
-          onClick={() => {
-            setFormData({});
-            setLogoPreview(null);
-            setSelectedFile(null);
-          }}
-          data-testid="button-cancel-branding"
-        >
-          Cancel
-        </Button>
-        
-        <Button
-          onClick={handleSubmit}
-          disabled={saveBrandingMutation.isPending || isUploading}
-          data-testid="button-save-branding"
-        >
-          {saveBrandingMutation.isPending || isUploading ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-          ) : (
-            <Check className="h-4 w-4 mr-2" />
-          )}
-          Save Changes
-        </Button>
-      </div>
-      
-      {branding?.isCustom && (
-        <Card className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
-          <CardContent className="py-4 flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                Custom branding is active
-              </p>
-              <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                Your clients will see your branding at login. Custom emails will include your logo and colors.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
