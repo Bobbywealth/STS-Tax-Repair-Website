@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { X, Download, Smartphone, Zap } from "lucide-react";
@@ -9,6 +9,51 @@ export function PWAInstallPrompt() {
   const { isInstallable, installApp } = usePWA();
   const [isDismissed, setIsDismissed] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
+  const [isReady, setIsReady] = useState(false);
+  const [isInputFocused, setIsInputFocused] = useState(false);
+
+  const pathname = useMemo(() => window.location.pathname, []);
+
+  // Never show the install prompt on form-heavy / auth routes (it overlaps important UI on mobile).
+  const isBlacklistedRoute = useMemo(() => {
+    const p = pathname || "/";
+    return (
+      p.startsWith("/client-login") ||
+      p.startsWith("/register") ||
+      p.startsWith("/forgot-password") ||
+      p.startsWith("/reset-password") ||
+      p.startsWith("/verify-email") ||
+      p.startsWith("/book-appointment") ||
+      p.startsWith("/staff-signup") ||
+      p.startsWith("/admin-login") ||
+      p.startsWith("/login") ||
+      p.startsWith("/redeem-invite")
+    );
+  }, [pathname]);
+
+  // Delay showing so it doesn't immediately cover content on initial render.
+  useEffect(() => {
+    const t = window.setTimeout(() => setIsReady(true), 3500);
+    return () => window.clearTimeout(t);
+  }, []);
+
+  // Track focus so we don't cover an active input on mobile.
+  useEffect(() => {
+    const onFocusIn = (e: Event) => {
+      const el = e.target as HTMLElement | null;
+      const tag = el?.tagName?.toLowerCase();
+      if (tag === "input" || tag === "textarea" || (el as any)?.isContentEditable) {
+        setIsInputFocused(true);
+      }
+    };
+    const onFocusOut = () => setIsInputFocused(false);
+    window.addEventListener("focusin", onFocusIn);
+    window.addEventListener("focusout", onFocusOut);
+    return () => {
+      window.removeEventListener("focusin", onFocusIn);
+      window.removeEventListener("focusout", onFocusOut);
+    };
+  }, []);
 
   const handleInstall = async () => {
     setIsInstalling(true);
@@ -16,7 +61,7 @@ export function PWAInstallPrompt() {
     setIsInstalling(false);
   };
 
-  if (!isInstallable || isDismissed) return null;
+  if (!isInstallable || isDismissed || !isReady || isBlacklistedRoute || isInputFocused) return null;
 
   return (
     <AnimatePresence>
