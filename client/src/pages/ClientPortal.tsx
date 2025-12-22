@@ -247,27 +247,32 @@ export default function ClientPortal() {
     <div className="min-h-screen bg-animated-mesh">
       {/* Header */}
       <header className="bg-flow-gradient border-b border-border backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-2">
+          {/* Left: Logo + Portal Title */}
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-shrink">
             <img 
               src={logoUrl} 
               alt="STS TaxRepair" 
-              className="h-12 w-auto object-contain"
+              className="h-8 sm:h-12 w-auto object-contain flex-shrink-0"
             />
-            <div>
-              <h1 className="text-xl font-bold">Client Portal</h1>
-              <p className="text-xs text-muted-foreground">Track your tax refund status</p>
+            <div className="min-w-0">
+              <h1 className="text-sm sm:text-xl font-bold truncate">Client Portal</h1>
+              <p className="hidden sm:block text-xs text-muted-foreground">Track your tax refund status</p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <p className="font-medium">{clientData.name}</p>
+          
+          {/* Right: User Info (desktop only) + Logout */}
+          <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+            <div className="hidden md:block text-right">
+              <p className="font-medium text-sm">{clientData.name}</p>
               <p className="text-xs text-muted-foreground">{clientData.email}</p>
             </div>
             <Button 
-              variant="outline" 
+              variant="outline"
+              size="sm"
               onClick={() => window.location.href = '/api/logout'}
               data-testid="button-logout"
+              className="flex-shrink-0"
             >
               Logout
             </Button>
@@ -275,16 +280,16 @@ export default function ClientPortal() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-8 space-y-6 animate-fade-in">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-8 space-y-4 sm:space-y-6 animate-fade-in pb-20 md:pb-8">
         {/* Welcome Section */}
-        <div id="welcome-section" className="p-6 rounded-lg bg-flow-gradient">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-3xl font-bold mb-2">Welcome back, {clientData.name.split(' ')[0]}!</h2>
-              <p className="text-muted-foreground">Track your tax refund status and manage your documents</p>
+        <div id="welcome-section" className="p-4 sm:p-6 rounded-lg bg-flow-gradient">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="text-xl sm:text-3xl font-bold mb-1 sm:mb-2">Welcome back, {clientData.name.split(' ')[0]}!</h2>
+              <p className="text-sm sm:text-base text-muted-foreground">Track your tax refund status and manage your documents</p>
             </div>
             {/* Demo button - shows celebration animation */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <Button
                 variant="outline"
                 size="sm"
@@ -293,7 +298,7 @@ export default function ClientPortal() {
                 data-testid="button-demo-celebration"
               >
                 <Sparkles className="h-4 w-4" />
-                Demo
+                <span className="hidden sm:inline">Demo</span>
               </Button>
               <Button
                 variant="ghost"
@@ -304,7 +309,7 @@ export default function ClientPortal() {
                 title="Restart the guided tour"
               >
                 <RotateCcw className="h-4 w-4" />
-                Tour
+                <span className="hidden sm:inline">Tour</span>
               </Button>
             </div>
           </div>
