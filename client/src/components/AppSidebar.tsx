@@ -1,4 +1,4 @@
-import { Home, Users, UserPlus, CheckSquare, Crown, Ticket, BookOpen, BarChart3, Settings, LogOut, Calendar, CalendarClock, DollarSign, FileText, FileSignature, Shield, Lock, Palette, UsersRound, Megaphone, Bot, Link2 } from "lucide-react";
+import { Home, Users, UserPlus, CheckSquare, Crown, Ticket, BookOpen, BarChart3, Settings, LogOut, Calendar, CalendarClock, DollarSign, FileText, FileSignature, Shield, Lock, Palette, UsersRound, Megaphone, Bot, Link2, UserCog } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import defaultLogoUrl from "@/assets/sts-logo.png";
 import {
@@ -48,6 +48,7 @@ const menuItems: MenuItem[] = [
   { title: "Marketing", url: "/marketing", icon: Megaphone, adminOnly: true },
   { title: "Branding", url: "/branding", icon: Palette, permission: PERMISSIONS.BRANDING_MANAGE },
   { title: "Marketing Links", url: "/marketing-links", icon: Link2, permission: PERMISSIONS.BRANDING_MANAGE },
+  { title: "Agents", url: "/agents-management", icon: UserCog, permission: PERMISSIONS.AGENTS_VIEW },
   { title: "User Management", url: "/users", icon: Shield, adminOnly: true },
   { title: "Homepage Agents", url: "/homepage-agents", icon: UsersRound, adminOnly: true },
   { title: "Permissions", url: "/permissions", icon: Lock, adminOnly: true },

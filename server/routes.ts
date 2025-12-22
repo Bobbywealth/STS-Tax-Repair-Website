@@ -2138,39 +2138,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Staff Invites (admin only)
-  app.get("/api/staff-invites", isAuthenticated, async (req: any, res) => {
+  // Staff Invites (Admin: all; Tax Office: office-scoped)
+  app.get("/api/staff-invites", isAuthenticated, requirePermission("admin.invites"), async (req: any, res) => {
     try {
       const userId = req.userId || req.user?.claims?.sub;
       if (!userId) {
         return res.status(401).json({ error: "Not authenticated" });
       }
-      const adminUser = await storage.getUser(userId);
-      if (!adminUser || adminUser.role !== "admin") {
-        return res.status(403).json({ error: "Admin access required" });
+      const currentUser = await storage.getUser(userId);
+      if (!currentUser) {
+        return res.status(401).json({ error: "Not authenticated" });
       }
+
       const invites = await storage.getStaffInvites();
-      res.json(invites);
+
+      // Admin / Super Admin can see all invites
+      const role = (currentUser.role || "").toLowerCase();
+      if (role === "admin" || role === "super_admin") {
+        return res.json(invites);
+      }
+
+      // Tax Office: only show invites created by the current user (office-scoped)
+      if (role === "tax_office") {
+        return res.json(invites.filter((i: any) => i.invitedById === userId));
+      }
+
+      // Others: deny (should be blocked by permission middleware, but keep safe)
+      return res.status(403).json({ error: "Access denied" });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
   });
 
-  // Create staff invite (admin only)
-  app.post("/api/staff-invites", isAuthenticated, async (req: any, res) => {
+  // Create staff invite (Admin: agent/tax_office/admin; Tax Office: agent only, auto-scoped)
+  app.post("/api/staff-invites", isAuthenticated, requirePermission("admin.invites"), async (req: any, res) => {
     try {
       const userId = req.userId || req.user?.claims?.sub;
       if (!userId) {
         return res.status(401).json({ error: "Not authenticated" });
       }
-      const adminUser = await storage.getUser(userId);
-      if (!adminUser || adminUser.role !== "admin") {
-        return res.status(403).json({ error: "Admin access required" });
+      const currentUser = await storage.getUser(userId);
+      if (!currentUser) {
+        return res.status(401).json({ error: "Not authenticated" });
       }
 
       const { email, role } = req.body;
-      if (!email || !role || !["agent", "tax_office", "admin"].includes(role)) {
-        return res.status(400).json({ error: "Valid email and role required" });
+      const requesterRole = (currentUser.role || "").toLowerCase();
+
+      if (!email || typeof email !== "string") {
+        return res.status(400).json({ error: "Valid email required" });
+      }
+
+      // Role restrictions:
+      // - Admin/Super Admin: can invite agent/tax_office/admin
+      // - Tax Office: can invite agent ONLY (agents are scoped to their office at redemption)
+      if (requesterRole === "tax_office") {
+        if ((role || "").toLowerCase() !== "agent") {
+          return res.status(400).json({ error: "Tax offices can only invite agents" });
+        }
+        if (!(currentUser as any).officeId) {
+          return res.status(400).json({ error: "Your tax office account is not linked to an office yet" });
+        }
+      } else {
+        if (!role || !["agent", "tax_office", "admin"].includes(String(role))) {
+          return res.status(400).json({ error: "Valid email and role required" });
+        }
       }
 
       const crypto = await import("crypto");
@@ -2178,22 +2210,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 7);
 
-      const adminName =
-        `${adminUser.firstName || ""} ${adminUser.lastName || ""}`.trim() ||
-        adminUser.email ||
-        "Admin";
+      const invitedByName =
+        `${currentUser.firstName || ""} ${currentUser.lastName || ""}`.trim() ||
+        currentUser.email ||
+        (requesterRole === "tax_office" ? "Tax Office" : "Admin");
 
       const invite = await storage.createStaffInvite({
         email,
-        role,
+        role: String(role).toLowerCase(),
         inviteCode,
         invitedById: userId,
-        invitedByName: adminName,
+        invitedByName,
         expiresAt,
       });
 
       // Send invitation email (non-blocking)
-      sendStaffInviteEmail(email, role, inviteCode, adminName)
+      sendStaffInviteEmail(email, String(role).toLowerCase(), inviteCode, invitedByName)
         .catch((err) => {
           console.warn(`Failed to send staff invite email to ${email}:`, err);
         });
@@ -2327,6 +2359,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isActive: true,
           // Email NOT auto-verified - staff must verify to ensure proper email delivery
         });
+      }
+
+      // If this is an Agent invited by a Tax Office, attach the agent to the inviter's office.
+      // This enables tax offices to add agents under their company without needing global admin.
+      try {
+        const invitedRole = (invite.role || "").toLowerCase();
+        if (invitedRole === "agent" && user) {
+          const inviter = await storage.getUser(invite.invitedById);
+          const inviterRole = (inviter?.role || "").toLowerCase();
+          const inviterOfficeId = (inviter as any)?.officeId || null;
+
+          if (inviterRole === "tax_office" && inviterOfficeId) {
+            const existingOfficeId = (user as any)?.officeId || null;
+            if (existingOfficeId && existingOfficeId !== inviterOfficeId) {
+              return res.status(400).json({
+                error: "This invite cannot be redeemed: user belongs to a different office",
+              });
+            }
+            if (!existingOfficeId) {
+              await storage.updateUser(user.id, { officeId: inviterOfficeId } as any);
+              user = await storage.getUser(user.id);
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("[staff-invites/redeem] Failed to attach agent to inviter office:", e);
       }
 
       // If this is a Tax Office signup, create/update their office + branding now
@@ -6200,8 +6258,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ===========================================
   app.get("/api/staff-members", isAuthenticated, async (req: any, res) => {
     try {
-      const staff = await storage.getStaffMembers();
+      const userId = req.userId || req.user?.claims?.sub;
+      const currentUser = userId ? await storage.getUser(userId) : null;
+      const role = (currentUser?.role || "").toLowerCase();
+      const officeId = (currentUser as any)?.officeId || null;
+
+      let staff = await storage.getStaffMembers();
+
+      // Tax Office should only see staff in their office (plus themselves)
+      if (role === "tax_office" && officeId) {
+        staff = staff.filter((u: any) => {
+          const r = (u.role || "").toLowerCase();
+          if (r === "super_admin") return true; // optional HQ visibility
+          return u.officeId === officeId;
+        });
+      }
+
       res.json(staff);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ===========================================
+  // AGENTS (Tax Office: office-scoped)
+  // ===========================================
+  app.get("/api/agents", isAuthenticated, requirePermission("agents.view"), async (req: any, res) => {
+    try {
+      const userId = req.userId || req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+      const currentUser = await storage.getUser(userId);
+      if (!currentUser) return res.status(401).json({ error: "Not authenticated" });
+
+      const role = (currentUser.role || "").toLowerCase();
+      const officeId = (currentUser as any)?.officeId || null;
+
+      const users = await storage.getUsers();
+      let agents = users.filter((u: any) => (u.role || "").toLowerCase() === "agent");
+
+      if (role === "tax_office") {
+        if (!officeId) return res.status(400).json({ error: "Tax office is not linked to an office" });
+        agents = agents.filter((u: any) => u.officeId === officeId);
+      }
+
+      res.json(agents);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/agents/:id/disable", isAuthenticated, requirePermission("agents.disable"), async (req: any, res) => {
+    try {
+      const userId = req.userId || req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+      const currentUser = await storage.getUser(userId);
+      if (!currentUser) return res.status(401).json({ error: "Not authenticated" });
+
+      const targetId = req.params.id;
+      const target = await storage.getUser(targetId);
+      if (!target) return res.status(404).json({ error: "Agent not found" });
+
+      const targetRole = (target.role || "").toLowerCase();
+      if (targetRole !== "agent") return res.status(400).json({ error: "Target user is not an agent" });
+
+      const role = (currentUser.role || "").toLowerCase();
+      const officeId = (currentUser as any)?.officeId || null;
+
+      // Tax office can only disable agents in their own office
+      if (role === "tax_office") {
+        if (!officeId) return res.status(400).json({ error: "Tax office is not linked to an office" });
+        if ((target as any).officeId !== officeId) {
+          return res.status(403).json({ error: "Cannot disable agents outside your office" });
+        }
+      }
+
+      const updated = await storage.updateUser(targetId, { isActive: false } as any);
+      res.json(updated);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
