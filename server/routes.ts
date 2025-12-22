@@ -264,6 +264,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: emailResult.success ? "sent" : "failed",
       });
 
+      // If the user is not verified yet, also (re)send a verification email.
+      // This addresses cases where the original verification email never arrived.
+      try {
+        if (!user.emailVerifiedAt) {
+          const existingToken = await storage.getEmailVerificationTokenByUserId(user.id);
+          let verificationTokenToSend: string | null = null;
+
+          if (existingToken && (existingToken.resendCount || 0) < 5) {
+            await storage.incrementEmailVerificationResendCount(existingToken.token);
+            verificationTokenToSend = existingToken.token;
+          } else {
+            const newToken = generateSecureToken();
+            const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+            await storage.createEmailVerificationToken(user.id, email, newToken, expiresAt);
+            verificationTokenToSend = newToken;
+          }
+
+          if (verificationTokenToSend) {
+            sendEmailVerificationEmail(email, verificationTokenToSend, user.firstName || undefined, emailBranding)
+              .then((r) => {
+                if (r.success) console.log(`[VERIFY EMAIL] Sent verification email during forgot-password to ${email}`);
+                else console.warn(`[VERIFY EMAIL] Failed to send verification email during forgot-password to ${email}:`, r.error);
+              })
+              .catch((e) => console.warn(`[VERIFY EMAIL] Error sending verification email during forgot-password to ${email}:`, e));
+          }
+        }
+      } catch (e) {
+        console.warn("[VERIFY EMAIL] forgot-password verification send failed (non-blocking):", e);
+      }
+
       return res.json({ 
         success: true, 
         message: "If an account exists with this email, you will receive a password reset link shortly." 
@@ -356,6 +386,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.getUser(resetToken.userId);
 
       console.log(`Password reset completed for user: ${user?.email || resetToken.userId}`);
+
+      // If still unverified, trigger a verification email resend (best effort).
+      try {
+        if (user && user.email && !user.emailVerifiedAt) {
+          const emailBranding = await getEmailBrandingForUser(user.id);
+          const existingToken = await storage.getEmailVerificationTokenByUserId(user.id);
+          let verificationTokenToSend: string | null = null;
+
+          if (existingToken && (existingToken.resendCount || 0) < 5) {
+            await storage.incrementEmailVerificationResendCount(existingToken.token);
+            verificationTokenToSend = existingToken.token;
+          } else {
+            const newToken = generateSecureToken();
+            const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+            await storage.createEmailVerificationToken(user.id, user.email, newToken, expiresAt);
+            verificationTokenToSend = newToken;
+          }
+
+          if (verificationTokenToSend) {
+            sendEmailVerificationEmail(user.email, verificationTokenToSend, user.firstName || undefined, emailBranding)
+              .then((r) => {
+                if (r.success) console.log(`[VERIFY EMAIL] Sent verification email during reset-password to ${user.email}`);
+                else console.warn(`[VERIFY EMAIL] Failed to send verification email during reset-password to ${user.email}:`, r.error);
+              })
+              .catch((e) => console.warn(`[VERIFY EMAIL] Error sending verification email during reset-password to ${user.email}:`, e));
+          }
+        }
+      } catch (e) {
+        console.warn("[VERIFY EMAIL] reset-password verification send failed (non-blocking):", e);
+      }
 
       return res.json({ 
         success: true, 
