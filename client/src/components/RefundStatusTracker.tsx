@@ -35,16 +35,16 @@ export function RefundStatusTracker({ currentStatus }: RefundStatusTrackerProps)
             }}
           />
           
-          <div className="relative flex justify-between">
+          <div className="relative flex justify-between items-start gap-1">
             {statuses.map((status, index) => {
               const isCompleted = index <= currentIndex;
               const isCurrent = index === currentIndex;
               
               return (
-                <div key={status.id} className="flex flex-col items-center" data-testid={`status-${status.id}`}>
+                <div key={status.id} className="flex flex-col items-center flex-1 min-w-0" data-testid={`status-${status.id}`}>
                   <div
                     className={cn(
-                      "h-10 w-10 rounded-full flex items-center justify-center mb-2 transition-all duration-500",
+                      "h-10 w-10 rounded-full flex items-center justify-center mb-2 transition-all duration-500 flex-shrink-0",
                       isCompleted 
                         ? "bg-primary text-primary-foreground shadow-lg scale-110" 
                         : "bg-muted text-muted-foreground",
@@ -59,7 +59,7 @@ export function RefundStatusTracker({ currentStatus }: RefundStatusTrackerProps)
                   </div>
                   <span 
                     className={cn(
-                      "text-xs font-medium text-center",
+                      "text-[10px] sm:text-xs font-medium text-center leading-tight px-1 break-words",
                       isCurrent ? "text-foreground" : "text-muted-foreground"
                     )}
                   >
