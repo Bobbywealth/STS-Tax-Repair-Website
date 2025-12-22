@@ -1,5 +1,5 @@
 // Bump to invalidate any previously cached HTML/JS mismatches after deploys
-const CACHE_VERSION = 'v19';
+const CACHE_VERSION = 'v20';
 const CACHE_NAME = `sts-taxrepair-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `sts-runtime-${CACHE_VERSION}`;
 const RUNTIME_MAX_ENTRIES = 80;
@@ -95,6 +95,14 @@ function shouldStaleWhileRevalidate(url) {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   
+  // Ignore non-http(s) requests (e.g. browser extensions) to avoid cache.put errors.
+  try {
+    const u = new URL(request.url);
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return;
+  } catch {
+    return;
+  }
+
   // Bypass Service Worker for file uploads - let them go directly to server
   if (request.method !== 'GET' && request.url.includes('/upload')) {
     // Don't intercept - pass through to network
@@ -110,7 +118,10 @@ self.addEventListener('fetch', (event) => {
 
   // Navigation requests (page loads) - always network first for SPA
   if (request.mode === 'navigate') {
-    event.respondWith(networkFirstWithOfflineFallback(request));
+    // IMPORTANT: Do NOT cache navigations (index.html). After a deploy, cached HTML
+    // can reference old hashed chunk filenames that no longer exist, causing 404
+    // dynamic-import failures (e.g. /assets/Settings-*.js).
+    event.respondWith(networkOnlyWithOfflineFallback(request));
     return;
   }
 
@@ -138,7 +149,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Everything else (JS, CSS, HTML) - network first for freshness
+  // Everything else - network first for freshness
   event.respondWith(networkFirstWithOfflineFallback(request));
 });
 
@@ -245,16 +256,31 @@ async function staleWhileRevalidateStrategy(request) {
   return cachedResponse || fetchPromise;
 }
 
+async function networkOnlyWithOfflineFallback(request) {
+  try {
+    // Add a timeout so stalled networks don't hang navigations forever
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    const response = await fetch(request, { signal: controller.signal });
+    clearTimeout(t);
+    return response;
+  } catch (error) {
+    console.log('[SW] Navigation offline, serving offline page');
+    const offlinePage = await caches.match('/offline.html');
+    if (offlinePage) return offlinePage;
+    return new Response('You are offline. Please check your connection.', {
+      status: 503,
+      headers: { 'Content-Type': 'text/html' }
+    });
+  }
+}
+
 async function networkFirstWithOfflineFallback(request) {
   try {
     const response = await fetch(request);
-    // Only cache successful HTML navigations (avoid caching 4xx/5xx error pages)
-    const contentType = (response.headers.get('content-type') || '').toLowerCase();
-    if (response.ok && contentType.includes('text/html')) {
-      const cache = await caches.open(RUNTIME_CACHE);
-      cache.put(request, response.clone());
-      await enforceRuntimeCacheLimits(cache);
-    }
+    // Do not cache HTML here; caching app shell HTML can break on deploys due to
+    // hashed chunk filename changes. Non-navigation requests can be cached by
+    // specific strategies above (scripts/styles/images/fonts).
     return response;
   } catch (error) {
     console.log('[SW] Navigation offline, serving cached page');
