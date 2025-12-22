@@ -87,6 +87,7 @@ const RedeemInvite = lazy(() => import("@/pages/RedeemInvite"));
 const Register = lazy(() => import("@/pages/Register"));
 const ForgotPassword = lazy(() => import("@/pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("@/pages/ResetPassword"));
+const VerifyEmail = lazy(() => import("@/pages/VerifyEmail"));
 const HomePage = lazy(() => import("@/pages/HomePage"));
 const ServicesPage = lazy(() => import("@/pages/ServicesPage"));
 const AgentsPage = lazy(() => import("@/pages/AgentsPage"));
@@ -452,6 +453,7 @@ function App() {
   const isPublicPage = location === '/services' || location === '/agents' || location === '/pricing' || location === '/about' || location === '/contact' || location === '/faq' || location === '/book-appointment' || location === '/staff-signup';
   const isClientRoute = location.startsWith('/client-login') || location.startsWith('/client-portal');
   const isPasswordResetRoute = location === '/forgot-password' || location.startsWith('/reset-password');
+  const isVerifyEmailRoute = location.startsWith('/verify-email');
   const isAdminLoginRoute = location === '/admin-login' || location === '/login';
   const isRedeemRoute = location.startsWith('/redeem-invite');
   const isRegisterRoute = location.startsWith('/register');
@@ -503,6 +505,10 @@ function App() {
               <Switch>
                 <Route path="/forgot-password" component={ForgotPassword} />
                 <Route path="/reset-password" component={ResetPassword} />
+              </Switch>
+            ) : isVerifyEmailRoute ? (
+              <Switch>
+                <Route path="/verify-email" component={VerifyEmail} />
               </Switch>
             ) : isRedeemRoute ? (
               <Switch>
