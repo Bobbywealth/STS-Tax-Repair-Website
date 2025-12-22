@@ -1078,9 +1078,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
       }
 
+      const role = (user?.role || 'client').toLowerCase();
+      const redirectUrl = role === 'client' ? '/client-login' : '/admin-login';
+
       return res.json({ 
         message: "Email verified successfully! You can now log in to your account.",
-        verified: true 
+        verified: true,
+        role,
+        redirectUrl,
       });
     } catch (error: any) {
       console.error("Email verification error:", error);

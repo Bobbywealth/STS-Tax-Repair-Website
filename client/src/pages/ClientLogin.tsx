@@ -27,6 +27,7 @@ import { Link, useLocation } from "wouter";
 import defaultLogoUrl from "@/assets/sts-logo.png";
 import { PWALoginScreen } from "@/components/PWALoginScreen";
 import { useBranding } from "@/hooks/useBranding";
+import { apiRequest } from "@/lib/queryClient";
 
 function FloatingParticles() {
   return (
@@ -62,6 +63,8 @@ export default function ClientLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
+  const [isResendingVerification, setIsResendingVerification] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isPWA, setIsPWA] = useState(false);
   const officeSlug = new URLSearchParams(window.location.search).get('_office') || undefined;
@@ -95,6 +98,7 @@ export default function ClientLogin() {
   const handleClientLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setVerificationEmail(null);
 
     try {
       const response = await fetch("/api/client-login", {
@@ -107,9 +111,18 @@ export default function ClientLogin() {
       const data = await response.json();
 
       if (!response.ok) {
+        if (data?.needsVerification) {
+          const e = data?.email || email;
+          setVerificationEmail(e);
+          throw new Error(
+            data.message ||
+              "Please verify your email address before logging in. Check your inbox for the verification link.",
+          );
+        }
         throw new Error(data.message || "Login failed");
       }
 
+      setVerificationEmail(null);
       toast({
         title: "Welcome back!",
         description: "Redirecting to your portal...",
@@ -125,6 +138,35 @@ export default function ClientLogin() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    const e = (verificationEmail || email).trim();
+    if (!e) {
+      toast({
+        title: "Email required",
+        description: "Enter your email first, then resend verification.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsResendingVerification(true);
+      await apiRequest("POST", "/api/auth/resend-verification", { email: e });
+      toast({
+        title: "Verification sent",
+        description: "Check your inbox (and spam folder) for the verification link.",
+      });
+    } catch (err: any) {
+      toast({
+        title: "Resend failed",
+        description: err?.message || "Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsResendingVerification(false);
     }
   };
 
@@ -610,6 +652,36 @@ export default function ClientLogin() {
                   )}
                 </Button>
               </form>
+
+              {verificationEmail && (
+                <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4">
+                  <div className="text-sm font-medium text-amber-200">
+                    Email verification required
+                  </div>
+                  <div className="text-xs text-amber-200/80 mt-1 break-all">
+                    We sent a verification link to <span className="font-semibold">{verificationEmail}</span>.
+                    Please verify your email to log in.
+                  </div>
+                  <div className="mt-3 flex flex-col sm:flex-row gap-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="w-full sm:w-auto"
+                      onClick={handleResendVerification}
+                      disabled={isResendingVerification}
+                      data-testid="button-resend-verification-client-login"
+                    >
+                      {isResendingVerification ? "Sending…" : "Resend verification"}
+                    </Button>
+                    <Link
+                      href="/forgot-password"
+                      className="text-center text-xs text-emerald-300 hover:text-emerald-200 transition-colors self-center"
+                    >
+                      Wrong email? Use “Forgot password”
+                    </Link>
+                  </div>
+                </div>
+              )}
 
               <div className="text-center space-y-3 pt-2">
                 <p className="text-sm text-gray-400">

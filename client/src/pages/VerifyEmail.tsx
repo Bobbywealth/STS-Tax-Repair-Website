@@ -50,7 +50,7 @@ export default function VerifyEmail() {
 
         // Auto-redirect after a short delay
         window.setTimeout(() => {
-          navigate("/client-login");
+          navigate(data.redirectUrl || "/client-login");
         }, 1500);
       } catch (e: any) {
         if (cancelled) return;
