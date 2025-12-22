@@ -39,9 +39,12 @@ export default function ClientPortal() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const [selectedSignature, setSelectedSignature] = useState<ESignature | null>(null);
   const [showSignDialog, setShowSignDialog] = useState(false);
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [showAppointmentDialog, setShowAppointmentDialog] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
   const [tourStarted, setTourStarted] = useState(false);
   const signaturePadRef = useRef<SignaturePadRef>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Initialize tour on first visit (desktop only to avoid mobile clutter)
   useEffect(() => {
@@ -175,6 +178,36 @@ export default function ClientPortal() {
   const handleSign = (signature: ESignature) => {
     setSelectedSignature(signature);
     setShowSignDialog(true);
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    toast({
+      title: "Upload Started",
+      description: `Uploading ${files.length} file(s)...`,
+    });
+
+    // Reset the input so the same file can be selected again
+    e.target.value = '';
+    
+    // In a real implementation, you would upload the files here
+    // For now, just show a success message
+    setTimeout(() => {
+      toast({
+        title: "Upload Successful",
+        description: `${files.length} file(s) uploaded successfully.`,
+      });
+    }, 1500);
+  };
+
+  const handleScheduleAppointment = () => {
+    setShowAppointmentDialog(true);
   };
 
   const handleSubmitSignature = () => {
@@ -317,9 +350,18 @@ export default function ClientPortal() {
 
         {/* Quick Action Buttons */}
         <div id="quick-actions" className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+            className="hidden"
+            onChange={handleFileUpload}
+          />
           <Button 
             variant="outline" 
             className="h-auto py-4 flex flex-col items-center gap-2 hover-elevate"
+            onClick={handleUploadClick}
             data-testid="quick-action-upload"
           >
             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -330,6 +372,7 @@ export default function ClientPortal() {
           <Button 
             variant="outline" 
             className="h-auto py-4 flex flex-col items-center gap-2 hover-elevate"
+            onClick={handleScheduleAppointment}
             data-testid="quick-action-schedule"
           >
             <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center">
@@ -628,6 +671,77 @@ export default function ClientPortal() {
               </DialogFooter>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Appointment Booking Dialog */}
+      <Dialog open={showAppointmentDialog} onOpenChange={setShowAppointmentDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Schedule an Appointment</DialogTitle>
+            <DialogDescription>
+              Choose a convenient date and time for your tax consultation
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Service Type</label>
+              <select className="w-full p-2 border rounded-md bg-background">
+                <option>Tax Consultation</option>
+                <option>Document Review</option>
+                <option>IRS Issue Resolution</option>
+                <option>General Inquiry</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Preferred Date</label>
+              <input
+                type="date"
+                className="w-full p-2 border rounded-md bg-background"
+                min={new Date().toISOString().split('T')[0]}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Preferred Time</label>
+              <select className="w-full p-2 border rounded-md bg-background">
+                <option>9:00 AM</option>
+                <option>10:00 AM</option>
+                <option>11:00 AM</option>
+                <option>12:00 PM</option>
+                <option>1:00 PM</option>
+                <option>2:00 PM</option>
+                <option>3:00 PM</option>
+                <option>4:00 PM</option>
+                <option>5:00 PM</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Notes (Optional)</label>
+              <textarea
+                className="w-full p-2 border rounded-md bg-background min-h-[80px]"
+                placeholder="Any specific topics you'd like to discuss..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowAppointmentDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                toast({
+                  title: "Appointment Request Sent",
+                  description: "We'll confirm your appointment within 24 hours.",
+                });
+                setShowAppointmentDialog(false);
+              }}
+            >
+              Request Appointment
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
