@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import type { UserRole } from "@shared/mysql-schema";
-import { mysqlStorage } from "./mysql-storage";
+import { storage } from "./storage";
 
 declare global {
   namespace Express {
@@ -141,7 +141,7 @@ async function loadUserPermissions(role: UserRole): Promise<Set<string>> {
   }
   
   try {
-    const permissions = await mysqlStorage.getRolePermissions(role);
+    const permissions = await storage.getRolePermissions(role);
     const permSet = new Set(permissions);
     permissionCache.set(cacheKey, { permissions: permSet, timestamp: Date.now() });
     return permSet;
@@ -242,7 +242,7 @@ async function loadAgentAssignedClients(agentId: string): Promise<Set<string>> {
   }
   
   try {
-    const clientIds = await mysqlStorage.getAgentAssignedClientIds(agentId);
+    const clientIds = await (storage as any).getAgentAssignedClientIds(agentId);
     const clientSet = new Set(clientIds);
     agentScopeCache.set(cacheKey, { clientIds: clientSet, timestamp: Date.now() });
     return clientSet;
@@ -274,7 +274,7 @@ export function loadScopeContext() {
     
     try {
       // Load office ID from user record
-      const user = await mysqlStorage.getUser(userId);
+      const user = await storage.getUser(userId);
       if (user?.officeId) {
         req.officeId = user.officeId;
       }
@@ -373,7 +373,7 @@ export function requireClientScope(getClientId: (req: Request) => string | undef
       }
       
       try {
-        const client = await mysqlStorage.getUser(clientId);
+        const client = await storage.getUser(clientId);
         if (client?.officeId === req.officeId) {
           return next();
         }

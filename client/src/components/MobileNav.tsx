@@ -1,25 +1,44 @@
-import { Home, Users, CheckSquare, FileText, Menu } from "lucide-react";
+import { Home, Users, CheckSquare, FileText, Menu, CalendarClock, HelpCircle } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/ui/sidebar";
 import { triggerHaptic } from "@/lib/haptics";
+import { usePermissions } from "@/hooks/usePermissions";
 
-const navItems = [
+interface NavItem {
+  title: string;
+  url: string;
+  icon: React.ComponentType<{ className?: string }>;
+  requiresStaff?: boolean;
+}
+
+const staffNavItems: NavItem[] = [
   { title: "Home", url: "/dashboard", icon: Home },
-  { title: "Clients", url: "/clients", icon: Users },
-  { title: "Tasks", url: "/tasks", icon: CheckSquare },
+  { title: "Clients", url: "/clients", icon: Users, requiresStaff: true },
+  { title: "Tasks", url: "/tasks", icon: CheckSquare, requiresStaff: true },
   { title: "Docs", url: "/documents", icon: FileText },
+];
+
+const clientNavItems: NavItem[] = [
+  { title: "Home", url: "/client-portal", icon: Home },
+  { title: "Docs", url: "/client-portal", icon: FileText },
+  { title: "Appointments", url: "/client-portal", icon: CalendarClock },
+  { title: "Help", url: "/client-portal", icon: HelpCircle },
 ];
 
 export function MobileNav() {
   const [location] = useLocation();
   const { toggleSidebar } = useSidebar();
+  const { role } = usePermissions();
+  
+  const isClient = role === 'client';
+  const navItems = isClient ? clientNavItems : staffNavItems;
 
   return (
     <nav className="mobile-bottom-nav md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border safe-area-bottom">
       <div className="flex items-center justify-around h-16 px-2">
         {navItems.map((item) => {
-          const isActive = location === item.url || (item.url === "/dashboard" && location === "/");
+          const isActive = location === item.url || (item.url === "/dashboard" && location === "/") || (item.url === "/client-portal" && location === "/client-portal");
           return (
             <Link key={item.title} href={item.url}>
               <button

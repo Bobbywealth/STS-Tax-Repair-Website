@@ -43,10 +43,11 @@ export default function ClientPortal() {
   const [tourStarted, setTourStarted] = useState(false);
   const signaturePadRef = useRef<SignaturePadRef>(null);
 
-  // Initialize tour on first visit
+  // Initialize tour on first visit (desktop only to avoid mobile clutter)
   useEffect(() => {
     const hasSeenTour = localStorage.getItem("clientPortalTourSeen");
-    if (!hasSeenTour && isAuthenticated && !tourStarted) {
+    const isMobile = window.innerWidth < 768;
+    if (!hasSeenTour && isAuthenticated && !tourStarted && !isMobile) {
       // Delay tour start to ensure DOM is ready
       setTimeout(() => startTour(), 500);
     }

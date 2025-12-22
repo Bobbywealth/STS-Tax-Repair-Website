@@ -27,9 +27,25 @@ export function PWAInstallPrompt() {
       p.startsWith("/staff-signup") ||
       p.startsWith("/admin-login") ||
       p.startsWith("/login") ||
-      p.startsWith("/redeem-invite")
+      p.startsWith("/redeem-invite") ||
+      p.startsWith("/client-portal") ||
+      p.startsWith("/dashboard") ||
+      p.startsWith("/clients") ||
+      p.startsWith("/documents") ||
+      p.startsWith("/appointments") ||
+      p.startsWith("/tasks") ||
+      p.startsWith("/settings")
     );
   }, [pathname]);
+
+  // Check if user has permanently dismissed (or dismissed recently)
+  const isPermanentlyDismissed = useMemo(() => {
+    const dismissedAt = localStorage.getItem("pwa-install-dismissed-at");
+    if (!dismissedAt) return false;
+    const dismissedTime = parseInt(dismissedAt, 10);
+    const sevenDays = 7 * 24 * 60 * 60 * 1000;
+    return Date.now() - dismissedTime < sevenDays;
+  }, []);
 
   // Delay showing so it doesn't immediately cover content on initial render.
   useEffect(() => {
@@ -61,7 +77,12 @@ export function PWAInstallPrompt() {
     setIsInstalling(false);
   };
 
-  if (!isInstallable || isDismissed || !isReady || isBlacklistedRoute || isInputFocused) return null;
+  const handleDismiss = () => {
+    localStorage.setItem("pwa-install-dismissed-at", Date.now().toString());
+    setIsDismissed(true);
+  };
+
+  if (!isInstallable || isDismissed || !isReady || isBlacklistedRoute || isInputFocused || isPermanentlyDismissed) return null;
 
   return (
     <AnimatePresence>
@@ -73,7 +94,7 @@ export function PWAInstallPrompt() {
       >
         <div className="bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] rounded-2xl border border-[#4CAF50]/30 p-4 shadow-2xl shadow-[#4CAF50]/10">
           <button
-            onClick={() => setIsDismissed(true)}
+            onClick={handleDismiss}
             className="absolute top-3 right-3 text-gray-500 hover:text-white transition-colors"
             data-testid="button-dismiss-install"
           >
@@ -119,7 +140,7 @@ export function PWAInstallPrompt() {
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => setIsDismissed(true)}
+                  onClick={handleDismiss}
                   className="text-gray-400 hover:text-white text-xs h-8 px-2"
                   data-testid="button-later-install"
                 >

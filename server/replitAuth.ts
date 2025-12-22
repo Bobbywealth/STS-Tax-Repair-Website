@@ -7,6 +7,7 @@ import memoize from "memoizee";
 import MySQLStore from "express-mysql-session";
 import { storage } from "./storage";
 import { mysqlPool } from "./mysql-db";
+import { isMySQLConfigured } from "./dbConfig";
 
 // Check if we're running on Replit (has required env vars)
 export const isReplitEnvironment = !!(process.env.REPL_ID && process.env.REPLIT_DOMAINS);
@@ -28,22 +29,26 @@ const getOidcConfig = memoize(
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
   
-  // Use MySQL session store with SHARED connection pool (prevents connection exhaustion)
-  const MySQLSessionStore = MySQLStore(session);
-  const sessionStore = new (MySQLSessionStore as any)({
-    createDatabaseTable: true,
-    schema: {
-      tableName: 'sessions', // Use unified sessions table
-      columnNames: {
-        session_id: 'sid',
-        expires: 'expire',
-        data: 'sess'
-      }
-    },
-    expiration: sessionTtl,
-    clearExpired: true,
-    checkExpirationInterval: 900000, // 15 minutes
-  }, mysqlPool); // Pass existing pool to prevent separate connections
+  // Use MySQL session store when DB is configured.
+  // Otherwise (local layout testing), fall back to in-memory sessions.
+  const sessionStore = (() => {
+    if (!isMySQLConfigured()) return undefined;
+    const MySQLSessionStore = MySQLStore(session);
+    return new (MySQLSessionStore as any)({
+      createDatabaseTable: true,
+      schema: {
+        tableName: 'sessions', // Use unified sessions table
+        columnNames: {
+          session_id: 'sid',
+          expires: 'expire',
+          data: 'sess'
+        }
+      },
+      expiration: sessionTtl,
+      clearExpired: true,
+      checkExpirationInterval: 900000, // 15 minutes
+    }, mysqlPool); // Pass existing pool to prevent separate connections
+  })();
 
   const isProduction = process.env.NODE_ENV === 'production';
   const sessionSecret =
@@ -59,7 +64,7 @@ export function getSession() {
   
   return session({
     secret: sessionSecret,
-    store: sessionStore,
+    store: sessionStore as any,
     resave: false,
     saveUninitialized: false,
     proxy: isProduction, // Trust the reverse proxy in production (Render)

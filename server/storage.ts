@@ -242,6 +242,15 @@ export interface IStorage {
   updateUserThemePreference(userId: string, theme: ThemePreference): Promise<User | undefined>;
 }
 
-// MySQL storage connected to cPanel database
 import { mysqlStorage } from "./mysql-storage";
-export const storage: IStorage = mysqlStorage;
+import { MemoryStorage } from "./memory-storage";
+import { isMySQLConfigured } from "./dbConfig";
+
+// Storage selection:
+// - Production should always have MySQL configured.
+// - Local/dev without MySQL should still be able to render pages and test layout.
+export const storage: IStorage = (isMySQLConfigured()
+  ? mysqlStorage
+  : (new MemoryStorage() as any)) as IStorage;
+
+export const isDemoStorage = !isMySQLConfigured();

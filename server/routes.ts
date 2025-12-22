@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { isDemoStorage, storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import {
   requireRole,
@@ -775,21 +775,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           officeId: office.id,
         });
 
-        try {
-          await mysqlStorage.createAuditLog({
-            action: "office.create",
-            userId: user.id,
-            userName: `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email || null,
-            userRole: user.role,
-            officeId: office.id,
-            resourceType: "office",
-            resourceId: office.id,
-            details: { autoCreated: true },
-            ipAddress: req.ip,
-            userAgent: req.headers["user-agent"],
-          });
-        } catch {
-          // non-blocking
+        // Avoid DB writes in demo storage mode.
+        if (!isDemoStorage) {
+          try {
+            await mysqlStorage.createAuditLog({
+              action: "office.create",
+              userId: user.id,
+              userName:
+                `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
+                user.email ||
+                null,
+              userRole: user.role,
+              officeId: office.id,
+              resourceType: "office",
+              resourceId: office.id,
+              details: { autoCreated: true },
+              ipAddress: req.ip,
+              userAgent: req.headers["user-agent"],
+            });
+          } catch {
+            // non-blocking
+          }
         }
 
         return updated;
@@ -1395,8 +1401,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Temporary diagnostic endpoint to check user account status
-  app.get("/api/debug/user-status/:email", async (req, res) => {
+  // Diagnostic endpoint to check user account status (ADMIN ONLY)
+  app.get("/api/debug/user-status/:email", isAuthenticated, requireAdmin(), async (req, res) => {
     try {
       const email = decodeURIComponent(req.params.email);
       const user = await storage.getUserByEmail(email);
@@ -1427,8 +1433,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Temporary endpoint to manually verify a user's email
-  app.post("/api/debug/verify-email/:email", async (req, res) => {
+  // Manual verify endpoint (ADMIN ONLY) - use to help clients who can't receive email
+  app.post("/api/debug/verify-email/:email", isAuthenticated, requireAdmin(), async (req, res) => {
     try {
       const email = decodeURIComponent(req.params.email);
       const user = await storage.getUserByEmail(email);
@@ -1448,6 +1454,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: `Email verified for ${email}`,
         email: user.email
       });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Verify a user by ID (ADMIN ONLY) - used by User Management UI
+  app.post("/api/admin/users/:id/verify-email", isAuthenticated, requireAdmin(), async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const user = await storage.getUser(id);
+      if (!user) return res.status(404).json({ error: "User not found" });
+
+      if (user.emailVerifiedAt) {
+        return res.json({ success: true, message: "User already verified" });
+      }
+
+      await storage.markUserEmailVerified(id);
+      const updated = await storage.getUser(id);
+
+      // Optional: audit log
+      try {
+        const adminId = req.userId || req.user?.claims?.sub;
+        const admin = adminId ? await storage.getUser(adminId) : null;
+        const adminName = `${admin?.firstName || ""} ${admin?.lastName || ""}`.trim() || admin?.email || "Admin";
+        await mysqlStorage.createAuditLog({
+          userId: adminId,
+          action: "user.verify_email",
+          resourceType: "user",
+          resourceId: id,
+          details: { targetEmail: user.email },
+          ipAddress: req.ip,
+          userAgent: req.headers["user-agent"],
+        } as any);
+        console.log(`[VERIFY EMAIL] Admin ${adminName} verified ${user.email}`);
+      } catch (e) {
+        console.warn("[VERIFY EMAIL] Failed to write audit log (non-blocking):", e);
+      }
+
+      res.json({ success: true, user: updated });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
