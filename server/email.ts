@@ -6,7 +6,7 @@ const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 const FROM_EMAIL =
   process.env.FROM_EMAIL ||
   'ststaxrepair@gmail.com'; // requested SendGrid sender
-const FROM_NAME = process.env.FROM_NAME || 'STS Tax Repair';
+const FROM_NAME = process.env.FROM_NAME || 'STS TaxRepair';
 
 export interface OfficeBranding {
   companyName: string;
@@ -70,8 +70,17 @@ interface SendEmailParams {
   category?: string;
 }
 
+function isValidEmail(email: string): boolean {
+  // Pragmatic check (SendGrid does full validation too)
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim());
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export async function sendEmail(params: SendEmailParams): Promise<EmailResult> {
-  const fromName = params.branding?.replyToName || FROM_NAME;
+  const fromName = params.branding?.companyName || FROM_NAME;
   
   console.log(`[EMAIL] Attempting to send email to: ${params.to}, subject: ${params.subject}`);
   console.log(`[EMAIL] SendGrid API key configured: ${SENDGRID_API_KEY ? 'YES (length: ' + SENDGRID_API_KEY.length + ')' : 'NO'}`);
@@ -81,48 +90,88 @@ export async function sendEmail(params: SendEmailParams): Promise<EmailResult> {
     console.warn('[EMAIL] SendGrid API key not configured. Email not sent:', params.subject);
     return { success: false, error: 'SendGrid not configured' };
   }
+  if (!FROM_EMAIL || !isValidEmail(FROM_EMAIL)) {
+    console.error('[EMAIL] Invalid FROM_EMAIL configuration:', FROM_EMAIL);
+    return { success: false, error: 'Invalid FROM_EMAIL configuration' };
+  }
+  if (!params.to || !isValidEmail(params.to)) {
+    return { success: false, error: 'Invalid recipient email address' };
+  }
 
-  try {
-    const msg: any = {
-      to: params.to,
-      from: {
-        email: FROM_EMAIL,
-        name: fromName,
-      },
-      subject: params.subject,
-      html: params.html,
-      text: params.text || params.html.replace(/<[^>]*>/g, ''),
-    };
-
+  const diagId = crypto.randomBytes(8).toString('hex');
+  const msg: any = {
+    to: params.to,
+    from: {
+      email: FROM_EMAIL,
+      name: fromName,
+    },
+    subject: params.subject,
+    html: params.html,
+    text: params.text || params.html.replace(/<[^>]*>/g, ''),
     // Helps SendGrid reporting/deliverability tuning (esp. Yahoo/Gmail)
-    if (params.category) {
-      msg.categories = [params.category];
-    }
-    
-    if (params.branding?.replyToEmail) {
-      msg.replyTo = {
-        email: params.branding.replyToEmail,
-        name: params.branding.replyToName || params.branding.companyName,
-      };
-    }
+    ...(params.category ? { categories: [params.category] } : {}),
+    // Correlate SendGrid events/logs with server logs
+    customArgs: {
+      diagId,
+      category: params.category || undefined,
+    },
+  };
 
-    console.log(`[EMAIL] Sending via SendGrid...`);
-    const [response] = await sgMail.send(msg);
-    console.log(`[EMAIL] SUCCESS - Email sent to ${params.to}: ${params.subject}`);
-    console.log(`[EMAIL] Response status: ${response.statusCode}`);
-    
-    return { 
-      success: true, 
-      messageId: response.headers['x-message-id'] as string 
-    };
-  } catch (error: any) {
-    console.error('[EMAIL] SendGrid ERROR:', JSON.stringify(error.response?.body || error.message, null, 2));
-    console.error('[EMAIL] Full error:', error);
-    return { 
-      success: false, 
-      error: error.response?.body?.errors?.[0]?.message || error.message 
+  if (params.branding?.replyToEmail && isValidEmail(params.branding.replyToEmail)) {
+    msg.replyTo = {
+      email: params.branding.replyToEmail,
+      name: params.branding.replyToName || params.branding.companyName,
     };
   }
+
+  // Retry transient SendGrid failures (429 / 5xx) a few times.
+  const maxAttempts = 3;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      console.log(`[EMAIL] Sending via SendGrid (attempt ${attempt}/${maxAttempts}, diagId=${diagId})...`);
+      const [response] = await sgMail.send(msg);
+      console.log(`[EMAIL] SUCCESS - Email sent to ${params.to}: ${params.subject} (diagId=${diagId})`);
+      console.log(`[EMAIL] Response status: ${response.statusCode}`);
+
+      return {
+        success: true,
+        messageId: response.headers['x-message-id'] as string,
+      };
+    } catch (error: any) {
+      const status = error?.code || error?.response?.statusCode || error?.response?.status;
+      const body = error?.response?.body;
+      const errMsg =
+        body?.errors?.[0]?.message ||
+        error?.message ||
+        'SendGrid error';
+
+      const isRetryable =
+        status === 429 ||
+        status === 500 ||
+        status === 502 ||
+        status === 503 ||
+        status === 504 ||
+        // Network errors sometimes have no status
+        !status;
+
+      console.error(
+        `[EMAIL] SendGrid ERROR (attempt ${attempt}/${maxAttempts}, diagId=${diagId}) status=${status || 'n/a'}:`,
+        JSON.stringify(body || errMsg, null, 2),
+      );
+
+      if (!isRetryable || attempt === maxAttempts) {
+        return {
+          success: false,
+          error: `${status ? `${status}: ` : ''}${errMsg}`,
+        };
+      }
+
+      const backoffMs = Math.round((500 * Math.pow(2, attempt - 1)) + Math.random() * 250);
+      await sleep(backoffMs);
+    }
+  }
+
+  return { success: false, error: 'SendGrid error' };
 }
 
 function getEmailTemplate(type: EmailType, data: Record<string, any>, branding?: OfficeBranding): { subject: string; html: string } {
@@ -686,6 +735,7 @@ export async function sendEmailVerificationEmail(
     subject: template.subject,
     html: template.html,
     branding,
+    category: 'email_verification',
   });
 }
 
@@ -702,6 +752,7 @@ export async function sendWelcomeEmail(
     subject: template.subject,
     html: template.html,
     branding,
+    category: 'welcome',
   });
 }
 
