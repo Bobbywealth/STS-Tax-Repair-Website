@@ -24,6 +24,7 @@ import {
 type NotificationType = 
   | 'staff_request'
   | 'new_client'
+  | 'login_issue'
   | 'new_ticket'
   | 'ticket_response'
   | 'task_assigned'
@@ -53,6 +54,7 @@ interface Notification {
 const notificationIcons: Record<NotificationType, typeof Bell> = {
   staff_request: Users,
   new_client: User,
+  login_issue: AlertCircle,
   new_ticket: MessageSquare,
   ticket_response: MessageSquare,
   task_assigned: ClipboardList,
@@ -68,6 +70,7 @@ const notificationIcons: Record<NotificationType, typeof Bell> = {
 const notificationColors: Record<NotificationType, string> = {
   staff_request: 'text-purple-500',
   new_client: 'text-blue-500',
+  login_issue: 'text-red-500',
   new_ticket: 'text-orange-500',
   ticket_response: 'text-orange-500',
   task_assigned: 'text-yellow-500',
@@ -215,6 +218,8 @@ export function NotificationBell() {
         return '/manager?tab=requests';
       case 'new_client':
       case 'lead_created':
+        return '/clients';
+      case 'login_issue':
         return '/clients';
       case 'new_ticket':
       case 'ticket_response':

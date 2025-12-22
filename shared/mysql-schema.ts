@@ -1007,6 +1007,7 @@ export type AuditLog = typeof auditLogs.$inferSelect;
 export type NotificationType = 
   | 'staff_request'
   | 'new_client'
+  | 'login_issue'
   | 'new_ticket'
   | 'ticket_response'
   | 'task_assigned'

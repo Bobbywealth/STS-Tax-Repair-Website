@@ -1501,8 +1501,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .json({ message: "Account is deactivated. Please contact support." });
       }
 
+      // Notify admins when a client is blocked from logging in (deduped).
+      const notifyClientLoginIssue = async (reason: string) => {
+        try {
+          const clientOfficeId = (user as any)?.officeId || null;
+
+          // Determine recipients: office tax_office/admin + super_admin, fallback to global admins.
+          const allUsers = await mysqlStorage.getUsers();
+          const roleOf = (u: any) => (u.role || "").toLowerCase();
+          const isActive = (u: any) => u.isActive !== false;
+
+          let recipients: any[] = [];
+          if (clientOfficeId) {
+            recipients = allUsers.filter((u: any) => {
+              const r = roleOf(u);
+              if (!isActive(u)) return false;
+              if (r === "super_admin") return true;
+              return u.officeId === clientOfficeId && (r === "tax_office" || r === "admin");
+            });
+            if (recipients.length === 0) {
+              recipients = await mysqlStorage.getUsersByRole("admin");
+            }
+          } else {
+            recipients = await mysqlStorage.getUsersByRole("admin");
+          }
+
+          // Dedupe per recipient: don't create another notification within 30 minutes for the same client/reason.
+          for (const r of recipients) {
+            const [rows] = await mysqlPool.query(
+              `
+                SELECT id
+                FROM notifications
+                WHERE user_id = ?
+                  AND type = 'login_issue'
+                  AND resource_type = 'client'
+                  AND resource_id = ?
+                  AND message LIKE ?
+                  AND created_at > (NOW() - INTERVAL 30 MINUTE)
+                LIMIT 1
+              `,
+              [r.id, user.id, `%${reason}%`],
+            );
+
+            if (Array.isArray(rows) && rows.length > 0) continue;
+
+            await mysqlStorage.createNotification({
+              userId: r.id,
+              type: "login_issue" as any,
+              title: "Client login issue",
+              message: `${user.firstName || ""} ${user.lastName || ""}`.trim()
+                ? `${(user.firstName || "").trim()} ${(user.lastName || "").trim()} (${user.email}) is having trouble logging in: ${reason}`
+                : `${user.email} is having trouble logging in: ${reason}`,
+              link: "/clients",
+              resourceType: "client",
+              resourceId: user.id,
+            });
+          }
+        } catch (e) {
+          console.warn("[CLIENT-LOGIN] Failed to notify login issue (non-blocking):", e);
+        }
+      };
+
       // SECURITY: Enforce email verification before allowing login
       if (!user.emailVerifiedAt) {
+        // Notify office/admins so they can assist the client (resend verification / confirm email)
+        void notifyClientLoginIssue("Email not verified");
         return res.status(403).json({ 
           message: "Please verify your email address before logging in. Check your inbox for the verification link.",
           needsVerification: true,

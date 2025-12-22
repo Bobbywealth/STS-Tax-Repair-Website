@@ -13,6 +13,7 @@ import { Check, CheckCheck, ExternalLink, RefreshCw, Trash2 } from "lucide-react
 type NotificationType =
   | "staff_request"
   | "new_client"
+  | "login_issue"
   | "new_ticket"
   | "ticket_response"
   | "task_assigned"
@@ -42,6 +43,7 @@ interface Notification {
 const typeLabels: Record<NotificationType, string> = {
   staff_request: "Staff request",
   new_client: "New client",
+  login_issue: "Login issue",
   new_ticket: "New ticket",
   ticket_response: "Ticket response",
   task_assigned: "Task assigned",
@@ -57,6 +59,7 @@ const typeLabels: Record<NotificationType, string> = {
 const typeBadges: Record<NotificationType, string> = {
   staff_request: "bg-purple-100 text-purple-800",
   new_client: "bg-blue-100 text-blue-800",
+  login_issue: "bg-red-100 text-red-800",
   new_ticket: "bg-orange-100 text-orange-800",
   ticket_response: "bg-orange-100 text-orange-800",
   task_assigned: "bg-yellow-100 text-yellow-800",
@@ -75,6 +78,8 @@ function getDefaultLink(type: NotificationType, resourceId?: string): string {
       return "/manager?tab=requests";
     case "new_client":
     case "lead_created":
+      return "/clients";
+    case "login_issue":
       return "/clients";
     case "new_ticket":
     case "ticket_response":
