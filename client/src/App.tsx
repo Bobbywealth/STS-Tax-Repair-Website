@@ -98,6 +98,7 @@ const BookAppointmentPage = lazy(() => import("@/pages/BookAppointmentPage"));
 const StaffSignup = lazy(() => import("@/pages/StaffSignup"));
 const AgentManagement = lazy(() => import("@/pages/AgentManagement"));
 const AIAssistant = lazy(() => import("@/pages/AIAssistant"));
+const MarketingLinks = lazy(() => import("@/pages/MarketingLinks"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
 function PageLoader() {
@@ -235,6 +236,10 @@ function AdminRouter() {
         {/* Branding - Tax Office white-label customization */}
         <Route path="/branding">
           <PermissionRoute component={Branding} permission={PERMISSIONS.BRANDING_MANAGE} />
+        </Route>
+        {/* Marketing Links - Tax Office share links */}
+        <Route path="/marketing-links">
+          <PermissionRoute component={MarketingLinks} permission={PERMISSIONS.BRANDING_MANAGE} />
         </Route>
         {/* User Management - both short and long URL formats */}
         <Route path="/users">
