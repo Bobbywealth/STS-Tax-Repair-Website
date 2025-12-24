@@ -1834,28 +1834,60 @@ export class MySQLStorage implements IStorage {
     isGlobal?: boolean;
     clientId?: string;
   }): Promise<Ticket[]> {
-    // Join users to derive officeId since legacy tickets table may not have the column
-    const [rows] = await mysqlPool.query(
-      `SELECT 
-         t.id,
-         t.client_id AS clientId,
-         t.client_name AS clientName,
-         u.office_id AS officeId,
-         t.subject,
-         t.description,
-         t.category,
-         t.priority,
-         t.status,
-         t.assigned_to_id AS assignedToId,
-         t.assigned_to AS assignedTo,
-         t.internal_notes AS internalNotes,
-         t.resolved_at AS resolvedAt,
-         t.created_at AS createdAt,
-         t.updated_at AS updatedAt
-       FROM tickets t
-       LEFT JOIN users u ON u.id = t.client_id
-       ORDER BY t.created_at DESC`
-    );
+    // Join users to derive officeId since legacy tickets table may not have the column.
+    // Some deployments may also lack users.office_id; in that case, fall back gracefully.
+    let rows: any;
+    try {
+      const result = await mysqlPool.query(
+        `SELECT 
+           t.id,
+           t.client_id AS clientId,
+           t.client_name AS clientName,
+           u.office_id AS officeId,
+           t.subject,
+           t.description,
+           t.category,
+           t.priority,
+           t.status,
+           t.assigned_to_id AS assignedToId,
+           t.assigned_to AS assignedTo,
+           t.internal_notes AS internalNotes,
+           t.resolved_at AS resolvedAt,
+           t.created_at AS createdAt,
+           t.updated_at AS updatedAt
+         FROM tickets t
+         LEFT JOIN users u ON u.id = t.client_id
+         ORDER BY t.created_at DESC`,
+      );
+      rows = (result as any)[0];
+    } catch (err: any) {
+      const msg = String(err?.message || "");
+      if (msg.includes("Unknown column") && msg.includes("office_id")) {
+        const fallback = await mysqlPool.query(
+          `SELECT 
+             t.id,
+             t.client_id AS clientId,
+             t.client_name AS clientName,
+             NULL AS officeId,
+             t.subject,
+             t.description,
+             t.category,
+             t.priority,
+             t.status,
+             t.assigned_to_id AS assignedToId,
+             t.assigned_to AS assignedTo,
+             t.internal_notes AS internalNotes,
+             t.resolved_at AS resolvedAt,
+             t.created_at AS createdAt,
+             t.updated_at AS updatedAt
+           FROM tickets t
+           ORDER BY t.created_at DESC`,
+        );
+        rows = (fallback as any)[0];
+      } else {
+        throw err;
+      }
+    }
     let tickets = rows as Ticket[];
     
     if (options.clientId) {
