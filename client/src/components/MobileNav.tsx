@@ -35,8 +35,8 @@ export function MobileNav() {
   const navItems = isClient ? clientNavItems : staffNavItems;
 
   return (
-    <nav className="mobile-bottom-nav md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border safe-area-bottom">
-      <div className="flex items-center justify-around h-16 px-2">
+    <nav className="mobile-bottom-nav md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border/60 bg-background/80 supports-[backdrop-filter]:bg-background/60 backdrop-blur-xl saturate-150 safe-area-bottom">
+      <div className="flex items-center justify-around h-14 px-2">
         {navItems.map((item) => {
           const isActive = location === item.url || (item.url === "/dashboard" && location === "/") || (item.url === "/client-portal" && location === "/client-portal");
           return (
@@ -44,7 +44,7 @@ export function MobileNav() {
               <button
                 onClick={() => triggerHaptic('light')}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1 w-16 h-14 rounded-xl transition-all duration-200",
+                  "relative flex flex-col items-center justify-center gap-1 w-16 h-12 rounded-2xl transition-all duration-200",
                   isActive 
                     ? "text-emerald-500 bg-emerald-500/10" 
                     : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
@@ -57,7 +57,7 @@ export function MobileNav() {
                 )} />
                 <span className="text-[10px] font-medium">{item.title}</span>
                 {isActive && (
-                  <div className="absolute bottom-1 w-1 h-1 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
+                  <div className="absolute -bottom-0.5 w-6 h-0.5 rounded-full bg-emerald-500/90 shadow-[0_0_10px_rgba(16,185,129,0.35)]" />
                 )}
               </button>
             </Link>
@@ -65,7 +65,7 @@ export function MobileNav() {
         })}
         <button
           onClick={() => { triggerHaptic('light'); toggleSidebar(); }}
-          className="flex flex-col items-center justify-center gap-1 w-16 h-14 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all duration-200"
+          className="flex flex-col items-center justify-center gap-1 w-16 h-12 rounded-2xl text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all duration-200"
           data-testid="mobile-nav-menu"
         >
           <Menu className="h-5 w-5" />

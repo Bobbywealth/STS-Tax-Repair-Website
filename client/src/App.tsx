@@ -416,7 +416,7 @@ function AdminLayout() {
       <div className="flex h-screen w-full">
         <AppSidebar user={sidebarUser} />
         <div className="flex flex-col flex-1 overflow-hidden w-full">
-          <header className="flex items-center justify-between px-3 md:px-4 py-2 md:py-3 border-b border-border/50 md:border-border bg-background/95 sticky top-0 z-50 safe-area-top">
+          <header className="flex items-center justify-between px-3 md:px-4 py-2 md:py-3 border-b border-border/50 md:border-border bg-background/80 supports-[backdrop-filter]:bg-background/60 backdrop-blur-xl sticky top-0 z-50 safe-area-top">
             <SidebarTrigger data-testid="button-sidebar-toggle" />
             <div className="flex items-center gap-2 md:gap-3">
               <NotificationBell />
@@ -432,7 +432,7 @@ function AdminLayout() {
               <ThemeToggle />
             </div>
           </header>
-          <main className="flex-1 overflow-y-auto p-4 pb-20 md:pb-4">
+          <main className="flex-1 overflow-y-auto p-4 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] md:pb-4 bg-muted/30 md:bg-transparent">
             <div className="max-w-7xl mx-auto">
               <AdminRouter />
             </div>
