@@ -177,7 +177,7 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
             <img
               src={logoUrl}
               alt={`${companyName} Logo`}
-              className="w-16 h-16 object-contain"
+              className="w-24 h-24 object-contain drop-shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
             />
             <div className="mt-3 text-center">
               <div className="text-2xl font-semibold tracking-tight text-white">
@@ -188,9 +188,9 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
           </div>
 
           {/* Card */}
-          <div className="bg-white/[0.04] backdrop-blur-xl rounded-2xl border border-white/10 p-5 shadow-2xl">
+          <div className="bg-black/35 backdrop-blur-xl rounded-2xl border border-white/15 p-5 shadow-2xl">
             <Tabs defaultValue="client">
-              <TabsList className="grid w-full grid-cols-2 bg-white/5">
+              <TabsList className="grid w-full grid-cols-2 bg-white/10">
                 <TabsTrigger value="client" data-testid="pwa-tab-client">Client</TabsTrigger>
                 <TabsTrigger value="staff" data-testid="pwa-tab-staff">Staff</TabsTrigger>
               </TabsList>
@@ -209,7 +209,7 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
                         placeholder="you@example.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="pl-10 h-12 bg-white/5 border-white/10 text-white placeholder:text-white/40 rounded-xl focus:border-emerald-400/60 focus:ring-emerald-400/20 transition-all"
+                        className="pl-10 h-12 bg-black/30 border-white/20 text-white placeholder:text-white/65 rounded-xl focus:border-emerald-400/70 focus:ring-emerald-400/25 transition-all"
                         required
                         data-testid="pwa-input-email"
                       />
@@ -228,7 +228,7 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
                         placeholder="Enter your password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="pl-10 pr-10 h-12 bg-white/5 border-white/10 text-white placeholder:text-white/40 rounded-xl focus:border-emerald-400/60 focus:ring-emerald-400/20 transition-all"
+                        className="pl-10 pr-10 h-12 bg-black/30 border-white/20 text-white placeholder:text-white/65 rounded-xl focus:border-emerald-400/70 focus:ring-emerald-400/25 transition-all"
                         required
                         data-testid="pwa-input-password"
                       />
@@ -249,6 +249,7 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
                         id="remember-me"
                         checked={rememberMe}
                         onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                        className="scale-90 border-white/30 data-[state=checked]:border-emerald-500 data-[state=checked]:bg-emerald-500"
                         data-testid="pwa-checkbox-remember-client"
                       />
                       <Label htmlFor="remember-me" className="text-gray-200 text-sm cursor-pointer font-normal">
@@ -302,7 +303,7 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
                         placeholder="staff@company.com"
                         value={staffEmail}
                         onChange={(e) => setStaffEmail(e.target.value)}
-                        className="pl-10 h-12 bg-white/5 border-white/10 text-white placeholder:text-white/40 rounded-xl focus:border-amber-400/60 focus:ring-amber-400/20 transition-all"
+                        className="pl-10 h-12 bg-black/30 border-white/20 text-white placeholder:text-white/65 rounded-xl focus:border-amber-400/70 focus:ring-amber-400/25 transition-all"
                         required
                         data-testid="pwa-input-staff-email"
                       />
@@ -321,7 +322,7 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
                         placeholder="Enter your password"
                         value={staffPassword}
                         onChange={(e) => setStaffPassword(e.target.value)}
-                        className="pl-10 pr-10 h-12 bg-white/5 border-white/10 text-white placeholder:text-white/40 rounded-xl focus:border-amber-400/60 focus:ring-amber-400/20 transition-all"
+                        className="pl-10 pr-10 h-12 bg-black/30 border-white/20 text-white placeholder:text-white/65 rounded-xl focus:border-amber-400/70 focus:ring-amber-400/25 transition-all"
                         required
                         data-testid="pwa-input-staff-password"
                       />
@@ -341,6 +342,7 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
                       id="remember-me-staff"
                       checked={staffRememberMe}
                       onCheckedChange={(checked) => setStaffRememberMe(checked as boolean)}
+                      className="scale-90 border-white/30 data-[state=checked]:border-amber-400 data-[state=checked]:bg-amber-400"
                       data-testid="pwa-checkbox-remember-staff"
                     />
                     <Label htmlFor="remember-me-staff" className="text-gray-200 text-sm cursor-pointer font-normal">
