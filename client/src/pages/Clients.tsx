@@ -365,8 +365,11 @@ export default function Clients() {
       <div className="space-y-3">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Clients</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
+            {/* iOS-style large title on mobile */}
+            <h1 className="text-[34px] leading-[41px] font-bold tracking-tight sm:text-3xl sm:leading-tight">
+              Clients
+            </h1>
+            <p className="text-[15px] text-muted-foreground mt-0.5">
               {isLoading ? "Loading..." : `${clients.length} for ${selectedYear}`}
             </p>
           </div>
@@ -441,7 +444,7 @@ export default function Clients() {
             placeholder="Search name, email, phone..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 pr-10"
+            className="pl-10 pr-10 h-11 rounded-2xl bg-background/70 border-border/70"
             data-testid="input-search-clients"
           />
           {searchQuery && (
@@ -498,7 +501,7 @@ export default function Clients() {
               onClick={() => setActiveFilter(filter.value)}
               data-testid={`filter-${filter.value.toLowerCase().replace('_', '-')}`}
               className={`
-                flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap
+                flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all whitespace-nowrap
                 ${activeFilter === filter.value 
                   ? 'bg-primary text-primary-foreground shadow-md shadow-primary/25' 
                   : 'bg-card hover-elevate border border-border/50'

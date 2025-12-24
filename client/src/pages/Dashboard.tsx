@@ -579,11 +579,14 @@ export default function Dashboard() {
             {/* Mobile: Compact greeting with inline clock */}
             <div className="md:hidden">
               <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Zap className="h-6 w-6 text-amber-400" />
-                  <h1 className="text-xl font-bold tracking-tight">
-                    {getGreeting()}!
+                <div className="flex flex-col">
+                  {/* iOS-style large title */}
+                  <h1 className="text-[34px] leading-[41px] font-bold tracking-tight">
+                    Dashboard
                   </h1>
+                  <p className="text-sm text-white/70 mt-0.5">
+                    {getGreeting()} • {portalCompanyName}
+                  </p>
                 </div>
                 <LiveClockWidget />
               </div>
