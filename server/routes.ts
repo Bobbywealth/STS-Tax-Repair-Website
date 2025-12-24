@@ -68,6 +68,7 @@ import nodemailer from "nodemailer";
 import twilio from "twilio";
 import { randomUUID } from "crypto";
 import aiRoutes from "./ai-routes";
+import { sendPushNotifications, isAPNsConfigured } from "./apns-service";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const appUrl =
@@ -6607,6 +6608,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isCustom: !!branding
       };
 
+      // Normalize logoUrl so internal object keys like "objects/..." or "ftp/..." (no leading slash)
+      // become valid absolute paths ("/objects/..." or "/ftp/...") before downstream transformation.
+      if (responseBranding.logoUrl && typeof responseBranding.logoUrl === 'string') {
+        const raw = responseBranding.logoUrl.trim();
+        if (raw && !raw.startsWith('http') && !raw.startsWith('/')) {
+          responseBranding.logoUrl = `/${raw}`;
+        } else {
+          responseBranding.logoUrl = raw;
+        }
+      }
+
       // Transform logoUrl to a proxy endpoint if it's an internal path
       if (
         responseBranding.logoUrl &&
@@ -6619,6 +6631,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(responseBranding);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ===========================================
+  // ACCOUNT DELETION (App Store Guideline 5.1.1(v))
+  // ===========================================
+  app.delete("/api/account", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId || req.session?.userId || req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const existingUser = await storage.getUser(userId);
+      if (!existingUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Scrub/anonymize the account and disable sign-in (meets deletion requirement by removing personal data).
+      // We keep the row to avoid breaking historical records (payments, filings, tickets).
+      await (storage as any).deleteUserAccount(userId);
+
+      // Log out: clear session + redirect path for webviews.
+      try {
+        if (req.session) {
+          req.session.destroy(() => undefined);
+        }
+      } catch {
+        // ignore
+      }
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Account deletion error:", error);
+      res.status(500).json({ error: error.message || "Failed to delete account" });
     }
   });
 
@@ -8192,6 +8239,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register AI Assistant routes
   app.use('/api/ai', aiRoutes);
+
+  // ===========================================
+  // PUSH NOTIFICATION ENDPOINTS
+  // ===========================================
+
+  // Register device token for push notifications
+  app.post("/api/push/register", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId || req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const { deviceToken, deviceType = 'ios', deviceName, appVersion } = req.body;
+
+      if (!deviceToken || typeof deviceToken !== 'string') {
+        return res.status(400).json({ error: "Device token is required" });
+      }
+
+      const token = await mysqlStorage.registerDeviceToken({
+        userId,
+        deviceToken,
+        deviceType: deviceType as 'ios' | 'android' | 'web',
+        deviceName: deviceName || 'Unknown Device',
+        appVersion: appVersion || '1.0.0',
+      });
+
+      res.json({ success: true, token });
+    } catch (error: any) {
+      console.error("[PUSH] Error registering device token:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Unregister device token
+  app.post("/api/push/unregister", isAuthenticated, async (req: any, res) => {
+    try {
+      const { deviceToken } = req.body;
+
+      if (!deviceToken) {
+        return res.status(400).json({ error: "Device token is required" });
+      }
+
+      await mysqlStorage.unregisterDeviceToken(deviceToken);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("[PUSH] Error unregistering device token:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get user's registered devices (for settings page)
+  app.get("/api/push/devices", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId || req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const devices = await mysqlStorage.getDeviceTokensForUser(userId);
+      res.json(devices);
+    } catch (error: any) {
+      console.error("[PUSH] Error fetching devices:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

@@ -240,6 +240,10 @@ export interface IStorage {
 
   // User theme preference
   updateUserThemePreference(userId: string, theme: ThemePreference): Promise<User | undefined>;
+
+  // Account deletion (App Store 5.1.1(v))
+  // Scrubs/anonymizes user data and disables access.
+  deleteUserAccount(userId: string): Promise<void>;
 }
 
 import { mysqlStorage } from "./mysql-storage";

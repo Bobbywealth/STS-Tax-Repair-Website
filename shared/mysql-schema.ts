@@ -1053,6 +1053,37 @@ export const insertNotificationSchema = createInsertSchema(notifications).omit({
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type Notification = typeof notifications.$inferSelect;
 
+// Push Notification Device Tokens Table - stores APNs device tokens for push notifications
+export const pushDeviceTokens = mysqlTable(
+  "push_device_tokens",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+    userId: varchar("user_id", { length: 36 }).notNull(),
+    deviceToken: varchar("device_token", { length: 500 }).notNull().unique(), // APNs device token
+    deviceType: varchar("device_type", { length: 20 }).default("ios").$type<'ios' | 'android' | 'web'>(),
+    deviceName: varchar("device_name", { length: 255 }), // e.g., "John's iPhone"
+    appVersion: varchar("app_version", { length: 50 }),
+    isActive: boolean("is_active").default(true),
+    lastUsedAt: timestamp("last_used_at").defaultNow(),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => ({
+    userIdx: index("idx_push_tokens_user").on(table.userId),
+    tokenIdx: index("idx_push_tokens_token").on(table.deviceToken),
+    activeIdx: index("idx_push_tokens_active").on(table.isActive),
+  }),
+);
+
+export const insertPushDeviceTokenSchema = createInsertSchema(pushDeviceTokens).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertPushDeviceToken = z.infer<typeof insertPushDeviceTokenSchema>;
+export type PushDeviceToken = typeof pushDeviceTokens.$inferSelect;
+
 // Homepage Agents Table - agents displayed on the public homepage
 export const homePageAgents = mysqlTable("home_page_agents", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),

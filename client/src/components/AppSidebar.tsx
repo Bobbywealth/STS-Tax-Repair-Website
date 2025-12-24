@@ -18,6 +18,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { usePermissions, PERMISSIONS } from "@/hooks/usePermissions";
 import { useBranding } from "@/hooks/useBranding";
+import { useEffect, useMemo, useState } from "react";
 
 type UserRole = 'client' | 'agent' | 'tax_office' | 'admin' | 'super_admin';
 
@@ -72,7 +73,21 @@ export function AppSidebar({ user }: AppSidebarProps) {
   // while office staff still see their office branding inside the CRM.
   const { branding } = useBranding(user?.officeId || undefined);
   const { setOpenMobile, isMobile } = useSidebar();
-  const logoUrl = branding?.logoUrl || defaultLogoUrl;
+  const resolvedLogoUrl = useMemo(() => {
+    const raw = branding?.logoUrl;
+    if (!raw) return defaultLogoUrl;
+    if (raw.startsWith("http")) return raw;
+    if (raw.startsWith("/api/")) return raw;
+    // If branding is office-scoped, always use the proxy endpoint to avoid broken internal object paths.
+    if ((branding as any)?.officeId) return `/api/offices/${(branding as any).officeId}/logo`;
+    // Normalize internal paths that may be missing a leading slash.
+    return raw.startsWith("/") ? raw : `/${raw}`;
+  }, [branding]);
+
+  const [logoSrc, setLogoSrc] = useState(resolvedLogoUrl);
+  useEffect(() => {
+    setLogoSrc(resolvedLogoUrl);
+  }, [resolvedLogoUrl]);
   const companyName = branding?.companyName || 'STS TaxRepair';
   const userRole = (user?.role?.toLowerCase() || 'client') as UserRole;
   
@@ -137,9 +152,13 @@ export function AppSidebar({ user }: AppSidebarProps) {
       <SidebarHeader className="py-3 sm:py-6 px-3 sm:px-4 border-b border-emerald-500/20 border-b-emerald-500/10 sm:border-b-emerald-500/20 flex-shrink-0 relative z-10">
         <div className="sidebar-logo-container flex items-center justify-center flex-shrink-0">
           <img 
-            src={logoUrl} 
+            src={logoSrc}
             alt={`${companyName} Logo`}
             className="h-20 w-auto object-contain flex-shrink-0 drop-shadow-[0_0_10px_rgba(16,185,129,0.3)]"
+            onError={() => {
+              // If a custom logo URL is broken/blocked (common in iOS webviews), fall back to default.
+              if (logoSrc !== defaultLogoUrl) setLogoSrc(defaultLogoUrl);
+            }}
           />
         </div>
       </SidebarHeader>

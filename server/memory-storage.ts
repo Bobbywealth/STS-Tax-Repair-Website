@@ -69,6 +69,39 @@ export class MemoryStorage {
     void this.seed();
   }
 
+  // Account deletion (App Store 5.1.1(v))
+  async deleteUserAccount(userId: string): Promise<void> {
+    // Remove any stored tokens for the user
+    for (const [token, value] of this.emailVerificationTokens.entries()) {
+      if (value.userId === userId) this.emailVerificationTokens.delete(token);
+    }
+    for (const [token, value] of this.passwordResetTokens.entries()) {
+      if (value.userId === userId) this.passwordResetTokens.delete(token);
+    }
+
+    // Scrub and deactivate (keep row so UI doesn't explode if something references it)
+    const user = this.users.get(userId);
+    if (!user) return;
+    this.users.set(userId, {
+      ...user,
+      email: `deleted+${userId}@ststaxrepair.invalid`,
+      firstName: null,
+      lastName: null,
+      profileImageUrl: null,
+      phone: null,
+      address: null,
+      city: null,
+      state: null,
+      zipCode: null,
+      country: null,
+      referralSource: null,
+      passwordHash: null,
+      emailVerifiedAt: null,
+      isActive: false,
+      updatedAt: new Date(),
+    });
+  }
+
   private async seed() {
     const officeId = randomUUID();
     const office: Office = {

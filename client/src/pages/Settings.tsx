@@ -8,9 +8,20 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { Loader2, Upload, Camera } from "lucide-react";
+import { Loader2, Upload, Camera, Trash2 } from "lucide-react";
 import type { User, Office, OfficeBranding, NotificationPreferences } from "@shared/mysql-schema";
 
 export default function Settings() {
@@ -233,6 +244,29 @@ export default function Settings() {
       toast({
         title: "Save Failed",
         description: error.message || "Could not update company settings.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteAccountMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("DELETE", "/api/account");
+      return response.json();
+    },
+    onSuccess: () => {
+      // Clear cached user state and redirect out of the authenticated app
+      queryClient.clear();
+      toast({
+        title: "Account deleted",
+        description: "Your account has been deleted. You have been logged out.",
+      });
+      window.location.href = "/api/logout";
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Delete Failed",
+        description: error.message || "Could not delete your account. Please try again.",
         variant: "destructive",
       });
     },
@@ -648,6 +682,57 @@ export default function Settings() {
                   "Save Changes"
                 )}
               </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="border-destructive/30">
+            <CardHeader>
+              <CardTitle className="text-destructive">Danger Zone</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Deleting your account will permanently remove your profile information and disable access to the app.
+              </p>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="destructive"
+                    disabled={deleteAccountMutation.isPending}
+                    data-testid="button-delete-account"
+                  >
+                    {deleteAccountMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Deleting...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete Account
+                      </>
+                    )}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete your account?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. Your account will be deleted and you will be logged out.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={deleteAccountMutation.isPending}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => deleteAccountMutation.mutate()}
+                      disabled={deleteAccountMutation.isPending}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      data-testid="confirm-delete-account"
+                    >
+                      Delete account
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </CardContent>
           </Card>
         </TabsContent>

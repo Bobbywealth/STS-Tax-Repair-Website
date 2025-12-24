@@ -48,6 +48,8 @@ import {
   type InsertOfficeBranding,
   type AgentClientAssignment,
   type InsertAgentClientAssignment,
+  type PushDeviceToken,
+  type InsertPushDeviceToken,
   type TicketMessage,
   type InsertTicketMessage,
   type AuditLog,
@@ -89,7 +91,8 @@ import {
   ticketMessages as ticketMessagesTable,
   auditLogs as auditLogsTable,
   staffRequests as staffRequestsTable,
-  notifications as notificationsTable
+  notifications as notificationsTable,
+  pushDeviceTokens as pushDeviceTokensTable
 } from "@shared/mysql-schema";
 import { mysqlPool } from "./mysql-db";
 import { randomUUID } from "crypto";
@@ -1983,6 +1986,63 @@ export class MySQLStorage implements IStorage {
     return result;
   }
 
+  // Account deletion (App Store 5.1.1(v))
+  async deleteUserAccount(userId: string): Promise<void> {
+    // Best-effort cleanup of user-owned rows. We do not hard-delete the `users` row to avoid
+    // breaking legacy tables that reference client_id without FK constraints.
+    // Instead we anonymize and deactivate the user, removing personal data and preventing login.
+    const deletedEmail = `deleted+${userId}@ststaxrepair.invalid`;
+
+    // Remove tokens/prefs that enable access or notifications
+    try {
+      await mysqlDb.delete(notificationPreferencesTable).where(eq(notificationPreferencesTable.userId, userId));
+    } catch {
+      // ignore
+    }
+    try {
+      await mysqlDb.delete(passwordResetTokensTable).where(eq(passwordResetTokensTable.userId, userId));
+    } catch {
+      // ignore
+    }
+    try {
+      await mysqlDb.delete(emailVerificationTokensTable).where(eq(emailVerificationTokensTable.userId, userId));
+    } catch {
+      // ignore
+    }
+    try {
+      await mysqlDb.delete(pushDeviceTokensTable).where(eq(pushDeviceTokensTable.userId, userId));
+    } catch {
+      // ignore
+    }
+    try {
+      await mysqlDb.delete(notificationsTable).where(eq(notificationsTable.userId, userId));
+    } catch {
+      // ignore
+    }
+
+    // Anonymize and disable the account
+    await mysqlDb
+      .update(usersTable)
+      .set({
+        email: deletedEmail,
+        firstName: null,
+        lastName: null,
+        profileImageUrl: null,
+        phone: null,
+        address: null,
+        city: null,
+        state: null,
+        zipCode: null,
+        country: null,
+        referralSource: null,
+        passwordHash: null,
+        emailVerifiedAt: null,
+        isActive: false,
+        updatedAt: new Date(),
+      })
+      .where(eq(usersTable.id, userId));
+  }
+
   // ============================================================================
   // STAFF REQUESTS - Staff sign-up request management
   // ============================================================================
@@ -2421,6 +2481,115 @@ export class MySQLStorage implements IStorage {
         .set({ sortOrder: i, updatedAt: new Date() })
         .where(eq(homePageAgentsTable.id, agentIds[i]));
     }
+  }
+
+  // ============================================================================
+  // PUSH NOTIFICATION DEVICE TOKENS
+  // ============================================================================
+
+  async registerDeviceToken(data: InsertPushDeviceToken): Promise<PushDeviceToken> {
+    const id = randomUUID();
+    const normalizedDeviceType: 'ios' | 'android' | 'web' | null =
+      data.deviceType === 'ios' || data.deviceType === 'android' || data.deviceType === 'web'
+        ? data.deviceType
+        : (data.deviceType == null ? null : 'ios');
+
+    const tokenData = {
+      id,
+      userId: data.userId,
+      deviceToken: data.deviceToken,
+      deviceType: normalizedDeviceType ?? 'ios',
+      deviceName: data.deviceName ?? null,
+      appVersion: data.appVersion ?? null,
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      lastUsedAt: new Date(),
+    };
+
+    // Check if token already exists
+    const [existing] = await mysqlDb
+      .select()
+      .from(pushDeviceTokensTable)
+      .where(eq(pushDeviceTokensTable.deviceToken, data.deviceToken));
+
+    if (existing) {
+      // Update existing token
+      const updated = { ...tokenData, id: existing.id };
+      await mysqlDb
+        .update(pushDeviceTokensTable)
+        .set({
+          userId: data.userId,
+          deviceType: tokenData.deviceType,
+          deviceName: tokenData.deviceName,
+          appVersion: tokenData.appVersion,
+          isActive: true,
+          lastUsedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(pushDeviceTokensTable.id, existing.id));
+      return { ...existing, ...updated };
+    }
+
+    // Create new token
+    await mysqlDb.insert(pushDeviceTokensTable).values(tokenData);
+    const [result] = await mysqlDb
+      .select()
+      .from(pushDeviceTokensTable)
+      .where(eq(pushDeviceTokensTable.id, id));
+    return result!;
+  }
+
+  async getDeviceTokensForUser(userId: string): Promise<PushDeviceToken[]> {
+    return await mysqlDb
+      .select()
+      .from(pushDeviceTokensTable)
+      .where(and(
+        eq(pushDeviceTokensTable.userId, userId),
+        eq(pushDeviceTokensTable.isActive, true)
+      ));
+  }
+
+  async unregisterDeviceToken(deviceToken: string): Promise<boolean> {
+    const [existing] = await mysqlDb
+      .select()
+      .from(pushDeviceTokensTable)
+      .where(eq(pushDeviceTokensTable.deviceToken, deviceToken));
+
+    if (!existing) {
+      return false;
+    }
+
+    await mysqlDb
+      .update(pushDeviceTokensTable)
+      .set({
+        isActive: false,
+        updatedAt: new Date(),
+      })
+      .where(eq(pushDeviceTokensTable.deviceToken, deviceToken));
+    return true;
+  }
+
+  async removeInvalidDeviceTokens(tokens: string[]): Promise<void> {
+    if (tokens.length === 0) return;
+    await mysqlDb
+      .update(pushDeviceTokensTable)
+      .set({
+        isActive: false,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(pushDeviceTokensTable.isActive, true),
+          // Note: Drizzle doesn't support IN() directly, so we'll use a workaround
+        )
+      );
+    // Use raw SQL for IN clause
+    const placeholders = tokens.map(() => '?').join(',');
+    await mysqlPool.execute(
+      `UPDATE push_device_tokens SET is_active = false, updated_at = NOW() WHERE device_token IN (${placeholders}) AND is_active = true`,
+      tokens
+    );
   }
 }
 

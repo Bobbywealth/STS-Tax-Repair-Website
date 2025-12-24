@@ -91,11 +91,21 @@ export default function Reports() {
       </div>
 
       {isError && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Unable to load reports</AlertTitle>
-          <AlertDescription>{(error as any)?.message || "Something went wrong"}</AlertDescription>
-        </Alert>
+        (() => {
+          const message = (error as any)?.message || "Something went wrong";
+          const isAuthError = typeof message === "string" && (message.startsWith("401:") || message.startsWith("403:"));
+          return (
+            <Alert variant={isAuthError ? "default" : "destructive"}>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>{isAuthError ? "Reports access required" : "Unable to load reports"}</AlertTitle>
+              <AlertDescription>
+                {isAuthError
+                  ? "Reports are available to staff accounts. Please sign in with an office/staff demo account to view metrics."
+                  : message}
+              </AlertDescription>
+            </Alert>
+          );
+        })()
       )}
 
       {isLoading ? (
