@@ -1835,15 +1835,18 @@ export class MySQLStorage implements IStorage {
     clientId?: string;
   }): Promise<Ticket[]> {
     // Join users to derive officeId since legacy tickets table may not have the column.
-    // Some deployments may also lack users.office_id; in that case, fall back gracefully.
-    let rows: any;
-    try {
-      const result = await mysqlPool.query(
-        `SELECT 
+    // Some deployments may also lack users.office_id and/or tickets.internal_notes.
+    // Fall back gracefully by retrying the SELECT with missing columns replaced by NULL.
+    const buildSql = (includeOfficeId: boolean, includeInternalNotes: boolean) => {
+      const officeSelect = includeOfficeId ? "u.office_id AS officeId," : "NULL AS officeId,";
+      const internalNotesSelect = includeInternalNotes ? "t.internal_notes AS internalNotes," : "NULL AS internalNotes,";
+      // If we are not selecting officeId from users, no need to join users at all.
+      const joinUsers = includeOfficeId ? "LEFT JOIN users u ON u.id = t.client_id" : "";
+      return `SELECT 
            t.id,
            t.client_id AS clientId,
            t.client_name AS clientName,
-           u.office_id AS officeId,
+           ${officeSelect}
            t.subject,
            t.description,
            t.category,
@@ -1851,39 +1854,31 @@ export class MySQLStorage implements IStorage {
            t.status,
            t.assigned_to_id AS assignedToId,
            t.assigned_to AS assignedTo,
-           t.internal_notes AS internalNotes,
+           ${internalNotesSelect}
            t.resolved_at AS resolvedAt,
            t.created_at AS createdAt,
            t.updated_at AS updatedAt
          FROM tickets t
-         LEFT JOIN users u ON u.id = t.client_id
-         ORDER BY t.created_at DESC`,
-      );
-      rows = (result as any)[0];
+         ${joinUsers}
+         ORDER BY t.created_at DESC`;
+    };
+
+    const run = async (includeOfficeId: boolean, includeInternalNotes: boolean) => {
+      const result = await mysqlPool.query(buildSql(includeOfficeId, includeInternalNotes));
+      return (result as any)[0];
+    };
+
+    let rows: any;
+    try {
+      rows = await run(true, true);
     } catch (err: any) {
       const msg = String(err?.message || "");
-      if (msg.includes("Unknown column") && msg.includes("office_id")) {
-        const fallback = await mysqlPool.query(
-          `SELECT 
-             t.id,
-             t.client_id AS clientId,
-             t.client_name AS clientName,
-             NULL AS officeId,
-             t.subject,
-             t.description,
-             t.category,
-             t.priority,
-             t.status,
-             t.assigned_to_id AS assignedToId,
-             t.assigned_to AS assignedTo,
-             t.internal_notes AS internalNotes,
-             t.resolved_at AS resolvedAt,
-             t.created_at AS createdAt,
-             t.updated_at AS updatedAt
-           FROM tickets t
-           ORDER BY t.created_at DESC`,
-        );
-        rows = (fallback as any)[0];
+      const missingOfficeId = msg.includes("Unknown column") && msg.includes("office_id");
+      const missingInternalNotes = msg.includes("Unknown column") && msg.includes("internal_notes");
+
+      // Retry with whichever columns are missing removed.
+      if (missingOfficeId || missingInternalNotes) {
+        rows = await run(!missingOfficeId, !missingInternalNotes);
       } else {
         throw err;
       }
