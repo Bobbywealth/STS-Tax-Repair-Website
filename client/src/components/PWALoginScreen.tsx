@@ -390,9 +390,7 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
             </Tabs>
           </motion.div>
 
-          <div className="mt-6 text-center">
-            <p className="text-xs text-white/40">Maximum Refund Guaranteed</p>
-          </div>
+          <div className="mt-6" />
         </motion.div>
       </div>
     </div>
