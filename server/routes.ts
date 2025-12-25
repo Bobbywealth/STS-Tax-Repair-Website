@@ -1610,8 +1610,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // SECURITY: Enforce email verification before allowing login
       if (!user.emailVerifiedAt) {
-        // Notify office/admins so they can assist the client (resend verification / confirm email)
-        void notifyClientLoginIssue("Email not verified");
+        // Do NOT create admin notifications for "Email not verified".
+        // This is an expected onboarding state and can create noisy alert spam on busy systems.
         return res.status(403).json({ 
           message: "Please verify your email address before logging in. Check your inbox for the verification link.",
           needsVerification: true,
