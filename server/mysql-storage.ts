@@ -1769,11 +1769,14 @@ export class MySQLStorage implements IStorage {
     officeId?: string;
     isGlobal?: boolean;
   }): Promise<User[]> {
+    // Use raw SQL for broader compatibility with legacy schemas.
+    // Some deployments may be missing columns defined in Drizzle schema (e.g. office_id),
+    // which can cause SELECT(column) failures when using mysqlDb.select().
     if (options.isGlobal) {
-      return await mysqlDb
-        .select()
-        .from(usersTable)
-        .where(eq(usersTable.role, 'client'));
+      const [rows] = await mysqlPool.query(
+        `SELECT * FROM users WHERE role = 'client'`
+      );
+      return rows as User[];
     }
     
     if (options.agentClientIds && options.agentClientIds.length > 0) {
@@ -1785,13 +1788,21 @@ export class MySQLStorage implements IStorage {
     }
     
     if (options.officeId) {
-      return await mysqlDb
-        .select()
-        .from(usersTable)
-        .where(and(
-          eq(usersTable.role, 'client'),
-          eq(usersTable.officeId, options.officeId)
-        ));
+      try {
+        const [rows] = await mysqlPool.query(
+          `SELECT * FROM users WHERE role = 'client' AND office_id = ?`,
+          [options.officeId],
+        );
+        return rows as User[];
+      } catch (err: any) {
+        const msg = String(err?.message || "");
+        if (msg.includes("Unknown column") && msg.includes("office_id")) {
+          // Can't scope by office without office_id column; fall back to all clients.
+          const [rows] = await mysqlPool.query(`SELECT * FROM users WHERE role = 'client'`);
+          return rows as User[];
+        }
+        throw err;
+      }
     }
     
     return [];
@@ -1803,10 +1814,23 @@ export class MySQLStorage implements IStorage {
     isGlobal?: boolean;
   }): Promise<Payment[]> {
     if (options.isGlobal) {
-      return await mysqlDb
-        .select()
-        .from(paymentsTable)
-        .orderBy(desc(paymentsTable.createdAt));
+      try {
+        // Prefer Drizzle when schema matches.
+        return await mysqlDb
+          .select()
+          .from(paymentsTable)
+          .orderBy(desc(paymentsTable.createdAt));
+      } catch (err: any) {
+        const msg = String(err?.message || "");
+        if (msg.includes("Unknown column") && msg.includes("office_id")) {
+          // Legacy schema without office_id in payments: fall back to raw query.
+          const [rows] = await mysqlPool.query(
+            `SELECT * FROM payments ORDER BY created_at DESC`,
+          );
+          return rows as Payment[];
+        }
+        throw err;
+      }
     }
     
     if (options.agentClientIds && options.agentClientIds.length > 0) {
@@ -1818,11 +1842,22 @@ export class MySQLStorage implements IStorage {
     }
     
     if (options.officeId) {
-      return await mysqlDb
-        .select()
-        .from(paymentsTable)
-        .where(eq(paymentsTable.officeId, options.officeId))
-        .orderBy(desc(paymentsTable.createdAt));
+      try {
+        return await mysqlDb
+          .select()
+          .from(paymentsTable)
+          .where(eq(paymentsTable.officeId, options.officeId))
+          .orderBy(desc(paymentsTable.createdAt));
+      } catch (err: any) {
+        const msg = String(err?.message || "");
+        if (msg.includes("Unknown column") && msg.includes("office_id")) {
+          const [rows] = await mysqlPool.query(
+            `SELECT * FROM payments ORDER BY created_at DESC`,
+          );
+          return rows as Payment[];
+        }
+        throw err;
+      }
     }
     
     return [];
