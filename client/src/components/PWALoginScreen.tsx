@@ -177,7 +177,7 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
             <img
               src={logoUrl}
               alt={`${companyName} Logo`}
-              className="w-24 h-24 object-contain drop-shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
+              className="w-[min(40vw,160px)] h-[min(40vw,160px)] object-contain drop-shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
             />
             <div className="mt-3 text-center">
               <div className="text-2xl font-semibold tracking-tight text-white">
