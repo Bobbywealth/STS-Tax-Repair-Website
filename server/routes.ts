@@ -1261,7 +1261,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin/Staff Login (email/password) - for non-Replit environments
   app.post("/api/admin/login", async (req: any, res) => {
     try {
-      const { email, password } = req.body;
+      const { email, password, rememberMe } = req.body;
 
       if (!email || !password) {
         return res
@@ -1307,6 +1307,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.session.userId = user.id;
       req.session.userRole = user.role;
       req.session.isAdminLogin = true;
+      // "Remember me" = persistent cookie (30 days). Otherwise session cookie.
+      try {
+        req.session.cookie.maxAge = rememberMe ? 1000 * 60 * 60 * 24 * 30 : null;
+      } catch {
+        // ignore
+      }
 
       // Explicitly save session to ensure it persists
       await new Promise<void>((resolve, reject) => {
@@ -1502,7 +1508,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Client Login (email/password) - public endpoint
   app.post("/api/client-login", async (req: any, res) => {
     try {
-      const { email, password } = req.body;
+      const { email, password, rememberMe } = req.body;
 
       if (!email || !password) {
         return res
@@ -1624,6 +1630,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.session.userRole = user.role;
       req.session.isClientLogin = true;
       req.session.isAdminLogin = false;
+      // "Remember me" = persistent cookie (30 days). Otherwise session cookie.
+      try {
+        req.session.cookie.maxAge = rememberMe ? 1000 * 60 * 60 * 24 * 30 : null;
+      } catch {
+        // ignore
+      }
 
       // Explicitly save session to ensure it persists
       await new Promise<void>((resolve, reject) => {

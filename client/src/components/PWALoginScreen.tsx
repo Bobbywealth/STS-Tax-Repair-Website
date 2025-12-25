@@ -62,7 +62,7 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, rememberMe }),
       });
 
       const data = await response.json();
@@ -115,7 +115,7 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ email: staffEmail, password: staffPassword }),
+        body: JSON.stringify({ email: staffEmail, password: staffPassword, rememberMe: staffRememberMe }),
       });
 
       const data = await response.json();
