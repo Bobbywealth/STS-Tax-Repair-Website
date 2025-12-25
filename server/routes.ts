@@ -6555,6 +6555,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // OFFICE BRANDING ENDPOINTS (White-labeling)
   // ===========================================
 
+  // ===========================================
+  // BUILD / VERSION (debug helper for deployments)
+  // ===========================================
+  // Render exposes git metadata env vars when connected to GitHub.
+  // This endpoint lets us verify the running backend matches the latest commit.
+  app.get("/api/version", (_req, res) => {
+    res.json({
+      commit:
+        process.env.RENDER_GIT_COMMIT ||
+        process.env.GIT_COMMIT ||
+        process.env.SOURCE_VERSION ||
+        null,
+      branch: process.env.RENDER_GIT_BRANCH || null,
+      serviceId: process.env.RENDER_SERVICE_ID || null,
+      deployId: process.env.RENDER_DEPLOY_ID || null,
+      node: process.version,
+      ts: new Date().toISOString(),
+    });
+  });
+
   // Default STS branding for fallback
   const DEFAULT_BRANDING: Partial<OfficeBranding> = {
     companyName: 'STS TaxRepair',
