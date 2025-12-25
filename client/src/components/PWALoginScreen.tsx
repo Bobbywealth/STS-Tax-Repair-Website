@@ -180,7 +180,7 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
           transition={{ duration: 0.35, ease: "easeOut" }}
         >
           {/* Header */}
-          <div className="flex flex-col items-center mb-6">
+          <div className="flex flex-col items-center mb-4">
             <motion.img
               src={logoUrl}
               alt={`${companyName} Logo`}
@@ -189,7 +189,7 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
               animate={reduceMotion ? undefined : { opacity: 1, scale: 1 }}
               transition={{ duration: 0.4, ease: "easeOut" }}
             />
-            <div className="mt-3 text-center">
+            <div className="mt-1 text-center">
               <div className="text-2xl font-semibold tracking-tight text-white">
                 {companyName}
               </div>
