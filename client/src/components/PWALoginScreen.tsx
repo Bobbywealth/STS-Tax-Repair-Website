@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,6 +29,7 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
   const { saveAuthToken, saveCredentials } = useAuthStorage();
   const { isOnline, requestManualSync } = usePWA();
   const { branding } = useBranding();
+  const reduceMotion = useReducedMotion();
   const logoUrl = branding?.logoUrl || defaultLogoUrl;
   const companyName = branding?.companyName || "STS TaxRepair";
   const officeSlug = new URLSearchParams(window.location.search).get('_office') || undefined;
@@ -171,13 +173,21 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
 
       {/* Content */}
       <div className="relative h-full flex flex-col items-center justify-center p-6 overflow-y-auto">
-        <div className="w-full max-w-sm">
+        <motion.div
+          className="w-full max-w-sm"
+          initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+          animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
+        >
           {/* Header */}
           <div className="flex flex-col items-center mb-6">
-            <img
+            <motion.img
               src={logoUrl}
               alt={`${companyName} Logo`}
               className="w-[clamp(160px,80vw,320px)] h-[clamp(160px,80vw,320px)] object-contain drop-shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
+              initial={reduceMotion ? false : { opacity: 0, scale: 0.96 }}
+              animate={reduceMotion ? undefined : { opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
             />
             <div className="mt-3 text-center">
               <div className="text-2xl font-semibold tracking-tight text-white">
@@ -188,7 +198,12 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
           </div>
 
           {/* Card */}
-          <div className="bg-black/35 backdrop-blur-xl rounded-2xl border border-white/15 p-5 shadow-2xl">
+          <motion.div
+            className="bg-black/35 backdrop-blur-xl rounded-2xl border border-white/15 p-5 shadow-2xl"
+            initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+            animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: 0.08, ease: "easeOut" }}
+          >
             <Tabs defaultValue="client">
               <TabsList className="grid w-full grid-cols-2 bg-white/10">
                 <TabsTrigger value="client" data-testid="pwa-tab-client">Client</TabsTrigger>
@@ -361,12 +376,12 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
                 </form>
               </TabsContent>
             </Tabs>
-          </div>
+          </motion.div>
 
           <div className="mt-6 text-center">
             <p className="text-xs text-white/40">Maximum Refund Guaranteed</p>
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );
