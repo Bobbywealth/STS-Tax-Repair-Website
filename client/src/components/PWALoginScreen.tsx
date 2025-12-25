@@ -205,9 +205,21 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
             transition={{ duration: 0.35, delay: 0.08, ease: "easeOut" }}
           >
             <Tabs defaultValue="client">
-              <TabsList className="grid w-full grid-cols-2 bg-white/10">
-                <TabsTrigger value="client" data-testid="pwa-tab-client">Client</TabsTrigger>
-                <TabsTrigger value="staff" data-testid="pwa-tab-staff">Staff</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 bg-white/10 border border-white/15 rounded-xl p-1">
+                <TabsTrigger
+                  value="client"
+                  data-testid="pwa-tab-client"
+                  className="rounded-lg text-white/80 data-[state=active]:bg-white data-[state=active]:text-zinc-950 data-[state=active]:shadow-sm"
+                >
+                  Client
+                </TabsTrigger>
+                <TabsTrigger
+                  value="staff"
+                  data-testid="pwa-tab-staff"
+                  className="rounded-lg text-white/80 data-[state=active]:bg-white data-[state=active]:text-zinc-950 data-[state=active]:shadow-sm"
+                >
+                  Staff
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="client" className="mt-4">
