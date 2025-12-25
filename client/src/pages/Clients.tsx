@@ -373,8 +373,14 @@ export default function Clients() {
               {isLoading ? "Loading..." : `${clients.length} for ${selectedYear}`}
             </p>
           </div>
-          <Button size="sm" onClick={() => setShowAddDialog(true)} data-testid="button-add-client" className="sm:hidden">
-            <UserPlus className="h-4 w-4" />
+          {/* iOS-style circular add button (mobile) */}
+          <Button
+            size="icon"
+            onClick={() => setShowAddDialog(true)}
+            data-testid="button-add-client"
+            className="sm:hidden rounded-full shadow-md"
+          >
+            <UserPlus className="h-5 w-5" />
           </Button>
         </div>
 
@@ -542,6 +548,17 @@ export default function Clients() {
           onBulkAssign={handleBulkAssign}
         />
       )}
+
+      {/* Floating Add Button (mobile/PWA) */}
+      <button
+        type="button"
+        onClick={() => setShowAddDialog(true)}
+        className="sm:hidden fixed right-5 bottom-[calc(5rem+env(safe-area-inset-bottom,0px))] h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/25 flex items-center justify-center active:scale-95 transition-transform"
+        aria-label="Add client"
+        data-testid="fab-add-client"
+      >
+        <UserPlus className="h-6 w-6" />
+      </button>
 
       {/* Add Client Dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>

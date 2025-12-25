@@ -186,79 +186,70 @@ export function ClientsTable({
         </div>
       </CardHeader>
       <CardContent className="p-0 md:p-6">
-        {/* Mobile Card View */}
-        <div className="md:hidden space-y-3 p-4">
+        {/* Mobile iOS-style List View */}
+        <div className="md:hidden p-4">
           {filteredClients.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No clients found matching your search.
             </div>
           ) : (
-            filteredClients.map((client, index) => (
-              <button
-                key={client.id}
-                onClick={() => setLocation(`/clients/${client.id}`)}
-                className="w-full p-4 rounded-lg border bg-card animate-fade-in text-left hover-elevate active-elevate-2 transition-all touch-manipulation"
-                style={{ animationDelay: `${index * 30}ms` }}
-                data-testid={`client-card-${client.id}`}
-              >
-                <div className="flex items-start gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-2">
-                      <Avatar className="h-10 w-10 flex-shrink-0">
-                        <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                          {client.name.split(' ').map(n => n[0]).join('')}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <span className="font-semibold text-primary text-left block truncate">
-                          {client.name}
-                        </span>
-                        <Badge variant="secondary" className={`${statusColors[clientStatuses[client.id] || client.status]} text-xs mt-1`}>
-                          {clientStatuses[client.id] || client.status}
-                        </Badge>
-                      </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                          <Button size="icon" variant="ghost" className="h-10 w-10 flex-shrink-0">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setLocation(`/clients/${client.id}`); }}>
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={(e) => e.stopPropagation()}>Export Data</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                    
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <span className="truncate">{client.email}</span>
-                      </div>
-                      {client.phone && (
-                        <div className="text-muted-foreground">{client.phone}</div>
-                      )}
-                      <div className="flex items-center justify-between pt-2 border-t">
-                        <div className="flex flex-col">
-                          <span className="text-xs text-muted-foreground">Tax Year {client.taxYear}</span>
-                          {client.createdAt && (
-                            <span className="text-[10px] text-muted-foreground">Enrolled: {new Date(client.createdAt).toLocaleDateString()}</span>
-                          )}
+            <div className="overflow-hidden rounded-2xl border bg-card">
+              {filteredClients.map((client) => {
+                const status = clientStatuses[client.id] || client.status;
+                const initials = client.name.split(" ").map(n => n[0]).join("").slice(0, 2);
+                return (
+                  <div key={client.id} className="border-b last:border-b-0">
+                    <button
+                      onClick={() => setLocation(`/clients/${client.id}`)}
+                      className="w-full px-4 py-3 text-left active:bg-muted/40 transition-colors"
+                      data-testid={`client-row-${client.id}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-11 w-11 flex-shrink-0">
+                          <AvatarFallback className="bg-primary/10 text-primary text-base">
+                            {initials}
+                          </AvatarFallback>
+                        </Avatar>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="font-semibold truncate">{client.name}</div>
+                              <div className="text-sm text-muted-foreground truncate">{client.email}</div>
+                              {client.phone ? (
+                                <div className="text-sm text-muted-foreground">{client.phone}</div>
+                              ) : null}
+                            </div>
+
+                            <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                              <Badge
+                                variant="secondary"
+                                className={`rounded-full px-3 py-1 text-xs ${statusColors[status]}`}
+                              >
+                                {status === "Documents Pending" ? "Docs Pending" : status}
+                              </Badge>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                  <Button size="icon" variant="ghost" className="h-9 w-9 rounded-full border bg-background/60 hover:bg-muted/60">
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setLocation(`/clients/${client.id}`); }}>
+                                    View Details
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={(e) => e.stopPropagation()}>Export Data</DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </div>
                         </div>
-                        <span className="text-xs">
-                          {client.assignedTo && client.assignedTo !== "Unassigned" ? (
-                            <Badge variant="outline" className="text-xs">{client.assignedTo}</Badge>
-                          ) : (
-                            <span className="text-muted-foreground">Unassigned</span>
-                          )}
-                        </span>
                       </div>
-                    </div>
+                    </button>
                   </div>
-                </div>
-              </button>
-            ))
+                );
+              })}
+            </div>
           )}
         </div>
 
