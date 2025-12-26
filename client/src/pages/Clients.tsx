@@ -309,6 +309,11 @@ export default function Clients() {
         
         const fallbackAssigned =
           (user as any).assignedTo ? staffNameById.get((user as any).assignedTo) : undefined;
+        const filingAssignedRaw = filing?.preparerName || undefined;
+        const filingAssigned =
+          typeof filingAssignedRaw === "string" && filingAssignedRaw.trim().toLowerCase() === "system"
+            ? undefined
+            : filingAssignedRaw;
 
         return {
           id: user.id,
@@ -318,7 +323,7 @@ export default function Clients() {
           status: filingStatusToDisplay[filingStatus],
           filingStatus,
           taxYear: String(selectedYear),
-          assignedTo: filing?.preparerName || fallbackAssigned || "Unassigned",
+          assignedTo: filingAssigned || fallbackAssigned || "Unassigned",
           city: user.city || undefined,
           state: user.state || undefined,
           estimatedRefund: filing?.estimatedRefund || undefined,
