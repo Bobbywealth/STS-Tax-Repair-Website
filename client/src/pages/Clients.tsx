@@ -85,6 +85,7 @@ interface NewClientForm {
   city: string;
   state: string;
   zipCode: string;
+  referredById: string;
 }
 
 const initialFormState: NewClientForm = {
@@ -96,6 +97,7 @@ const initialFormState: NewClientForm = {
   city: "",
   state: "",
   zipCode: "",
+  referredById: "",
 };
 
 export default function Clients() {
@@ -271,6 +273,14 @@ export default function Clients() {
       });
       return;
     }
+    if (!newClientForm.referredById) {
+      toast({
+        title: "Referrer Required",
+        description: "Please select who referred this client so they can be assigned correctly.",
+        variant: "destructive",
+      });
+      return;
+    }
     addClientMutation.mutate(newClientForm);
   };
 
@@ -284,6 +294,12 @@ export default function Clients() {
     return map;
   }, [taxFilings]);
 
+  const staffNameById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const s of staffMembers) m.set(s.id, s.name);
+    return m;
+  }, [staffMembers]);
+
   const allClients: ClientTableData[] = useMemo(() => {
     return (users || [])
       .filter(user => user.role === 'client')
@@ -291,6 +307,9 @@ export default function Clients() {
         const filing = filingsByClientId.get(user.id);
         const filingStatus: FilingStatus = filing?.status || 'new';
         
+        const fallbackAssigned =
+          (user as any).assignedTo ? staffNameById.get((user as any).assignedTo) : undefined;
+
         return {
           id: user.id,
           name: [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email || "Unknown",
@@ -299,7 +318,7 @@ export default function Clients() {
           status: filingStatusToDisplay[filingStatus],
           filingStatus,
           taxYear: String(selectedYear),
-          assignedTo: filing?.preparerName || "Unassigned",
+          assignedTo: filing?.preparerName || fallbackAssigned || "Unassigned",
           city: user.city || undefined,
           state: user.state || undefined,
           estimatedRefund: filing?.estimatedRefund || undefined,
@@ -307,7 +326,7 @@ export default function Clients() {
           createdAt: user.createdAt ? new Date(user.createdAt).toISOString() : new Date().toISOString(),
         };
       });
-  }, [users, filingsByClientId, selectedYear]);
+  }, [users, filingsByClientId, selectedYear, staffNameById]);
 
   const searchedClients = useMemo(() => {
     let filtered = allClients;
@@ -655,6 +674,24 @@ export default function Clients() {
                   data-testid="input-new-zip"
                 />
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Who Referred Them? *</Label>
+              <Select
+                value={newClientForm.referredById}
+                onValueChange={(val) => setNewClientForm({ ...newClientForm, referredById: val })}
+              >
+                <SelectTrigger data-testid="select-new-client-referrer">
+                  <SelectValue placeholder="Select a staff member" />
+                </SelectTrigger>
+                <SelectContent>
+                  {staffMembers.map((s) => (
+                    <SelectItem key={s.id} value={s.id} data-testid={`new-client-referrer-${s.id}`}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <DialogFooter>
               <Button

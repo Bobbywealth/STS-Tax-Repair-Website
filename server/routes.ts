@@ -1116,6 +1116,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         referralSource: referralSourceText,
       });
 
+      // Ensure the "Assigned To" column in the Clients table is populated.
+      // The UI primarily displays assignment from the current tax year's filing (preparerName),
+      // not the user's assignedTo field. Create/update a filing assignment when we have a referrer.
+      if (assignedTo) {
+        try {
+          const year = new Date().getFullYear();
+          const existingFiling = await storage.getTaxFilingByClientYear(user.id, year);
+          const preparerName =
+            `${referrer.firstName || ""} ${referrer.lastName || ""}`.trim() ||
+            (referrer.email as any) ||
+            null;
+
+          if (existingFiling) {
+            await storage.updateTaxFiling(existingFiling.id, {
+              preparerId: assignedTo,
+              preparerName,
+            });
+          } else {
+            await storage.createTaxFiling({
+              clientId: user.id,
+              taxYear: year,
+              status: "new",
+              preparerId: assignedTo,
+              preparerName,
+            });
+          }
+        } catch (e) {
+          // Non-blocking: signup should succeed even if filing assignment can't be created.
+          console.warn("[register] Failed to create/update filing assignment (non-blocking):", e);
+        }
+      }
+
       // Notify referrer if selected
       if (assignedTo) {
         try {
@@ -2000,7 +2032,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req: any, res) => {
       try {
         // Extract only allowed fields - prevent privilege escalation by ignoring id, role, passwordHash
-        const { firstName, lastName, email, phone, address, city, state, zipCode, country } = req.body;
+        const { firstName, lastName, email, phone, address, city, state, zipCode, country, referredById } = req.body;
         
         // Validate required email
         if (!email || typeof email !== 'string' || email.trim().length === 0) {
@@ -2019,6 +2051,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ error: "A client with this email already exists" });
         }
 
+        // Optional: assign to a referrer if provided (matches signup behavior).
+        let assignedTo: string | null = null;
+        let referralSourceText: string | null = null;
+        let clientOfficeId: string | null = null;
+
+        // Default office for new clients (prevents scope issues for office staff)
+        try {
+          const creatorId = req.userId || req.user?.claims?.sub;
+          const creator = creatorId ? await storage.getUser(creatorId) : null;
+          const creatorRole = (creator?.role || "").toLowerCase();
+          if (creatorRole !== "super_admin" && creator?.officeId) {
+            clientOfficeId = creator.officeId;
+          }
+        } catch {
+          // ignore
+        }
+
+        if (referredById && typeof referredById === "string" && referredById !== "none") {
+          const referrer = await storage.getUser(referredById);
+          if (!referrer) {
+            return res.status(400).json({ error: "Selected referrer not found" });
+          }
+          if ((referrer.role || "").toLowerCase() === "client") {
+            return res.status(400).json({ error: "Referrer must be a staff member" });
+          }
+          assignedTo = referrer.id;
+          referralSourceText = `${referrer.firstName || ""} ${referrer.lastName || ""}`.trim() || (referrer.email as any) || null;
+          if (!clientOfficeId) clientOfficeId = referrer.officeId || null;
+        }
+
         // Create the new client - explicitly set role to 'client' to prevent privilege escalation
         const newUser = await storage.upsertUser({
           email: email.trim(),
@@ -2032,7 +2094,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
           country: country?.trim() || 'United States',
           role: 'client', // Always force client role
           isActive: true,
+          officeId: clientOfficeId,
+          assignedTo,
+          referralSource: referralSourceText,
         });
+
+        // If assigned, create/update current-year tax filing so "Assigned To" displays immediately in Clients table.
+        if (assignedTo) {
+          try {
+            const year = new Date().getFullYear();
+            const existingFiling = await storage.getTaxFilingByClientYear(newUser.id, year);
+            if (existingFiling) {
+              await storage.updateTaxFiling(existingFiling.id, {
+                preparerId: assignedTo,
+                preparerName: referralSourceText,
+              });
+            } else {
+              await storage.createTaxFiling({
+                clientId: newUser.id,
+                taxYear: year,
+                status: "new",
+                preparerId: assignedTo,
+                preparerName: referralSourceText,
+              });
+            }
+          } catch (e) {
+            console.warn("[create-client] Failed to create/update filing assignment (non-blocking):", e);
+          }
+        }
 
         res.status(201).json(newUser);
       } catch (error: any) {
