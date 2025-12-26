@@ -678,6 +678,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Health check endpoint (suitable for Render "Health Check Path")
+  // - Returns 200 only when the API + MySQL dependency is healthy
+  // - Returns 503 when the app is running but critical dependencies (DB) are unavailable
+  app.get("/api/health", async (_req, res) => {
+    const isProduction = process.env.NODE_ENV === "production";
+    const startedAt = Date.now();
+
+    const result: any = {
+      ok: true,
+      now: new Date().toISOString(),
+      uptimeSec: Math.round(process.uptime()),
+      nodeEnv: process.env.NODE_ENV || "not set",
+      render: {
+        serviceId: process.env.RENDER_SERVICE_ID || null,
+        commit: process.env.RENDER_GIT_COMMIT || null,
+        externalUrl: process.env.RENDER_EXTERNAL_URL || null,
+      },
+      sessionCookie: {
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax",
+      },
+      db: {
+        ok: true,
+        latencyMs: null as number | null,
+        error: null as string | null,
+      },
+      latencyMs: null as number | null,
+    };
+
+    try {
+      const dbStart = Date.now();
+      await mysqlPool.query("SELECT 1 as ok");
+      result.db.latencyMs = Date.now() - dbStart;
+    } catch (e: any) {
+      result.db.ok = false;
+      result.db.error = e?.message || String(e);
+      result.ok = false;
+    }
+
+    result.latencyMs = Date.now() - startedAt;
+    return res.status(result.ok ? 200 : 503).json(result);
+  });
+
   // Redirect Perfex document URLs to the actual Perfex server
   // Perfex stores files at: uploads/clients/perfex-{CLIENT_ID}/filename
   // Accessed via: /download/preview_image?path=uploads/clients/perfex-{CLIENT_ID}/filename
@@ -826,6 +869,116 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching user:", error);
       return res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  /**
+   * Admin/Tax Office: impersonate a client account (View As Client)
+   *
+   * - Only for session-authenticated staff (tax_office/admin/super_admin)
+   * - Stores original identity in the session so it can be restored later
+   * - While impersonating, the userRole becomes "client" so staff-only pages are inaccessible
+   */
+  app.post(
+    "/api/admin/impersonate/:clientId",
+    isAuthenticated,
+    requireMinRole("tax_office"),
+    async (req: any, res) => {
+      try {
+        if (!req.session) {
+          return res
+            .status(400)
+            .json({ error: "Session is required for impersonation" });
+        }
+
+        const clientId = req.params.clientId as string;
+        const target = await storage.getUser(clientId);
+        if (!target || (target as any).role !== "client") {
+          return res.status(404).json({ error: "Client not found" });
+        }
+
+        // Prevent nested impersonation
+        if (req.session.__impersonation) {
+          return res.status(400).json({ error: "Already impersonating a user" });
+        }
+
+        // Save original session identity
+        req.session.__impersonation = {
+          userId: req.session.userId,
+          userRole: req.session.userRole,
+          isClientLogin: req.session.isClientLogin,
+          isAdminLogin: req.session.isAdminLogin,
+          startedAt: Date.now(),
+          impersonatedUserId: clientId,
+        };
+
+        // Switch to client
+        req.session.userId = clientId;
+        req.session.userRole = "client";
+        req.session.isClientLogin = true;
+        req.session.isAdminLogin = false;
+
+        return res.json({ ok: true });
+      } catch (error: any) {
+        console.error("Impersonation failed:", error);
+        return res
+          .status(500)
+          .json({ error: error.message || "Impersonation failed" });
+      }
+    },
+  );
+
+  // Get current impersonation status (used by Client Portal banner)
+  app.get("/api/admin/impersonation", isAuthenticated, async (req: any, res) => {
+    try {
+      const info = req.session?.__impersonation;
+      if (!info) return res.json({ isImpersonating: false });
+
+      const originalUserId = info.userId as string | undefined;
+      const originalUser = originalUserId ? await storage.getUser(originalUserId) : null;
+
+      return res.json({
+        isImpersonating: true,
+        impersonator: originalUser
+          ? {
+              id: originalUser.id,
+              role: (originalUser as any).role,
+              email: (originalUser as any).email || null,
+              name:
+                `${(originalUser as any).firstName || ""} ${(originalUser as any).lastName || ""}`.trim() ||
+                (originalUser as any).email ||
+                null,
+            }
+          : null,
+        startedAt: info.startedAt || null,
+      });
+    } catch (error: any) {
+      console.error("Error fetching impersonation status:", error);
+      return res
+        .status(500)
+        .json({ error: "Failed to fetch impersonation status" });
+    }
+  });
+
+  // Stop impersonation and restore the original staff session identity
+  app.post("/api/admin/stop-impersonate", isAuthenticated, async (req: any, res) => {
+    try {
+      const info = req.session?.__impersonation;
+      if (!req.session || !info) {
+        return res.status(400).json({ error: "Not impersonating" });
+      }
+
+      req.session.userId = info.userId;
+      req.session.userRole = info.userRole;
+      req.session.isClientLogin = info.isClientLogin;
+      req.session.isAdminLogin = info.isAdminLogin;
+
+      delete req.session.__impersonation;
+
+      return res.json({ ok: true });
+    } catch (error: any) {
+      console.error("Error stopping impersonation:", error);
+      return res.status(500).json({ error: "Failed to stop impersonation" });
     }
   });
 
@@ -3425,6 +3578,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // Tax Filings - tracks each client's tax filing per year
+  // Client-only: fetch your own tax filings (used by Client Portal)
+  app.get("/api/tax-filings/me", isAuthenticated, async (req: any, res) => {
+    try {
+      const userRole = ((req as any).userRole || "client").toLowerCase();
+      const userId = (req as any).userId || (req as any).user?.claims?.sub;
+
+      if (!userId) return res.json([]);
+      if (userRole !== "client") {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const filings = await storage.getTaxFilingsByClient(userId);
+      return res.json(filings);
+    } catch (error: any) {
+      return res.status(500).json({ error: error.message });
+    }
+  });
+
   app.get(
     "/api/tax-filings",
     isAuthenticated,

@@ -31,7 +31,7 @@ import { Form8879 } from "@/components/Form8879";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { ESignature, Form8879Data } from "@shared/mysql-schema";
+import type { Appointment, DocumentVersion, ESignature, Form8879Data, FilingStatus, TaxFiling } from "@shared/mysql-schema";
 import logoUrl from "@/assets/sts-logo.png";
 
 export default function ClientPortal() {
@@ -45,6 +45,42 @@ export default function ClientPortal() {
   const [tourStarted, setTourStarted] = useState(false);
   const signaturePadRef = useRef<SignaturePadRef>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { data: impersonation } = useQuery<{
+    isImpersonating: boolean;
+    impersonator?: { id: string; role: string; email?: string | null; name?: string | null } | null;
+    startedAt?: number | null;
+  }>({
+    queryKey: ["/api/admin/impersonation"],
+    enabled: isAuthenticated,
+    retry: false,
+  });
+
+  const stopImpersonationMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/admin/stop-impersonate", {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null);
+        throw new Error(payload?.error || payload?.message || "Failed to stop impersonation");
+      }
+      return res.json().catch(() => ({}));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/impersonation"] });
+      window.location.href = "/clients";
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Could not return to admin",
+        description: error?.message || "Failed to stop impersonation.",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Initialize tour on first visit (desktop only to avoid mobile clutter)
   useEffect(() => {
@@ -128,6 +164,24 @@ export default function ClientPortal() {
       return res.json();
     },
     enabled: !!user?.id,
+  });
+
+  const { data: documents = [] } = useQuery<DocumentVersion[]>({
+    queryKey: ["/api/documents/all"],
+    enabled: isAuthenticated,
+    retry: false,
+  });
+
+  const { data: appointments = [] } = useQuery<Appointment[]>({
+    queryKey: ["/api/appointments"],
+    enabled: isAuthenticated,
+    retry: false,
+  });
+
+  const { data: filings = [] } = useQuery<TaxFiling[]>({
+    queryKey: ["/api/tax-filings/me"],
+    enabled: isAuthenticated,
+    retry: false,
   });
 
   // Sign document mutation
@@ -256,22 +310,32 @@ export default function ClientPortal() {
     return null;
   }
 
-  // Use real user data from auth
-  const clientData = {
-    name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || "Client",
-    email: user.email || "",
-    phone: "(555) 123-4567",
-    refundStatus: "Filed" as const,
-    refundAmount: "$4,500",
-    filingYear: "2024",
-    appointmentDate: "March 15, 2025",
-  };
+  const clientName = `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email || "Client";
+  const currentYear = new Date().getFullYear();
+  const latestFiling =
+    (filings || []).slice().sort((a, b) => (b.taxYear || 0) - (a.taxYear || 0))[0] || null;
+  const filingYear = latestFiling?.taxYear || currentYear;
+  const filingStatusMap: Record<FilingStatus, string> = {
+    new: "New",
+    documents_pending: "Docs Pending",
+    review: "In Review",
+    filed: "Filed",
+    accepted: "Accepted",
+    approved: "Approved",
+    paid: "Paid",
+  } as const;
+  const refundStatusLabel = latestFiling?.status ? (filingStatusMap[latestFiling.status] || "New") : "New";
+  const estimatedRefund =
+    (latestFiling as any)?.estimatedRefund || (latestFiling as any)?.actualRefund || null;
+  const refundAmountLabel =
+    estimatedRefund && String(estimatedRefund).trim().length > 0 ? `$${String(estimatedRefund)}` : "—";
 
-  const documents = [
-    { name: "W-2 Form", uploadedDate: "Jan 10, 2025", status: "Received" },
-    { name: "1099-MISC", uploadedDate: "Jan 15, 2025", status: "Received" },
-    { name: "ID Document", uploadedDate: "Jan 10, 2025", status: "Verified" },
-  ];
+  const nextAppointment =
+    (appointments || [])
+      .filter((a) => a?.appointmentDate)
+      .slice()
+      .sort((a, b) => new Date(a.appointmentDate as any).getTime() - new Date(b.appointmentDate as any).getTime())
+      .find((a) => new Date(a.appointmentDate as any).getTime() >= Date.now()) || null;
 
   const pendingSignatures = signatures?.filter(s => s.status === "pending") || [];
   const signedSignatures = signatures?.filter(s => s.status === "signed") || [];
@@ -297,8 +361,8 @@ export default function ClientPortal() {
           {/* Right: User Info (desktop only) + Logout */}
           <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
             <div className="hidden md:block text-right">
-              <p className="font-medium text-sm">{clientData.name}</p>
-              <p className="text-xs text-muted-foreground">{clientData.email}</p>
+              <p className="font-medium text-sm">{clientName}</p>
+              <p className="text-xs text-muted-foreground">{user.email || ""}</p>
             </div>
             <Button 
               variant="outline"
@@ -314,11 +378,31 @@ export default function ClientPortal() {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-8 space-y-4 sm:space-y-6 animate-fade-in pb-20 md:pb-8">
+        {impersonation?.isImpersonating && (
+          <div className="rounded-lg border bg-amber-50/80 dark:bg-amber-950/30 px-4 py-3 flex items-center justify-between gap-3">
+            <div className="text-sm">
+              <span className="font-semibold">Viewing as client.</span>{" "}
+              <span className="text-muted-foreground">
+                Signed in as {impersonation.impersonator?.name || impersonation.impersonator?.email || "staff"}.
+              </span>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => stopImpersonationMutation.mutate()}
+              disabled={stopImpersonationMutation.isPending}
+              data-testid="button-return-to-admin"
+            >
+              {stopImpersonationMutation.isPending ? "Returning..." : "Return to Admin"}
+            </Button>
+          </div>
+        )}
+
         {/* Welcome Section */}
         <div id="welcome-section" className="p-4 sm:p-6 rounded-lg bg-flow-gradient">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="min-w-0">
-              <h2 className="text-xl sm:text-3xl font-bold mb-1 sm:mb-2">Welcome back, {clientData.name.split(' ')[0]}!</h2>
+              <h2 className="text-xl sm:text-3xl font-bold mb-1 sm:mb-2">Welcome back, {clientName.split(' ')[0]}!</h2>
               <p className="text-sm sm:text-base text-muted-foreground">Track your tax refund status and manage your documents</p>
             </div>
             {/* Demo button - shows celebration animation */}
@@ -462,7 +546,7 @@ export default function ClientPortal() {
             <CardTitle>Your Refund Status</CardTitle>
           </CardHeader>
           <CardContent className="relative z-10 space-y-4">
-            <RefundStatusTracker currentStatus={clientData.refundStatus} />
+            <RefundStatusTracker currentStatus={refundStatusLabel} />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -470,7 +554,7 @@ export default function ClientPortal() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Expected Refund</p>
-                  <p className="text-xl font-bold">{clientData.refundAmount}</p>
+                  <p className="text-xl font-bold">{refundAmountLabel}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -479,13 +563,13 @@ export default function ClientPortal() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Tax Year</p>
-                  <p className="text-xl font-bold">{clientData.filingYear}</p>
+                  <p className="text-xl font-bold">{filingYear}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
                   <Badge variant="default" className="h-6">
-                    {clientData.refundStatus}
+                    {refundStatusLabel}
                   </Badge>
                 </div>
                 <div>
@@ -540,7 +624,7 @@ export default function ClientPortal() {
           <CardHeader className="relative z-10">
             <div className="flex items-center justify-between">
               <CardTitle>Your Documents</CardTitle>
-              <Button className="gradient-primary border-0" data-testid="button-upload">
+              <Button className="gradient-primary border-0" onClick={handleUploadClick} data-testid="button-upload">
                 <Upload className="h-4 w-4 mr-2" />
                 Upload Document
               </Button>
@@ -548,24 +632,35 @@ export default function ClientPortal() {
           </CardHeader>
           <CardContent className="relative z-10">
             <div className="space-y-3">
-              {documents.map((doc, index) => (
-                <div 
-                  key={index} 
-                  className="flex items-center justify-between p-4 rounded-lg border hover-elevate"
-                  data-testid={`document-${index}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <FileText className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium">{doc.name}</p>
-                      <p className="text-sm text-muted-foreground">Uploaded {doc.uploadedDate}</p>
-                    </div>
-                  </div>
-                  <Badge variant={doc.status === "Verified" ? "outline" : "default"}>
-                    {doc.status}
-                  </Badge>
+              {documents.length === 0 ? (
+                <div className="text-sm text-muted-foreground py-6 text-center">
+                  No documents yet. Tap <span className="font-medium">Upload Document</span> to add your first file.
                 </div>
-              ))}
+              ) : (
+                documents
+                  .slice()
+                  .sort((a, b) => new Date((b.uploadedAt as any) || 0).getTime() - new Date((a.uploadedAt as any) || 0).getTime())
+                  .slice(0, 6)
+                  .map((doc, index) => (
+                    <div
+                      key={doc.id || index}
+                      className="flex items-center justify-between p-4 rounded-lg border hover-elevate"
+                      data-testid={`document-${doc.id || index}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <FileText className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                          <p className="font-medium">{doc.documentName}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {doc.documentType} • Uploaded{" "}
+                            {doc.uploadedAt ? new Date(doc.uploadedAt as any).toLocaleDateString() : "—"}
+                          </p>
+                        </div>
+                      </div>
+                      <Badge variant="outline">Uploaded</Badge>
+                    </div>
+                  ))
+              )}
             </div>
           </CardContent>
         </Card>
@@ -577,18 +672,40 @@ export default function ClientPortal() {
             <CardTitle>Upcoming Appointment</CardTitle>
           </CardHeader>
           <CardContent className="relative z-10">
-            <div className="flex items-center gap-4">
-              <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-                <Calendar className="h-8 w-8 text-primary" />
+            {nextAppointment ? (
+              <div className="flex items-center gap-4">
+                <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Calendar className="h-8 w-8 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium">{nextAppointment.title || "Appointment"}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {new Date(nextAppointment.appointmentDate as any).toLocaleDateString()} at{" "}
+                    {new Date(nextAppointment.appointmentDate as any).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  </p>
+                  <Button variant="ghost" className="h-auto p-0 mt-1" onClick={handleScheduleAppointment} data-testid="button-reschedule">
+                    Reschedule
+                  </Button>
+                </div>
               </div>
-              <div>
-                <p className="font-medium">Tax Consultation</p>
-                <p className="text-sm text-muted-foreground">{clientData.appointmentDate} at 2:00 PM</p>
-                <Button variant="ghost" className="h-auto p-0 mt-1" data-testid="button-reschedule">
-                  Reschedule
+            ) : (
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Calendar className="h-8 w-8 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium">No appointment scheduled</p>
+                    <p className="text-sm text-muted-foreground">
+                      Schedule a consultation when you’re ready.
+                    </p>
+                  </div>
+                </div>
+                <Button className="gradient-primary border-0" onClick={handleScheduleAppointment} data-testid="button-schedule">
+                  Schedule
                 </Button>
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       </main>
@@ -612,7 +729,7 @@ export default function ClientPortal() {
                 </DialogDescription>
               </DialogHeader>
               <Form8879
-                clientName={clientData.name}
+                clientName={clientName}
                 clientAddress=""
                 clientCity=""
                 clientState=""
@@ -775,7 +892,7 @@ export default function ClientPortal() {
               <Sparkles className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
               <h2 className="text-3xl font-bold text-primary mb-2">Congratulations!</h2>
               <p className="text-xl text-muted-foreground">Your refund has been approved!</p>
-              <p className="text-2xl font-bold text-primary mt-2">{clientData.refundAmount}</p>
+              <p className="text-2xl font-bold text-primary mt-2">{refundAmountLabel}</p>
             </div>
           </div>
         </div>

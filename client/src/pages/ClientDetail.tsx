@@ -10,10 +10,11 @@ import { RefundStatusTracker } from "@/components/RefundStatusTracker";
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { 
   ArrowLeft, Mail, Phone, Calendar, User, Edit, MapPin, Building, Loader2, 
-  Plus, DollarSign, FileText, Clock, CheckCircle2, ChevronRight 
+  Plus, DollarSign, FileText, Clock, CheckCircle2, ChevronRight, Eye
 } from "lucide-react";
 import { Link } from "wouter";
 import type { User as UserType, TaxFiling, FilingStatus } from "@shared/mysql-schema";
+import { useAuth } from "@/hooks/useAuth";
 import {
   Select,
   SelectContent,
@@ -73,6 +74,7 @@ interface EditFormData {
 export default function ClientDetail() {
   const [, params] = useRoute("/clients/:id");
   const clientId = params?.id;
+  const { user: currentUser } = useAuth();
   const [selectedFilingYear, setSelectedFilingYear] = useState<number | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [selectedFiling, setSelectedFiling] = useState<TaxFiling | null>(null);
@@ -220,6 +222,32 @@ export default function ClientDetail() {
     },
   });
 
+  const impersonateMutation = useMutation({
+    mutationFn: async () => {
+      if (!clientId) throw new Error("Missing client id");
+      const res = await fetch(`/api/admin/impersonate/${clientId}`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null);
+        throw new Error(payload?.error || payload?.message || "Failed to impersonate client");
+      }
+      return res.json().catch(() => ({}));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      window.location.href = "/client-portal";
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Could not view as client",
+        description: error?.message || "Impersonation failed.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const openEditDialog = () => {
     if (client) {
       setEditFormData({
@@ -325,6 +353,22 @@ export default function ClientDetail() {
           <Edit className="h-4 w-4 sm:mr-2" />
           <span className="hidden sm:inline">Edit Profile</span>
         </Button>
+        {(currentUser?.role === "admin" ||
+          currentUser?.role === "super_admin" ||
+          currentUser?.role === "tax_office") && (
+          <Button
+            onClick={() => impersonateMutation.mutate()}
+            size="sm"
+            variant="outline"
+            disabled={impersonateMutation.isPending}
+            data-testid="button-view-as-client"
+          >
+            <Eye className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">
+              {impersonateMutation.isPending ? "Opening..." : "View as Client"}
+            </span>
+          </Button>
+        )}
       </div>
 
       <Card>
