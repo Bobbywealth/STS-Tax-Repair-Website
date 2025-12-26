@@ -449,7 +449,7 @@ export default function AgentManagement() {
                   id="phone"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="(555) 123-4567"
+                  placeholder="Phone number"
                   data-testid="input-agent-phone"
                 />
               </div>

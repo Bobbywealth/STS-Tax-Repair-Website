@@ -57,18 +57,7 @@ export default function Appointments() {
     queryKey: ['/api/users'],
   });
 
-  // Debug logging for appointments
-  useEffect(() => {
-    if (appointments) {
-      console.log('[APPOINTMENTS] Loaded:', appointments.length);
-      if (appointments.length > 0) {
-        console.log('[APPOINTMENTS] Sample:', appointments[0]);
-      }
-    }
-    if (error) {
-      console.error('[APPOINTMENTS] Error loading:', error);
-    }
-  }, [appointments, error]);
+  // Note: avoid console debug logs in production UI.
 
   const form = useForm<CreateAppointmentForm>({
     resolver: zodResolver(createAppointmentSchema),

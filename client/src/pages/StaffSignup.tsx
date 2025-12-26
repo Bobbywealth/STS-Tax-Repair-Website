@@ -430,7 +430,7 @@ export default function StaffSignup() {
                         <Input 
                           {...field} 
                           type="tel"
-                          placeholder="(555) 123-4567" 
+                          placeholder="Phone number"
                           className="pl-10"
                           data-testid="input-phone"
                         />

@@ -20,7 +20,6 @@ import {
   FileSignature,
   CheckCircle,
   Eye,
-  Sparkles,
   RotateCcw
 } from "lucide-react";
 import IntroJs from "intro.js/intro.js";
@@ -28,10 +27,11 @@ import "intro.js/minified/introjs.min.css";
 import { RefundStatusTracker } from "@/components/RefundStatusTracker";
 import { SignaturePad, type SignaturePadRef } from "@/components/SignaturePad";
 import { Form8879 } from "@/components/Form8879";
+import { DocumentUpload } from "@/components/DocumentUpload";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Appointment, DocumentVersion, ESignature, Form8879Data, FilingStatus, TaxFiling } from "@shared/mysql-schema";
+import type { Appointment, ESignature, Form8879Data, FilingStatus, TaxFiling } from "@shared/mysql-schema";
 import logoUrl from "@/assets/sts-logo.png";
 
 export default function ClientPortal() {
@@ -41,7 +41,6 @@ export default function ClientPortal() {
   const [showSignDialog, setShowSignDialog] = useState(false);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [showAppointmentDialog, setShowAppointmentDialog] = useState(false);
-  const [showCelebration, setShowCelebration] = useState(false);
   const [tourStarted, setTourStarted] = useState(false);
   const signaturePadRef = useRef<SignaturePadRef>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -144,13 +143,7 @@ export default function ClientPortal() {
     startTour();
   };
 
-  // Auto-dismiss celebration after 5 seconds
-  useEffect(() => {
-    if (showCelebration) {
-      const timer = setTimeout(() => setShowCelebration(false), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [showCelebration]);
+  // No demo/celebration effects in production client portal.
 
   // Fetch pending signatures for this client
   const { data: signatures } = useQuery<ESignature[]>({
@@ -164,12 +157,6 @@ export default function ClientPortal() {
       return res.json();
     },
     enabled: !!user?.id,
-  });
-
-  const { data: documents = [] } = useQuery<DocumentVersion[]>({
-    queryKey: ["/api/documents/all"],
-    enabled: isAuthenticated,
-    retry: false,
   });
 
   const { data: appointments = [] } = useQuery<Appointment[]>({
@@ -234,31 +221,7 @@ export default function ClientPortal() {
     setShowSignDialog(true);
   };
 
-  const handleUploadClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    toast({
-      title: "Upload Started",
-      description: `Uploading ${files.length} file(s)...`,
-    });
-
-    // Reset the input so the same file can be selected again
-    e.target.value = '';
-    
-    // In a real implementation, you would upload the files here
-    // For now, just show a success message
-    setTimeout(() => {
-      toast({
-        title: "Upload Successful",
-        description: `${files.length} file(s) uploaded successfully.`,
-      });
-    }, 1500);
-  };
+  // Uploads are handled by the real DocumentUpload component.
 
   const handleScheduleAppointment = () => {
     setShowAppointmentDialog(true);
@@ -405,18 +368,7 @@ export default function ClientPortal() {
               <h2 className="text-xl sm:text-3xl font-bold mb-1 sm:mb-2">Welcome back, {clientName.split(' ')[0]}!</h2>
               <p className="text-sm sm:text-base text-muted-foreground">Track your tax refund status and manage your documents</p>
             </div>
-            {/* Demo button - shows celebration animation */}
             <div className="flex items-center gap-2 flex-shrink-0">
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                onClick={() => setShowCelebration(true)}
-                data-testid="button-demo-celebration"
-              >
-                <Sparkles className="h-4 w-4" />
-                <span className="hidden sm:inline">Demo</span>
-              </Button>
               <Button
                 variant="ghost"
                 size="sm"
@@ -434,18 +386,10 @@ export default function ClientPortal() {
 
         {/* Quick Action Buttons */}
         <div id="quick-actions" className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-            className="hidden"
-            onChange={handleFileUpload}
-          />
           <Button 
             variant="outline" 
             className="h-auto py-4 flex flex-col items-center gap-2 hover-elevate"
-            onClick={handleUploadClick}
+            onClick={() => setShowUploadDialog(true)}
             data-testid="quick-action-upload"
           >
             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -624,44 +568,14 @@ export default function ClientPortal() {
           <CardHeader className="relative z-10">
             <div className="flex items-center justify-between">
               <CardTitle>Your Documents</CardTitle>
-              <Button className="gradient-primary border-0" onClick={handleUploadClick} data-testid="button-upload">
+              <Button className="gradient-primary border-0" onClick={() => setShowUploadDialog(true)} data-testid="button-upload">
                 <Upload className="h-4 w-4 mr-2" />
                 Upload Document
               </Button>
             </div>
           </CardHeader>
           <CardContent className="relative z-10">
-            <div className="space-y-3">
-              {documents.length === 0 ? (
-                <div className="text-sm text-muted-foreground py-6 text-center">
-                  No documents yet. Tap <span className="font-medium">Upload Document</span> to add your first file.
-                </div>
-              ) : (
-                documents
-                  .slice()
-                  .sort((a, b) => new Date((b.uploadedAt as any) || 0).getTime() - new Date((a.uploadedAt as any) || 0).getTime())
-                  .slice(0, 6)
-                  .map((doc, index) => (
-                    <div
-                      key={doc.id || index}
-                      className="flex items-center justify-between p-4 rounded-lg border hover-elevate"
-                      data-testid={`document-${doc.id || index}`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <FileText className="h-5 w-5 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium">{doc.documentName}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {doc.documentType} • Uploaded{" "}
-                            {doc.uploadedAt ? new Date(doc.uploadedAt as any).toLocaleDateString() : "—"}
-                          </p>
-                        </div>
-                      </div>
-                      <Badge variant="outline">Uploaded</Badge>
-                    </div>
-                  ))
-              )}
-            </div>
+            <DocumentUpload clientId={user.id} />
           </CardContent>
         </Card>
 
@@ -862,41 +776,18 @@ export default function ClientPortal() {
         </DialogContent>
       </Dialog>
 
-      {/* Celebration Animation (Confetti) */}
-      {showCelebration && (
-        <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-          {/* Confetti pieces */}
-          {[...Array(50)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute animate-confetti"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: '-20px',
-                animationDelay: `${Math.random() * 2}s`,
-                animationDuration: `${3 + Math.random() * 2}s`,
-              }}
-            >
-              <div
-                className="w-3 h-3 rounded-sm"
-                style={{
-                  backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'][Math.floor(Math.random() * 6)],
-                  transform: `rotate(${Math.random() * 360}deg)`,
-                }}
-              />
-            </div>
-          ))}
-          {/* Celebration message */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="bg-background/95 backdrop-blur-sm p-8 rounded-2xl shadow-2xl text-center animate-bounce-in">
-              <Sparkles className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
-              <h2 className="text-3xl font-bold text-primary mb-2">Congratulations!</h2>
-              <p className="text-xl text-muted-foreground">Your refund has been approved!</p>
-              <p className="text-2xl font-bold text-primary mt-2">{refundAmountLabel}</p>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Upload Dialog */}
+      <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Upload Documents</DialogTitle>
+            <DialogDescription>
+              Upload your tax documents securely. You can upload PDFs or images (JPG/PNG).
+            </DialogDescription>
+          </DialogHeader>
+          <DocumentUpload clientId={user.id} />
+        </DialogContent>
+      </Dialog>
 
     </div>
   );

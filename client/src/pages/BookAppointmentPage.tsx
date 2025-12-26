@@ -339,7 +339,7 @@ export default function BookAppointmentPage() {
                           Phone
                         </FormLabel>
                         <FormControl>
-                          <Input type="tel" placeholder="(555) 123-4567" {...field} data-testid="input-phone" />
+                          <Input type="tel" placeholder="Phone number" {...field} data-testid="input-phone" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

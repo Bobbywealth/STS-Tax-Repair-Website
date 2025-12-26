@@ -610,7 +610,7 @@ export default function Clients() {
                 id="phone"
                 value={newClientForm.phone}
                 onChange={(e) => setNewClientForm({ ...newClientForm, phone: e.target.value })}
-                placeholder="(555) 123-4567"
+                placeholder="Phone number"
                 data-testid="input-new-phone"
               />
             </div>

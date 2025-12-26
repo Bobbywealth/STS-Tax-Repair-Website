@@ -785,9 +785,6 @@ export default function ClientLogin() {
                 support@ststaxrepair.com
               </a>
             </p>
-            <p className="text-xs text-gray-500">
-              Or call us at (555) 123-4567
-            </p>
           </div>
         </div>
       </div>

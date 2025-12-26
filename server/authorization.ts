@@ -242,8 +242,10 @@ async function loadAgentAssignedClients(agentId: string): Promise<Set<string>> {
   }
   
   try {
-    const clientIds = await (storage as any).getAgentAssignedClientIds(agentId);
-    const clientSet = new Set(clientIds);
+    const clientIds = (await (storage as any).getAgentAssignedClientIds(agentId)) as unknown;
+    const clientSet = new Set<string>(
+      Array.isArray(clientIds) ? (clientIds as any[]).filter((x) => typeof x === "string") : [],
+    );
     agentScopeCache.set(cacheKey, { clientIds: clientSet, timestamp: Date.now() });
     return clientSet;
   } catch (error) {

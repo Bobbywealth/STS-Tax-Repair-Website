@@ -66,7 +66,11 @@ export class MemoryStorage {
   private roleOverrides = new Map<UserRole, Map<string, boolean>>(); // slug -> granted
 
   constructor() {
-    void this.seed();
+    // By default, do NOT seed any demo data.
+    // If you explicitly want demo data for local development, set: DEMO_MODE=true
+    if (process.env.DEMO_MODE === "true") {
+      void this.seed();
+    }
   }
 
   // Account deletion (App Store 5.1.1(v))

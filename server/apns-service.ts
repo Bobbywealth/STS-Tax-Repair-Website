@@ -1,5 +1,6 @@
 import apn from 'apn';
 import type { PushDeviceToken } from '@shared/mysql-schema';
+import { readFileSync } from "fs";
 
 interface APNsConfig {
   keyId: string;
@@ -37,16 +38,13 @@ export function initializeAPNs(): apn.Provider | null {
   try {
     const options: apn.ProviderOptions = {
       token: {
-        key: keyPath || (key ? Buffer.from(key, 'base64').toString('utf-8') : undefined),
+        // apn expects key as string or Buffer (not undefined). We already validate keyPath/key above.
+        key: keyPath ? readFileSync(keyPath) : Buffer.from(key!, "base64").toString("utf-8"),
         keyId,
         teamId,
       },
       production,
     };
-
-    if (keyPath) {
-      options.token!.key = require('fs').readFileSync(keyPath);
-    }
 
     apnProvider = new apn.Provider(options);
     console.log(`[APNs] Initialized for ${production ? 'Production' : 'Development'} (Bundle: ${bundleId})`);
@@ -93,7 +91,9 @@ export async function sendPushNotification(
       title: notification.title,
       body: notification.body,
     };
-    note.badge = notification.badge;
+    if (typeof notification.badge === "number") {
+      note.badge = notification.badge;
+    }
     note.sound = notification.sound || 'default';
     note.topic = process.env.APNS_BUNDLE_ID || '';
     note.payload = {
@@ -170,7 +170,9 @@ export async function sendPushNotifications(
         title: notification.title,
         body: notification.body,
       };
-      note.badge = notification.badge;
+      if (typeof notification.badge === "number") {
+        note.badge = notification.badge;
+      }
       note.sound = notification.sound || 'default';
       note.topic = process.env.APNS_BUNDLE_ID || '';
       note.payload = {
@@ -215,4 +217,5 @@ export function isAPNsConfigured(): boolean {
     (process.env.APNS_KEY_PATH || process.env.APNS_KEY)
   );
 }
+
 

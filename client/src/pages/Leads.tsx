@@ -471,7 +471,7 @@ export default function Leads() {
                       <FormLabel>Phone</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="(555) 123-4567"
+                          placeholder="Phone number"
                           {...field}
                           data-testid="input-lead-phone"
                         />

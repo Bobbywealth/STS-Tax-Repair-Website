@@ -503,7 +503,7 @@ export default function Register() {
                           <FormControl>
                             <div className="relative">
                               <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                              <Input {...field} type="tel" className="pl-10" placeholder="(555) 123-4567" data-testid="input-phone" />
+                              <Input {...field} type="tel" className="pl-10" placeholder="Phone number" data-testid="input-phone" />
                             </div>
                           </FormControl>
                           <FormMessage />
@@ -722,7 +722,7 @@ export default function Register() {
                           <FormControl>
                             <div className="relative">
                               <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                              <Input {...field} type="tel" className="pl-10" placeholder="(555) 987-6543" data-testid="input-phone-secondary" />
+                              <Input {...field} type="tel" className="pl-10" placeholder="Secondary phone (optional)" data-testid="input-phone-secondary" />
                             </div>
                           </FormControl>
                           <FormMessage />
