@@ -134,8 +134,19 @@ export default function Clients() {
 
   // Get staff members for assignment dropdown
   const staffMembers = useMemo(() => {
+    const isSystemAdmin = (user: User) => {
+      const name = [user.firstName, user.lastName].filter(Boolean).join(" ").trim().toLowerCase();
+      const email = (user.email || "").trim().toLowerCase();
+      const id = (user.id || "").trim().toLowerCase();
+      return (
+        id === "system" ||
+        name === "system admin" ||
+        email === "system" ||
+        email.startsWith("system@")
+      );
+    };
     return (users || [])
-      .filter(user => user.role !== 'client')
+      .filter(user => user.role !== 'client' && !isSystemAdmin(user))
       .map(user => ({
         id: user.id,
         name: [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email || "Unknown",

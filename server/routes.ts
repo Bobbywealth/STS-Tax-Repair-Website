@@ -77,6 +77,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     (process.env.NODE_ENV === "production" ? "https://ststaxrepair.org" : null) ||
     "http://localhost:5000";
 
+  // Internal/system accounts should never be selectable as referrers/assignees.
+  const isSystemAdminUser = (u: any): boolean => {
+    if (!u) return false;
+    const name = `${u.firstName || ""} ${u.lastName || ""}`.trim().toLowerCase();
+    const email = String(u.email || "").trim().toLowerCase();
+    const id = String(u.id || "").trim().toLowerCase();
+    return (
+      id === "system" ||
+      name === "system admin" ||
+      email === "system" ||
+      email.startsWith("system@")
+    );
+  };
+
   async function getEmailBrandingForOffice(officeId?: string | null): Promise<EmailBranding | undefined> {
     if (!officeId) return undefined;
     try {
@@ -1078,6 +1092,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!referrer) {
         return res.status(400).json({ message: "Selected referrer not found", code: "REFERRER_NOT_FOUND" });
       }
+      if (isSystemAdminUser(referrer)) {
+        return res.status(400).json({ message: "Selected referrer is not allowed", code: "REFERRER_NOT_ALLOWED" });
+      }
 
       // If we're in an office context, ensure the referrer belongs to that office (or is a super admin).
       if (contextOfficeId) {
@@ -1890,7 +1907,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Check activity status robustly - handle boolean, null, and potential numeric values from MySQL
         const isActive = u.isActive !== false;
         // Include everyone who is not a client and is active
-        return role !== "client" && isActive;
+        return role !== "client" && isActive && !isSystemAdminUser(u);
       });
 
       // If office-scoped, keep only that office staff (and Super Admins)
@@ -2072,6 +2089,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const referrer = await storage.getUser(referredById);
           if (!referrer) {
             return res.status(400).json({ error: "Selected referrer not found" });
+          }
+          if (isSystemAdminUser(referrer)) {
+            return res.status(400).json({ error: "Selected referrer is not allowed" });
           }
           if ((referrer.role || "").toLowerCase() === "client") {
             return res.status(400).json({ error: "Referrer must be a staff member" });
@@ -3936,6 +3956,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!preparerId) {
           return res.status(400).json({ error: "Preparer ID is required" });
         }
+
+        // Prevent assigning to internal/system accounts
+        const preparerUser = await storage.getUser(preparerId);
+        if (isSystemAdminUser(preparerUser)) {
+          return res.status(400).json({ error: "Selected assignee is not allowed" });
+        }
         
         const year = taxYear || new Date().getFullYear();
         const results = [];
@@ -3994,6 +4020,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (!preparerId) {
           return res.status(400).json({ error: "Preparer ID is required" });
+        }
+
+        // Prevent assigning to internal/system accounts
+        const preparerUser = await storage.getUser(preparerId);
+        if (isSystemAdminUser(preparerUser)) {
+          return res.status(400).json({ error: "Selected assignee is not allowed" });
         }
         
         const year = taxYear || new Date().getFullYear();
