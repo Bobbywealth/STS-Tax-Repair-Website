@@ -4,7 +4,7 @@ import { ClientsTable } from "@/components/ClientsTable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { UserPlus, Download, Loader2, Calendar, Search, X } from "lucide-react";
+import { UserPlus, Download, Loader2, Calendar, Search, X, ArrowUpDown } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -25,6 +25,8 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { User, TaxFiling, FilingStatus } from "@shared/mysql-schema";
 
 type StatusFilter = "all" | FilingStatus;
+type EnrolledCategory = "all" | "today" | "last7" | "thisMonth";
+type SortMode = "enrolled_desc" | "enrolled_asc" | "name_asc" | "name_desc" | "assigned_asc" | "assigned_desc";
 
 interface ClientTableData {
   id: string;
@@ -106,6 +108,8 @@ export default function Clients() {
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
   const [searchQuery, setSearchQuery] = useState("");
   const deferredSearch = useDeferredValue(searchQuery);
+  const [enrolledCategory, setEnrolledCategory] = useState<EnrolledCategory>("all");
+  const [sortMode, setSortMode] = useState<SortMode>("enrolled_desc");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [newClientForm, setNewClientForm] = useState<NewClientForm>(initialFormState);
   const [startDate, setStartDate] = useState<string>("");
@@ -348,7 +352,24 @@ export default function Clients() {
       );
     }
 
-    // Date range filter
+    // Quick Enrolled category filter (Today / Last 7 days / This Month)
+    if (enrolledCategory !== "all") {
+      const now = new Date();
+      const start = new Date(now);
+      start.setHours(0, 0, 0, 0);
+      if (enrolledCategory === "last7") {
+        start.setDate(start.getDate() - 6); // inclusive: today + 6 previous days
+      } else if (enrolledCategory === "thisMonth") {
+        start.setDate(1);
+      }
+      filtered = filtered.filter((client) => {
+        const d = new Date(client.createdAt);
+        if (Number.isNaN(d.getTime())) return false;
+        return d >= start;
+      });
+    }
+
+    // Date range filter (manual range)
     if (startDate) {
       const start = new Date(startDate);
       filtered = filtered.filter(client => new Date(client.createdAt) >= start);
@@ -361,11 +382,37 @@ export default function Clients() {
     }
 
     return filtered;
-  }, [allClients, deferredSearch, startDate, endDate]);
+  }, [allClients, deferredSearch, enrolledCategory, startDate, endDate]);
 
-  const clients = activeFilter === "all" 
+  const clientsUnsorted = activeFilter === "all" 
     ? searchedClients 
     : searchedClients.filter(client => client.filingStatus === activeFilter);
+
+  const clients = useMemo(() => {
+    const list = [...clientsUnsorted];
+    const byDate = (a: string, b: string) => new Date(a).getTime() - new Date(b).getTime();
+    const byStr = (a: string, b: string) => a.localeCompare(b, undefined, { sensitivity: "base" });
+
+    list.sort((a, b) => {
+      switch (sortMode) {
+        case "enrolled_asc":
+          return byDate(a.createdAt, b.createdAt);
+        case "enrolled_desc":
+          return byDate(b.createdAt, a.createdAt);
+        case "name_asc":
+          return byStr(a.name, b.name);
+        case "name_desc":
+          return byStr(b.name, a.name);
+        case "assigned_asc":
+          return byStr(a.assignedTo || "", b.assignedTo || "");
+        case "assigned_desc":
+          return byStr(b.assignedTo || "", a.assignedTo || "");
+        default:
+          return 0;
+      }
+    });
+    return list;
+  }, [clientsUnsorted, sortMode]);
 
   const getStatusCount = (status: StatusFilter) => {
     if (status === "all") return searchedClients.length;
@@ -409,7 +456,7 @@ export default function Clients() {
         </div>
 
         {/* Desktop Actions Row */}
-        <div className="hidden sm:flex items-center gap-2">
+        <div className="hidden sm:flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-2 bg-card border rounded-lg px-3 py-1.5">
             <Calendar className="h-4 w-4 text-muted-foreground" />
             <Select
@@ -428,6 +475,35 @@ export default function Clients() {
                     Tax Year {year}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-2 bg-card border rounded-lg px-3 py-1.5">
+            <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+            <Select value={sortMode} onValueChange={(v) => setSortMode(v as SortMode)}>
+              <SelectTrigger className="border-0 bg-transparent h-auto p-0 focus:ring-0 w-[180px]" data-testid="select-sort">
+                <SelectValue placeholder="Sort" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="enrolled_desc" data-testid="sort-enrolled-desc">Enrolled (Newest)</SelectItem>
+                <SelectItem value="enrolled_asc" data-testid="sort-enrolled-asc">Enrolled (Oldest)</SelectItem>
+                <SelectItem value="name_asc" data-testid="sort-name-asc">Name (A–Z)</SelectItem>
+                <SelectItem value="name_desc" data-testid="sort-name-desc">Name (Z–A)</SelectItem>
+                <SelectItem value="assigned_asc" data-testid="sort-assigned-asc">Assigned To (A–Z)</SelectItem>
+                <SelectItem value="assigned_desc" data-testid="sort-assigned-desc">Assigned To (Z–A)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-2 bg-card border rounded-lg px-3 py-1.5">
+            <Select value={enrolledCategory} onValueChange={(v) => setEnrolledCategory(v as EnrolledCategory)}>
+              <SelectTrigger className="border-0 bg-transparent h-auto p-0 focus:ring-0 w-[160px]" data-testid="select-enrolled-category">
+                <SelectValue placeholder="Enrolled" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" data-testid="enrolled-all">Enrolled (All)</SelectItem>
+                <SelectItem value="today" data-testid="enrolled-today">Enrolled (Today)</SelectItem>
+                <SelectItem value="last7" data-testid="enrolled-last7">Enrolled (Last 7 Days)</SelectItem>
+                <SelectItem value="thisMonth" data-testid="enrolled-thismonth">Enrolled (This Month)</SelectItem>
               </SelectContent>
             </Select>
           </div>
