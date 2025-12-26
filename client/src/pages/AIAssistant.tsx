@@ -46,10 +46,15 @@ export default function AIAssistant() {
     refetch: refetchStatus,
   } = useQuery<AIStatus>({
     queryKey: ['/api/ai/status'],
-    queryFn: async () => {
-      // Prevent infinite spinner if the server/proxy stalls
+    queryFn: async ({ signal }) => {
+      // Prevent infinite spinner if the server/proxy stalls (common on cold starts)
       const controller = new AbortController();
-      const timeout = window.setTimeout(() => controller.abort(), 12_000);
+
+      const onQueryAbort = () => controller.abort();
+      if (signal) signal.addEventListener('abort', onQueryAbort);
+
+      const timeout = window.setTimeout(() => controller.abort(), 25_000);
+
       try {
         const res = await fetch('/api/ai/status', {
           credentials: 'include',
@@ -60,11 +65,24 @@ export default function AIAssistant() {
           throw new Error(`${res.status}: ${text || res.statusText}`);
         }
         return JSON.parse(text) as AIStatus;
+      } catch (e: unknown) {
+        // Normalize AbortError so users don't see "signal is aborted without reason"
+        if (e instanceof DOMException && e.name === 'AbortError') {
+          throw new Error('408: Request timed out while checking AI status. Please retry.');
+        }
+        throw e;
       } finally {
         window.clearTimeout(timeout);
+        if (signal) signal.removeEventListener('abort', onQueryAbort);
       }
     },
-    retry: false,
+    retry: (failureCount, err) => {
+      const msg = (err as Error)?.message || '';
+      // Retry a couple times for cold start / transient network issues
+      if (msg.startsWith('408') && failureCount < 2) return true;
+      return false;
+    },
+    retryDelay: (attemptIndex) => Math.min(1500 * (attemptIndex + 1), 5000),
     staleTime: 5 * 60 * 1000,
   });
   
