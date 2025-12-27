@@ -8565,17 +8565,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Avoid caching while editing/refreshing images
         res.setHeader('Cache-Control', 'no-store, max-age=0');
 
+        // If SFTP is blocked/misconfigured on this environment, fall back to redirecting to a public WP asset host.
+        // This is critical on Render where outbound SSH can be blocked or env vars may be missing.
+        const derivedHost = (process.env.FTP_BASE_PATH || "ststaxrepair.org")
+          .replace(/^https?:\/\//, "")
+          .replace(/\/+$/, "");
+        const wpBase = (process.env.WP_ASSET_BASE_URL || `https://www.${derivedHost}` || "https://www.ststaxrepair.org")
+          .replace(/\/+$/, "");
+
         try {
           const ok = await ftpStorageService.streamFileToResponse(ftpPath, res, fileName);
           if (!ok) {
-            console.error(`[${diagId}] Failed to stream agent photo from FTP: ${ftpPath}`);
-            return res.status(404).json({ error: "Agent photo not found", diagId });
+            console.error(`[${diagId}] Failed to stream agent photo from FTP: ${ftpPath} (fallback to redirect)`);
+            return res.redirect(`${wpBase}/${ftpPath.replace(/^\/+/, "")}`);
           }
           return;
         } catch (e) {
-          // Avoid 500 spam in the UI; return 404 so the client can fall back to initials/avatar.
-          console.warn(`[${diagId}] FTP streaming error:`, e);
-          return res.status(404).json({ error: "Agent photo not available", diagId });
+          console.warn(`[${diagId}] FTP streaming error (fallback to redirect):`, e);
+          return res.redirect(`${wpBase}/${ftpPath.replace(/^\/+/, "")}`);
         }
       } else if (imageUrl.startsWith('http')) {
         // External URL - redirect

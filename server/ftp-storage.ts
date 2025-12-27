@@ -41,6 +41,28 @@ const BASE_PATH = process.env.FTP_BASE_PATH || "ststaxrepair.org";
 const UPLOADS_DIR = "uploads/clients";
 
 export class FTPStorageService {
+  private async tryExists(client: SftpClient, fullPath: string): Promise<boolean> {
+    try {
+      const exists = await client.exists(fullPath);
+      return !!exists;
+    } catch {
+      return false;
+    }
+  }
+
+  private async resolveFullPath(client: SftpClient, filePath: string): Promise<string | null> {
+    const clean = filePath.replace(/^\/+/, "");
+    const primary = `${BASE_PATH}/${clean}`;
+    const secondary = clean; // some hosts are already chrooted to the site root
+
+    // Prefer primary if it exists
+    if (BASE_PATH && (await this.tryExists(client, primary))) return primary;
+    if (await this.tryExists(client, secondary)) return secondary;
+
+    // Last chance: if BASE_PATH doesn't exist, try without it (already done), otherwise give up
+    return null;
+  }
+
   private async getClient(): Promise<SftpClient> {
     if (!FTP_HOST || !FTP_USER || !FTP_PASSWORD) {
       throw new Error(
@@ -120,17 +142,27 @@ export class FTPStorageService {
       const uniqueFileName = `${timestamp}_${sanitizedFileName}`;
       const normalizedBaseDir = baseDir.replace(/^\/+|\/+$/g, '');
       
-      // Use relative path from home directory
-      const remoteDirPath = `${BASE_PATH}/${normalizedBaseDir}/${clientId}`;
+      // Use relative path from home directory; some hosts may already be chrooted to site root.
+      const remoteDirPathPrimary = `${BASE_PATH}/${normalizedBaseDir}/${clientId}`;
+      const remoteDirPathSecondary = `${normalizedBaseDir}/${clientId}`;
       
-      console.log(`[FTP] Preparing upload: client=${clientId}, file=${fileName}, sanitized=${uniqueFileName}, dir=${remoteDirPath}, size=${fileBuffer.length}`);
+      console.log(`[FTP] Preparing upload: client=${clientId}, file=${fileName}, sanitized=${uniqueFileName}, dir=${remoteDirPathPrimary}, size=${fileBuffer.length}`);
       
       const t0 = Date.now();
       console.log(`[FTP] ensureDirectory start`);
-      await this.ensureDirectory(client, remoteDirPath);
+      try {
+        await this.ensureDirectory(client, remoteDirPathPrimary);
+      } catch (e) {
+        console.warn(`[FTP] ensureDirectory primary failed, trying secondary path`, e);
+        await this.ensureDirectory(client, remoteDirPathSecondary);
+      }
       console.log(`[FTP] ensureDirectory done in ${Date.now() - t0}ms`);
 
-      const remotePath = `${remoteDirPath}/${uniqueFileName}`;
+      let remotePath = `${remoteDirPathPrimary}/${uniqueFileName}`;
+      // If primary dir doesn't exist (chroot), write to secondary
+      if (!(await this.tryExists(client, remoteDirPathPrimary))) {
+        remotePath = `${remoteDirPathSecondary}/${uniqueFileName}`;
+      }
       console.log(`[FTP] put start -> ${remotePath}`);
       await client.put(fileBuffer, remotePath);
       console.log(`[FTP] put done in ${Date.now() - t0}ms`);
@@ -144,7 +176,8 @@ export class FTPStorageService {
         console.error(`[FTP] WARNING: Could not verify file after upload:`, verifyError);
       }
       
-      const filePath = `${normalizedBaseDir}/${clientId}/${uniqueFileName}`;
+      const remoteDirUsed = remotePath.split("/").slice(0, -1).join("/");
+      const filePath = remoteDirUsed.replace(/^\/+/, "");
       const fileUrl = `/ftp/${filePath}`;
       
       return { filePath, fileUrl };
@@ -191,10 +224,9 @@ export class FTPStorageService {
     const client = await this.getClient();
     
     try {
-      const fullPath = `${BASE_PATH}/${filePath}`;
-      const exists = await client.exists(fullPath);
-      if (!exists) {
-        console.error(`[FTP] File not found: ${fullPath}`);
+      const fullPath = await this.resolveFullPath(client, filePath);
+      if (!fullPath) {
+        console.error(`[FTP] File not found (tried base/no-base): ${filePath}`);
         return false;
       }
 
