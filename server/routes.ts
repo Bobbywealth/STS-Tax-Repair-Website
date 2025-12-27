@@ -2574,13 +2574,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // FTP-backed photo
       if (imageUrl.startsWith("/ftp/")) {
         const relativePath = imageUrl.replace("/ftp/", "");
-        const success = await ftpStorageService.streamFileToResponse(
-          relativePath,
-          res,
-          "profile-photo"
-        );
-        if (success) return;
-        return res.status(404).json({ error: "Photo not found on FTP" });
+        try {
+          const success = await ftpStorageService.streamFileToResponse(
+            relativePath,
+            res,
+            "profile-photo",
+          );
+          if (success) return;
+          return res.status(404).json({ error: "Photo not found on FTP" });
+        } catch {
+          // Avoid 500 spam on avatars; allow UI to fall back to initials.
+          return res.status(404).json({ error: "Photo not available" });
+        }
       }
 
       // Object storage
@@ -5350,7 +5355,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/test-ftp-network", isAuthenticated, async (req, res) => {
     const net = require('net');
     const host = process.env.FTP_HOST || '198.12.220.248';
-    const port = parseInt(process.env.FTP_PORT || '21');
+    // This app uses SFTP (SSH). Default to port 22.
+    const port = parseInt(process.env.FTP_PORT || '22');
     
     console.log(`[FTP-NETWORK-TEST] Testing connection to ${host}:${port}`);
     
@@ -8559,26 +8565,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Avoid caching while editing/refreshing images
         res.setHeader('Cache-Control', 'no-store, max-age=0');
 
-        // If SFTP is blocked/misconfigured on this environment, fall back to redirecting to a public WP asset host.
-        // This is critical on Render where outbound SSH can be blocked or env vars may be missing.
-        const wpBase = (process.env.WP_ASSET_BASE_URL || "https://www.ststaxrepair.net").replace(/\/+$/, "");
-
-        // If the path is a WordPress public asset, prefer redirect (no SFTP dependency).
-        // This fixes "previous images not showing" even when Render cannot reach SFTP.
-        if (ftpPath.startsWith("wp-content/")) {
-          return res.redirect(`${wpBase}/${ftpPath.replace(/^\/+/, "")}`);
-        }
-
         try {
           const ok = await ftpStorageService.streamFileToResponse(ftpPath, res, fileName);
           if (!ok) {
-            console.error(`[${diagId}] Failed to stream agent photo from FTP: ${ftpPath} (fallback to redirect)`);
-            return res.redirect(`${wpBase}/${ftpPath.replace(/^\/+/, "")}`);
+            console.error(`[${diagId}] Failed to stream agent photo from FTP: ${ftpPath}`);
+            return res.status(404).json({ error: "Agent photo not found", diagId });
           }
           return;
         } catch (e) {
-          console.warn(`[${diagId}] FTP streaming error (fallback to redirect):`, e);
-          return res.redirect(`${wpBase}/${ftpPath.replace(/^\/+/, "")}`);
+          // Avoid 500 spam in the UI; return 404 so the client can fall back to initials/avatar.
+          console.warn(`[${diagId}] FTP streaming error:`, e);
+          return res.status(404).json({ error: "Agent photo not available", diagId });
         }
       } else if (imageUrl.startsWith('http')) {
         // External URL - redirect
