@@ -8563,6 +8563,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // This is critical on Render where outbound SSH can be blocked or env vars may be missing.
         const wpBase = (process.env.WP_ASSET_BASE_URL || "https://www.ststaxrepair.net").replace(/\/+$/, "");
 
+        // If the path is a WordPress public asset, prefer redirect (no SFTP dependency).
+        // This fixes "previous images not showing" even when Render cannot reach SFTP.
+        if (ftpPath.startsWith("wp-content/")) {
+          return res.redirect(`${wpBase}/${ftpPath.replace(/^\/+/, "")}`);
+        }
+
         try {
           const ok = await ftpStorageService.streamFileToResponse(ftpPath, res, fileName);
           if (!ok) {
