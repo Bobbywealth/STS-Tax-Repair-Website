@@ -41,6 +41,9 @@ const BASE_PATH = process.env.FTP_BASE_PATH || "ststaxrepair.org";
 const UPLOADS_DIR = "uploads/clients";
 
 export class FTPStorageService {
+  private client: SftpClient | null = null;
+  private connectingPromise: Promise<SftpClient> | null = null;
+
   private async tryExists(client: SftpClient, fullPath: string): Promise<boolean> {
     try {
       const exists = await client.exists(fullPath);
@@ -77,36 +80,70 @@ export class FTPStorageService {
       );
     }
 
-    const client = new SftpClient();
-    console.log(
-      `[FTP] Connecting via SFTP to ${FTP_HOST}:${FTP_PORT} as ${FTP_USER} at ${new Date().toISOString()}...`
-    );
-
-    try {
-      await client.connect({
-        host: FTP_HOST,
-        port: FTP_PORT,
-        username: FTP_USER,
-        password: FTP_PASSWORD,
-        readyTimeout: 15000,
-        keepaliveInterval: 10000,
-        keepaliveCountMax: 3,
-      });
-
-      console.log(`[FTP] Connected successfully at ${new Date().toISOString()}`);
-
-      // Log the current working directory after login
-      const pwd = await client.cwd();
-      console.log(`[FTP] Current directory: ${pwd}`);
-    } catch (connectError) {
-      console.error(
-        `[FTP] Connection failed at ${new Date().toISOString()}:`,
-        connectError
-      );
-      throw connectError;
+    // Return existing client if connected
+    if (this.client) {
+      try {
+        // Simple test to see if still alive
+        await this.client.cwd();
+        return this.client;
+      } catch (err) {
+        console.warn("[FTP] Existing client stale, reconnecting...");
+        this.client = null;
+      }
     }
 
-    return client;
+    // Prevent parallel connection attempts
+    if (this.connectingPromise) {
+      return this.connectingPromise;
+    }
+
+    this.connectingPromise = (async () => {
+      const client = new SftpClient();
+      console.log(
+        `[FTP] Connecting via SFTP to ${FTP_HOST}:${FTP_PORT} as ${FTP_USER} at ${new Date().toISOString()}...`
+      );
+
+      try {
+        await client.connect({
+          host: FTP_HOST,
+          port: FTP_PORT,
+          username: FTP_USER,
+          password: FTP_PASSWORD,
+          readyTimeout: 15000,
+          keepaliveInterval: 10000,
+          keepaliveCountMax: 3,
+        });
+
+        console.log(`[FTP] Connected successfully at ${new Date().toISOString()}`);
+
+        // Set up event handlers to clear the singleton on error/end
+        client.on('error', (err) => {
+          console.error('[FTP] Connection error event:', err);
+          this.client = null;
+        });
+        client.on('end', () => {
+          console.log('[FTP] Connection ended event');
+          this.client = null;
+        });
+        client.on('close', () => {
+          console.log('[FTP] Connection closed event');
+          this.client = null;
+        });
+
+        this.client = client;
+        return client;
+      } catch (connectError) {
+        console.error(
+          `[FTP] Connection failed at ${new Date().toISOString()}:`,
+          connectError
+        );
+        throw connectError;
+      } finally {
+        this.connectingPromise = null;
+      }
+    })();
+
+    return this.connectingPromise;
   }
 
   async uploadFile(
@@ -184,10 +221,8 @@ export class FTPStorageService {
     } catch (uploadError) {
       console.error(`[FTP] Upload failed:`, uploadError);
       throw uploadError;
-    } finally {
-      console.log(`[FTP] Closing SFTP client`);
-      client.end();
     }
+    // No client.end() here, we reuse the singleton
   }
 
   async deleteFile(filePath: string): Promise<boolean> {
@@ -201,8 +236,6 @@ export class FTPStorageService {
     } catch (error) {
       console.error(`[FTP] Failed to delete file:`, error);
       return false;
-    } finally {
-      client.end();
     }
   }
 
@@ -215,39 +248,49 @@ export class FTPStorageService {
       return !!exists;
     } catch {
       return false;
-    } finally {
-      client.end();
     }
   }
 
   async streamFileToResponse(filePath: string, res: any, documentName: string): Promise<boolean> {
-    const client = await this.getClient();
-    
-    try {
-      const fullPath = await this.resolveFullPath(client, filePath);
-      if (!fullPath) {
-        console.error(`[FTP] File not found (tried base/no-base): ${filePath}`);
+    // Retry once on connection failure
+    let retryCount = 0;
+    while (retryCount < 2) {
+      try {
+        const client = await this.getClient();
+        const fullPath = await this.resolveFullPath(client, filePath);
+        if (!fullPath) {
+          console.error(`[FTP] File not found (tried base/no-base): ${filePath}`);
+          return false;
+        }
+
+        const buffer = (await client.get(fullPath)) as Buffer;
+
+        // Determine content type
+        const fileExt = documentName.split('.').pop()?.toLowerCase();
+        const mimeType = this.getMimeType(fileExt || '');
+        
+        res.setHeader('Content-Type', mimeType);
+        res.setHeader('Content-Disposition', `inline; filename="${documentName}"`);
+        res.send(buffer);
+        
+        console.log(`[FTP] Stream completed for ${fullPath}`);
+        return true;
+      } catch (error: any) {
+        console.error(`[FTP] Failed to stream file ${filePath} (attempt ${retryCount + 1}):`, error);
+        
+        // If it was a connection error, clear the client and retry
+        if (error.message.includes('end') || error.message.includes('close') || error.message.includes('Connection')) {
+          this.client = null;
+          retryCount++;
+          if (retryCount < 2) {
+            await new Promise(resolve => setTimeout(resolve, 500)); // wait 0.5s before retry
+            continue;
+          }
+        }
         return false;
       }
-
-      const buffer = (await client.get(fullPath)) as Buffer;
-
-      // Determine content type
-      const fileExt = documentName.split('.').pop()?.toLowerCase();
-      const mimeType = this.getMimeType(fileExt || '');
-      
-      res.setHeader('Content-Type', mimeType);
-      res.setHeader('Content-Disposition', `inline; filename="${documentName}"`);
-      res.send(buffer);
-      
-      console.log(`[FTP] Stream completed for ${fullPath}`);
-      return true;
-    } catch (error) {
-      console.error(`[FTP] Failed to stream file ${filePath}:`, error);
-      return false;
-    } finally {
-      client.end();
     }
+    return false;
   }
 
   private async ensureDirectory(client: SftpClient, dirPath: string): Promise<void> {
@@ -309,8 +352,6 @@ export class FTPStorageService {
     } catch (error) {
       console.error(`[FTP] Error listing directory:`, error);
       throw error;
-    } finally {
-      client.end();
     }
   }
 
