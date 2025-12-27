@@ -667,7 +667,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Run MySQL migrations on startup
-  await runMySQLMigrations();
+  if (!isDemoStorage) {
+    await runMySQLMigrations();
+  } else {
+    console.warn("[DB] MySQL not configured; skipping migrations (demo/no-DB mode).");
+  }
 
   // Setup Authentication
   await setupAuth(app);
@@ -722,9 +726,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     };
 
     try {
-      const dbStart = Date.now();
-      await mysqlPool.query("SELECT 1 as ok");
-      result.db.latencyMs = Date.now() - dbStart;
+      if (isDemoStorage) {
+        result.db.ok = false;
+        result.db.error = "MySQL not configured";
+        // In production, missing DB is a hard failure. In dev, we allow no-DB mode.
+        if (isProduction) result.ok = false;
+      } else {
+        const dbStart = Date.now();
+        await mysqlPool.query("SELECT 1 as ok");
+        result.db.latencyMs = Date.now() - dbStart;
+      }
     } catch (e: any) {
       result.db.ok = false;
       result.db.error = e?.message || String(e);
@@ -8286,26 +8297,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all homepage agents (public - no auth required)
   app.get("/api/homepage-agents", async (req, res) => {
     try {
-      const agents = await mysqlStorage.getHomePageAgents();
-      console.log(`[HOMEPAGE-AGENTS] Returning ${agents.length} agents`);
-      agents.forEach(a => {
-        console.log(`[HOMEPAGE-AGENTS] Agent: ${a.name}, imageUrl: ${a.imageUrl || 'NONE'}`);
-      });
-      res.json(agents);
+      const agents = await storage.getHomePageAgents();
+      return res.json(agents);
     } catch (error: any) {
       console.error('Error fetching homepage agents:', error);
-      res.status(500).json({ error: error.message });
+      // Prefer a safe empty response for the public homepage in demo/no-DB mode
+      if (isDemoStorage) return res.json([]);
+      return res.status(500).json({ error: error.message });
     }
   });
 
   // Create a new homepage agent (admin only)
   app.post("/api/homepage-agents", isAuthenticated, requireAdmin(), async (req, res) => {
     try {
-      const agent = await mysqlStorage.createHomePageAgent(req.body);
-      res.status(201).json(agent);
+      const agent = await storage.createHomePageAgent(req.body);
+      return res.status(201).json(agent);
     } catch (error: any) {
       console.error('Error creating homepage agent:', error);
-      res.status(500).json({ error: error.message });
+      return res.status(500).json({ error: error.message });
     }
   });
 
@@ -8313,7 +8322,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/homepage-agents/:id", isAuthenticated, requireAdmin(), async (req, res) => {
     try {
       const { id } = req.params;
-      const agent = await mysqlStorage.updateHomePageAgent(id, req.body);
+      const agent = await storage.updateHomePageAgent(id, req.body);
       if (!agent) {
         return res.status(404).json({ error: "Agent not found" });
       }
@@ -8328,7 +8337,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/homepage-agents/:id", isAuthenticated, requireAdmin(), async (req, res) => {
     try {
       const { id } = req.params;
-      const deleted = await mysqlStorage.deleteHomePageAgent(id);
+      const deleted = await storage.deleteHomePageAgent(id);
       if (!deleted) {
         return res.status(404).json({ error: "Agent not found" });
       }
@@ -8346,7 +8355,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!Array.isArray(agentIds)) {
         return res.status(400).json({ error: "agentIds must be an array" });
       }
-      await mysqlStorage.reorderHomePageAgents(agentIds);
+      await storage.reorderHomePageAgents(agentIds);
       res.json({ success: true });
     } catch (error: any) {
       console.error('Error reordering homepage agents:', error);
@@ -8395,13 +8404,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Validate agent exists first
-      const existingAgent = await mysqlStorage.getHomePageAgentById(id);
+      const existingAgent = await storage.getHomePageAgentById(id);
       if (!existingAgent) {
         return res.status(404).json({ error: "Agent not found" });
       }
       
       // Store the object path - the /api/agent-photos/:id endpoint will handle serving
-      const agent = await mysqlStorage.updateHomePageAgent(id, { imageUrl: objectPath });
+      const agent = await storage.updateHomePageAgent(id, { imageUrl: objectPath } as any);
       
       res.json({ success: true, imageUrl: objectPath, agent });
     } catch (error: any) {
@@ -8420,7 +8429,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const contentLength = Number(req.headers['content-length'] || 0);
 
       // Check env configuration early for clearer errors
-      const missingEnv = ['FTP_HOST', 'FTP_USER', 'FTP_PASSWORD']
+      const missingEnv = ['FTP_HOST', 'FTP_USER', 'FTP_PASSWORD', 'FTP_PORT']
         .filter((k) => !process.env[k]);
       if (missingEnv.length > 0) {
         console.error(`[${diagId}] Missing FTP env vars: ${missingEnv.join(', ')}`);
@@ -8430,13 +8439,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           diagId,
         });
       }
+      
+      // Guardrail: this code path uses SFTP; port 21 will fail with "Unexpected end".
+      if (String(process.env.FTP_PORT || "").trim() === "21") {
+        return res.status(500).json({
+          error: "FTP_PORT is set to 21, but this app requires SFTP. Set FTP_PORT=22.",
+          diagId,
+        });
+      }
 
       if (!agentId || !fileName) {
         return res.status(400).json({ error: "x-agent-id and x-file-name headers are required" });
       }
 
       // Validate agent exists
-      const existingAgent = await mysqlStorage.getHomePageAgentById(agentId);
+      const existingAgent = await storage.getHomePageAgentById(agentId);
       if (!existingAgent) {
         return res.status(404).json({ error: "Agent not found" });
       }
@@ -8483,7 +8500,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Update agent with new image URL
       const imageUrl = `/ftp/${result.filePath}`;
-      await mysqlStorage.updateHomePageAgent(agentId, { imageUrl });
+      await storage.updateHomePageAgent(agentId, { imageUrl } as any);
 
       res.json({ 
         success: true, 
@@ -8507,7 +8524,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Clean ID in case of browser quirks
       const cleanId = id.split('?')[0].split(':')[0];
-      const agent = await mysqlStorage.getHomePageAgentById(cleanId);
+      const agent = await storage.getHomePageAgentById(cleanId);
       
       if (!agent) {
         console.error(`[${diagId}] Agent not found in DB: ${cleanId}`);
@@ -8542,12 +8559,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Avoid caching while editing/refreshing images
         res.setHeader('Cache-Control', 'no-store, max-age=0');
 
-        const ok = await ftpStorageService.streamFileToResponse(ftpPath, res, fileName);
-        if (!ok) {
-          console.error(`[${diagId}] Failed to stream agent photo from FTP: ${ftpPath}`);
-          return res.status(404).json({ error: "Agent photo not found", diagId });
+        // If SFTP is blocked/misconfigured on this environment, fall back to redirecting to a public WP asset host.
+        // This is critical on Render where outbound SSH can be blocked or env vars may be missing.
+        const wpBase = (process.env.WP_ASSET_BASE_URL || "https://www.ststaxrepair.net").replace(/\/+$/, "");
+
+        try {
+          const ok = await ftpStorageService.streamFileToResponse(ftpPath, res, fileName);
+          if (!ok) {
+            console.error(`[${diagId}] Failed to stream agent photo from FTP: ${ftpPath} (fallback to redirect)`);
+            return res.redirect(`${wpBase}/${ftpPath.replace(/^\/+/, "")}`);
+          }
+          return;
+        } catch (e) {
+          console.warn(`[${diagId}] FTP streaming error (fallback to redirect):`, e);
+          return res.redirect(`${wpBase}/${ftpPath.replace(/^\/+/, "")}`);
         }
-        return;
       } else if (imageUrl.startsWith('http')) {
         // External URL - redirect
         return res.redirect(imageUrl);

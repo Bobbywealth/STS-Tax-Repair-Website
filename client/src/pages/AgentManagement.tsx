@@ -121,8 +121,12 @@ export default function AgentManagement() {
           clearTimeout(timeoutId);
           
           if (!ftpResponse.ok) {
-            const errorData = await ftpResponse.json().catch(() => ({}));
-            throw new Error(errorData.error || 'FTP upload failed');
+            const errorData = await ftpResponse.json().catch(() => ({} as any));
+            const diag = errorData?.diagId ? ` (diag: ${errorData.diagId})` : "";
+            const missing = Array.isArray(errorData?.missingEnv) && errorData.missingEnv.length
+              ? ` Missing env: ${errorData.missingEnv.join(", ")}.`
+              : "";
+            throw new Error((errorData?.error || 'FTP upload failed') + diag + missing);
           }
           
           const result = await ftpResponse.json().catch(() => ({}));

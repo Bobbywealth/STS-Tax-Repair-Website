@@ -5,7 +5,9 @@ const FTP_HOST = process.env.FTP_HOST || "";
 const FTP_USER = process.env.FTP_USER || "";
 const FTP_PASSWORD = process.env.FTP_PASSWORD || "";
 // Default to SFTP port 22 (supported by GoDaddy). Override with FTP_PORT if needed.
-const FTP_PORT = parseInt(process.env.FTP_PORT || "22");
+const FTP_PORT = Number.isFinite(parseInt(process.env.FTP_PORT || "22"))
+  ? parseInt(process.env.FTP_PORT || "22")
+  : 22;
 
 // Overall timeout for transfer operations (4 minutes for uploads)
 const FTP_OPERATION_TIMEOUT = 60000;
@@ -34,7 +36,8 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, operationName: s
 
 // The SFTP user lands in /home/i28qwzd7d2dt/ so paths are relative to that
 // ststaxrepair.org is a folder directly in home, NOT inside public_html
-const BASE_PATH = "ststaxrepair.org";
+// Some environments may use a different site root folder name; allow override.
+const BASE_PATH = process.env.FTP_BASE_PATH || "ststaxrepair.org";
 const UPLOADS_DIR = "uploads/clients";
 
 export class FTPStorageService {
@@ -42,6 +45,13 @@ export class FTPStorageService {
     if (!FTP_HOST || !FTP_USER || !FTP_PASSWORD) {
       throw new Error(
         "FTP credentials not configured. Set FTP_HOST, FTP_USER, and FTP_PASSWORD environment variables."
+      );
+    }
+
+    // This service uses SFTP (SSH). Port 21 is plain FTP and will fail with cryptic errors like "Unexpected end".
+    if (FTP_PORT === 21) {
+      throw new Error(
+        "FTP_PORT is set to 21, but this app uses SFTP (SSH). Set FTP_PORT=22 (or your SFTP port)."
       );
     }
 
