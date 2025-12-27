@@ -8525,7 +8525,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Homepage Agent photos are FTP-only.
       if (!imageUrl.startsWith("/ftp/")) {
-        return res.status(404).json({ error: "Agent photo not found", diagId });
+        console.warn(`[${diagId}] Agent ${cleanId} imageUrl does not start with /ftp/: ${imageUrl}`);
+        return res.status(404).json({ error: "Agent photo not found (not an FTP path)", diagId });
       }
 
       const ftpPath = imageUrl.replace("/ftp/", "");
@@ -8534,14 +8535,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Avoid caching while editing/refreshing images
       res.setHeader("Cache-Control", "no-store, max-age=0");
 
+      console.log(`[${diagId}] Attempting to stream from FTP: ${ftpPath}`);
       const ok = await ftpStorageService.streamFileToResponse(ftpPath, res, fileName);
       if (!ok) {
-        return res.status(404).json({ error: "Agent photo not found", diagId });
+        console.error(`[${diagId}] Failed to stream file from FTP: ${ftpPath}`);
+        return res.status(404).json({ error: "Agent photo not found on server", diagId });
       }
       return;
     } catch (error: any) {
       console.error(`[${diagId}] Error serving agent photo:`, error);
-      res.status(500).json({ error: error.message, diagId });
+      res.status(500).json({ 
+        error: error.message, 
+        diagId,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+        ftpConfig: {
+          host: process.env.FTP_HOST ? "configured" : "missing",
+          user: process.env.FTP_USER ? "configured" : "missing",
+          port: process.env.FTP_PORT || "default(22)",
+        }
+      });
+    }
+  });
+
+  // Diagnostic endpoint for FTP (Admin only)
+  app.get("/api/diag/ftp-test", isAuthenticated, requireAdmin(), async (req, res) => {
+    const diagId = `ftp-test-${Date.now()}`;
+    try {
+      console.log(`[${diagId}] Starting FTP diagnostic test...`);
+      const results: any = {
+        diagId,
+        env: {
+          FTP_HOST: process.env.FTP_HOST ? "present" : "MISSING",
+          FTP_USER: process.env.FTP_USER ? "present" : "MISSING",
+          FTP_PASSWORD: process.env.FTP_PASSWORD ? "present" : "MISSING",
+          FTP_PORT: process.env.FTP_PORT || "22 (default)",
+          FTP_BASE_PATH: process.env.FTP_BASE_PATH || "ststaxrepair.org (default)",
+        }
+      };
+
+      if (!process.env.FTP_HOST || !process.env.FTP_USER || !process.env.FTP_PASSWORD) {
+        return res.status(500).json({ error: "Missing FTP credentials", ...results });
+      }
+
+      const startTime = Date.now();
+      try {
+        const list = await ftpStorageService.listDirectory("wp-content/uploads/agent-photos");
+        results.connection = "SUCCESS";
+        results.directoryListing = list;
+        results.durationMs = Date.now() - startTime;
+      } catch (connErr: any) {
+        results.connection = "FAILED";
+        results.error = connErr.message;
+        results.stack = connErr.stack;
+        
+        // Try root directory as a fallback test
+        try {
+          const rootList = await ftpStorageService.listDirectory("");
+          results.rootListing = rootList;
+          results.rootListingStatus = "SUCCESS";
+        } catch (rootErr: any) {
+          results.rootListingStatus = "FAILED";
+          results.rootError = rootErr.message;
+        }
+      }
+
+      res.json(results);
+    } catch (error: any) {
+      console.error(`[${diagId}] Fatal diagnostic error:`, error);
+      res.status(500).json({ error: error.message, diagId: diagId });
     }
   });
 
