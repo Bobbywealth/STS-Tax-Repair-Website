@@ -8378,21 +8378,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!fileName) {
         return res.status(400).json({ error: "fileName is required" });
       }
-      
-      // Check if we're on Replit with Object Storage available
-      if (isReplitEnvironment()) {
-        const objectStorageService = new ObjectStorageService();
-        const { uploadURL, objectPath } = await objectStorageService.getAgentPhotoUploadURL(id, fileName);
-        res.json({ uploadURL, objectPath, mode: 'object-storage' });
-      } else {
-        // On Render/other environments, use FTP
-        res.json({ 
-          uploadURL: '/api/homepage-agents/photo-ftp',
-          objectPath: null,
-          mode: 'ftp',
-          agentId: id
-        });
-      }
+
+      // Homepage Agents photos are FTP-only (no object storage).
+      return res.json({
+        uploadURL: "/api/homepage-agents/photo-ftp",
+        objectPath: null,
+        mode: "ftp",
+        agentId: id,
+      });
     } catch (error: any) {
       console.error('Error getting agent photo upload URL:', error);
       res.status(500).json({ error: error.message });
@@ -8402,23 +8395,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Confirm agent photo upload and update agent record (admin only)
   app.post("/api/homepage-agents/:id/photo/confirm", isAuthenticated, requireAdmin(), async (req, res) => {
     try {
-      const { id } = req.params;
-      const { objectPath } = req.body;
-      
-      if (!objectPath) {
-        return res.status(400).json({ error: "objectPath is required" });
-      }
-      
-      // Validate agent exists first
-      const existingAgent = await storage.getHomePageAgentById(id);
-      if (!existingAgent) {
-        return res.status(404).json({ error: "Agent not found" });
-      }
-      
-      // Store the object path - the /api/agent-photos/:id endpoint will handle serving
-      const agent = await storage.updateHomePageAgent(id, { imageUrl: objectPath } as any);
-      
-      res.json({ success: true, imageUrl: objectPath, agent });
+      // FTP-only: this endpoint is not used.
+      return res.status(400).json({ error: "Not supported (FTP-only). Use /api/homepage-agents/photo-ftp" });
     } catch (error: any) {
       console.error('Error confirming agent photo upload:', error);
       res.status(500).json({ error: error.message });
@@ -8545,52 +8523,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const imageUrl = agent.imageUrl;
       console.log(`[${diagId}] Agent ${cleanId} imageUrl in DB: ${imageUrl}`);
       
-      // Handle different storage formats
-      if (imageUrl.startsWith('/objects/public/')) {
-        // Replit Object Storage
-        const objectStorageService = new ObjectStorageService();
-        const file = await objectStorageService.getPublicObjectFile(imageUrl);
-        if (!file) {
-          console.error(`[${diagId}] Replit object file not found: ${imageUrl}`);
-          return res.status(404).json({ error: "Photo file not found", diagId });
-        }
-        await objectStorageService.downloadObject(file, res);
-      } else if (imageUrl.startsWith('/ftp/')) {
-        // FTP/SFTP storage - stream via SFTP instead of redirecting.
-        // Redirecting to https://ststaxrepair.org/wp-content/... hits Render (this app),
-        // not the GoDaddy filesystem, so it 404s. Streaming ensures images always load.
-        const ftpPath = imageUrl.replace('/ftp/', '');
-        const fileName = ftpPath.split('/').pop() || 'agent-photo';
-
-        // Avoid caching while editing/refreshing images
-        res.setHeader('Cache-Control', 'no-store, max-age=0');
-
-        // If SFTP is blocked/misconfigured on this environment, fall back to redirecting to a public WP asset host.
-        // This is critical on Render where outbound SSH can be blocked or env vars may be missing.
-        const derivedHost = (process.env.FTP_BASE_PATH || "ststaxrepair.org")
-          .replace(/^https?:\/\//, "")
-          .replace(/\/+$/, "");
-        const wpBase = (process.env.WP_ASSET_BASE_URL || `https://www.${derivedHost}` || "https://www.ststaxrepair.org")
-          .replace(/\/+$/, "");
-
-        try {
-          const ok = await ftpStorageService.streamFileToResponse(ftpPath, res, fileName);
-          if (!ok) {
-            console.error(`[${diagId}] Failed to stream agent photo from FTP: ${ftpPath} (fallback to redirect)`);
-            return res.redirect(`${wpBase}/${ftpPath.replace(/^\/+/, "")}`);
-          }
-          return;
-        } catch (e) {
-          console.warn(`[${diagId}] FTP streaming error (fallback to redirect):`, e);
-          return res.redirect(`${wpBase}/${ftpPath.replace(/^\/+/, "")}`);
-        }
-      } else if (imageUrl.startsWith('http')) {
-        // External URL - redirect
-        return res.redirect(imageUrl);
-      } else {
-        console.error(`[${diagId}] Unknown image format for agent ${cleanId}: ${imageUrl}`);
-        return res.status(404).json({ error: "Unknown image format", diagId });
+      // Homepage Agent photos are FTP-only.
+      if (!imageUrl.startsWith("/ftp/")) {
+        return res.status(404).json({ error: "Agent photo not found", diagId });
       }
+
+      const ftpPath = imageUrl.replace("/ftp/", "");
+      const fileName = ftpPath.split("/").pop() || "agent-photo";
+
+      // Avoid caching while editing/refreshing images
+      res.setHeader("Cache-Control", "no-store, max-age=0");
+
+      const ok = await ftpStorageService.streamFileToResponse(ftpPath, res, fileName);
+      if (!ok) {
+        return res.status(404).json({ error: "Agent photo not found", diagId });
+      }
+      return;
     } catch (error: any) {
       console.error(`[${diagId}] Error serving agent photo:`, error);
       res.status(500).json({ error: error.message, diagId });
