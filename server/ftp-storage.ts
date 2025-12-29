@@ -213,8 +213,8 @@ export class FTPStorageService {
         console.error(`[FTP] WARNING: Could not verify file after upload:`, verifyError);
       }
       
-      const remoteDirUsed = remotePath.split("/").slice(0, -1).join("/");
-      const filePath = remoteDirUsed.replace(/^\/+/, "");
+      // Return the full file path (including filename), stripped of leading slashes
+      const filePath = remotePath.replace(/^\/+/, "");
       const fileUrl = `/ftp/${filePath}`;
       
       return { filePath, fileUrl };
