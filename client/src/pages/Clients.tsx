@@ -39,6 +39,7 @@ interface ClientTableData {
   assignedTo: string;
   city?: string;
   state?: string;
+  zipCode?: string;
   estimatedRefund?: string;
   preparerName?: string;
   createdAt: string;
@@ -353,6 +354,7 @@ export default function Clients() {
           assignedTo: filingAssigned || fallbackAssigned || "Unassigned",
           city: user.city || undefined,
           state: user.state || undefined,
+          zipCode: user.zipCode || undefined,
           estimatedRefund: filing?.estimatedRefund || undefined,
           preparerName: filing?.preparerName || undefined,
           createdAt: user.createdAt ? new Date(user.createdAt).toISOString() : new Date().toISOString(),
@@ -371,7 +373,8 @@ export default function Clients() {
         client.email.toLowerCase().includes(query) ||
         client.phone.toLowerCase().includes(query) ||
         (client.city && client.city.toLowerCase().includes(query)) ||
-        (client.state && client.state.toLowerCase().includes(query))
+        (client.state && client.state.toLowerCase().includes(query)) ||
+        (client.zipCode && client.zipCode.toLowerCase().includes(query))
       );
     }
 
