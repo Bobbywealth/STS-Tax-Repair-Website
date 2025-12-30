@@ -54,7 +54,14 @@ interface ClientsTableProps {
   onBulkAssign?: (clientIds: string[], preparerId: string, preparerName: string) => void;
 }
 
-export function ClientsTable({ 
+import { useState, useMemo, memo } from "react";
+// ... (imports)
+import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
+
+// ... (interfaces)
+
+export const ClientsTable = memo(function ClientsTable({ 
   clients, 
   staffMembers = [],
   selectedYear,
@@ -64,16 +71,11 @@ export function ClientsTable({
   onAssignClient,
   onBulkAssign,
 }: ClientsTableProps) {
-  const [searchTerm, setSearchTerm] = useState("");
   const [selectedClients, setSelectedClients] = useState<Set<string>>(new Set());
-  const [clientStatuses, setClientStatuses] = useState<Record<string, Client["status"]>>(
-    clients.reduce((acc, client) => ({ ...acc, [client.id]: client.status }), {})
-  );
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
   const handleStatusChange = (clientId: string, newStatus: Client["status"]) => {
-    setClientStatuses(prev => ({ ...prev, [clientId]: newStatus }));
     onStatusChange?.(clientId, newStatus);
     
     toast({
@@ -84,7 +86,7 @@ export function ClientsTable({
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedClients(new Set(filteredClients.map(c => c.id)));
+      setSelectedClients(new Set(clients.map(c => c.id)));
     } else {
       setSelectedClients(new Set());
     }
@@ -115,23 +117,15 @@ export function ClientsTable({
     }
   };
 
-  const filteredClients = useMemo(() => {
-    return clients.filter((client) =>
-      client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.phone.includes(searchTerm)
-    );
-  }, [clients, searchTerm]);
-
-  const allSelected = filteredClients.length > 0 && filteredClients.every(c => selectedClients.has(c.id));
-  const someSelected = filteredClients.some(c => selectedClients.has(c.id));
+  const allSelected = clients.length > 0 && clients.every(c => selectedClients.has(c.id));
+  const someSelected = clients.some(c => selectedClients.has(c.id));
 
   return (
     <Card>
       <CardHeader>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <CardTitle className="text-xl">Clients</CardTitle>
+            <CardTitle className="text-xl">Clients List</CardTitle>
             {selectedClients.size > 0 && (
               <Badge variant="secondary" className="gap-1">
                 <UserCheck className="h-3 w-3" />
@@ -172,30 +166,20 @@ export function ClientsTable({
                 </SelectContent>
               </Select>
             )}
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search clients..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9"
-                data-testid="input-search-clients-table"
-              />
-            </div>
           </div>
         </div>
       </CardHeader>
       <CardContent className="p-0 md:p-6">
         {/* Mobile iOS-style List View */}
         <div className="md:hidden p-4">
-          {filteredClients.length === 0 ? (
+          {clients.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No clients found matching your search.
             </div>
           ) : (
             <div className="overflow-hidden rounded-2xl border bg-card">
-              {filteredClients.map((client) => {
-                const status = clientStatuses[client.id] || client.status;
+              {clients.map((client) => {
+                const status = client.status;
                 const initials = client.name.split(" ").map(n => n[0]).join("").slice(0, 2);
                 return (
                   <div key={client.id} className="border-b last:border-b-0">
@@ -277,11 +261,10 @@ export function ClientsTable({
               </tr>
             </thead>
             <tbody>
-              {filteredClients.map((client, index) => (
+              {clients.map((client, index) => (
                 <tr 
                   key={client.id} 
-                  className={`border-b hover-elevate animate-fade-in ${selectedClients.has(client.id) ? 'bg-primary/5' : ''}`}
-                  style={{ animationDelay: `${index * 50}ms` }}
+                  className={`border-b hover-elevate ${selectedClients.has(client.id) ? 'bg-primary/5' : ''}`}
                   data-testid={`client-row-${client.id}`}
                 >
                   <td className="p-3">
@@ -316,14 +299,14 @@ export function ClientsTable({
                   </td>
                   <td className="p-3">
                     <Select
-                      value={clientStatuses[client.id] || client.status}
+                      value={client.status}
                       onValueChange={(value) => handleStatusChange(client.id, value as Client["status"])}
                     >
                       <SelectTrigger 
                         className="w-32 h-7 text-xs border-0"
                         data-testid={`select-status-${client.id}`}
                       >
-                        <Badge variant="secondary" className={statusColors[clientStatuses[client.id] || client.status]}>
+                        <Badge variant="secondary" className={statusColors[client.status]}>
                           <SelectValue />
                         </Badge>
                       </SelectTrigger>
@@ -429,7 +412,7 @@ export function ClientsTable({
               ))}
             </tbody>
           </table>
-          {filteredClients.length === 0 && (
+          {clients.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
               No clients found matching your search.
             </div>
@@ -438,4 +421,4 @@ export function ClientsTable({
       </CardContent>
     </Card>
   );
-}
+});

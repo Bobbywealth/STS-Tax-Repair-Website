@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useDeferredValue } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { ClientsTable } from "@/components/ClientsTable";
 import { Button } from "@/components/ui/button";
@@ -111,7 +111,15 @@ export default function Clients() {
   const [activeFilter, setActiveFilter] = useState<StatusFilter>("all");
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
   const [searchQuery, setSearchQuery] = useState("");
-  const deferredSearch = useDeferredValue(searchQuery);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const [enrolledCategory, setEnrolledCategory] = useState<EnrolledCategory>("all");
   const [sortMode, setSortMode] = useState<SortMode>("enrolled_desc");
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -356,8 +364,8 @@ export default function Clients() {
     let filtered = allClients;
 
     // Search query filter
-    if (deferredSearch.trim()) {
-      const query = deferredSearch.toLowerCase().trim();
+    if (debouncedSearch.trim()) {
+      const query = debouncedSearch.toLowerCase().trim();
       filtered = filtered.filter(client => 
         client.name.toLowerCase().includes(query) ||
         client.email.toLowerCase().includes(query) ||
@@ -397,7 +405,7 @@ export default function Clients() {
     }
 
     return filtered;
-  }, [allClients, deferredSearch, enrolledCategory, startDate, endDate]);
+  }, [allClients, debouncedSearch, enrolledCategory, startDate, endDate]);
 
   const clientsUnsorted = activeFilter === "all" 
     ? searchedClients 
