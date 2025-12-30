@@ -2341,7 +2341,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         bankRoutingEncrypted,
         bankAccountEncrypted
       });
-      });
       
       if (!user) {
         return res.status(404).json({ error: "User not found" });
