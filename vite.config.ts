@@ -30,6 +30,39 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "vendor-recharts": ["recharts"],
+          "vendor-lucide": ["lucide-react"],
+          "vendor-tanstack": ["@tanstack/react-query"],
+          "vendor-framer": ["framer-motion"],
+          "vendor-pdf": ["pdf-lib", "react-pdf"],
+          "vendor-tesseract": ["tesseract.js"],
+          "vendor-uppy": ["@uppy/core", "@uppy/dashboard", "@uppy/react", "@uppy/aws-s3"],
+          "vendor-ui": [
+            "@radix-ui/react-avatar",
+            "@radix-ui/react-dialog",
+            "@radix-ui/react-dropdown-menu",
+            "@radix-ui/react-label",
+            "@radix-ui/react-popover",
+            "@radix-ui/react-select",
+            "@radix-ui/react-separator",
+            "@radix-ui/react-slot",
+            "@radix-ui/react-tabs",
+            "@radix-ui/react-tooltip",
+            "@radix-ui/react-accordion",
+            "@radix-ui/react-alert-dialog",
+            "@radix-ui/react-checkbox",
+            "@radix-ui/react-progress",
+            "@radix-ui/react-scroll-area",
+            "@radix-ui/react-switch",
+            "@radix-ui/react-toast",
+          ],
+        },
+      },
+    },
   },
   server: {
     fs: {
