@@ -184,6 +184,16 @@ export class MySQLStorage implements IStorage {
       userValues.referralSource = (userData as any).referralSource;
     }
 
+    // Handle ssn if provided
+    if ((userData as any).ssn !== undefined) {
+      userValues.ssn = (userData as any).ssn;
+    }
+
+    // Handle dateOfBirth if provided
+    if ((userData as any).dateOfBirth !== undefined) {
+      userValues.dateOfBirth = (userData as any).dateOfBirth;
+    }
+
     if (existing) {
       await mysqlDb
         .update(usersTable)

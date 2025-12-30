@@ -2198,6 +2198,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!user) {
           return res.status(404).json({ error: "Client not found" });
         }
+
+        // Decrypt sensitive fields for authorized viewers
+        if ((user as any).ssn) {
+          try {
+             (user as any).ssn = decrypt((user as any).ssn); 
+          } catch (e) {
+             console.error("Failed to decrypt SSN", e);
+             (user as any).ssn = null;
+          }
+        }
+
         res.json(user);
       } catch (error: any) {
         res.status(500).json({ error: error.message });
@@ -2329,6 +2340,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         directDepositBank,
         bankRoutingEncrypted,
         bankAccountEncrypted
+      });
       });
       
       if (!user) {
@@ -5858,7 +5870,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const pathMatch = normalizedUrl.match(/\/perfex-uploads\/uploads\/customers\/([^/]+)\/(.+)/);
         if (pathMatch) {
           const perfexId = pathMatch[1];
-          const filename = pathMatch[2];
+          const filename = decodeURIComponent(pathMatch[2]);
           console.log(`[DOWNLOAD-PERFEX] Extracted - ID: ${perfexId}, Filename: ${filename}`);
           
           // Convert Perfex numeric ID to CRM folder format: perfex-{id}
@@ -5881,7 +5893,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         // Fallback: try the raw path without /perfex-uploads/ prefix
         console.log(`[DOWNLOAD-PERFEX] URL pattern did not match. Trying raw fallback.`);
-        const fallbackPath = normalizedUrl.replace('/perfex-uploads/', '');
+        const fallbackPath = decodeURIComponent(normalizedUrl.replace('/perfex-uploads/', ''));
         console.log(`[DOWNLOAD-PERFEX] Raw fallback path: ${fallbackPath}`);
         const success = await ftpStorageService.streamFileToResponse(fallbackPath, res, documentName);
         if (success) return;
@@ -5891,7 +5903,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // For FTP-uploaded files, download via FTP from GoDaddy
       if (normalizedUrl.startsWith('/ftp/')) {
         // Remove /ftp/ prefix to get the actual path
-        const relativePath = normalizedUrl.replace('/ftp/', '');
+        const relativePath = decodeURIComponent(normalizedUrl.replace('/ftp/', ''));
         console.log(`[FTP] Downloading via FTP: ${relativePath} for document ${documentId}`);
         const success = await ftpStorageService.streamFileToResponse(relativePath, res, documentName);
         if (success) return;

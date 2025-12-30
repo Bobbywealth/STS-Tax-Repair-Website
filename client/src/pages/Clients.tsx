@@ -729,6 +729,26 @@ export default function Clients() {
                 data-testid="input-new-phone"
               />
             </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="ssn">SSN</Label>
+                <Input
+                  id="ssn"
+                  value={newClientForm.ssn}
+                  onChange={(e) => setNewClientForm({ ...newClientForm, ssn: e.target.value })}
+                  placeholder="***-**-****"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                <Input
+                  id="dateOfBirth"
+                  type="date"
+                  value={newClientForm.dateOfBirth}
+                  onChange={(e) => setNewClientForm({ ...newClientForm, dateOfBirth: e.target.value })}
+                />
+              </div>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="address">Address</Label>
               <Input
