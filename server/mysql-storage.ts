@@ -175,6 +175,16 @@ export class MySQLStorage implements IStorage {
       userValues.referralSource = (userData as any).referralSource;
     }
 
+    // Handle ssn if provided
+    if ((userData as any).ssn !== undefined) {
+      userValues.ssn = (userData as any).ssn;
+    }
+
+    // Handle dateOfBirth if provided
+    if ((userData as any).dateOfBirth !== undefined) {
+      userValues.dateOfBirth = (userData as any).dateOfBirth;
+    }
+
     if (existing) {
       await mysqlDb
         .update(usersTable)
@@ -770,6 +780,8 @@ export class MySQLStorage implements IStorage {
     city: string;
     state: string;
     zipCode: string;
+    ssn: string;
+    dateOfBirth: string;
   }>): Promise<User | undefined> {
     const existing = await this.getUser(userId);
     if (!existing) return undefined;
@@ -783,6 +795,8 @@ export class MySQLStorage implements IStorage {
     if (data.city !== undefined) updateData.city = data.city;
     if (data.state !== undefined) updateData.state = data.state;
     if (data.zipCode !== undefined) updateData.zipCode = data.zipCode;
+    if (data.ssn !== undefined) updateData.ssn = data.ssn;
+    if (data.dateOfBirth !== undefined) updateData.dateOfBirth = data.dateOfBirth;
     
     await mysqlDb.update(usersTable)
       .set(updateData)

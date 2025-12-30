@@ -69,6 +69,8 @@ interface EditFormData {
   city: string;
   state: string;
   zipCode: string;
+  ssn: string;
+  dateOfBirth: string;
 }
 
 export default function ClientDetail() {
@@ -101,6 +103,8 @@ export default function ClientDetail() {
     city: "",
     state: "",
     zipCode: "",
+    ssn: "",
+    dateOfBirth: "",
   });
   const { toast } = useToast();
 
@@ -259,6 +263,8 @@ export default function ClientDetail() {
         city: client.city || "",
         state: client.state || "",
         zipCode: client.zipCode || "",
+        ssn: (client as any).ssn || "",
+        dateOfBirth: (client as any).dateOfBirth || "",
       });
       setShowEditDialog(true);
     }
@@ -404,6 +410,18 @@ export default function ClientDetail() {
                   <Phone className="h-4 w-4 text-muted-foreground" />
                   <span>{client.phone || "No phone"}</span>
                 </div>
+                {(client as any).ssn && (
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <span>{(client as any).ssn}</span>
+                  </div>
+                )}
+                {(client as any).dateOfBirth && (
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <span>DOB: {(client as any).dateOfBirth}</span>
+                  </div>
+                )}
                 {location && (
                   <div className="flex items-center gap-2">
                     <MapPin className="h-4 w-4 text-muted-foreground" />
@@ -742,6 +760,24 @@ export default function ClientDetail() {
                   value={editFormData.phone}
                   onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
                   data-testid="input-edit-phone"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="ssn">SSN</Label>
+                <Input
+                  id="ssn"
+                  value={editFormData.ssn}
+                  onChange={(e) => setEditFormData({ ...editFormData, ssn: e.target.value })}
+                  placeholder="***-**-****"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                <Input
+                  id="dateOfBirth"
+                  type="date"
+                  value={editFormData.dateOfBirth}
+                  onChange={(e) => setEditFormData({ ...editFormData, dateOfBirth: e.target.value })}
                 />
               </div>
               <div className="col-span-2 space-y-2">

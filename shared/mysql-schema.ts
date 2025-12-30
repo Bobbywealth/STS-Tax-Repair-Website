@@ -123,6 +123,8 @@ export const users = mysqlTable("users", {
   themePreference: varchar("theme_preference", { length: 10 }).default("system").$type<ThemePreference>(),
   isActive: boolean("is_active").default(true),
   passwordHash: varchar("password_hash", { length: 255 }),
+  ssn: varchar("ssn", { length: 255 }), // Encrypted SSN
+  dateOfBirth: varchar("date_of_birth", { length: 50 }), // YYYY-MM-DD
   emailVerifiedAt: timestamp("email_verified_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

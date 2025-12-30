@@ -2060,7 +2060,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req: any, res) => {
       try {
         // Extract only allowed fields - prevent privilege escalation by ignoring id, role, passwordHash
-        const { firstName, lastName, email, phone, address, city, state, zipCode, country, referredById } = req.body;
+        const { firstName, lastName, email, phone, address, city, state, zipCode, country, referredById, ssn, dateOfBirth } = req.body;
         
         // Validate required email
         if (!email || typeof email !== 'string' || email.trim().length === 0) {
@@ -2123,6 +2123,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           state: state?.trim() || null,
           zipCode: zipCode?.trim() || null,
           country: country?.trim() || 'United States',
+          ssn: ssn ? encrypt(ssn) : null,
+          dateOfBirth: dateOfBirth || null,
           role: 'client', // Always force client role
           isActive: true,
           officeId: clientOfficeId,
@@ -2173,6 +2175,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!user) {
           return res.status(404).json({ error: "Client not found" });
         }
+
+        // Decrypt sensitive fields for authorized viewers
+        if ((user as any).ssn) {
+          try {
+             (user as any).ssn = decrypt((user as any).ssn); 
+          } catch (e) {
+             console.error("Failed to decrypt SSN", e);
+             (user as any).ssn = null;
+          }
+        }
+
         res.json(user);
       } catch (error: any) {
         res.status(500).json({ error: error.message });
@@ -2274,8 +2287,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Not authorized to update this profile" });
       }
       
-      const { firstName, lastName, email, phone, address, city, state, zipCode } = req.body;
+      const { firstName, lastName, email, phone, address, city, state, zipCode, ssn, dateOfBirth } = req.body;
       
+      let encryptedSSN = undefined;
+      // Only update SSN if it's provided and not a mask
+      if (ssn && !ssn.includes('***')) {
+        encryptedSSN = encrypt(ssn);
+      }
+
       const user = await storage.updateUser(targetUserId, {
         firstName,
         lastName,
@@ -2284,7 +2303,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         address,
         city,
         state,
-        zipCode
+        zipCode,
+        ssn: encryptedSSN,
+        dateOfBirth
       });
       
       if (!user) {
