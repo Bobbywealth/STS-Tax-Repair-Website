@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback, useTransition } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { ClientsTable } from "@/components/ClientsTable";
 import { Button } from "@/components/ui/button";
@@ -109,15 +109,26 @@ const initialFormState: NewClientForm = {
 
 export default function Clients() {
   const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
   const [activeFilter, setActiveFilter] = useState<StatusFilter>("all");
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setSearchQuery(val);
+    startTransition(() => {
+      // Transition is marked as low priority
+    });
+  };
+
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedSearch(searchQuery);
-    }, 300);
+      startTransition(() => {
+        setDebouncedSearch(searchQuery);
+      });
+    }, 200);
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
@@ -240,13 +251,21 @@ export default function Clients() {
     },
   });
 
-  const handleAssignClient = (clientId: string, preparerId: string, preparerName: string) => {
+  const handleAssignClient = useCallback((clientId: string, preparerId: string, preparerName: string) => {
     assignClientMutation.mutate({ clientId, preparerId, preparerName });
-  };
+  }, [assignClientMutation]);
 
-  const handleBulkAssign = (clientIds: string[], preparerId: string, preparerName: string) => {
+  const handleBulkAssign = useCallback((clientIds: string[], preparerId: string, preparerName: string) => {
     bulkAssignMutation.mutate({ clientIds, preparerId, preparerName });
-  };
+  }, [bulkAssignMutation]);
+
+  const filingsByClientId = useMemo(() => {
+    const map = new Map<string, TaxFiling>();
+    (taxFilings || []).forEach(filing => {
+      map.set(filing.clientId, filing);
+    });
+    return map;
+  }, [taxFilings]);
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ clientId, newStatus }: { clientId: string; newStatus: ClientTableData["status"] }) => {
@@ -287,9 +306,17 @@ export default function Clients() {
     },
   });
 
-  const handleStatusChange = (clientId: string, newStatus: ClientTableData["status"]) => {
+  const handleStatusChange = useCallback((clientId: string, newStatus: ClientTableData["status"]) => {
     updateStatusMutation.mutate({ clientId, newStatus });
-  };
+  }, [updateStatusMutation]);
+
+  const handleViewClient = useCallback((id: string) => {
+    window.location.href = `/clients/${id}`;
+  }, []);
+
+  const handleEditClient = useCallback((id: string) => {
+    console.log('Edit client:', id);
+  }, []);
 
   const handleAddClient = (e: React.FormEvent) => {
     e.preventDefault();
@@ -313,14 +340,6 @@ export default function Clients() {
   };
 
   const isLoading = usersLoading || filingsLoading;
-
-  const filingsByClientId = useMemo(() => {
-    const map = new Map<string, TaxFiling>();
-    (taxFilings || []).forEach(filing => {
-      map.set(filing.clientId, filing);
-    });
-    return map;
-  }, [taxFilings]);
 
   const staffNameById = useMemo(() => {
     const m = new Map<string, string>();
@@ -575,7 +594,7 @@ export default function Clients() {
             type="text"
             placeholder="Search name, email, phone..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={handleSearchChange}
             className="pl-10 pr-10 h-11 rounded-2xl bg-background/70 border-border/70"
             data-testid="input-search-clients"
           />
@@ -667,8 +686,8 @@ export default function Clients() {
           clients={clients}
           staffMembers={staffMembers}
           selectedYear={selectedYear}
-          onViewClient={(id) => window.location.href = `/clients/${id}`}
-          onEditClient={(id) => console.log('Edit client:', id)}
+          onViewClient={handleViewClient}
+          onEditClient={handleEditClient}
           onStatusChange={handleStatusChange}
           onAssignClient={handleAssignClient}
           onBulkAssign={handleBulkAssign}
