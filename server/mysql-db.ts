@@ -159,6 +159,25 @@ export async function runMySQLMigrations(): Promise<void> {
       if (Array.isArray(passwordHashColumn) && passwordHashColumn.length === 0) {
         await connection.query(`ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) NULL`);
       }
+
+      // Add SSN and DOB columns to users table
+      const [ssnColumn] = await connection.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'ssn'`,
+        [dbName]
+      );
+      if (Array.isArray(ssnColumn) && ssnColumn.length === 0) {
+        console.log('Adding ssn column to users table...');
+        await connection.query(`ALTER TABLE users ADD COLUMN ssn VARCHAR(255) NULL`);
+      }
+
+      const [dobColumn] = await connection.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'date_of_birth'`,
+        [dbName]
+      );
+      if (Array.isArray(dobColumn) && dobColumn.length === 0) {
+        console.log('Adding date_of_birth column to users table...');
+        await connection.query(`ALTER TABLE users ADD COLUMN date_of_birth VARCHAR(50) NULL`);
+      }
     } catch (err: any) { console.error('Error in users table updates:', err.message); }
 
     // 3. OTHER TABLES
