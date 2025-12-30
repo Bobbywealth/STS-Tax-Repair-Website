@@ -72,7 +72,6 @@ const registerSchema = z.object({
   zipCode: z.string().optional(),
   state: z.string().optional(),
   country: z.string().default("United States"),
-  fullName: z.string().min(1, "Full name is required"),
   phoneSecondary: z.string().optional(),
   email: z.string().email("Valid email is required"),
   birthday: z.string().optional(),
@@ -176,7 +175,6 @@ export default function Register() {
       zipCode: "",
       state: "",
       country: "United States",
-      fullName: "",
       phoneSecondary: "",
       email: "",
       birthday: "",
@@ -236,7 +234,7 @@ export default function Register() {
   };
 
   const stepRequiredFields: Record<number, Array<keyof RegisterForm>> = {
-    1: ["firstName", "lastName", "email", "password", "confirmPassword", "fullName"],
+    1: ["firstName", "lastName", "email", "password", "confirmPassword"],
     2: [],
     3: ["referredById"],
     4: [],
@@ -277,8 +275,7 @@ export default function Register() {
         values.lastName &&
         values.email &&
         values.password &&
-        values.confirmPassword &&
-        values.fullName
+        values.confirmPassword
       );
     }
     if (currentStep === 3) {
@@ -453,22 +450,6 @@ export default function Register() {
                               <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                               <Input {...field} className="pl-10" placeholder="Doe" data-testid="input-last-name" />
                             </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="fullName"
-                      render={({ field }) => (
-                        <FormItem className="md:col-span-2">
-                          <FormLabel>
-                            <span className="text-destructive">*</span> Full Legal Name (as it appears on tax documents)
-                          </FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="John Michael Doe" data-testid="input-full-name" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

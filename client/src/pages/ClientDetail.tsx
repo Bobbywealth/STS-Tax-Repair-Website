@@ -10,7 +10,7 @@ import { RefundStatusTracker } from "@/components/RefundStatusTracker";
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { 
   ArrowLeft, Mail, Phone, Calendar, User, Edit, MapPin, Building, Loader2, 
-  Plus, DollarSign, FileText, Clock, CheckCircle2, ChevronRight, Eye
+  Plus, DollarSign, FileText, Clock, CheckCircle2, ChevronRight, Eye, Shield
 } from "lucide-react";
 import { Link } from "wouter";
 import type { User as UserType, TaxFiling, FilingStatus } from "@shared/mysql-schema";
@@ -69,6 +69,8 @@ interface EditFormData {
   city: string;
   state: string;
   zipCode: string;
+  dateOfBirth: string;
+  ssn: string;
 }
 
 export default function ClientDetail() {
@@ -101,6 +103,8 @@ export default function ClientDetail() {
     city: "",
     state: "",
     zipCode: "",
+    dateOfBirth: "",
+    ssn: "",
   });
   const { toast } = useToast();
 
@@ -259,6 +263,8 @@ export default function ClientDetail() {
         city: client.city || "",
         state: client.state || "",
         zipCode: client.zipCode || "",
+        dateOfBirth: (client as any).dateOfBirth || "",
+        ssn: "", // Don't pre-fill full SSN
       });
       setShowEditDialog(true);
     }
@@ -330,12 +336,20 @@ export default function ClientDetail() {
 
   const clientName = [client.firstName, client.lastName].filter(Boolean).join(" ") || client.email || "Unknown Client";
   const initials = clientName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-  const location = [client.city, client.state].filter(Boolean).join(", ");
+  const location = [client.city, client.state, client.zipCode].filter(Boolean).join(", ");
   const joinedDate = client.createdAt ? new Date(client.createdAt).toLocaleDateString('en-US', { 
     month: 'short', 
     day: 'numeric', 
     year: 'numeric' 
   }) : "Unknown";
+
+  const dob = (client as any).dateOfBirth ? new Date((client as any).dateOfBirth).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  }) : null;
+
+  const ssn = (client as any).ssn;
 
   return (
     <div className="space-y-6">
@@ -410,8 +424,20 @@ export default function ClientDetail() {
                     <span>{location}</span>
                   </div>
                 )}
+                {dob && (
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <span>DOB: {dob}</span>
+                  </div>
+                )}
+                {ssn && (
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-4 w-4 text-muted-foreground" />
+                    <span>SSN: {ssn}</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <Clock className="h-4 w-4 text-muted-foreground" />
                   <span>Joined: {joinedDate}</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -778,6 +804,26 @@ export default function ClientDetail() {
                   value={editFormData.zipCode}
                   onChange={(e) => setEditFormData({ ...editFormData, zipCode: e.target.value })}
                   data-testid="input-edit-zipCode"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                <Input
+                  id="dateOfBirth"
+                  type="date"
+                  value={editFormData.dateOfBirth}
+                  onChange={(e) => setEditFormData({ ...editFormData, dateOfBirth: e.target.value })}
+                  data-testid="input-edit-dateOfBirth"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="ssn">Social Security Number</Label>
+                <Input
+                  id="ssn"
+                  placeholder="XXX-XX-XXXX (only if changing)"
+                  value={editFormData.ssn}
+                  onChange={(e) => setEditFormData({ ...editFormData, ssn: e.target.value })}
+                  data-testid="input-edit-ssn"
                 />
               </div>
             </div>

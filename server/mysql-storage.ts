@@ -145,6 +145,15 @@ export class MySQLStorage implements IStorage {
       state: userData.state ?? null,
       zipCode: userData.zipCode ?? null,
       country: userData.country ?? 'United States',
+      phoneSecondary: (userData as any).phoneSecondary ?? null,
+      dateOfBirth: (userData as any).dateOfBirth ?? null,
+      occupation: (userData as any).occupation ?? null,
+      ssn: (userData as any).ssn ?? null,
+      irsUsernameEncrypted: (userData as any).irsUsernameEncrypted ?? null,
+      irsPasswordEncrypted: (userData as any).irsPasswordEncrypted ?? null,
+      directDepositBank: (userData as any).directDepositBank ?? null,
+      bankRoutingEncrypted: (userData as any).bankRoutingEncrypted ?? null,
+      bankAccountEncrypted: (userData as any).bankAccountEncrypted ?? null,
       role: userData.role ?? 'client',
       isActive: userData.isActive ?? true,
       updatedAt: new Date(),
@@ -770,6 +779,15 @@ export class MySQLStorage implements IStorage {
     city: string;
     state: string;
     zipCode: string;
+    phoneSecondary?: string;
+    dateOfBirth?: string;
+    occupation?: string;
+    ssn?: string;
+    irsUsernameEncrypted?: string;
+    irsPasswordEncrypted?: string;
+    directDepositBank?: string;
+    bankRoutingEncrypted?: string;
+    bankAccountEncrypted?: string;
   }>): Promise<User | undefined> {
     const existing = await this.getUser(userId);
     if (!existing) return undefined;
@@ -783,6 +801,15 @@ export class MySQLStorage implements IStorage {
     if (data.city !== undefined) updateData.city = data.city;
     if (data.state !== undefined) updateData.state = data.state;
     if (data.zipCode !== undefined) updateData.zipCode = data.zipCode;
+    if (data.phoneSecondary !== undefined) updateData.phoneSecondary = data.phoneSecondary;
+    if (data.dateOfBirth !== undefined) updateData.dateOfBirth = data.dateOfBirth;
+    if (data.occupation !== undefined) updateData.occupation = data.occupation;
+    if (data.ssn !== undefined) updateData.ssn = data.ssn;
+    if (data.irsUsernameEncrypted !== undefined) updateData.irsUsernameEncrypted = data.irsUsernameEncrypted;
+    if (data.irsPasswordEncrypted !== undefined) updateData.irsPasswordEncrypted = data.irsPasswordEncrypted;
+    if (data.directDepositBank !== undefined) updateData.directDepositBank = data.directDepositBank;
+    if (data.bankRoutingEncrypted !== undefined) updateData.bankRoutingEncrypted = data.bankRoutingEncrypted;
+    if (data.bankAccountEncrypted !== undefined) updateData.bankAccountEncrypted = data.bankAccountEncrypted;
     
     await mysqlDb.update(usersTable)
       .set(updateData)

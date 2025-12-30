@@ -291,7 +291,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             verificationTokenToSend = existingToken.token;
           } else {
             const newToken = generateSecureToken();
-            const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+            const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
             await storage.createEmailVerificationToken(user.id, email, newToken, expiresAt);
             verificationTokenToSend = newToken;
           }
@@ -414,7 +414,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             verificationTokenToSend = existingToken.token;
           } else {
             const newToken = generateSecureToken();
-            const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+            const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
             await storage.createEmailVerificationToken(user.id, user.email, newToken, expiresAt);
             verificationTokenToSend = newToken;
           }
@@ -1036,12 +1036,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } = req.body;
 
       // Validate required fields
-      if (!firstName || !lastName || !email || !password || !fullName || !referredById) {
+      if (!firstName || !lastName || !email || !password || !referredById) {
         return res
           .status(400)
           .json({
             message:
-              "Required fields missing: firstName, lastName, email, password, fullName, referredById",
+              "Required fields missing: firstName, lastName, email, password, referredById",
           });
       }
 
@@ -1059,10 +1059,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Hash password
       const passwordHash = await bcrypt.hash(password, 10);
-
-      // Extract last 4 of SSN and encrypt full SSN
-      const ssnLast4 = ssn ? ssn.replace(/\D/g, "").slice(-4) : null;
-      const ssnEncrypted = ssn ? encrypt(ssn) : null;
 
       // Encrypt sensitive data
       const irsUsernameEncrypted = irsUsername ? encrypt(irsUsername) : null;
@@ -1136,13 +1132,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         state: state || null,
         zipCode: zipCode || null,
         country: country || "United States",
+        phoneSecondary: phoneSecondary || null,
+        dateOfBirth: birthday || null,
+        occupation: occupation || null,
+        ssn: ssn || null,
+        irsUsernameEncrypted: irsUsernameEncrypted,
+        irsPasswordEncrypted: irsPasswordEncrypted,
+        directDepositBank: directDepositBank || null,
+        bankRoutingEncrypted: bankRoutingEncrypted,
+        bankAccountEncrypted: bankAccountEncrypted,
         role: "client",
         isActive: true,
         passwordHash,
         officeId: clientOfficeId,
         assignedTo: assignedTo,
         referralSource: referralSourceText,
-      });
+      } as any);
 
       // Ensure the "Assigned To" column in the Clients table is populated.
       // The UI primarily displays assignment from the current tax year's filing (preparerName),
@@ -1195,7 +1200,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Create email verification token (expires in 24 hours)
       const verificationToken = generateSecureToken();
-      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
       
       await storage.createEmailVerificationToken(
         user.id,
@@ -1294,9 +1299,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       return res.status(201).json({
-        message: "Registration successful. Please check your email to verify your account.",
+        message: "Registration successful! You can now log in. We've also sent you a verification email to secure your account.",
         userId: user.id,
-        requiresVerification: true,
+        requiresVerification: false,
       });
     } catch (error: any) {
       console.error("Registration error:", error);
@@ -1422,7 +1427,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Create new verification token (expires in 24 hours)
       const newToken = generateSecureToken();
-      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
       
       await storage.createEmailVerificationToken(
         user.id,
@@ -1827,16 +1832,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       };
 
-      // SECURITY: Enforce email verification before allowing login
+      // NOTE: Email verification is no longer mandatory for login to improve user experience.
+      // We still encourage it and track it via user.emailVerifiedAt.
+      /*
       if (!user.emailVerifiedAt) {
-        // Do NOT create admin notifications for "Email not verified".
-        // This is an expected onboarding state and can create noisy alert spam on busy systems.
         return res.status(403).json({ 
           message: "Please verify your email address before logging in. Check your inbox for the verification link.",
           needsVerification: true,
           email: user.email
         });
       }
+      */
 
       // Create session for the client
       req.session.userId = user.id;
@@ -2060,7 +2066,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req: any, res) => {
       try {
         // Extract only allowed fields - prevent privilege escalation by ignoring id, role, passwordHash
-        const { firstName, lastName, email, phone, address, city, state, zipCode, country, referredById } = req.body;
+        const { 
+          firstName, lastName, email, phone, address, city, state, zipCode, country, referredById,
+          fullName, phoneSecondary, dateOfBirth, occupation, ssn,
+          irsUsername, irsPassword, directDepositBank, bankRoutingNumber, bankAccountNumber
+        } = req.body;
         
         // Validate required email
         if (!email || typeof email !== 'string' || email.trim().length === 0) {
@@ -2078,6 +2088,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (existingUser) {
           return res.status(400).json({ error: "A client with this email already exists" });
         }
+
+        // Encrypt sensitive fields
+        const irsUsernameEncrypted = irsUsername ? encrypt(irsUsername) : null;
+        const irsPasswordEncrypted = irsPassword ? encrypt(irsPassword) : null;
+        const bankRoutingEncrypted = bankRoutingNumber ? encrypt(bankRoutingNumber) : null;
+        const bankAccountEncrypted = bankAccountNumber ? encrypt(bankAccountNumber) : null;
 
         // Optional: assign to a referrer if provided (matches signup behavior).
         let assignedTo: string | null = null;
@@ -2123,12 +2139,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           state: state?.trim() || null,
           zipCode: zipCode?.trim() || null,
           country: country?.trim() || 'United States',
+          phoneSecondary: phoneSecondary?.trim() || null,
+          dateOfBirth: dateOfBirth || null,
+          occupation: occupation?.trim() || null,
+          ssn: ssn || null,
+          irsUsernameEncrypted,
+          irsPasswordEncrypted,
+          directDepositBank: directDepositBank?.trim() || null,
+          bankRoutingEncrypted,
+          bankAccountEncrypted,
           role: 'client', // Always force client role
           isActive: true,
           officeId: clientOfficeId,
           assignedTo,
           referralSource: referralSourceText,
-        });
+        } as any);
 
         // If assigned, create/update current-year tax filing so "Assigned To" displays immediately in Clients table.
         if (assignedTo) {
@@ -2274,7 +2299,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Not authorized to update this profile" });
       }
       
-      const { firstName, lastName, email, phone, address, city, state, zipCode } = req.body;
+      const { 
+        firstName, lastName, email, phone, address, city, state, zipCode,
+        phoneSecondary, dateOfBirth, occupation, ssn,
+        irsUsername, irsPassword, directDepositBank, bankRoutingNumber, bankAccountNumber 
+      } = req.body;
+
+      // Encrypt sensitive fields if provided
+      const irsUsernameEncrypted = irsUsername ? encrypt(irsUsername) : undefined;
+      const irsPasswordEncrypted = irsPassword ? encrypt(irsPassword) : undefined;
+      const bankRoutingEncrypted = bankRoutingNumber ? encrypt(bankRoutingNumber) : undefined;
+      const bankAccountEncrypted = bankAccountNumber ? encrypt(bankAccountNumber) : undefined;
       
       const user = await storage.updateUser(targetUserId, {
         firstName,
@@ -2284,7 +2319,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         address,
         city,
         state,
-        zipCode
+        zipCode,
+        phoneSecondary,
+        dateOfBirth,
+        occupation,
+        ssn,
+        irsUsernameEncrypted,
+        irsPasswordEncrypted,
+        directDepositBank,
+        bankRoutingEncrypted,
+        bankAccountEncrypted
       });
       
       if (!user) {
@@ -2362,7 +2406,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         state,
         zipCode,
         country,
+        phoneSecondary,
+        dateOfBirth,
+        occupation,
+        ssn,
+        irsUsername,
+        irsPassword,
+        directDepositBank,
+        bankRoutingNumber,
+        bankAccountNumber,
       } = req.body;
+
+      // Encrypt sensitive fields if provided
+      const irsUsernameEncrypted = irsUsername ? encrypt(irsUsername) : undefined;
+      const irsPasswordEncrypted = irsPassword ? encrypt(irsPassword) : undefined;
+      const bankRoutingEncrypted = bankRoutingNumber ? encrypt(bankRoutingNumber) : undefined;
+      const bankAccountEncrypted = bankAccountNumber ? encrypt(bankAccountNumber) : undefined;
 
       const updatedUser = await storage.upsertUser({
         id: userId,
@@ -2376,9 +2435,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         state: state ?? existingUser.state,
         zipCode: zipCode ?? existingUser.zipCode,
         country: country ?? existingUser.country,
+        phoneSecondary: phoneSecondary ?? (existingUser as any).phoneSecondary,
+        dateOfBirth: dateOfBirth ?? (existingUser as any).dateOfBirth,
+        occupation: occupation ?? (existingUser as any).occupation,
+        ssn: ssn ?? (existingUser as any).ssn,
+        irsUsernameEncrypted: irsUsernameEncrypted ?? (existingUser as any).irsUsernameEncrypted,
+        irsPasswordEncrypted: irsPasswordEncrypted ?? (existingUser as any).irsPasswordEncrypted,
+        directDepositBank: directDepositBank ?? (existingUser as any).directDepositBank,
+        bankRoutingEncrypted: bankRoutingEncrypted ?? (existingUser as any).bankRoutingEncrypted,
+        bankAccountEncrypted: bankAccountEncrypted ?? (existingUser as any).bankAccountEncrypted,
         role: existingUser.role,
         isActive: existingUser.isActive,
-      });
+      } as any);
 
       res.json(updatedUser);
     } catch (error: any) {
@@ -2954,7 +3022,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Create email verification token for staff member
       const verificationToken = generateSecureToken();
-      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
       
       await storage.createEmailVerificationToken(
         user!.id,
@@ -2981,7 +3049,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ 
         success: true, 
         role: invite.role,
-        requiresVerification: true,
+        requiresVerification: false,
         user: {
           id: user!.id,
           email: user!.email,
@@ -2989,7 +3057,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lastName: user!.lastName,
           role: user!.role
         },
-        message: "Account created! Please check your email to verify your address before logging in."
+        message: "Account created! You can now log in. We've also sent you a verification email."
       });
     } catch (error: any) {
       console.error("Staff invite redemption error:", error);
@@ -7561,19 +7629,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // If they are a client, we allow them to submit a staff request
         // but we'll check if they are verified first to give a better message
+        // Note: We no longer block staff requests for unverified accounts to reduce friction.
+        /*
         if (!existingUser.emailVerifiedAt) {
-          // Fall through to allow them to submit, but the frontend will show 
-          // they need verification if we returned an error.
-          // For now, let's allow them to submit the request even if unverified,
-          // as they can verify later. Or we can block and ask for verification.
-          // The current frontend expects an error to show the verification box.
-          
           return res.status(400).json({ 
             error: 'An account with this email already exists but is not verified. Please check your email for the verification link, or go to the login page and request a new verification email.',
             code: 'ACCOUNT_EXISTS_UNVERIFIED',
             email: email
           });
         }
+        */
         
         // If they are a verified client, they can still submit a staff request.
         // We'll proceed to check for pending requests.

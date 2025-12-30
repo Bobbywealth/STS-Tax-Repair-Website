@@ -87,6 +87,8 @@ interface NewClientForm {
   city: string;
   state: string;
   zipCode: string;
+  dateOfBirth: string;
+  ssn: string;
   referredById: string;
 }
 
@@ -99,6 +101,8 @@ const initialFormState: NewClientForm = {
   city: "",
   state: "",
   zipCode: "",
+  dateOfBirth: "",
+  ssn: "",
   referredById: "",
 };
 
@@ -764,6 +768,28 @@ export default function Clients() {
                   onChange={(e) => setNewClientForm({ ...newClientForm, zipCode: e.target.value })}
                   placeholder="30301"
                   data-testid="input-new-zip"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                <Input
+                  id="dateOfBirth"
+                  type="date"
+                  value={newClientForm.dateOfBirth}
+                  onChange={(e) => setNewClientForm({ ...newClientForm, dateOfBirth: e.target.value })}
+                  data-testid="input-new-dob"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="ssn">SSN</Label>
+                <Input
+                  id="ssn"
+                  value={newClientForm.ssn}
+                  onChange={(e) => setNewClientForm({ ...newClientForm, ssn: e.target.value })}
+                  placeholder="XXX-XX-XXXX"
+                  data-testid="input-new-ssn"
                 />
               </div>
             </div>
