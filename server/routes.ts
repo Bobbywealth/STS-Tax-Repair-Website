@@ -2057,6 +2057,454 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
+  // Lightweight staff list (avoids fetching all users/clients) - requires clients.view
+  app.get(
+    "/api/staff",
+    isAuthenticated,
+    requirePermission("clients.view"),
+    async (req: any, res) => {
+      try {
+        // In demo/no-DB mode, fall back to in-memory list.
+        if (isDemoStorage) {
+          const allUsers = await storage.getUsers();
+          const staff = (allUsers || [])
+            .filter((u: any) => (u.role || "").toLowerCase() !== "client" && !isSystemAdminUser(u))
+            .map((u: any) => ({
+              id: u.id,
+              email: u.email || "",
+              firstName: u.firstName || null,
+              lastName: u.lastName || null,
+              role: u.role || null,
+              officeId: (u as any).officeId || null,
+            }));
+          return res.json(staff);
+        }
+
+        const userId = req.userId || req.user?.claims?.sub;
+        const currentUser = userId ? await storage.getUser(userId) : null;
+        const role = (currentUser?.role || "").toLowerCase();
+        const officeId = (currentUser as any)?.officeId || null;
+
+        // Scope staff list to office for tax_office/admin (super_admin sees all).
+        const params: any[] = [];
+        let where = `WHERE (role IS NULL OR LOWER(role) <> 'client') AND (is_active IS NULL OR is_active = 1)`;
+
+        if (role !== "super_admin" && officeId) {
+          // Some legacy schemas might not have office_id; fall back gracefully.
+          try {
+            const [rows] = await mysqlPool.query(
+              `
+                SELECT id, email, first_name AS firstName, last_name AS lastName, role, office_id AS officeId
+                FROM users
+                ${where} AND office_id = ?
+                ORDER BY first_name ASC, last_name ASC
+              `,
+              [officeId],
+            );
+            const staff = (rows as any[]).filter((u) => !isSystemAdminUser(u));
+            return res.json(staff);
+          } catch (err: any) {
+            const msg = String(err?.message || "");
+            if (!(msg.includes("Unknown column") && msg.includes("office_id"))) {
+              throw err;
+            }
+            // Continue to unscoped query below.
+          }
+        }
+
+        const [rows] = await mysqlPool.query(
+          `
+            SELECT id, email, first_name AS firstName, last_name AS lastName, role, NULL AS officeId
+            FROM users
+            ${where}
+            ORDER BY first_name ASC, last_name ASC
+          `,
+          params,
+        );
+        const staff = (rows as any[]).filter((u) => !isSystemAdminUser(u));
+        return res.json(staff);
+      } catch (error: any) {
+        console.error("Error fetching staff:", error);
+        return res.status(500).json({ error: error.message || "Failed to load staff" });
+      }
+    },
+  );
+
+  // Paginated clients list (fast) - avoids fetching all users/filings in one payload
+  app.get(
+    "/api/clients",
+    isAuthenticated,
+    requirePermission("clients.view"),
+    async (req: any, res) => {
+      try {
+        const userId = req.userId || req.user?.claims?.sub;
+        const currentUser = userId ? await storage.getUser(userId) : null;
+        const role = (currentUser?.role || "").toLowerCase();
+        const officeId = (currentUser as any)?.officeId || null;
+
+        const year = Number.parseInt(String(req.query.year || new Date().getFullYear()), 10);
+        const q = String(req.query.q || "").trim();
+        const enrolledCategory = String(req.query.enrolledCategory || "all");
+        const startDate = String(req.query.startDate || "").trim();
+        const endDate = String(req.query.endDate || "").trim();
+        const sort = String(req.query.sort || "enrolled_desc");
+        const status = String(req.query.status || "all");
+
+        const pageSizeRaw = Number.parseInt(String(req.query.pageSize || 50), 10);
+        const pageSize = Math.min(Math.max(pageSizeRaw || 50, 10), 200);
+        const pageRaw = Number.parseInt(String(req.query.page || 1), 10);
+        const page = Math.max(pageRaw || 1, 1);
+        const offset = (page - 1) * pageSize;
+
+        // Demo/no-DB: fall back to existing in-memory behavior (still small in demo).
+        if (isDemoStorage) {
+          const allUsers = await storage.getUsers();
+          const clients = (allUsers || []).filter((u: any) => (u.role || "").toLowerCase() === "client");
+          const needle = q.toLowerCase();
+          const filtered = needle
+            ? clients.filter((u: any) => {
+                const name = `${u.firstName || ""} ${u.lastName || ""}`.trim().toLowerCase();
+                return (
+                  name.includes(needle) ||
+                  String(u.email || "").toLowerCase().includes(needle) ||
+                  String(u.phone || "").toLowerCase().includes(needle)
+                );
+              })
+            : clients;
+          const total = filtered.length;
+          const items = filtered.slice(offset, offset + pageSize).map((u: any) => ({
+            id: u.id,
+            name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email || "Unknown",
+            email: u.email || "",
+            phone: u.phone || "",
+            city: u.city || null,
+            state: u.state || null,
+            zipCode: u.zipCode || null,
+            createdAt: u.createdAt || new Date().toISOString(),
+            filingStatus: "new",
+            estimatedRefund: null,
+            preparerName: null,
+            assignedTo: "Unassigned",
+          }));
+          return res.json({
+            year,
+            page,
+            pageSize,
+            total,
+            filteredTotal: total,
+            countsByStatus: { new: total },
+            items,
+          });
+        }
+
+        const paramsBase: any[] = [];
+        const whereBase: string[] = [`LOWER(u.role) = 'client'`];
+
+        // Scope enforcement
+        if (role === "agent") {
+          // Agent can see clients assigned via:
+          // - users.assigned_to
+          // - agent_client_assignments
+          // - tax_filings.preparer_id
+          whereBase.push(
+            `(u.assigned_to = ? OR EXISTS (SELECT 1 FROM agent_client_assignments aca WHERE aca.agent_id = ? AND aca.client_id = u.id AND aca.is_active = 1) OR EXISTS (SELECT 1 FROM tax_filings tf2 WHERE tf2.client_id = u.id AND tf2.preparer_id = ?))`,
+          );
+          paramsBase.push(userId, userId, userId);
+        } else if (role === "tax_office" || role === "admin") {
+          if (officeId) {
+            // Try office scoping; if schema lacks office_id we will retry without it.
+            whereBase.push(`u.office_id = ?`);
+            paramsBase.push(officeId);
+          }
+        } else if (role === "super_admin") {
+          // Global
+        }
+
+        // Enrolled category filter
+        if (enrolledCategory && enrolledCategory !== "all") {
+          // Use MySQL date arithmetic
+          if (enrolledCategory === "today") {
+            whereBase.push(`u.created_at >= CURDATE()`);
+          } else if (enrolledCategory === "last7") {
+            whereBase.push(`u.created_at >= (CURDATE() - INTERVAL 6 DAY)`);
+          } else if (enrolledCategory === "thisMonth") {
+            whereBase.push(`u.created_at >= DATE_FORMAT(CURDATE(), '%Y-%m-01')`);
+          }
+        }
+
+        // Manual date range (YYYY-MM-DD)
+        if (startDate) {
+          whereBase.push(`u.created_at >= ?`);
+          paramsBase.push(`${startDate} 00:00:00`);
+        }
+        if (endDate) {
+          whereBase.push(`u.created_at <= ?`);
+          paramsBase.push(`${endDate} 23:59:59`);
+        }
+
+        // Search
+        if (q) {
+          const like = `%${q}%`;
+          const digits = q.replace(/\D/g, "");
+          const phoneLike = `%${digits}%`;
+          whereBase.push(
+            `(
+              CONCAT(IFNULL(u.first_name,''),' ',IFNULL(u.last_name,'')) LIKE ?
+              OR IFNULL(u.email,'') LIKE ?
+              OR IFNULL(u.phone,'') LIKE ?
+              OR ( ? <> '' AND REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(IFNULL(u.phone,''),'-',''),' ','') ,'(','') ,')',''),'+','') LIKE ? )
+              OR IFNULL(u.city,'') LIKE ?
+              OR IFNULL(u.state,'') LIKE ?
+              OR IFNULL(u.zip_code,'') LIKE ?
+            )`,
+          );
+          paramsBase.push(like, like, like, digits, phoneLike, like, like, like);
+        }
+
+        const whereSqlBase = whereBase.length ? `WHERE ${whereBase.join(" AND ")}` : "";
+
+        // Counts by status (base filters only; used for status pills)
+        const countsQuery = `
+          SELECT COALESCE(f.status, 'new') AS status, COUNT(*) AS count
+          FROM users u
+          LEFT JOIN tax_filings f
+            ON f.client_id = u.id AND f.tax_year = ?
+          ${whereSqlBase}
+          GROUP BY COALESCE(f.status, 'new')
+        `;
+
+        // Total (base)
+        const totalQuery = `
+          SELECT COUNT(*) AS count
+          FROM users u
+          LEFT JOIN tax_filings f
+            ON f.client_id = u.id AND f.tax_year = ?
+          ${whereSqlBase}
+        `;
+
+        // List filters include status
+        const paramsList: any[] = [...paramsBase];
+        const whereList: string[] = [...whereBase];
+        if (status && status !== "all") {
+          whereList.push(`COALESCE(f.status, 'new') = ?`);
+          paramsList.push(status);
+        }
+        const whereSqlList = whereList.length ? `WHERE ${whereList.join(" AND ")}` : "";
+
+        const filteredTotalQuery = `
+          SELECT COUNT(*) AS count
+          FROM users u
+          LEFT JOIN tax_filings f
+            ON f.client_id = u.id AND f.tax_year = ?
+          ${whereSqlList}
+        `;
+
+        // Sorting
+        const orderBy =
+          sort === "enrolled_asc"
+            ? `u.created_at ASC`
+            : sort === "name_asc"
+              ? `IFNULL(u.first_name,''), IFNULL(u.last_name,''), IFNULL(u.email,'')`
+              : sort === "name_desc"
+                ? `IFNULL(u.first_name,'') DESC, IFNULL(u.last_name,'') DESC, IFNULL(u.email,'') DESC`
+                : sort === "assigned_asc"
+                  ? `IFNULL(f.preparer_name,''), u.created_at DESC`
+                  : sort === "assigned_desc"
+                    ? `IFNULL(f.preparer_name,'') DESC, u.created_at DESC`
+                    : `u.created_at DESC`;
+
+        const listQuery = `
+          SELECT
+            u.id,
+            TRIM(CONCAT(IFNULL(u.first_name,''),' ',IFNULL(u.last_name,''))) AS fullName,
+            IFNULL(u.email,'') AS email,
+            IFNULL(u.phone,'') AS phone,
+            u.city AS city,
+            u.state AS state,
+            u.zip_code AS zipCode,
+            u.created_at AS createdAt,
+            COALESCE(f.status, 'new') AS filingStatus,
+            f.estimated_refund AS estimatedRefund,
+            f.preparer_name AS preparerName,
+            u.assigned_to AS assignedToId
+          FROM users u
+          LEFT JOIN tax_filings f
+            ON f.client_id = u.id AND f.tax_year = ?
+          ${whereSqlList}
+          ORDER BY ${orderBy}
+          LIMIT ?
+          OFFSET ?
+        `;
+
+        const runQueries = async () => {
+          const [countsRows] = await mysqlPool.query(countsQuery, [year, ...paramsBase]);
+          const [totalRows] = await mysqlPool.query(totalQuery, [year, ...paramsBase]);
+          const [filteredTotalRows] = await mysqlPool.query(filteredTotalQuery, [year, ...paramsList]);
+          const [rows] = await mysqlPool.query(listQuery, [year, ...paramsList, pageSize, offset]);
+          return {
+            countsRows: countsRows as any[],
+            totalRows: totalRows as any[],
+            filteredTotalRows: filteredTotalRows as any[],
+            rows: rows as any[],
+          };
+        };
+
+        let result: any;
+        try {
+          result = await runQueries();
+        } catch (err: any) {
+          const msg = String(err?.message || "");
+          // Legacy schema may lack office_id/assigned_to fields — retry without those filters/columns.
+          if (msg.includes("Unknown column") && (msg.includes("office_id") || msg.includes("assigned_to"))) {
+            // Remove office_id and assigned_to filters if present.
+            const scrubbedWhereBase = whereBase.filter((w) => !w.includes("office_id") && !w.includes("assigned_to"));
+            const scrubbedParamsBase = [...paramsBase];
+            // If we added officeId or userId-based assigned_to filter params, safest is to rebuild from scratch without those.
+            // Simpler: just drop scoping-by-office/assigned_to and rely on agent assignment joins to enforce scope.
+            // For agents, keep scope. For office/admin, scope is best-effort.
+            const rebuiltWhereBase: string[] = [`LOWER(u.role) = 'client'`];
+            const rebuiltParamsBase: any[] = [];
+            if (role === "agent") {
+              rebuiltWhereBase.push(
+                `(EXISTS (SELECT 1 FROM agent_client_assignments aca WHERE aca.agent_id = ? AND aca.client_id = u.id AND aca.is_active = 1) OR EXISTS (SELECT 1 FROM tax_filings tf2 WHERE tf2.client_id = u.id AND tf2.preparer_id = ?))`,
+              );
+              rebuiltParamsBase.push(userId, userId);
+            }
+            // Re-apply non-office filters
+            if (enrolledCategory && enrolledCategory !== "all") {
+              if (enrolledCategory === "today") rebuiltWhereBase.push(`u.created_at >= CURDATE()`);
+              else if (enrolledCategory === "last7") rebuiltWhereBase.push(`u.created_at >= (CURDATE() - INTERVAL 6 DAY)`);
+              else if (enrolledCategory === "thisMonth") rebuiltWhereBase.push(`u.created_at >= DATE_FORMAT(CURDATE(), '%Y-%m-01')`);
+            }
+            if (startDate) {
+              rebuiltWhereBase.push(`u.created_at >= ?`);
+              rebuiltParamsBase.push(`${startDate} 00:00:00`);
+            }
+            if (endDate) {
+              rebuiltWhereBase.push(`u.created_at <= ?`);
+              rebuiltParamsBase.push(`${endDate} 23:59:59`);
+            }
+            if (q) {
+              const like = `%${q}%`;
+              const digits = q.replace(/\D/g, "");
+              const phoneLike = `%${digits}%`;
+              rebuiltWhereBase.push(
+                `(
+                  CONCAT(IFNULL(u.first_name,''),' ',IFNULL(u.last_name,'')) LIKE ?
+                  OR IFNULL(u.email,'') LIKE ?
+                  OR IFNULL(u.phone,'') LIKE ?
+                  OR ( ? <> '' AND REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(IFNULL(u.phone,''),'-',''),' ','') ,'(','') ,')',''),'+','') LIKE ? )
+                  OR IFNULL(u.city,'') LIKE ?
+                  OR IFNULL(u.state,'') LIKE ?
+                  OR IFNULL(u.zip_code,'') LIKE ?
+                )`,
+              );
+              rebuiltParamsBase.push(like, like, like, digits, phoneLike, like, like, like);
+            }
+
+            const rebuiltWhereSqlBase = `WHERE ${rebuiltWhereBase.join(" AND ")}`;
+            const countsQuery2 = countsQuery.replace(whereSqlBase, rebuiltWhereSqlBase);
+            const totalQuery2 = totalQuery.replace(whereSqlBase, rebuiltWhereSqlBase);
+
+            const rebuiltParamsList: any[] = [...rebuiltParamsBase];
+            const rebuiltWhereList: string[] = [...rebuiltWhereBase];
+            if (status && status !== "all") {
+              rebuiltWhereList.push(`COALESCE(f.status, 'new') = ?`);
+              rebuiltParamsList.push(status);
+            }
+            const rebuiltWhereSqlList = `WHERE ${rebuiltWhereList.join(" AND ")}`;
+            const filteredTotalQuery2 = filteredTotalQuery.replace(whereSqlList, rebuiltWhereSqlList);
+            const listQuery2 = listQuery
+              .replace(whereSqlList, rebuiltWhereSqlList)
+              .replace("u.assigned_to AS assignedToId", "NULL AS assignedToId");
+
+            const [countsRows] = await mysqlPool.query(countsQuery2, [year, ...rebuiltParamsBase]);
+            const [totalRows] = await mysqlPool.query(totalQuery2, [year, ...rebuiltParamsBase]);
+            const [filteredTotalRows] = await mysqlPool.query(filteredTotalQuery2, [year, ...rebuiltParamsList]);
+            const [rows] = await mysqlPool.query(listQuery2, [year, ...rebuiltParamsList, pageSize, offset]);
+            result = {
+              countsRows: countsRows as any[],
+              totalRows: totalRows as any[],
+              filteredTotalRows: filteredTotalRows as any[],
+              rows: rows as any[],
+            };
+          } else {
+            throw err;
+          }
+        }
+
+        const countsByStatus: Record<string, number> = {};
+        for (const r of result.countsRows) {
+          countsByStatus[String(r.status)] = Number(r.count || 0);
+        }
+        const total = Number(result.totalRows?.[0]?.count || 0);
+        const filteredTotal = Number(result.filteredTotalRows?.[0]?.count || 0);
+
+        // Map assignedToId -> name (batch)
+        const staffNameById = new Map<string, string>();
+        try {
+          const ids = Array.from(
+            new Set(
+              (result.rows as any[])
+                .map((r) => r.assignedToId)
+                .filter((v) => typeof v === "string" && v.length > 0),
+            ),
+          );
+          if (ids.length > 0) {
+            const placeholders = ids.map(() => "?").join(",");
+            const [staffRows] = await mysqlPool.query(
+              `SELECT id, TRIM(CONCAT(IFNULL(first_name,''),' ',IFNULL(last_name,''))) AS name, email FROM users WHERE id IN (${placeholders})`,
+              ids,
+            );
+            for (const s of staffRows as any[]) {
+              const name = String(s.name || "").trim() || String(s.email || "").trim() || String(s.id);
+              staffNameById.set(String(s.id), name);
+            }
+          }
+        } catch {
+          // ignore (non-blocking)
+        }
+
+        const items = (result.rows as any[]).map((r) => {
+          const name = String(r.fullName || "").trim() || String(r.email || "").trim() || "Unknown";
+          const assignedFromFiling =
+            typeof r.preparerName === "string" && r.preparerName.trim().toLowerCase() === "system"
+              ? null
+              : (r.preparerName || null);
+          const assignedFromUser =
+            typeof r.assignedToId === "string" ? staffNameById.get(String(r.assignedToId)) : null;
+          return {
+            id: r.id,
+            name,
+            email: r.email || "",
+            phone: r.phone || "",
+            city: r.city || null,
+            state: r.state || null,
+            zipCode: r.zipCode || null,
+            createdAt: r.createdAt ? new Date(r.createdAt).toISOString() : new Date().toISOString(),
+            filingStatus: r.filingStatus || "new",
+            estimatedRefund: r.estimatedRefund || null,
+            preparerName: r.preparerName || null,
+            assignedTo: assignedFromFiling || assignedFromUser || "Unassigned",
+          };
+        });
+
+        return res.json({
+          year,
+          page,
+          pageSize,
+          total,
+          filteredTotal,
+          countsByStatus,
+          items,
+        });
+      } catch (error: any) {
+        console.error("Error fetching clients:", error);
+        return res.status(500).json({ error: error.message || "Failed to load clients" });
+      }
+    },
+  );
+
   // Create new client - requires clients.create permission
   // Note: Only allows creating clients (role='client'), not staff/admin
   app.post(

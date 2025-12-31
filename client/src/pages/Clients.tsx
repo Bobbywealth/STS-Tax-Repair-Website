@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useTransition } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, keepPreviousData } from "@tanstack/react-query";
 import { ClientsTable } from "@/components/ClientsTable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { User, TaxFiling, FilingStatus } from "@shared/mysql-schema";
+import type { User, FilingStatus } from "@shared/mysql-schema";
 
 type StatusFilter = "all" | FilingStatus;
 type EnrolledCategory = "all" | "today" | "last7" | "thisMonth";
@@ -43,6 +43,29 @@ interface ClientTableData {
   estimatedRefund?: string;
   preparerName?: string;
   createdAt: string;
+}
+
+interface ClientsApiResponse {
+  year: number;
+  page: number;
+  pageSize: number;
+  total: number; // base filters (no status)
+  filteredTotal: number; // includes active status filter
+  countsByStatus: Record<string, number>;
+  items: Array<{
+    id: string;
+    name: string;
+    email: string;
+    phone: string;
+    city: string | null;
+    state: string | null;
+    zipCode: string | null;
+    createdAt: string;
+    filingStatus: FilingStatus;
+    estimatedRefund: string | null;
+    preparerName: string | null;
+    assignedTo: string;
+  }>;
 }
 
 const statusFilters: { label: string; value: StatusFilter; color: string }[] = [
@@ -114,6 +137,8 @@ export default function Clients() {
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const pageSize = 50;
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -139,22 +164,54 @@ export default function Clients() {
   const [newClientForm, setNewClientForm] = useState<NewClientForm>(initialFormState);
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
-  
-  const { data: users, isLoading: usersLoading, error: usersError } = useQuery<User[]>({
-    queryKey: ["/api/users"],
-    staleTime: 60000,
-  });
 
-  const { data: taxFilings, isLoading: filingsLoading } = useQuery<TaxFiling[]>({
-    queryKey: ["/api/tax-filings", selectedYear],
+  // Reset pagination when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [selectedYear, debouncedSearch, enrolledCategory, startDate, endDate, sortMode, activeFilter]);
+  
+  // Lightweight staff list (avoid fetching all users/clients)
+  const { data: staffUsers, isLoading: staffLoading, error: staffError } = useQuery<any[]>({
+    queryKey: ["/api/staff"],
     queryFn: async () => {
-      const res = await fetch(`/api/tax-filings?year=${selectedYear}`, {
-        credentials: "include",
-      });
-      if (!res.ok) return [];
+      const res = await fetch("/api/staff", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to load staff");
       return res.json();
     },
     staleTime: 60000,
+  });
+
+  // Paginated clients list (fast)
+  const { data: clientsResp, isLoading: clientsLoading, error: clientsError } = useQuery<ClientsApiResponse>({
+    queryKey: [
+      "/api/clients",
+      selectedYear,
+      page,
+      pageSize,
+      debouncedSearch,
+      enrolledCategory,
+      startDate,
+      endDate,
+      sortMode,
+      activeFilter,
+    ],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      params.set("year", String(selectedYear));
+      params.set("page", String(page));
+      params.set("pageSize", String(pageSize));
+      params.set("sort", sortMode);
+      params.set("enrolledCategory", enrolledCategory);
+      if (debouncedSearch.trim()) params.set("q", debouncedSearch.trim());
+      if (startDate) params.set("startDate", startDate);
+      if (endDate) params.set("endDate", endDate);
+      if (activeFilter !== "all") params.set("status", activeFilter);
+      const res = await fetch(`/api/clients?${params.toString()}`, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to load clients");
+      return res.json();
+    },
+    staleTime: 60000,
+    placeholderData: keepPreviousData,
   });
 
   // Get staff members for assignment dropdown
@@ -170,21 +227,22 @@ export default function Clients() {
         email.startsWith("system@")
       );
     };
-    return (users || [])
-      .filter(user => user.role !== 'client' && !isSystemAdmin(user))
-      .map(user => ({
-        id: user.id,
-        name: [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email || "Unknown",
-        role: user.role || 'agent',
+    return (staffUsers || [])
+      .filter((u: any) => (u.role || "").toLowerCase() !== "client" && !isSystemAdmin(u as any))
+      .map((u: any) => ({
+        id: u.id,
+        name: [u.firstName, u.lastName].filter(Boolean).join(" ") || u.email || "Unknown",
+        role: u.role || "agent",
       }));
-  }, [users]);
+  }, [staffUsers]);
 
   const addClientMutation = useMutation({
     mutationFn: async (data: NewClientForm) => {
       return apiRequest("POST", "/api/users", data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/staff"] });
       toast({
         title: "Client Added",
         description: "New client has been successfully created.",
@@ -211,6 +269,7 @@ export default function Clients() {
       });
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
       queryClient.invalidateQueries({ queryKey: ["/api/tax-filings", selectedYear] });
       toast({
         title: "Client Assigned",
@@ -237,6 +296,7 @@ export default function Clients() {
       });
     },
     onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
       queryClient.invalidateQueries({ queryKey: ["/api/tax-filings", selectedYear] });
       toast({
         title: "Clients Assigned",
@@ -271,6 +331,7 @@ export default function Clients() {
       });
     },
     onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
       queryClient.invalidateQueries({ queryKey: ["/api/tax-filings", selectedYear] });
       toast({
         title: "Statuses Updated",
@@ -290,14 +351,6 @@ export default function Clients() {
     bulkStatusMutation.mutate({ clientIds, newStatus });
   }, [bulkStatusMutation]);
 
-  const filingsByClientId = useMemo(() => {
-    const map = new Map<string, TaxFiling>();
-    (taxFilings || []).forEach(filing => {
-      map.set(filing.clientId, filing);
-    });
-    return map;
-  }, [taxFilings]);
-
   const updateStatusMutation = useMutation({
     mutationFn: async ({ clientId, newStatus }: { clientId: string; newStatus: ClientTableData["status"] }) => {
       const status = displayStatusToFiling[newStatus];
@@ -305,27 +358,33 @@ export default function Clients() {
         throw new Error("Invalid status");
       }
 
-      let filing = filingsByClientId.get(clientId);
+      // Fetch the filing for this client/year on demand (fast, avoids loading every filing).
+      let filing: any = null;
+      try {
+        const res = await fetch(`/api/tax-filings/client/${encodeURIComponent(clientId)}/year/${selectedYear}`, {
+          credentials: "include",
+        });
+        if (res.ok) {
+          filing = await res.json();
+        }
+      } catch {
+        // ignore
+      }
 
-      // If no filing exists for this client/year, create one on the fly so status changes persist
-      if (!filing) {
+      // If no filing exists for this client/year, create one so status changes persist.
+      if (!filing?.id) {
         const response = await apiRequest("POST", "/api/tax-filings", {
           clientId,
           taxYear: selectedYear,
           status,
         });
-        const created = await response.json();
-        filing = created;
-
-        // If create succeeded but status already matches, we're done
-        if (filing?.status === status) {
-          return filing;
-        }
+        filing = await response.json();
       }
 
-      return apiRequest("PATCH", `/api/tax-filings/${filing!.id}/status`, { status });
+      return apiRequest("PATCH", `/api/tax-filings/${filing.id}/status`, { status });
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
       queryClient.invalidateQueries({ queryKey: ["/api/tax-filings", selectedYear] });
     },
     onError: (error: any) => {
@@ -370,135 +429,37 @@ export default function Clients() {
     addClientMutation.mutate(newClientForm);
   };
 
-  const isLoading = usersLoading || filingsLoading;
+  const isLoading = staffLoading || clientsLoading;
 
-  const staffNameById = useMemo(() => {
-    const m = new Map<string, string>();
-    for (const s of staffMembers) m.set(s.id, s.name);
-    return m;
-  }, [staffMembers]);
-
-  const allClients: ClientTableData[] = useMemo(() => {
-    return (users || [])
-      .filter(user => user.role === 'client')
-      .map((user) => {
-        const filing = filingsByClientId.get(user.id);
-        const filingStatus: FilingStatus = filing?.status || 'new';
-        
-        const fallbackAssigned =
-          (user as any).assignedTo ? staffNameById.get((user as any).assignedTo) : undefined;
-        const filingAssignedRaw = filing?.preparerName || undefined;
-        const filingAssigned =
-          typeof filingAssignedRaw === "string" && filingAssignedRaw.trim().toLowerCase() === "system"
-            ? undefined
-            : filingAssignedRaw;
-
-        return {
-          id: user.id,
-          name: [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email || "Unknown",
-          email: user.email || "",
-          phone: user.phone || "",
-          status: filingStatusToDisplay[filingStatus],
-          filingStatus,
-          taxYear: String(selectedYear),
-          assignedTo: filingAssigned || fallbackAssigned || "Unassigned",
-          city: user.city || undefined,
-          state: user.state || undefined,
-          zipCode: user.zipCode || undefined,
-          estimatedRefund: filing?.estimatedRefund || undefined,
-          preparerName: filing?.preparerName || undefined,
-          createdAt: user.createdAt ? new Date(user.createdAt).toISOString() : new Date().toISOString(),
-        };
-      });
-  }, [users, filingsByClientId, selectedYear, staffNameById]);
-
-  const searchedClients = useMemo(() => {
-    let filtered = allClients;
-
-    // Search query filter
-    if (debouncedSearch.trim()) {
-      const query = debouncedSearch.toLowerCase().trim();
-      const queryDigits = query.replace(/\D/g, "");
-      filtered = filtered.filter(client => 
-        client.name.toLowerCase().includes(query) ||
-        client.email.toLowerCase().includes(query) ||
-        client.phone.toLowerCase().includes(query) ||
-        // Phone number search should work even if the stored phone has formatting (+1, dashes, spaces, etc.)
-        (queryDigits.length > 0 && client.phone.replace(/\D/g, "").includes(queryDigits)) ||
-        (client.city && client.city.toLowerCase().includes(query)) ||
-        (client.state && client.state.toLowerCase().includes(query)) ||
-        (client.zipCode && client.zipCode.toLowerCase().includes(query))
-      );
-    }
-
-    // Quick Enrolled category filter (Today / Last 7 days / This Month)
-    if (enrolledCategory !== "all") {
-      const now = new Date();
-      const start = new Date(now);
-      start.setHours(0, 0, 0, 0);
-      if (enrolledCategory === "last7") {
-        start.setDate(start.getDate() - 6); // inclusive: today + 6 previous days
-      } else if (enrolledCategory === "thisMonth") {
-        start.setDate(1);
-      }
-      filtered = filtered.filter((client) => {
-        const d = new Date(client.createdAt);
-        if (Number.isNaN(d.getTime())) return false;
-        return d >= start;
-      });
-    }
-
-    // Date range filter (manual range)
-    if (startDate) {
-      const start = new Date(startDate);
-      filtered = filtered.filter(client => new Date(client.createdAt) >= start);
-    }
-    if (endDate) {
-      const end = new Date(endDate);
-      // Set end date to end of day
-      end.setHours(23, 59, 59, 999);
-      filtered = filtered.filter(client => new Date(client.createdAt) <= end);
-    }
-
-    return filtered;
-  }, [allClients, debouncedSearch, enrolledCategory, startDate, endDate]);
-
-  const clientsUnsorted = activeFilter === "all" 
-    ? searchedClients 
-    : searchedClients.filter(client => client.filingStatus === activeFilter);
-
-  const clients = useMemo(() => {
-    const list = [...clientsUnsorted];
-    const byDate = (a: string, b: string) => new Date(a).getTime() - new Date(b).getTime();
-    const byStr = (a: string, b: string) => a.localeCompare(b, undefined, { sensitivity: "base" });
-
-    list.sort((a, b) => {
-      switch (sortMode) {
-        case "enrolled_asc":
-          return byDate(a.createdAt, b.createdAt);
-        case "enrolled_desc":
-          return byDate(b.createdAt, a.createdAt);
-        case "name_asc":
-          return byStr(a.name, b.name);
-        case "name_desc":
-          return byStr(b.name, a.name);
-        case "assigned_asc":
-          return byStr(a.assignedTo || "", b.assignedTo || "");
-        case "assigned_desc":
-          return byStr(b.assignedTo || "", a.assignedTo || "");
-        default:
-          return 0;
-      }
+  const clients: ClientTableData[] = useMemo(() => {
+    const items = clientsResp?.items || [];
+    return items.map((c) => {
+      const filingStatus: FilingStatus = (c.filingStatus || "new") as FilingStatus;
+      return {
+        id: c.id,
+        name: c.name,
+        email: c.email,
+        phone: c.phone,
+        status: filingStatusToDisplay[filingStatus],
+        filingStatus,
+        taxYear: String(selectedYear),
+        assignedTo: c.assignedTo || "Unassigned",
+        city: c.city || undefined,
+        state: c.state || undefined,
+        zipCode: c.zipCode || undefined,
+        estimatedRefund: c.estimatedRefund || undefined,
+        preparerName: c.preparerName || undefined,
+        createdAt: c.createdAt,
+      };
     });
-    return list;
-  }, [clientsUnsorted, sortMode]);
+  }, [clientsResp, selectedYear]);
 
   const getStatusCount = (status: StatusFilter) => {
-    if (status === "all") return searchedClients.length;
-    return searchedClients.filter(client => client.filingStatus === status).length;
+    if (status === "all") return Number(clientsResp?.total || 0);
+    return Number(clientsResp?.countsByStatus?.[status] || 0);
   };
 
-  if (usersError) {
+  if (clientsError || staffError) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
@@ -520,7 +481,7 @@ export default function Clients() {
               Clients
             </h1>
             <p className="text-[15px] text-muted-foreground mt-0.5">
-              {isLoading ? "Loading..." : `${clients.length} for ${selectedYear}`}
+              {isLoading ? "Loading..." : `${clientsResp?.filteredTotal ?? clients.length} for ${selectedYear}`}
             </p>
           </div>
           {/* iOS-style circular add button (mobile) */}
@@ -714,23 +675,65 @@ export default function Clients() {
         </div>
       </div>
 
-      {isLoading ? (
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      ) : (
-        <ClientsTable
-          clients={clients}
-          staffMembers={staffMembers}
-          selectedYear={selectedYear}
-          onViewClient={handleViewClient}
-          onEditClient={handleEditClient}
-          onStatusChange={handleStatusChange}
-          onAssignClient={handleAssignClient}
-          onBulkAssign={handleBulkAssign}
-          onBulkStatusChange={handleBulkStatusChange}
-        />
-      )}
+      <div className="space-y-4">
+        {isLoading ? (
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <>
+            <ClientsTable
+              clients={clients}
+              staffMembers={staffMembers}
+              selectedYear={selectedYear}
+              onViewClient={handleViewClient}
+              onEditClient={handleEditClient}
+              onStatusChange={handleStatusChange}
+              onAssignClient={handleAssignClient}
+              onBulkAssign={handleBulkAssign}
+              onBulkStatusChange={handleBulkStatusChange}
+            />
+
+            {/* Pagination */}
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-sm text-muted-foreground">
+                Showing{" "}
+                <span className="font-medium text-foreground">
+                  {clients.length ? (page - 1) * pageSize + 1 : 0}
+                </span>
+                {"–"}
+                <span className="font-medium text-foreground">
+                  {Math.min(page * pageSize, Number(clientsResp?.filteredTotal || 0))}
+                </span>{" "}
+                of{" "}
+                <span className="font-medium text-foreground">
+                  {Number(clientsResp?.filteredTotal || 0)}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page <= 1 || isLoading}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  data-testid="button-clients-prev"
+                >
+                  Prev
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={isLoading || page * pageSize >= Number(clientsResp?.filteredTotal || 0)}
+                  onClick={() => setPage((p) => p + 1)}
+                  data-testid="button-clients-next"
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
 
       {/* Floating Add Button (mobile/PWA) */}
       <button
