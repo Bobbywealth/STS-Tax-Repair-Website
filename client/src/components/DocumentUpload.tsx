@@ -260,7 +260,14 @@ export function DocumentUpload({ clientId, onUpload }: DocumentUploadProps) {
                             size="icon"
                             variant="ghost"
                             onClick={() => {
-                              window.open(`/api/documents/${doc.id}/download`, '_blank');
+                              const url = `/api/documents/${doc.id}/download`;
+                              const link = document.createElement('a');
+                              link.href = url;
+                              link.target = '_blank';
+                              link.rel = 'noopener noreferrer';
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
                             }}
                             data-testid={`button-view-${doc.id}`}
                           >
