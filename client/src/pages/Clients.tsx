@@ -138,7 +138,7 @@ export default function Clients() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
-  const pageSize = 50;
+  const [pageSize, setPageSize] = useState(20);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -695,37 +695,77 @@ export default function Clients() {
             />
 
             {/* Pagination */}
-            <div className="flex items-center justify-between gap-3">
-              <div className="text-sm text-muted-foreground">
-                Showing{" "}
-                <span className="font-medium text-foreground">
-                  {clients.length ? (page - 1) * pageSize + 1 : 0}
-                </span>
-                {"–"}
-                <span className="font-medium text-foreground">
-                  {Math.min(page * pageSize, Number(clientsResp?.filteredTotal || 0))}
-                </span>{" "}
-                of{" "}
-                <span className="font-medium text-foreground">
-                  {Number(clientsResp?.filteredTotal || 0)}
-                </span>
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-card border border-border/50 rounded-xl p-4 shadow-sm">
+              <div className="flex items-center gap-4">
+                <div className="text-sm text-muted-foreground">
+                  Showing{" "}
+                  <span className="font-medium text-foreground">
+                    {clients.length ? (page - 1) * pageSize + 1 : 0}
+                  </span>
+                  {"–"}
+                  <span className="font-medium text-foreground">
+                    {Math.min(page * pageSize, Number(clientsResp?.filteredTotal || 0))}
+                  </span>{" "}
+                  of{" "}
+                  <span className="font-medium text-foreground">
+                    {Number(clientsResp?.filteredTotal || 0)}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 border-l pl-4 border-border/50">
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">Per page:</span>
+                  <Select
+                    value={String(pageSize)}
+                    onValueChange={(val) => {
+                      setPageSize(parseInt(val));
+                      setPage(1);
+                    }}
+                  >
+                    <SelectTrigger className="h-8 w-[70px] text-xs">
+                      <SelectValue placeholder={String(pageSize)} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[20, 30, 40, 50, 100].map((size) => (
+                        <SelectItem key={size} value={String(size)}>
+                          {size}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
+
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
                   disabled={page <= 1 || isLoading}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  onClick={() => {
+                    setPage((p) => Math.max(1, p - 1));
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
                   data-testid="button-clients-prev"
+                  className="h-9 px-4 rounded-lg"
                 >
-                  Prev
+                  Previous
                 </Button>
+                
+                <div className="flex items-center justify-center px-3 min-w-[80px]">
+                  <span className="text-sm font-medium">
+                    Page {page} of {Math.ceil(Number(clientsResp?.filteredTotal || 0) / pageSize) || 1}
+                  </span>
+                </div>
+
                 <Button
                   variant="outline"
                   size="sm"
                   disabled={isLoading || page * pageSize >= Number(clientsResp?.filteredTotal || 0)}
-                  onClick={() => setPage((p) => p + 1)}
+                  onClick={() => {
+                    setPage((p) => p + 1);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
                   data-testid="button-clients-next"
+                  className="h-9 px-4 rounded-lg"
                 >
                   Next
                 </Button>
