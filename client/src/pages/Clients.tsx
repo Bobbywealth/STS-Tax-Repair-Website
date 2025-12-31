@@ -118,9 +118,10 @@ export default function Clients() {
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setSearchQuery(val);
-    startTransition(() => {
-      // Transition is marked as low priority
-    });
+    // If the user clears the input, clear the debounced value immediately so the list resets instantly.
+    if (!val.trim()) {
+      setDebouncedSearch("");
+    }
   };
 
   useEffect(() => {
@@ -417,10 +418,13 @@ export default function Clients() {
     // Search query filter
     if (debouncedSearch.trim()) {
       const query = debouncedSearch.toLowerCase().trim();
+      const queryDigits = query.replace(/\D/g, "");
       filtered = filtered.filter(client => 
         client.name.toLowerCase().includes(query) ||
         client.email.toLowerCase().includes(query) ||
         client.phone.toLowerCase().includes(query) ||
+        // Phone number search should work even if the stored phone has formatting (+1, dashes, spaces, etc.)
+        (queryDigits.length > 0 && client.phone.replace(/\D/g, "").includes(queryDigits)) ||
         (client.city && client.city.toLowerCase().includes(query)) ||
         (client.state && client.state.toLowerCase().includes(query)) ||
         (client.zipCode && client.zipCode.toLowerCase().includes(query))
@@ -630,7 +634,10 @@ export default function Clients() {
           />
           {searchQuery && (
             <button
-              onClick={() => setSearchQuery("")}
+              onClick={() => {
+                setSearchQuery("");
+                setDebouncedSearch("");
+              }}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
               data-testid="button-clear-search"
             >
