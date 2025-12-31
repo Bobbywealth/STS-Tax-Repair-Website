@@ -8251,7 +8251,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let sent = 0;
       const errors: string[] = [];
 
-      for (const recipient of to) {
+      // Clean phone numbers: Keep only digits, then ensure E.164
+      const cleanNumbers = to.map(num => {
+        const digits = num.replace(/\D/g, "");
+        if (digits.length === 10) return `+1${digits}`; // US number
+        if (digits.length > 10 && !num.startsWith("+")) return `+${digits}`;
+        return num.startsWith("+") ? num : `+${num}`;
+      });
+
+      for (const recipient of cleanNumbers) {
         try {
           await client.messages.create({
             from: TWILIO_FROM,
@@ -8265,7 +8273,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const failed = to.length - sent;
+      const failed = cleanNumbers.length - sent;
 
       // Track campaign record
       try {
@@ -8275,7 +8283,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: failed === 0 ? "completed" : (sent > 0 ? "partial" : "failed"),
           subject: null,
           content: message,
-          recipientCount: to.length,
+          recipientCount: cleanNumbers.length,
           sentCount: sent,
           errorCount: failed,
           createdById: req.userId || null,

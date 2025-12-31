@@ -260,10 +260,18 @@ export default function Marketing() {
       return (await res.json()) as MarketingResult;
     },
     onSuccess: (data) => {
-      toast({
-        title: "Email campaign sent",
-        description: `Sent: ${data.sent}, Failed: ${data.failed}`,
-      });
+      if (data.failed > 0) {
+        toast({
+          title: "Email campaign partially sent",
+          description: `Sent: ${data.sent}, Failed: ${data.failed}. Check logs for details.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Email campaign sent",
+          description: `Successfully sent to ${data.sent} recipients.`,
+        });
+      }
       queryClient.invalidateQueries({ queryKey: ["/api/marketing/campaigns"] });
       queryClient.invalidateQueries({ queryKey: ["/api/marketing/stats"] });
       setActiveTab("overview");
@@ -290,10 +298,18 @@ export default function Marketing() {
       return (await res.json()) as MarketingResult;
     },
     onSuccess: (data) => {
-      toast({
-        title: "SMS campaign sent",
-        description: `Sent: ${data.sent}, Failed: ${data.failed}`,
-      });
+      if (data.failed > 0) {
+        toast({
+          title: "SMS campaign partially sent",
+          description: `Sent: ${data.sent}, Failed: ${data.failed}. Check logs for details.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "SMS campaign sent",
+          description: `Successfully sent to ${data.sent} recipients.`,
+        });
+      }
       queryClient.invalidateQueries({ queryKey: ["/api/marketing/campaigns"] });
       queryClient.invalidateQueries({ queryKey: ["/api/marketing/stats"] });
       setActiveTab("overview");
