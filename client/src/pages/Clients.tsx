@@ -259,6 +259,36 @@ export default function Clients() {
     bulkAssignMutation.mutate({ clientIds, preparerId, preparerName });
   }, [bulkAssignMutation]);
 
+  // Bulk status update mutation
+  const bulkStatusMutation = useMutation({
+    mutationFn: async ({ clientIds, newStatus }: { clientIds: string[]; newStatus: ClientTableData["status"] }) => {
+      const status = displayStatusToFiling[newStatus];
+      return apiRequest("POST", "/api/clients/bulk-status", {
+        clientIds,
+        status,
+        taxYear: selectedYear,
+      });
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tax-filings", selectedYear] });
+      toast({
+        title: "Statuses Updated",
+        description: `Successfully updated status for ${data.updated} client(s).`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Bulk Update Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleBulkStatusChange = useCallback((clientIds: string[], newStatus: ClientTableData["status"]) => {
+    bulkStatusMutation.mutate({ clientIds, newStatus });
+  }, [bulkStatusMutation]);
+
   const filingsByClientId = useMemo(() => {
     const map = new Map<string, TaxFiling>();
     (taxFilings || []).forEach(filing => {
@@ -691,6 +721,7 @@ export default function Clients() {
           onStatusChange={handleStatusChange}
           onAssignClient={handleAssignClient}
           onBulkAssign={handleBulkAssign}
+          onBulkStatusChange={handleBulkStatusChange}
         />
       )}
 

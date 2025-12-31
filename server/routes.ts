@@ -4030,6 +4030,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
+  // Bulk update client filing status
+  app.post(
+    "/api/clients/bulk-status",
+    isAuthenticated,
+    requirePermission("clients.edit"),
+    async (req: any, res) => {
+      try {
+        const { clientIds, status, taxYear } = req.body;
+        
+        if (!clientIds || !Array.isArray(clientIds) || clientIds.length === 0) {
+          return res.status(400).json({ error: "Client IDs array is required" });
+        }
+        
+        if (!status) {
+          return res.status(400).json({ error: "Filing status is required" });
+        }
+        
+        const year = taxYear || new Date().getFullYear();
+        const results = [];
+        const errors = [];
+        
+        for (const clientId of clientIds) {
+          try {
+            // Check if tax filing exists for this client/year
+            const existingFiling = await storage.getTaxFilingByClientYear(clientId, year);
+            
+            if (existingFiling) {
+              // Update existing filing status
+              const updated = await storage.updateTaxFilingStatus(existingFiling.id, status);
+              results.push({ clientId, status: 'updated', filing: updated });
+            } else {
+              // Create new filing with status
+              const newFiling = await storage.createTaxFiling({
+                clientId,
+                taxYear: year,
+                status,
+              });
+              results.push({ clientId, status: 'created', filing: newFiling });
+            }
+          } catch (err: any) {
+            errors.push({ clientId, error: err.message });
+          }
+        }
+        
+        res.json({
+          success: true,
+          updated: results.length,
+          failed: errors.length,
+          results,
+          errors,
+        });
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    },
+  );
+
   // Single client assignment (quick assign from table)
   app.post(
     "/api/clients/:clientId/assign",

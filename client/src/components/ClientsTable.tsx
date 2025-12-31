@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, memo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -6,12 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, MoreVertical, Users, UserCheck } from "lucide-react";
+import { Search, MoreVertical, Users, UserCheck, CheckCircle2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
@@ -52,14 +54,8 @@ interface ClientsTableProps {
   onStatusChange?: (id: string, newStatus: Client["status"]) => void;
   onAssignClient?: (clientId: string, preparerId: string, preparerName: string) => void;
   onBulkAssign?: (clientIds: string[], preparerId: string, preparerName: string) => void;
+  onBulkStatusChange?: (clientIds: string[], newStatus: Client["status"]) => void;
 }
-
-import { useState, useMemo, memo } from "react";
-// ... (imports)
-import { useToast } from "@/hooks/use-toast";
-import { useLocation } from "wouter";
-
-// ... (interfaces)
 
 export const ClientsTable = memo(function ClientsTable({ 
   clients, 
@@ -70,6 +66,7 @@ export const ClientsTable = memo(function ClientsTable({
   onStatusChange,
   onAssignClient,
   onBulkAssign,
+  onBulkStatusChange,
 }: ClientsTableProps) {
   const [selectedClients, setSelectedClients] = useState<Set<string>>(new Set());
   const [, setLocation] = useLocation();
@@ -117,61 +114,80 @@ export const ClientsTable = memo(function ClientsTable({
     }
   };
 
+  const handleBulkStatusChange = (newStatus: Client["status"]) => {
+    if (onBulkStatusChange && selectedClients.size > 0) {
+      onBulkStatusChange(Array.from(selectedClients), newStatus);
+      setSelectedClients(new Set());
+    }
+  };
+
   const allSelected = clients.length > 0 && clients.every(c => selectedClients.has(c.id));
   const someSelected = clients.some(c => selectedClients.has(c.id));
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="pb-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <CardTitle className="text-xl">Clients List</CardTitle>
             {selectedClients.size > 0 && (
-              <Badge variant="secondary" className="gap-1">
+              <Badge variant="secondary" className="gap-1 px-2 py-1">
                 <UserCheck className="h-3 w-3" />
                 {selectedClients.size} selected
               </Badge>
             )}
           </div>
+          
           <div className="flex items-center gap-2">
-            {/* Bulk Actions */}
-            {selectedClients.size > 0 && staffMembers.length > 0 && (
-              <Select onValueChange={handleBulkAssign}>
-                <SelectTrigger className="w-[180px]" data-testid="select-bulk-assign">
-                  <Users className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Assign selected..." />
-                </SelectTrigger>
-                <SelectContent>
+            {/* Bulk Actions Dropdown */}
+            {selectedClients.size > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-9 gap-2 border-primary/20 hover:border-primary/50 bg-primary/5 hover:bg-primary/10">
+                    <CheckCircle2 className="h-4 w-4 text-primary" />
+                    Apply Bulk Action
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>Actions for {selectedClients.size} clients</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  
+                  {/* Bulk Assign */}
+                  <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Assign to Agent
+                  </div>
                   {staffMembers.map((staff) => (
-                    <SelectItem key={staff.id} value={staff.id} data-testid={`bulk-assign-${staff.id}`}>
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-5 w-5">
-                          <AvatarFallback className="text-[10px]">
-                            {staff.name.split(' ').map(n => n[0]).join('')}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span>{staff.name}</span>
-                        <Badge variant="outline" className="text-[10px] px-1">
-                          {staff.role === 'super_admin'
-                            ? 'Super Admin'
-                            : staff.role === 'admin'
-                              ? 'Admin'
-                              : staff.role === 'tax_office'
-                                ? 'Office'
-                                : 'Agent'}
-                        </Badge>
-                      </div>
-                    </SelectItem>
+                    <DropdownMenuItem key={staff.id} onClick={() => handleBulkAssign(staff.id)}>
+                      <Avatar className="h-5 w-5 mr-2">
+                        <AvatarFallback className="text-[10px]">
+                          {staff.name.split(' ').map(n => n[0]).join('')}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="flex-1 truncate">{staff.name}</span>
+                    </DropdownMenuItem>
                   ))}
-                </SelectContent>
-              </Select>
+                  
+                  <DropdownMenuSeparator />
+                  
+                  {/* Bulk Status Update */}
+                  <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Update Status
+                  </div>
+                  {Object.keys(statusColors).map((status) => (
+                    <DropdownMenuItem key={status} onClick={() => handleBulkStatusChange(status as Client["status"])}>
+                      <div className={`h-2 w-2 rounded-full mr-2 ${statusColors[status as Client["status"]].split(' ')[0]}`} />
+                      {status}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </div>
         </div>
       </CardHeader>
       <CardContent className="p-0 md:p-6">
         {/* Mobile iOS-style List View */}
-        <div className="md:hidden p-4">
+        <div className="md:hidden p-4 pt-0">
           {clients.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No clients found matching your search.
@@ -183,53 +199,59 @@ export const ClientsTable = memo(function ClientsTable({
                 const initials = client.name.split(" ").map(n => n[0]).join("").slice(0, 2);
                 return (
                   <div key={client.id} className="border-b last:border-b-0">
-                    <button
-                      onClick={() => setLocation(`/clients/${client.id}`)}
-                      className="w-full px-4 py-3 text-left active:bg-muted/40 transition-colors"
-                      data-testid={`client-row-${client.id}`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-11 w-11 flex-shrink-0">
-                          <AvatarFallback className="bg-primary/10 text-primary text-base">
-                            {initials}
-                          </AvatarFallback>
-                        </Avatar>
+                    <div className="flex items-center">
+                      <div className="pl-4">
+                        <Checkbox 
+                          checked={selectedClients.has(client.id)}
+                          onCheckedChange={(checked) => handleSelectClient(client.id, checked as boolean)}
+                          aria-label={`Select ${client.name}`}
+                        />
+                      </div>
+                      <button
+                        onClick={() => setLocation(`/clients/${client.id}`)}
+                        className="flex-1 px-4 py-3 text-left active:bg-muted/40 transition-colors"
+                        data-testid={`client-row-${client.id}`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-11 w-11 flex-shrink-0">
+                            <AvatarFallback className="bg-primary/10 text-primary text-base">
+                              {initials}
+                            </AvatarFallback>
+                          </Avatar>
 
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <div className="font-semibold truncate">{client.name}</div>
-                              <div className="text-sm text-muted-foreground truncate">{client.email}</div>
-                              {client.phone ? (
-                                <div className="text-sm text-muted-foreground">{client.phone}</div>
-                              ) : null}
-                            </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <div className="font-semibold truncate">{client.name}</div>
+                                <div className="text-sm text-muted-foreground truncate">{client.email}</div>
+                              </div>
 
-                            <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                              <Badge
-                                variant="secondary"
-                                className={`rounded-full px-3 py-1 text-xs ${statusColors[status]}`}
-                              >
-                                {status === "Documents Pending" ? "Docs Pending" : status}
-                              </Badge>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                  <Button size="icon" variant="ghost" className="h-9 w-9 rounded-full border bg-background/60 hover:bg-muted/60">
-                                    <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setLocation(`/clients/${client.id}`); }}>
-                                    View Details
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={(e) => e.stopPropagation()}>Export Data</DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                              <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                                <Badge
+                                  variant="secondary"
+                                  className={`rounded-full px-3 py-1 text-xs ${statusColors[status]}`}
+                                >
+                                  {status === "Documents Pending" ? "Docs Pending" : status}
+                                </Badge>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-full border bg-background/60 hover:bg-muted/60">
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setLocation(`/clients/${client.id}`); }}>
+                                      View Details
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={(e) => e.stopPropagation()}>Export Data</DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    </button>
+                      </button>
+                    </div>
                   </div>
                 );
               })}
@@ -311,48 +333,14 @@ export const ClientsTable = memo(function ClientsTable({
                         </Badge>
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="New" data-testid="status-option-new">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full bg-blue-500" />
-                            New
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="Documents Pending" data-testid="status-option-docs-pending">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full bg-orange-500" />
-                            Documents Pending
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="Review" data-testid="status-option-review">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full bg-yellow-500" />
-                            Review
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="Filed" data-testid="status-option-filed">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full bg-purple-500" />
-                            Filed
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="Accepted" data-testid="status-option-accepted">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full bg-teal-500" />
-                            Accepted
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="Approved" data-testid="status-option-approved">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full bg-green-500" />
-                            Approved
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="Paid" data-testid="status-option-paid">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                            Paid
-                          </div>
-                        </SelectItem>
+                        {Object.keys(statusColors).map(status => (
+                          <SelectItem key={status} value={status}>
+                            <div className="flex items-center gap-2">
+                              <div className={`h-2 w-2 rounded-full ${statusColors[status as Client["status"]].split(' ')[0]}`} />
+                              {status}
+                            </div>
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </td>
