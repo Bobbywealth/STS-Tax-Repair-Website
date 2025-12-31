@@ -28,6 +28,7 @@ import defaultLogoUrl from "@/assets/sts-logo.png";
 import { PWALoginScreen } from "@/components/PWALoginScreen";
 import { useBranding } from "@/hooks/useBranding";
 import { apiRequest } from "@/lib/queryClient";
+import { Checkbox } from "@/components/ui/checkbox";
 
 function FloatingParticles() {
   return (
@@ -62,6 +63,7 @@ export default function ClientLogin() {
   const [, navigate] = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
   const [isResendingVerification, setIsResendingVerification] = useState(false);
@@ -80,6 +82,17 @@ export default function ClientLogin() {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
                         (window.navigator as any).standalone === true;
     setIsPWA(isStandalone);
+  }, []);
+
+  useEffect(() => {
+    // If we're running inside the native iOS wrapper, default to persistent login.
+    const isAppShell = /PWAShell/i.test(navigator.userAgent);
+    if (isAppShell) setRememberMe(true);
+
+    // Prefill last used email for convenience (do NOT store password).
+    const lastEmail = localStorage.getItem("sts_last_login_email_client");
+    if (lastEmail && !email) setEmail(lastEmail);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (isPWA) {
@@ -105,7 +118,7 @@ export default function ClientLogin() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, rememberMe }),
       });
 
       const data = await response.json();
@@ -127,6 +140,13 @@ export default function ClientLogin() {
         title: "Welcome back!",
         description: "Redirecting to your portal...",
       });
+
+      // Remember the last-used email for faster sign-in next time.
+      try {
+        localStorage.setItem("sts_last_login_email_client", email);
+      } catch {
+        // ignore storage errors
+      }
 
       // Use the redirect URL from the server response (based on user role)
       window.location.href = data.redirectUrl || "/client-portal";
@@ -633,6 +653,22 @@ export default function ClientLogin() {
                     </Link>
                   </div>
                 </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="remember-client"
+                      checked={rememberMe}
+                      onCheckedChange={(checked) => setRememberMe(Boolean(checked))}
+                      className="border-white/30 data-[state=checked]:border-emerald-500 data-[state=checked]:bg-emerald-500"
+                      data-testid="checkbox-remember-client"
+                    />
+                    <Label htmlFor="remember-client" className="text-sm text-gray-300 cursor-pointer font-normal">
+                      Keep me signed in
+                    </Label>
+                  </div>
+                </div>
+
                 <Button
                   type="submit"
                   className="w-full neon-button h-12 text-base font-semibold text-white transition-all duration-300"

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,7 +26,7 @@ interface PWALoginScreenProps {
 export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
   const { toast } = useToast();
   const [, navigate] = useLocation();
-  const { saveAuthToken, saveCredentials } = useAuthStorage();
+  const { saveAuthToken, saveCredentials, isRememberMeEnabled } = useAuthStorage();
   const { isOnline, requestManualSync } = usePWA();
   const { branding } = useBranding();
   const reduceMotion = useReducedMotion();
@@ -36,14 +36,34 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
   const registerHref = officeSlug ? `/register?_office=${encodeURIComponent(officeSlug)}` : "/register";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [staffEmail, setStaffEmail] = useState("");
   const [staffPassword, setStaffPassword] = useState("");
-  const [staffRememberMe, setStaffRememberMe] = useState(false);
+  const [staffRememberMe, setStaffRememberMe] = useState(true);
   const [isStaffLoading, setIsStaffLoading] = useState(false);
   const [showStaffPassword, setShowStaffPassword] = useState(false);
+
+  useEffect(() => {
+    // Preserve user's prior choice if they previously enabled/disabled remember-me.
+    try {
+      const enabled = isRememberMeEnabled();
+      setRememberMe(enabled);
+      setStaffRememberMe(enabled);
+    } catch {
+      // ignore
+    }
+    // Prefill last used emails for convenience (do NOT store password ourselves).
+    try {
+      const lastClientEmail = localStorage.getItem("sts_last_login_email_client");
+      if (lastClientEmail) setEmail(lastClientEmail);
+      const lastStaffEmail = localStorage.getItem("sts_last_login_email_staff");
+      if (lastStaffEmail) setStaffEmail(lastStaffEmail);
+    } catch {
+      // ignore
+    }
+  }, [isRememberMeEnabled]);
 
   const handleClientLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,6 +106,13 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
       // Save credentials to browser password manager
       if (rememberMe) {
         saveCredentials(email, password);
+      }
+
+      // Remember last-used email for faster next sign-in.
+      try {
+        localStorage.setItem("sts_last_login_email_client", email);
+      } catch {
+        // ignore
       }
 
       toast({
@@ -139,6 +166,13 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
       // Save credentials to browser password manager
       if (staffRememberMe) {
         saveCredentials(staffEmail, staffPassword);
+      }
+
+      // Remember last-used email for faster next sign-in.
+      try {
+        localStorage.setItem("sts_last_login_email_staff", staffEmail);
+      } catch {
+        // ignore
       }
 
       toast({

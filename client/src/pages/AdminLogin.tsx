@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Shield, Mail, Lock, AlertCircle, UserPlus, FileQuestion } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
@@ -14,6 +15,7 @@ export default function AdminLogin() {
   const [, navigate] = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const { branding } = useBranding();
@@ -30,7 +32,7 @@ export default function AdminLogin() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, rememberMe }),
       });
 
       const data = await response.json();
@@ -43,6 +45,13 @@ export default function AdminLogin() {
         title: "Welcome back!",
         description: "Redirecting to dashboard...",
       });
+
+      // Remember last-used email for convenience (do NOT store password).
+      try {
+        localStorage.setItem("sts_last_login_email_staff", email);
+      } catch {
+        // ignore
+      }
 
       window.location.href = data.redirectUrl || "/dashboard";
     } catch (error: any) {
@@ -121,6 +130,21 @@ export default function AdminLogin() {
                   required
                   data-testid="input-password"
                 />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="remember-staff"
+                  checked={rememberMe}
+                  onCheckedChange={(checked) => setRememberMe(Boolean(checked))}
+                  className="border-slate-500 data-[state=checked]:border-emerald-500 data-[state=checked]:bg-emerald-600"
+                  data-testid="checkbox-remember-staff"
+                />
+                <Label htmlFor="remember-staff" className="text-sm text-slate-300 cursor-pointer font-normal">
+                  Keep me signed in
+                </Label>
               </div>
             </div>
             
