@@ -63,6 +63,8 @@ import {
   type InsertHomePageAgent,
   type NotificationPreferences,
   type InsertNotificationPreferences,
+  type MarketingCampaign,
+  type InsertMarketingCampaign,
   users as usersTable,
   homePageAgents as homePageAgentsTable,
   appointments as appointmentsTable,
@@ -89,7 +91,8 @@ import {
   auditLogs as auditLogsTable,
   staffRequests as staffRequestsTable,
   notifications as notificationsTable,
-  pushDeviceTokens as pushDeviceTokensTable
+  pushDeviceTokens as pushDeviceTokensTable,
+  marketingCampaigns as marketingCampaignsTable
 } from "@shared/mysql-schema";
 import { mysqlPool } from "./mysql-db";
 import { randomUUID } from "crypto";
@@ -2644,6 +2647,41 @@ export class MySQLStorage implements IStorage {
       `UPDATE push_device_tokens SET is_active = false, updated_at = NOW() WHERE device_token IN (${placeholders}) AND is_active = true`,
       tokens
     );
+  }
+
+  // Marketing Campaigns
+  async getMarketingCampaigns(): Promise<MarketingCampaign[]> {
+    return await mysqlDb.select().from(marketingCampaignsTable).orderBy(desc(marketingCampaignsTable.createdAt));
+  }
+
+  async createMarketingCampaign(campaign: InsertMarketingCampaign): Promise<MarketingCampaign> {
+    const id = randomUUID();
+    const data = { ...campaign, id, createdAt: new Date() };
+    await mysqlDb.insert(marketingCampaignsTable).values(data);
+    const [inserted] = await mysqlDb.select().from(marketingCampaignsTable).where(eq(marketingCampaignsTable.id, id));
+    return inserted;
+  }
+
+  async getMarketingStats(): Promise<{
+    totalSent: number;
+    emailSent: number;
+    smsSent: number;
+    errorCount: number;
+  }> {
+    const campaigns = await mysqlDb.select().from(marketingCampaignsTable);
+    let totalSent = 0;
+    let emailSent = 0;
+    let smsSent = 0;
+    let errorCount = 0;
+
+    campaigns.forEach(c => {
+      totalSent += (c.sentCount || 0);
+      if (c.type === 'email') emailSent += (c.sentCount || 0);
+      if (c.type === 'sms') smsSent += (c.sentCount || 0);
+      errorCount += (c.errorCount || 0);
+    });
+
+    return { totalSent, emailSent, smsSent, errorCount };
   }
 }
 

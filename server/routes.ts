@@ -8166,7 +8166,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Send marketing email via Gmail SMTP
   app.post("/api/marketing/email", isAuthenticated, requireAdmin(), async (req: AuthenticatedRequest, res) => {
     try {
-      const { to, subject, message } = req.body || {};
+      const { to, subject, message, name } = req.body || {};
 
       if (!Array.isArray(to) || to.length === 0) {
         return res.status(400).json({ error: "At least one recipient is required" });
@@ -8206,6 +8206,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const failed = to.length - sent;
+
+      // Track campaign record
+      try {
+        await storage.createMarketingCampaign({
+          name: name || subject || "Email Campaign",
+          type: "email",
+          status: failed === 0 ? "completed" : (sent > 0 ? "partial" : "failed"),
+          subject,
+          content: message,
+          recipientCount: to.length,
+          sentCount: sent,
+          errorCount: failed,
+          createdById: req.userId || null,
+          officeId: (req.user as any)?.officeId || null,
+        });
+      } catch (dbErr) {
+        console.error("[MARKETING][EMAIL] Failed to save campaign record:", dbErr);
+      }
+
       res.json({ success: failed === 0, sent, failed, errors });
     } catch (error: any) {
       console.error("[MARKETING][EMAIL] Error:", error);
@@ -8216,7 +8235,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Send marketing SMS via Twilio
   app.post("/api/marketing/sms", isAuthenticated, requireAdmin(), async (req: AuthenticatedRequest, res) => {
     try {
-      const { to, message } = req.body || {};
+      const { to, message, name } = req.body || {};
 
       if (!Array.isArray(to) || to.length === 0) {
         return res.status(400).json({ error: "At least one recipient is required" });
@@ -8247,9 +8266,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const failed = to.length - sent;
+
+      // Track campaign record
+      try {
+        await storage.createMarketingCampaign({
+          name: name || "SMS Blast",
+          type: "sms",
+          status: failed === 0 ? "completed" : (sent > 0 ? "partial" : "failed"),
+          subject: null,
+          content: message,
+          recipientCount: to.length,
+          sentCount: sent,
+          errorCount: failed,
+          createdById: req.userId || null,
+          officeId: (req.user as any)?.officeId || null,
+        });
+      } catch (dbErr) {
+        console.error("[MARKETING][SMS] Failed to save campaign record:", dbErr);
+      }
+
       res.json({ success: failed === 0, sent, failed, errors });
     } catch (error: any) {
       console.error("[MARKETING][SMS] Error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get marketing campaigns history
+  app.get("/api/marketing/campaigns", isAuthenticated, requireAdmin(), async (req, res) => {
+    try {
+      const campaigns = await storage.getMarketingCampaigns();
+      res.json(campaigns);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get marketing center statistics
+  app.get("/api/marketing/stats", isAuthenticated, requireAdmin(), async (req, res) => {
+    try {
+      const stats = await storage.getMarketingStats();
+      res.json(stats);
+    } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
   });

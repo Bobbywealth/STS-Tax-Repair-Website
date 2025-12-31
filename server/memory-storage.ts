@@ -15,6 +15,8 @@ import type {
   InsertKnowledgeBase,
   InsertLead,
   InsertNotification,
+  InsertMarketingCampaign,
+  MarketingCampaign,
   InsertNotificationPreferences,
   InsertOffice,
   InsertOfficeBranding,
@@ -793,5 +795,14 @@ export class MemoryStorage {
   // Methods not required for demo but referenced by types in some modules
   async createPermission(_: InsertPermission): Promise<Permission> { throw new Error("Not supported"); }
   async createRolePermission(_: InsertRolePermission): Promise<any> { throw new Error("Not supported"); }
+
+  // Marketing Campaigns
+  async getMarketingCampaigns(): Promise<MarketingCampaign[]> { return []; }
+  async createMarketingCampaign(campaign: InsertMarketingCampaign): Promise<MarketingCampaign> {
+    return { ...campaign, id: randomUUID(), createdAt: new Date() } as any;
+  }
+  async getMarketingStats(): Promise<any> {
+    return { totalSent: 0, emailSent: 0, smsSent: 0, errorCount: 0 };
+  }
 }
 

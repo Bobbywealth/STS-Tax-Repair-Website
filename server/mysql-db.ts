@@ -521,7 +521,8 @@ export async function runMySQLMigrations(): Promise<void> {
       'knowledge_base': `CREATE TABLE IF NOT EXISTS knowledge_base (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), title TEXT NOT NULL, content TEXT NOT NULL, category VARCHAR(100), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
       'ai_chat_sessions': `CREATE TABLE IF NOT EXISTS ai_chat_sessions (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), user_id VARCHAR(36) NOT NULL, title TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
       'ai_chat_messages': `CREATE TABLE IF NOT EXISTS ai_chat_messages (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), session_id VARCHAR(36) NOT NULL, role ENUM('user', 'assistant', 'system') NOT NULL, content TEXT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
-      'ai_document_analysis': `CREATE TABLE IF NOT EXISTS ai_document_analysis (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), document_id VARCHAR(36) NOT NULL, analysis_type VARCHAR(50) NOT NULL, results JSON NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`
+      'ai_document_analysis': `CREATE TABLE IF NOT EXISTS ai_document_analysis (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), document_id VARCHAR(36) NOT NULL, analysis_type VARCHAR(50) NOT NULL, results JSON NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
+      'marketing_campaigns': `CREATE TABLE IF NOT EXISTS marketing_campaigns (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), name VARCHAR(255) NOT NULL, type VARCHAR(20) NOT NULL, status VARCHAR(20) DEFAULT 'completed', subject VARCHAR(255), content TEXT NOT NULL, recipient_count INT DEFAULT 0, sent_count INT DEFAULT 0, error_count INT DEFAULT 0, created_by_id VARCHAR(36), office_id VARCHAR(36), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`
     };
 
     for (const [tName, sql] of Object.entries(tablesToCreate)) {

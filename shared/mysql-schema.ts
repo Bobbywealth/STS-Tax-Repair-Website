@@ -1174,3 +1174,27 @@ export const insertAiDocumentAnalysisSchema = createInsertSchema(aiDocumentAnaly
 
 export type InsertAiDocumentAnalysis = z.infer<typeof insertAiDocumentAnalysisSchema>;
 export type AiDocumentAnalysis = typeof aiDocumentAnalysis.$inferSelect;
+
+// Marketing Campaigns Table
+export const marketingCampaigns = mysqlTable("marketing_campaigns", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+  name: varchar("name", { length: 255 }).notNull(),
+  type: varchar("type", { length: 20 }).notNull(), // 'email' or 'sms'
+  status: varchar("status", { length: 20 }).default("completed"),
+  subject: varchar("subject", { length: 255 }),
+  content: text("content").notNull(),
+  recipientCount: int("recipient_count").default(0),
+  sentCount: int("sent_count").default(0),
+  errorCount: int("error_count").default(0),
+  createdById: varchar("created_by_id", { length: 36 }),
+  officeId: varchar("office_id", { length: 36 }),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertMarketingCampaignSchema = createInsertSchema(marketingCampaigns).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertMarketingCampaign = z.infer<typeof insertMarketingCampaignSchema>;
+export type MarketingCampaign = typeof marketingCampaigns.$inferSelect;

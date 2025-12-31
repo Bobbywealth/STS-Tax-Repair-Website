@@ -47,6 +47,8 @@ import {
   type InsertNotificationPreferences,
   type Notification,
   type InsertNotification,
+  type MarketingCampaign,
+  type InsertMarketingCampaign,
 } from "@shared/mysql-schema";
 
 export interface IStorage {
@@ -245,6 +247,16 @@ export interface IStorage {
   // Account deletion (App Store 5.1.1(v))
   // Scrubs/anonymizes user data and disables access.
   deleteUserAccount(userId: string): Promise<void>;
+
+  // Marketing Campaigns
+  getMarketingCampaigns(): Promise<MarketingCampaign[]>;
+  createMarketingCampaign(campaign: InsertMarketingCampaign): Promise<MarketingCampaign>;
+  getMarketingStats(): Promise<{
+    totalSent: number;
+    emailSent: number;
+    smsSent: number;
+    errorCount: number;
+  }>;
 }
 
 import { mysqlStorage } from "./mysql-storage";

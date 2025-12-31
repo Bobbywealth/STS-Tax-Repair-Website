@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,9 +32,11 @@ import {
   AlertCircle,
   Copy,
   Trash2,
-  Plus
+  Plus,
+  Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { MarketingCampaign } from "@shared/mysql-schema";
 
 type MarketingResult = {
   success: boolean;
@@ -101,12 +103,15 @@ function displayName(user: User) {
 
 export default function Marketing() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("overview");
 
+  const [emailCampaignName, setEmailCampaignName] = useState("");
   const [emailRecipients, setEmailRecipients] = useState("");
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
 
+  const [smsCampaignName, setSmsCampaignName] = useState("");
   const [smsRecipients, setSmsRecipients] = useState("");
   const [smsBody, setSmsBody] = useState("");
 
@@ -141,6 +146,27 @@ export default function Marketing() {
     queryKey: ["/api/users"],
     queryFn: async () => {
       const res = await apiRequest("GET", "/api/users");
+      return res.json();
+    },
+  });
+
+  const { data: campaigns = [], isLoading: campaignsLoading } = useQuery<MarketingCampaign[]>({
+    queryKey: ["/api/marketing/campaigns"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/marketing/campaigns");
+      return res.json();
+    },
+  });
+
+  const { data: stats, isLoading: statsLoading } = useQuery<{
+    totalSent: number;
+    emailSent: number;
+    smsSent: number;
+    errorCount: number;
+  }>({
+    queryKey: ["/api/marketing/stats"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/marketing/stats");
       return res.json();
     },
   });
@@ -229,6 +255,7 @@ export default function Marketing() {
         to,
         subject: emailSubject,
         message: emailBody,
+        name: emailCampaignName,
       });
       return (await res.json()) as MarketingResult;
     },
@@ -237,6 +264,8 @@ export default function Marketing() {
         title: "Email campaign sent",
         description: `Sent: ${data.sent}, Failed: ${data.failed}`,
       });
+      queryClient.invalidateQueries({ queryKey: ["/api/marketing/campaigns"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/marketing/stats"] });
       setActiveTab("overview");
     },
     onError: (error: any) => {
@@ -256,6 +285,7 @@ export default function Marketing() {
       const res = await apiRequest("POST", "/api/marketing/sms", {
         to,
         message: smsBody,
+        name: smsCampaignName,
       });
       return (await res.json()) as MarketingResult;
     },
@@ -264,6 +294,8 @@ export default function Marketing() {
         title: "SMS campaign sent",
         description: `Sent: ${data.sent}, Failed: ${data.failed}`,
       });
+      queryClient.invalidateQueries({ queryKey: ["/api/marketing/campaigns"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/marketing/stats"] });
       setActiveTab("overview");
     },
     onError: (error: any) => {
@@ -388,54 +420,45 @@ export default function Marketing() {
                 <Send className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">1,284</div>
+                <div className="text-2xl font-bold">{statsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (stats?.totalSent || 0).toLocaleString()}</div>
                 <p className="text-xs text-muted-foreground">
-                  <span className="text-green-500 font-medium inline-flex items-center">
-                    <TrendingUp className="h-3 w-3 mr-1" /> +12.5%
-                  </span>{" "}
-                  from last month
+                  Across all channels
                 </p>
               </CardContent>
             </Card>
             <Card className="border-none shadow-sm bg-gradient-to-br from-blue-500/5 to-transparent">
               <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                <CardTitle className="text-sm font-medium">Open Rate</CardTitle>
-                <Eye className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium">Email Sent</CardTitle>
+                <Mail className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">42.8%</div>
+                <div className="text-2xl font-bold">{statsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (stats?.emailSent || 0).toLocaleString()}</div>
                 <p className="text-xs text-muted-foreground">
-                  <span className="text-green-500 font-medium inline-flex items-center">
-                    <TrendingUp className="h-3 w-3 mr-1" /> +2.1%
-                  </span>{" "}
-                  above industry avg
+                  Gmail delivery
                 </p>
               </CardContent>
             </Card>
             <Card className="border-none shadow-sm bg-gradient-to-br from-purple-500/5 to-transparent">
               <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                <CardTitle className="text-sm font-medium">CTR</CardTitle>
-                <PieChart className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium">SMS Sent</CardTitle>
+                <Smartphone className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">8.4%</div>
+                <div className="text-2xl font-bold">{statsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (stats?.smsSent || 0).toLocaleString()}</div>
                 <p className="text-xs text-muted-foreground">
-                  <span className="text-red-500 font-medium inline-flex items-center">
-                    <TrendingUp className="h-3 w-3 mr-1 rotate-180" /> -0.4%
-                  </span>{" "}
-                  from last week
+                  Twilio delivery
                 </p>
               </CardContent>
             </Card>
             <Card className="border-none shadow-sm bg-gradient-to-br from-orange-500/5 to-transparent">
               <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                <CardTitle className="text-sm font-medium">Deliverability</CardTitle>
-                <History className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium">Errors</CardTitle>
+                <AlertCircle className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">99.2%</div>
-                <p className="text-xs text-muted-foreground font-medium text-green-500">
-                  Excellent health
+                <div className="text-2xl font-bold">{statsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (stats?.errorCount || 0).toLocaleString()}</div>
+                <p className="text-xs text-muted-foreground font-medium text-orange-500">
+                  Needs attention
                 </p>
               </CardContent>
             </Card>
@@ -448,35 +471,43 @@ export default function Marketing() {
                 <CardDescription>Your latest marketing campaigns and their performance.</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {[
-                    { name: "Spring Tax Promo", type: "Email", status: "Completed", sent: 450, rate: "48%" },
-                    { name: "Appointment Reminder", type: "SMS", status: "Active", sent: 12, rate: "92%" },
-                    { name: "Early Bird Special", type: "Email", status: "Completed", sent: 820, rate: "35%" },
-                    { name: "Document Request", type: "SMS", status: "Completed", sent: 24, rate: "100%" },
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 rounded-lg border bg-muted/20">
-                      <div className="flex items-center gap-3">
-                        <div className={cn(
-                          "p-2 rounded-md",
-                          item.type === "Email" ? "bg-blue-100 text-blue-600" : "bg-green-100 text-green-600"
-                        )}>
-                          {item.type === "Email" ? <Mail className="h-4 w-4" /> : <MessageSquare className="h-4 w-4" />}
+                {campaignsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : campaigns.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <History className="h-8 w-8 mx-auto mb-2 opacity-20" />
+                    <p>No recent marketing activity.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {campaigns.slice(0, 5).map((item) => (
+                      <div key={item.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/20">
+                        <div className="flex items-center gap-3">
+                          <div className={cn(
+                            "p-2 rounded-md",
+                            item.type === "email" ? "bg-blue-100 text-blue-600" : "bg-green-100 text-green-600"
+                          )}>
+                            {item.type === "email" ? <Mail className="h-4 w-4" /> : <MessageSquare className="h-4 w-4" />}
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm">{item.name}</p>
+                            <p className="text-xs text-muted-foreground capitalize">{item.type} • {item.sentCount} recipients</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-medium text-sm">{item.name}</p>
-                          <p className="text-xs text-muted-foreground">{item.type} • {item.sent} recipients</p>
+                        <div className="text-right">
+                          <Badge variant={item.status === "completed" ? "secondary" : "default"} className="text-[10px] h-5 capitalize">
+                            {item.status}
+                          </Badge>
+                          <p className="text-xs font-semibold mt-1">
+                            {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'N/A'}
+                          </p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <Badge variant={item.status === "Active" ? "default" : "secondary"} className="text-[10px] h-5">
-                          {item.status}
-                        </Badge>
-                        <p className="text-xs font-semibold mt-1">{item.rate} reach</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -520,6 +551,16 @@ export default function Marketing() {
                   <CardDescription>Send rich HTML or plain text emails via Gmail.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email-campaign-name">Campaign Name</Label>
+                    <Input
+                      id="email-campaign-name"
+                      placeholder="e.g. Spring 2024 Promo"
+                      value={emailCampaignName}
+                      onChange={(e) => setEmailCampaignName(e.target.value)}
+                      className="border-muted-foreground/20"
+                    />
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="email-subject">Subject Line</Label>
                     <Input
@@ -579,6 +620,7 @@ export default function Marketing() {
                       <Button variant="outline" className="flex-none" onClick={() => {
                         setEmailSubject("");
                         setEmailBody("");
+                        setEmailCampaignName("");
                       }}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -597,6 +639,16 @@ export default function Marketing() {
                   <CardDescription>Deliver instant mobile notifications via Twilio.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="sms-campaign-name">Campaign Name</Label>
+                    <Input
+                      id="sms-campaign-name"
+                      placeholder="e.g. Appt Reminder Blast"
+                      value={smsCampaignName}
+                      onChange={(e) => setSmsCampaignName(e.target.value)}
+                      className="border-muted-foreground/20"
+                    />
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="sms-body">SMS Message</Label>
                     <Textarea
@@ -951,7 +1003,7 @@ export default function Marketing() {
                             <Checkbox 
                               checked={selectedSmsIds.has(u.id)}
                               onCheckedChange={() => toggleSmsSelection(u.id)}
-                              className="rounded-full w-5 h-5 border-green-200 data-[state=checked]:bg-green-600"
+                              className="rounded-full w-5 h-5 border-blue-200 data-[state=checked]:bg-green-600"
                             />
                           </div>
                         ))
