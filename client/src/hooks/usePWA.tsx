@@ -99,7 +99,8 @@ export function usePWA() {
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (!refreshing) {
           refreshing = true;
-          window.location.reload();
+          // window.location.reload();
+          console.log('[PWA] Controller changed, refresh recommended.');
         }
       });
     }
@@ -187,7 +188,7 @@ export function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('/sw.js?v=21', {
+        const registration = await navigator.serviceWorker.register('/sw.js', {
           scope: '/',
         });
         
