@@ -11,6 +11,7 @@ import type {
   InsertDocumentVersion,
   InsertEmailLog,
   InsertEmailVerificationToken,
+  InsertHomePageAgent,
   InsertKnowledgeBase,
   InsertLead,
   InsertNotification,
@@ -27,6 +28,7 @@ import type {
   InsertTask,
   InsertTaxDeadline,
   InsertTaxFiling,
+  HomePageAgent,
   KnowledgeBase,
   Lead,
   LeadStatus,
@@ -64,6 +66,7 @@ export class MemoryStorage {
   private emailVerificationTokens = new Map<string, EmailVerificationToken>();
   private passwordResetTokens = new Map<string, PasswordResetToken>();
   private roleOverrides = new Map<UserRole, Map<string, boolean>>(); // slug -> granted
+  private homePageAgents = new Map<string, HomePageAgent>();
 
   constructor() {
     // By default, do NOT seed any demo data.
@@ -709,6 +712,89 @@ export class MemoryStorage {
   // Agent scopes (used by authorization)
   async getAgentAssignedClientIds(): Promise<string[]> {
     return [];
+  }
+
+  // ============================================================================
+  // Homepage Agents (public agents on homepage)
+  // ============================================================================
+
+  async getHomePageAgents(): Promise<HomePageAgent[]> {
+    return Array.from(this.homePageAgents.values())
+      .filter((a) => a.isActive !== false)
+      .sort((a, b) => {
+        const ao = a.sortOrder ?? 0;
+        const bo = b.sortOrder ?? 0;
+        if (ao !== bo) return ao - bo;
+        return String(a.name || "").localeCompare(String(b.name || ""));
+      });
+  }
+
+  async getHomePageAgentById(id: string): Promise<HomePageAgent | null> {
+    return this.homePageAgents.get(id) || null;
+  }
+
+  async createHomePageAgent(data: InsertHomePageAgent): Promise<HomePageAgent> {
+    const id = randomUUID();
+    const now = new Date();
+
+    const maxOrder =
+      Math.max(
+        -1,
+        ...Array.from(this.homePageAgents.values()).map((a) => a.sortOrder ?? 0),
+      ) + 1;
+
+    const agent: HomePageAgent = {
+      id,
+      name: data.name,
+      title: data.title,
+      phone: data.phone,
+      email: data.email,
+      address: data.address ?? null,
+      imageUrl: (data as any).imageUrl ?? null,
+      rating: (data as any).rating ?? 5,
+      sortOrder: (data as any).sortOrder ?? maxOrder,
+      isActive: (data as any).isActive ?? true,
+      createdAt: now,
+      updatedAt: now,
+    } as any;
+
+    this.homePageAgents.set(id, agent);
+    return agent;
+  }
+
+  async updateHomePageAgent(
+    id: string,
+    data: Partial<InsertHomePageAgent>,
+  ): Promise<HomePageAgent | null> {
+    const existing = this.homePageAgents.get(id);
+    if (!existing) return null;
+
+    const updated: HomePageAgent = {
+      ...existing,
+      ...data,
+      updatedAt: new Date(),
+    } as any;
+
+    this.homePageAgents.set(id, updated);
+    return updated;
+  }
+
+  async deleteHomePageAgent(id: string): Promise<boolean> {
+    return this.homePageAgents.delete(id);
+  }
+
+  async reorderHomePageAgents(agentIds: string[]): Promise<void> {
+    const now = new Date();
+    for (let i = 0; i < agentIds.length; i++) {
+      const id = agentIds[i];
+      const existing = this.homePageAgents.get(id);
+      if (!existing) continue;
+      this.homePageAgents.set(id, {
+        ...existing,
+        sortOrder: i,
+        updatedAt: now,
+      });
+    }
   }
 
   // Methods not required for demo but referenced by types in some modules

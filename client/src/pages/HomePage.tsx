@@ -49,6 +49,9 @@ import { motion, AnimatePresence, useInView, useScroll, useTransform } from "fra
 import logoUrl from "@/assets/sts-logo.png";
 import officeBackgroundUrl from "@assets/generated_images/professional_office_background_blur.png";
 
+const DEFAULT_HERO_IMAGE_URL =
+  "https://www.ststaxrepair.net/wp-content/uploads/2025/01/Untitled-design-3.png";
+
 const MotionCard = motion.create(Card);
 
 function AnimatedCounter({ value, suffix = "", prefix = "" }: { value: number; suffix?: string; prefix?: string }) {
@@ -95,6 +98,15 @@ export default function HomePage() {
   });
   const heroOpacity = useTransform(scrollYProgress, [0, 1], [1, 0]);
   const heroY = useTransform(scrollYProgress, [0, 1], [0, 100]);
+
+  // Temporary hero preview:
+  // - Use `/?heroImage=/your-file.png` (served from client/public)
+  // - Or `/?heroImage=https://...` (hosted image URL)
+  const heroImageOverride =
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("heroImage")
+      : null;
+  const heroImageUrl = heroImageOverride || DEFAULT_HERO_IMAGE_URL;
 
   const [contactForm, setContactForm] = useState({
     name: "",
@@ -630,7 +642,7 @@ export default function HomePage() {
           {/* Full Team Image - NO CROPPING - Starts below navbar */}
           <div className="w-full animate-marble" style={{ backgroundImage: `url(${officeBackgroundUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
             <img 
-              src="https://www.ststaxrepair.net/wp-content/uploads/2025/01/Untitled-design-3.png"
+              src={heroImageUrl}
               alt="STS Tax Repair Team - All 6 Members"
               className="w-full h-auto"
               style={{ 
@@ -779,7 +791,7 @@ export default function HomePage() {
               className="relative rounded-xl overflow-hidden shadow-2xl mb-8"
             >
               <img 
-                src="https://www.ststaxrepair.net/wp-content/uploads/2025/01/Untitled-design-3.png"
+                src={heroImageUrl}
                 alt="STS Tax Team - All 6 Members"
                 className="w-full h-auto"
                 style={{ display: 'block' }}

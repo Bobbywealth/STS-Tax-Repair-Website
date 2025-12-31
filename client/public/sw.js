@@ -116,6 +116,18 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
 
+  // Agent photos are served via an API route but used as <img> resources.
+  // Do NOT return JSON "offline" bodies for these, otherwise images break and fall back to initials.
+  if (url.pathname.startsWith('/api/agent-photos/')) {
+    event.respondWith(
+      fetch(request).catch(async () => {
+        const cached = await caches.match(request);
+        return cached || new Response('', { status: 504 });
+      }),
+    );
+    return;
+  }
+
   // Navigation requests (page loads) - always network first for SPA
   if (request.mode === 'navigate') {
     // IMPORTANT: Do NOT cache navigations (index.html). After a deploy, cached HTML

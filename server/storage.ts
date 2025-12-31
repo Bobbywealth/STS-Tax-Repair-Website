@@ -43,6 +43,8 @@ import {
   type InsertOffice,
   type OfficeBranding,
   type InsertOfficeBranding,
+  type HomePageAgent,
+  type InsertHomePageAgent,
   type NotificationPreferences,
   type InsertNotificationPreferences,
   type Notification,
@@ -231,6 +233,14 @@ export interface IStorage {
   updateOfficeBranding(officeId: string, branding: Partial<InsertOfficeBranding>): Promise<OfficeBranding | undefined>;
   deleteOfficeBranding(officeId: string): Promise<boolean>;
   
+  // Homepage Agents (public agents displayed on homepage)
+  getHomePageAgents(): Promise<HomePageAgent[]>;
+  getHomePageAgentById(id: string): Promise<HomePageAgent | null>;
+  createHomePageAgent(data: InsertHomePageAgent): Promise<HomePageAgent>;
+  updateHomePageAgent(id: string, data: Partial<InsertHomePageAgent>): Promise<HomePageAgent | null>;
+  deleteHomePageAgent(id: string): Promise<boolean>;
+  reorderHomePageAgents(agentIds: string[]): Promise<void>;
+
   // Notification preferences
   getNotificationPreferences(userId: string): Promise<NotificationPreferences | undefined>;
   upsertNotificationPreferences(prefs: InsertNotificationPreferences): Promise<NotificationPreferences>;
