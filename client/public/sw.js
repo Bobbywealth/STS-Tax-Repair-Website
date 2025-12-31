@@ -1,5 +1,5 @@
 // Bump to invalidate any previously cached HTML/JS mismatches after deploys
-const CACHE_VERSION = 'v20';
+const CACHE_VERSION = 'v21';
 const CACHE_NAME = `sts-taxrepair-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `sts-runtime-${CACHE_VERSION}`;
 const RUNTIME_MAX_ENTRIES = 80;
