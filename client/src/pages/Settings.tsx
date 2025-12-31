@@ -90,6 +90,10 @@ export default function Settings() {
     state: "",
     zipCode: "",
     country: "",
+    dateOfBirth: "",
+    ssn: "",
+    phoneSecondary: "",
+    occupation: "",
   });
 
   const [companyForm, setCompanyForm] = useState({
@@ -125,6 +129,10 @@ export default function Settings() {
         state: user.state || "",
         zipCode: user.zipCode || "",
         country: user.country || "United States",
+        dateOfBirth: (user as any).dateOfBirth || "",
+        ssn: (user as any).ssn || "",
+        phoneSecondary: (user as any).phoneSecondary || "",
+        occupation: (user as any).occupation || "",
       });
     }
   }, [user]);
@@ -603,14 +611,36 @@ export default function Settings() {
                   />
                   <p className="text-xs text-muted-foreground">Email cannot be changed</p>
                 </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone</Label>
+                    <Input 
+                      id="phone" 
+                      type="tel" 
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      data-testid="input-phone" 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phoneSecondary">Secondary Phone</Label>
+                    <Input 
+                      id="phoneSecondary" 
+                      type="tel" 
+                      value={formData.phoneSecondary}
+                      onChange={(e) => setFormData({ ...formData, phoneSecondary: e.target.value })}
+                      data-testid="input-phone-secondary" 
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone</Label>
+                  <Label htmlFor="occupation">Occupation</Label>
                   <Input 
-                    id="phone" 
-                    type="tel" 
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    data-testid="input-phone" 
+                    id="occupation" 
+                    value={formData.occupation}
+                    onChange={(e) => setFormData({ ...formData, occupation: e.target.value })}
+                    data-testid="input-occupation" 
                   />
                 </div>
               </div>
@@ -663,6 +693,29 @@ export default function Settings() {
                       value={formData.country}
                       onChange={(e) => setFormData({ ...formData, country: e.target.value })}
                       data-testid="input-country" 
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                    <Input 
+                      id="dateOfBirth" 
+                      type="date"
+                      value={formData.dateOfBirth}
+                      onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+                      data-testid="input-dob" 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="ssn">Social Security Number</Label>
+                    <Input 
+                      id="ssn" 
+                      placeholder="XXX-XX-XXXX"
+                      value={formData.ssn}
+                      onChange={(e) => setFormData({ ...formData, ssn: e.target.value })}
+                      data-testid="input-ssn" 
                     />
                   </div>
                 </div>

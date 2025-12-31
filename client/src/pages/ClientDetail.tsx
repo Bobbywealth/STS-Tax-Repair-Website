@@ -264,7 +264,7 @@ export default function ClientDetail() {
         state: client.state || "",
         zipCode: client.zipCode || "",
         dateOfBirth: (client as any).dateOfBirth || "",
-        ssn: "", // Don't pre-fill full SSN
+        ssn: (client as any).ssn || "",
       });
       setShowEditDialog(true);
     }
@@ -343,11 +343,7 @@ export default function ClientDetail() {
     year: 'numeric' 
   }) : "Unknown";
 
-  const dob = (client as any).dateOfBirth ? new Date((client as any).dateOfBirth).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  }) : null;
+  const dob = (client as any).dateOfBirth;
 
   const ssn = (client as any).ssn;
 
@@ -418,22 +414,16 @@ export default function ClientDetail() {
                   <Phone className="h-4 w-4 text-muted-foreground" />
                   <span>{client.phone || "No phone"}</span>
                 </div>
-                {(client as any).ssn && (
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                    <span>{(client as any).ssn}</span>
-                  </div>
-                )}
-                {(client as any).dateOfBirth && (
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span>DOB: {(client as any).dateOfBirth}</span>
-                  </div>
-                )}
                 {location && (
                   <div className="flex items-center gap-2">
                     <MapPin className="h-4 w-4 text-muted-foreground" />
                     <span>{location}</span>
+                  </div>
+                )}
+                {client.address && (
+                  <div className="flex items-center gap-2">
+                    <Building className="h-4 w-4 text-muted-foreground" />
+                    <span>{client.address}</span>
                   </div>
                 )}
                 {dob && (
@@ -456,12 +446,6 @@ export default function ClientDetail() {
                   <User className="h-4 w-4 text-muted-foreground" />
                   <span>Assigned to: <strong>{currentFiling?.preparerName || "Unassigned"}</strong></span>
                 </div>
-                {client.address && (
-                  <div className="flex items-center gap-2">
-                    <Building className="h-4 w-4 text-muted-foreground" />
-                    <span>{client.address}</span>
-                  </div>
-                )}
               </div>
             </div>
           </div>

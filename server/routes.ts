@@ -2199,16 +2199,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(404).json({ error: "Client not found" });
         }
 
-        // Decrypt sensitive fields for authorized viewers
-        if ((user as any).ssn) {
-          try {
-             (user as any).ssn = decrypt((user as any).ssn); 
-          } catch (e) {
-             console.error("Failed to decrypt SSN", e);
-             (user as any).ssn = null;
-          }
-        }
-
         res.json(user);
       } catch (error: any) {
         res.status(500).json({ error: error.message });

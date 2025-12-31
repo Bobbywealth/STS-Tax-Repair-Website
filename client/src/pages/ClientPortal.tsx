@@ -20,8 +20,10 @@ import {
   FileSignature,
   CheckCircle,
   Eye,
-  RotateCcw
+  RotateCcw,
+  Settings as SettingsIcon,
 } from "lucide-react";
+import { Link } from "wouter";
 import IntroJs from "intro.js/intro.js";
 import "intro.js/minified/introjs.min.css";
 import { RefundStatusTracker } from "@/components/RefundStatusTracker";
@@ -327,6 +329,11 @@ export default function ClientPortal() {
               <p className="font-medium text-sm">{clientName}</p>
               <p className="text-xs text-muted-foreground">{user.email || ""}</p>
             </div>
+            <Link href="/settings">
+              <Button variant="ghost" size="icon" className="rounded-full" title="Settings">
+                <SettingsIcon className="h-5 w-5" />
+              </Button>
+            </Link>
             <Button 
               variant="outline"
               size="sm"
@@ -426,6 +433,18 @@ export default function ClientPortal() {
               {pendingSignatures.length > 0 ? `Sign Documents (${pendingSignatures.length})` : 'Sign Documents'}
             </span>
           </Button>
+          <Link href="/settings" className="contents">
+            <Button 
+              variant="outline" 
+              className="h-auto py-4 flex flex-col items-center gap-2 hover-elevate"
+              data-testid="quick-action-profile"
+            >
+              <div className="h-10 w-10 rounded-full bg-purple-500/10 flex items-center justify-center">
+                <SettingsIcon className="h-5 w-5 text-purple-600" />
+              </div>
+              <span className="font-medium">My Profile</span>
+            </Button>
+          </Link>
         </div>
 
         {/* Pending Signatures Alert */}
