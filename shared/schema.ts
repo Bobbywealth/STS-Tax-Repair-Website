@@ -34,27 +34,6 @@ export type UpsertUser = typeof users.$inferInsert;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
-// Tax Deadlines Table
-export const taxDeadlines = pgTable("tax_deadlines", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  title: text("title").notNull(),
-  description: text("description"),
-  deadlineDate: timestamp("deadline_date").notNull(),
-  deadlineType: text("deadline_type").notNull(), // 'filing', 'extension', 'quarterly', 'other'
-  taxYear: integer("tax_year").notNull(),
-  isRecurring: boolean("is_recurring").default(false),
-  notifyDaysBefore: integer("notify_days_before").default(7),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-export const insertTaxDeadlineSchema = createInsertSchema(taxDeadlines).omit({
-  id: true,
-  createdAt: true,
-});
-
-export type InsertTaxDeadline = z.infer<typeof insertTaxDeadlineSchema>;
-export type TaxDeadline = typeof taxDeadlines.$inferSelect;
-
 // Appointments Table
 export const appointments = pgTable("appointments", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

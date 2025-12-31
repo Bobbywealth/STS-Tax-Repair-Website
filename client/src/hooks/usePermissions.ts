@@ -88,11 +88,6 @@ export const PERMISSIONS = {
   APPOINTMENTS_EDIT: 'appointments.edit',
   APPOINTMENTS_DELETE: 'appointments.delete',
   
-  // Tax Deadlines
-  DEADLINES_VIEW: 'deadlines.view',
-  DEADLINES_CREATE: 'deadlines.create',
-  DEADLINES_EDIT: 'deadlines.edit',
-  
   // Tasks (Agent: scoped to assigned tasks and clients)
   TASKS_VIEW: 'tasks.view',
   TASKS_CREATE: 'tasks.create',

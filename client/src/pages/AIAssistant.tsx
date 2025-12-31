@@ -321,14 +321,14 @@ export default function AIAssistant() {
           </CardContent>
         </Card>
         
-        <Card className="hover:border-primary/50 transition-colors cursor-pointer" onClick={() => handleSendMessage("What are the important tax deadlines I should track?")}>
+        <Card className="hover:border-primary/50 transition-colors cursor-pointer" onClick={() => handleSendMessage("Give me some tips for efficient tax filing.")}>
           <CardContent className="p-4 flex items-start gap-3">
             <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center flex-shrink-0">
               <Sparkles className="h-5 w-5 text-orange-500" />
             </div>
             <div>
-              <p className="font-medium text-sm">Tax Deadlines</p>
-              <p className="text-xs text-muted-foreground">Important dates</p>
+              <p className="font-medium text-sm">Filing Tips</p>
+              <p className="text-xs text-muted-foreground">Efficiency & accuracy</p>
             </div>
           </CardContent>
         </Card>

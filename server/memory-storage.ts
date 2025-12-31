@@ -26,7 +26,6 @@ import type {
   InsertStaffInvite,
   InsertStaffMember,
   InsertTask,
-  InsertTaxDeadline,
   InsertTaxFiling,
   HomePageAgent,
   KnowledgeBase,
@@ -43,7 +42,6 @@ import type {
   StaffInvite,
   StaffMember,
   Task,
-  TaxDeadline,
   TaxFiling,
   ThemePreference,
   Ticket,
@@ -597,11 +595,6 @@ export class MemoryStorage {
   // -------------------------
   // Everything below: layout-only defaults
   // -------------------------
-  async getTaxDeadlines(): Promise<TaxDeadline[]> { return []; }
-  async getTaxDeadlinesByYear(): Promise<TaxDeadline[]> { return []; }
-  async createTaxDeadline(): Promise<TaxDeadline> { throw new Error("Not supported in demo storage"); }
-  async updateTaxDeadline(): Promise<TaxDeadline | undefined> { return undefined; }
-  async deleteTaxDeadline(): Promise<boolean> { return false; }
 
   async getAppointments(): Promise<Appointment[]> { return []; }
   async getAppointment(): Promise<Appointment | undefined> { return undefined; }

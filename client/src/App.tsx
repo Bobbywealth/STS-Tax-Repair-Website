@@ -64,7 +64,6 @@ const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const Clients = lazy(() => import("@/pages/Clients"));
 const ClientDetail = lazy(() => import("@/pages/ClientDetail"));
 const Leads = lazy(() => import("@/pages/Leads"));
-const TaxDeadlines = lazy(() => import("@/pages/TaxDeadlines"));
 const Appointments = lazy(() => import("@/pages/Appointments"));
 const Payments = lazy(() => import("@/pages/Payments"));
 const Documents = lazy(() => import("@/pages/Documents"));
@@ -185,13 +184,6 @@ function AdminRouter() {
         </Route>
         <Route path="/leads">
           <PermissionRoute component={Leads} permission={PERMISSIONS.LEADS_VIEW} />
-        </Route>
-        {/* Tax Deadlines - both short and long URL formats */}
-        <Route path="/deadlines">
-          <PermissionRoute component={TaxDeadlines} permission={PERMISSIONS.DEADLINES_VIEW} />
-        </Route>
-        <Route path="/tax-deadlines">
-          <PermissionRoute component={TaxDeadlines} permission={PERMISSIONS.DEADLINES_VIEW} />
         </Route>
         <Route path="/appointments">
           <PermissionRoute component={Appointments} permission={PERMISSIONS.APPOINTMENTS_VIEW} />

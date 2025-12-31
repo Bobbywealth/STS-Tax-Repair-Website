@@ -3296,79 +3296,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
-  // Tax Deadlines - requires deadlines permission
-  app.get(
-    "/api/deadlines",
-    isAuthenticated,
-    requirePermission("deadlines.view"),
-    async (req, res) => {
-      const deadlines = await storage.getTaxDeadlines();
-      res.json(deadlines);
-    },
-  );
-
-  app.get(
-    "/api/deadlines/year/:year",
-    isAuthenticated,
-    requirePermission("deadlines.view"),
-    async (req, res) => {
-      const year = parseInt(req.params.year);
-      const deadlines = await storage.getTaxDeadlinesByYear(year);
-      res.json(deadlines);
-    },
-  );
-
-  app.post(
-    "/api/deadlines",
-    isAuthenticated,
-    requirePermission("deadlines.create"),
-    async (req, res) => {
-      try {
-        const result = insertTaxDeadlineSchema.safeParse(req.body);
-        if (!result.success) {
-          return res.status(400).json({ error: result.error.message });
-        }
-        const deadline = await storage.createTaxDeadline(result.data);
-        res.status(201).json(deadline);
-      } catch (error: any) {
-        res.status(500).json({ error: error.message });
-      }
-    },
-  );
-
-  app.patch(
-    "/api/deadlines/:id",
-    isAuthenticated,
-    requirePermission("deadlines.edit"),
-    async (req, res) => {
-      try {
-        const deadline = await storage.updateTaxDeadline(
-          req.params.id,
-          req.body,
-        );
-        if (!deadline) {
-          return res.status(404).json({ error: "Deadline not found" });
-        }
-        res.json(deadline);
-      } catch (error: any) {
-        res.status(500).json({ error: error.message });
-      }
-    },
-  );
-
-  app.delete(
-    "/api/deadlines/:id",
-    isAuthenticated,
-    requirePermission("deadlines.edit"),
-    async (req, res) => {
-      const success = await storage.deleteTaxDeadline(req.params.id);
-      if (!success) {
-        return res.status(404).json({ error: "Deadline not found" });
-      }
-      res.status(204).send();
-    },
-  );
-
   // Public appointment booking - no authentication required
   app.post("/api/appointments/public", async (req, res) => {
     try {
@@ -6759,51 +6686,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         signatures = await storage.getESignatures();
       }
       res.json(signatures);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  // ===========================================
-  // TAX DEADLINES ENDPOINTS
-  // ===========================================
-  app.get("/api/tax-deadlines", isAuthenticated, async (req: any, res) => {
-    try {
-      const year = req.query.year ? parseInt(req.query.year as string) : new Date().getFullYear();
-      const deadlines = await storage.getTaxDeadlinesByYear(year);
-      res.json(deadlines);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.post("/api/tax-deadlines", isAuthenticated, async (req: any, res) => {
-    try {
-      const deadline = await storage.createTaxDeadline(req.body);
-      res.status(201).json(deadline);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.patch("/api/tax-deadlines/:id", isAuthenticated, async (req: any, res) => {
-    try {
-      const { id } = req.params;
-      const deadline = await storage.updateTaxDeadline(id, req.body);
-      if (!deadline) {
-        return res.status(404).json({ error: 'Deadline not found' });
-      }
-      res.json(deadline);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.delete("/api/tax-deadlines/:id", isAuthenticated, async (req: any, res) => {
-    try {
-      const { id } = req.params;
-      await storage.deleteTaxDeadline(id);
-      res.json({ success: true });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }

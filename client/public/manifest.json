@@ -116,18 +116,6 @@
     { "origin": "https://app.ststaxrepair.org", "scope": "/", "type": "navigation" },
     { "origin": "https://ststaxrepair.net", "scope": "/", "type": "navigation" }
   ],
-  "widgets": [
-    {
-      "name": "Tax Deadline Widget",
-      "short_name": "Deadlines",
-      "description": "View upcoming tax deadlines",
-      "url": "/widgets/deadlines",
-      "icons": [
-        { "src": "/icons/icon-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-        { "src": "/icons/icon-384x384.png", "sizes": "384x384", "type": "image/png", "purpose": "any" }
-      ]
-    }
-  ],
   "shortcuts": [
     {
       "name": "Client Portal",

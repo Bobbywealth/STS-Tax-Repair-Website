@@ -3,8 +3,6 @@ import {
   type UpsertUser,
   type UserRole,
   type ThemePreference,
-  type TaxDeadline,
-  type InsertTaxDeadline,
   type Appointment,
   type InsertAppointment,
   type Payment,
@@ -71,13 +69,6 @@ export interface IStorage {
   }>): Promise<User | undefined>;
   getUsersByRole(role: UserRole): Promise<User[]>;
   getStaffUsers(): Promise<User[]>;
-
-  // Tax Deadlines
-  getTaxDeadlines(): Promise<TaxDeadline[]>;
-  getTaxDeadlinesByYear(year: number): Promise<TaxDeadline[]>;
-  createTaxDeadline(deadline: InsertTaxDeadline): Promise<TaxDeadline>;
-  updateTaxDeadline(id: string, deadline: Partial<InsertTaxDeadline>): Promise<TaxDeadline | undefined>;
-  deleteTaxDeadline(id: string): Promise<boolean>;
 
   // Appointments
   getAppointments(): Promise<Appointment[]>;

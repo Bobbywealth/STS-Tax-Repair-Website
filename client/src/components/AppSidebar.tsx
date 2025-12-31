@@ -35,7 +35,6 @@ const menuItems: MenuItem[] = [
   { title: "Dashboard", url: "/dashboard", icon: Home, alwaysShow: true },
   { title: "Clients", url: "/clients", icon: Users, permission: PERMISSIONS.CLIENTS_VIEW },
   { title: "Leads", url: "/leads", icon: UserPlus, permission: PERMISSIONS.LEADS_VIEW },
-  { title: "Tax Deadlines", url: "/deadlines", icon: Calendar, permission: PERMISSIONS.DEADLINES_VIEW },
   { title: "Appointments", url: "/appointments", icon: CalendarClock, permission: PERMISSIONS.APPOINTMENTS_VIEW },
   { title: "Payments", url: "/payments", icon: DollarSign, permission: PERMISSIONS.PAYMENTS_VIEW },
   { title: "Documents", url: "/documents", icon: FileText, permission: PERMISSIONS.DOCUMENTS_VIEW },

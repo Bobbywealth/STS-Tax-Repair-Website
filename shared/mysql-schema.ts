@@ -172,27 +172,6 @@ export const insertAgentClientAssignmentSchema = createInsertSchema(agentClientA
 export type InsertAgentClientAssignment = z.infer<typeof insertAgentClientAssignmentSchema>;
 export type AgentClientAssignment = typeof agentClientAssignments.$inferSelect;
 
-// Tax Deadlines Table
-export const taxDeadlines = mysqlTable("tax_deadlines", {
-  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
-  title: text("title").notNull(),
-  description: text("description"),
-  deadlineDate: timestamp("deadline_date").notNull(),
-  deadlineType: varchar("deadline_type", { length: 50 }).notNull(),
-  taxYear: int("tax_year").notNull(),
-  isRecurring: boolean("is_recurring").default(false),
-  notifyDaysBefore: int("notify_days_before").default(7),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-export const insertTaxDeadlineSchema = createInsertSchema(taxDeadlines).omit({
-  id: true,
-  createdAt: true,
-});
-
-export type InsertTaxDeadline = z.infer<typeof insertTaxDeadlineSchema>;
-export type TaxDeadline = typeof taxDeadlines.$inferSelect;
-
 // Appointments Table
 export const appointments = mysqlTable("appointments", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
@@ -626,7 +605,6 @@ export const PermissionGroups = {
   SIGNATURES: 'signatures',
   PAYMENTS: 'payments',
   APPOINTMENTS: 'appointments',
-  DEADLINES: 'deadlines',
   TASKS: 'tasks',
   SUPPORT: 'support',
   KNOWLEDGE: 'knowledge',
@@ -692,11 +670,6 @@ export const DefaultPermissions: Array<{
   { slug: 'appointments.create', label: 'Create Appointments', description: 'Schedule new appointments', featureGroup: 'appointments', defaultRoles: ['agent', 'tax_office', 'admin'] },
   { slug: 'appointments.edit', label: 'Edit Appointments', description: 'Modify appointment details', featureGroup: 'appointments', defaultRoles: ['agent', 'tax_office', 'admin'] },
   { slug: 'appointments.delete', label: 'Delete Appointments', description: 'Cancel appointments', featureGroup: 'appointments', defaultRoles: ['tax_office', 'admin'] },
-  
-  // Tax Deadlines
-  { slug: 'deadlines.view', label: 'View Tax Deadlines', description: 'View tax deadline calendar', featureGroup: 'deadlines', defaultRoles: ['agent', 'tax_office', 'admin'] },
-  { slug: 'deadlines.create', label: 'Create Deadlines', description: 'Add new tax deadlines', featureGroup: 'deadlines', defaultRoles: ['tax_office', 'admin'] },
-  { slug: 'deadlines.edit', label: 'Edit Deadlines', description: 'Modify deadline information', featureGroup: 'deadlines', defaultRoles: ['tax_office', 'admin'] },
   
   // Tasks (Agent: scoped to assigned tasks and clients)
   { slug: 'tasks.view', label: 'View Tasks', description: 'View task board (Agent: assigned tasks only)', featureGroup: 'tasks', defaultRoles: ['agent', 'tax_office', 'admin'] },

@@ -1034,22 +1034,6 @@ export default function Dashboard() {
                   </CardContent>
                 </Card>
               </Link>
-              <Link href="/deadlines">
-                <Card className="quick-action-card glass-card border-0 cursor-pointer group hover:shadow-xl transition-all">
-                  <CardContent className="p-6">
-                    <div className="flex items-center gap-4">
-                      <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-red-500/20 to-rose-500/20 flex items-center justify-center group-hover:scale-110 transition-transform border border-red-500/30">
-                        <Clock className="h-7 w-7 text-red-400" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-lg">Tax Deadlines</p>
-                        <p className="text-sm text-muted-foreground">Important dates</p>
-                      </div>
-                      <ArrowRight className="h-5 w-5 text-muted-foreground ml-auto group-hover:text-red-400 group-hover:translate-x-1 transition-all" />
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
             </div>
           </>
         )}

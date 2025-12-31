@@ -4,8 +4,6 @@ import {
   type UserRole,
   ALL_ROLES,
   type ThemePreference,
-  type TaxDeadline,
-  type InsertTaxDeadline,
   type Appointment,
   type InsertAppointment,
   type Payment,
@@ -67,7 +65,6 @@ import {
   type InsertNotificationPreferences,
   users as usersTable,
   homePageAgents as homePageAgentsTable,
-  taxDeadlines as taxDeadlinesTable,
   appointments as appointmentsTable,
   payments as paymentsTable,
   documentVersions as documentVersionsTable,
@@ -208,48 +205,6 @@ export class MySQLStorage implements IStorage {
       const [inserted] = await mysqlDb.select().from(usersTable).where(eq(usersTable.id, id));
       return inserted;
     }
-  }
-
-  // Tax Deadlines
-  async getTaxDeadlines(): Promise<TaxDeadline[]> {
-    return await mysqlDb.select().from(taxDeadlinesTable).orderBy(asc(taxDeadlinesTable.deadlineDate));
-  }
-
-  async getTaxDeadlinesByYear(year: number): Promise<TaxDeadline[]> {
-    return await mysqlDb.select().from(taxDeadlinesTable)
-      .where(eq(taxDeadlinesTable.taxYear, year))
-      .orderBy(asc(taxDeadlinesTable.deadlineDate));
-  }
-
-  async createTaxDeadline(deadline: InsertTaxDeadline): Promise<TaxDeadline> {
-    const id = randomUUID();
-    const deadlineData = {
-      id,
-      title: deadline.title,
-      description: deadline.description ?? null,
-      deadlineDate: deadline.deadlineDate,
-      deadlineType: deadline.deadlineType,
-      taxYear: deadline.taxYear,
-      isRecurring: deadline.isRecurring ?? false,
-      notifyDaysBefore: deadline.notifyDaysBefore ?? 7,
-      createdAt: new Date()
-    };
-    await mysqlDb.insert(taxDeadlinesTable).values(deadlineData);
-    const [inserted] = await mysqlDb.select().from(taxDeadlinesTable).where(eq(taxDeadlinesTable.id, id));
-    return inserted;
-  }
-
-  async updateTaxDeadline(id: string, deadline: Partial<InsertTaxDeadline>): Promise<TaxDeadline | undefined> {
-    const existing = await mysqlDb.select().from(taxDeadlinesTable).where(eq(taxDeadlinesTable.id, id));
-    if (existing.length === 0) return undefined;
-    await mysqlDb.update(taxDeadlinesTable).set(deadline).where(eq(taxDeadlinesTable.id, id));
-    const [updated] = await mysqlDb.select().from(taxDeadlinesTable).where(eq(taxDeadlinesTable.id, id));
-    return updated;
-  }
-
-  async deleteTaxDeadline(id: string): Promise<boolean> {
-    const result = await mysqlDb.delete(taxDeadlinesTable).where(eq(taxDeadlinesTable.id, id));
-    return getAffectedRows(result) > 0;
   }
 
   // Appointments
