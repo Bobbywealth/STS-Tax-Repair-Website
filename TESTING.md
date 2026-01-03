@@ -69,6 +69,3 @@ Many “login works once, then logs out / refresh breaks” issues come from ses
 - login returns **no `Set-Cookie`** header
 - `/api/auth/user` returns `null` immediately after login (session not persisted)
 
-
-
-

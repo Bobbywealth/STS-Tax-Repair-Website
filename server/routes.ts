@@ -44,6 +44,7 @@ import {
 import { mysqlPool, runMySQLMigrations } from "./mysql-db";
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 import bcrypt from "bcrypt";
+import { rateLimit } from "express-rate-limit";
 import { encrypt, decrypt } from "./encryption";
 import { 
   sendPasswordResetEmail, 
@@ -675,6 +676,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Setup Authentication
   await setupAuth(app);
+
+  // Auth-specific rate limiting (stricter than global)
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 10, // Limit each IP to 10 login/password-reset attempts per windowMs
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { message: "Too many login attempts, please try again after 15 minutes" },
+    skip: () => process.env.NODE_ENV !== 'production'
+  });
+
+  // Apply auth limiter to sensitive routes
+  app.use("/api/admin/login", authLimiter);
+  app.use("/api/client-login", authLimiter);
+  app.use("/api/auth/forgot-password", authLimiter);
+  app.use("/api/auth/reset-password", authLimiter);
 
   // DEBUG SESSION ROUTE - Check session state (must be AFTER setupAuth)
   app.get("/api/debug/session", (req: any, res) => {
@@ -2671,9 +2688,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid role" });
       }
 
-      // Only a super admin can grant or revoke super admin access
-      if (role === "super_admin" && adminUser.role !== "super_admin") {
-        return res.status(403).json({ error: "Super Admin access required to assign this role" });
+      const targetUser = await storage.getUser(req.params.id);
+      if (!targetUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Only a super admin can grant OR revoke super admin access.
+      // (Non-super admins should not be able to modify super admin accounts.)
+      if (
+        adminUser.role !== "super_admin" &&
+        ((targetUser.role || "").toLowerCase() === "super_admin" || role === "super_admin")
+      ) {
+        return res
+          .status(403)
+          .json({ error: "Super Admin access required to modify Super Admin role" });
       }
 
       const adminName =
@@ -2705,7 +2733,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Not authenticated" });
       }
       const adminUser = await storage.getUser(userId);
-      if (!adminUser || adminUser.role !== "admin") {
+      if (!adminUser || (adminUser.role !== "admin" && adminUser.role !== "super_admin")) {
         return res.status(403).json({ error: "Admin access required" });
       }
 

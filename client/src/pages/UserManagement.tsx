@@ -95,6 +95,11 @@ export default function UserManagement() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<UserRole>("agent");
 
+  const { data: currentUser } = useQuery<User | null>({
+    queryKey: ['/api/auth/user'],
+  });
+  const isSuperAdmin = currentUser?.role === 'super_admin';
+
   const { data: users, isLoading: loadingUsers } = useQuery<User[]>({
     queryKey: ['/api/users'],
   });
@@ -218,6 +223,15 @@ export default function UserManagement() {
   };
 
   const handleOpenRoleDialog = (user: User) => {
+    // Only a Super Admin can modify Super Admin accounts (grant/revoke).
+    if (user.role === 'super_admin' && !isSuperAdmin) {
+      toast({
+        title: "Restricted",
+        description: "Only a Super Admin can modify Super Admin accounts.",
+        variant: "destructive",
+      });
+      return;
+    }
     setSelectedUser(user);
     setNewRole((user.role as UserRole) || 'client');
     setShowRoleDialog(true);
@@ -854,7 +868,9 @@ export default function UserManagement() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.entries(roleConfig).map(([role, config]) => (
+                  {Object.entries(roleConfig)
+                    .filter(([role]) => role !== 'super_admin' || isSuperAdmin)
+                    .map(([role, config]) => (
                     <SelectItem key={role} value={role}>
                       <div className="flex items-center gap-2">
                         <Badge className={config.color}>{config.label}</Badge>
@@ -866,6 +882,11 @@ export default function UserManagement() {
               <p className="text-xs text-muted-foreground">
                 {roleConfig[newRole].description}
               </p>
+              {!isSuperAdmin && (
+                <p className="text-xs text-muted-foreground">
+                  Note: Only Super Admins can assign or revoke the Super Admin role.
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Reason for Change (Optional)</Label>

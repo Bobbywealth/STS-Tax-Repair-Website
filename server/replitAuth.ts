@@ -27,7 +27,11 @@ const getOidcConfig = memoize(
 );
 
 export function getSession() {
-  const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
+  // "Remember me" sets a 30-day cookie in the login route handlers.
+  // Ensure the server-side session store can outlive that cookie; otherwise users will be logged out
+  // even though their cookie is still present.
+  const storeTtl = 35 * 24 * 60 * 60 * 1000; // 35 days
+  const defaultCookieTtl = 7 * 24 * 60 * 60 * 1000; // 1 week (non-remembered flows)
   
   // Use MySQL session store when DB is configured.
   // Otherwise (local layout testing), fall back to in-memory sessions.
@@ -44,7 +48,7 @@ export function getSession() {
           data: 'sess'
         }
       },
-      expiration: sessionTtl,
+      expiration: storeTtl,
       clearExpired: true,
       checkExpirationInterval: 900000, // 15 minutes
     }, mysqlPool); // Pass existing pool to prevent separate connections
@@ -63,6 +67,7 @@ export function getSession() {
   }
   
   return session({
+    name: 'sts.sid', // Custom cookie name instead of default connect.sid
     secret: sessionSecret,
     store: sessionStore as any,
     resave: false,
@@ -71,8 +76,9 @@ export function getSession() {
     cookie: {
       httpOnly: true,
       secure: isProduction, // HTTPS only in production
-      sameSite: isProduction ? 'none' : 'lax', // 'none' required for cross-origin cookies with credentials
-      maxAge: sessionTtl,
+      sameSite: isProduction ? 'lax' : 'lax', // 'lax' is safer than 'none' for tax data
+      maxAge: defaultCookieTtl,
+      path: '/',
     },
   });
 }

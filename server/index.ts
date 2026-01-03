@@ -1,5 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import cors from "cors";
+import helmet from "helmet";
+import { rateLimit } from "express-rate-limit";
+import hpp from "hpp";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { storage } from "./storage";
@@ -27,7 +30,50 @@ process.on('uncaughtException', (error) => {
   // Don't exit - keep the server running for public pages
 });
 
+// Environment variable validation
+const requiredEnvVars = ['SESSION_SECRET', 'DATABASE_URL'];
+const isProduction = process.env.NODE_ENV === 'production';
+
+if (isProduction) {
+  const missing = requiredEnvVars.filter(v => !process.env[v]);
+  if (missing.length > 0) {
+    console.error(`CRITICAL: Missing required environment variables in production: ${missing.join(', ')}`);
+    process.exit(1);
+  }
+  
+  if ((process.env.SESSION_SECRET?.length || 0) < 32) {
+    console.warn('WARNING: SESSION_SECRET is too short (should be at least 32 characters)');
+  }
+}
+
 const app = express();
+
+// Set security HTTP headers using Helmet
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+      "script-src": ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Needed for Vite and Replit environment
+      "img-src": ["'self'", "data:", "https:", "http:"],
+      "connect-src": ["'self'", "wss:", "https:", "http:"],
+    },
+  },
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
+
+// Global Rate Limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 500, // Limit each IP to 500 requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many requests from this IP, please try again after 15 minutes" },
+  skip: (req) => {
+    // Skip rate limiting for static assets in development
+    return process.env.NODE_ENV !== 'production' && !req.path.startsWith('/api');
+  }
+});
+app.use(limiter);
 
 // Trust proxy for Render deployment (required for secure cookies behind reverse proxy)
 app.set('trust proxy', 1);
@@ -53,6 +99,9 @@ app.use(express.json({
   }
 }));
 app.use(express.urlencoded({ extended: false }));
+
+// Protect against HTTP Parameter Pollution
+app.use(hpp());
 
 // Raw body parser for binary file uploads (agent photos via FTP)
 app.use(express.raw({ 

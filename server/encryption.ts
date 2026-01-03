@@ -8,10 +8,12 @@ const KEY_LENGTH = 32;
 
 function getEncryptionKey(): Buffer {
   const secret = process.env.ENCRYPTION_SECRET || process.env.SESSION_SECRET;
+  const salt = process.env.ENCRYPTION_SALT || 'sts-default-salt-2024';
+  
   if (!secret) {
     throw new Error('ENCRYPTION_SECRET or SESSION_SECRET must be set');
   }
-  return crypto.scryptSync(secret, 'salt', KEY_LENGTH);
+  return crypto.scryptSync(secret, salt, KEY_LENGTH);
 }
 
 export function encrypt(text: string): string {

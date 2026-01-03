@@ -26,7 +26,7 @@ interface PWALoginScreenProps {
 export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
   const { toast } = useToast();
   const [, navigate] = useLocation();
-  const { saveAuthToken, saveCredentials, isRememberMeEnabled } = useAuthStorage();
+  const { saveAuthToken, saveCredentials, getRememberMePreference } = useAuthStorage();
   const { isOnline, requestManualSync } = usePWA();
   const { branding } = useBranding();
   const reduceMotion = useReducedMotion();
@@ -47,10 +47,13 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
 
   useEffect(() => {
     // Preserve user's prior choice if they previously enabled/disabled remember-me.
+    // If no preference has been stored yet, keep the component default (true).
     try {
-      const enabled = isRememberMeEnabled();
-      setRememberMe(enabled);
-      setStaffRememberMe(enabled);
+      const pref = getRememberMePreference();
+      if (pref !== null) {
+        setRememberMe(pref);
+        setStaffRememberMe(pref);
+      }
     } catch {
       // ignore
     }
@@ -63,7 +66,7 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
     } catch {
       // ignore
     }
-  }, [isRememberMeEnabled]);
+  }, [getRememberMePreference]);
 
   const handleClientLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -309,7 +312,7 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
                       <Checkbox
                         id="remember-me"
                         checked={rememberMe}
-                        onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                        onCheckedChange={(checked) => setRememberMe(Boolean(checked))}
                         className="scale-90 border-white/30 data-[state=checked]:border-emerald-500 data-[state=checked]:bg-emerald-500"
                         data-testid="pwa-checkbox-remember-client"
                       />
@@ -402,7 +405,7 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
                     <Checkbox
                       id="remember-me-staff"
                       checked={staffRememberMe}
-                      onCheckedChange={(checked) => setStaffRememberMe(checked as boolean)}
+                      onCheckedChange={(checked) => setStaffRememberMe(Boolean(checked))}
                       className="scale-90 border-white/30 data-[state=checked]:border-amber-400 data-[state=checked]:bg-amber-400"
                       data-testid="pwa-checkbox-remember-staff"
                     />

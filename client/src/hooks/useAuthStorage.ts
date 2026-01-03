@@ -35,10 +35,14 @@ export const useAuthStorage = () => {
 
     // Store in localStorage if remember me is checked
     if (rememberMe) {
+      // Ensure any prior session-only token is removed to avoid ambiguity.
+      sessionStorage.removeItem(TOKEN_KEY);
       localStorage.setItem(TOKEN_KEY, JSON.stringify(authData));
       localStorage.setItem(REMEMBER_ME_KEY, 'true');
     } else {
       // Use sessionStorage for current session only
+      // Ensure any prior remembered token is removed so "remember me" truly disables persistence.
+      localStorage.removeItem(TOKEN_KEY);
       sessionStorage.setItem(TOKEN_KEY, JSON.stringify(authData));
       localStorage.removeItem(REMEMBER_ME_KEY);
     }
@@ -46,13 +50,10 @@ export const useAuthStorage = () => {
 
   // Get stored token if valid
   const getStoredToken = (): StoredAuthToken | null => {
-    // Check remember me first (localStorage), then session (sessionStorage)
-    let tokenStr = localStorage.getItem(TOKEN_KEY);
     const rememberMe = localStorage.getItem(REMEMBER_ME_KEY) === 'true';
-    
-    if (!tokenStr) {
-      tokenStr = sessionStorage.getItem(TOKEN_KEY);
-    }
+
+    // If "remember me" is enabled, use localStorage. Otherwise only use sessionStorage.
+    let tokenStr = rememberMe ? localStorage.getItem(TOKEN_KEY) : sessionStorage.getItem(TOKEN_KEY);
 
     if (!tokenStr) {
       return null;
@@ -81,9 +82,13 @@ export const useAuthStorage = () => {
   };
 
   // Check if user has enabled remember me
-  const isRememberMeEnabled = (): boolean => {
-    return localStorage.getItem(REMEMBER_ME_KEY) === 'true';
+  const getRememberMePreference = (): boolean | null => {
+    const raw = localStorage.getItem(REMEMBER_ME_KEY);
+    if (raw === null) return null;
+    return raw === 'true';
   };
+
+  const isRememberMeEnabled = (): boolean => getRememberMePreference() === true;
 
   // Use Credential Management API to save credentials
   const saveCredentials = (email: string, password: string) => {
@@ -136,6 +141,7 @@ export const useAuthStorage = () => {
     getStoredToken,
     clearAuthToken,
     isRememberMeEnabled,
+    getRememberMePreference,
     saveCredentials,
     getCredentials,
   };

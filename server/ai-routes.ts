@@ -157,11 +157,3 @@ router.get('/status', isAuthenticated, requireStaff, (req: AuthenticatedRequest,
 
 export default router;
 
-
-
-
-
-
-
-
-
