@@ -21,6 +21,84 @@ export default function Knowledge() {
   const articles: Article[] = [
     // Admin Articles
     {
+      id: "admin-super-admins",
+      title: "Managing Super Admins (STS HQ)",
+      category: "Security & Access",
+      excerpt: "How to grant Super Admin access safely, what it unlocks, and emergency setup options.",
+      lastUpdated: "Jan 3, 2026",
+      audience: "admin",
+      content: `
+# Managing Super Admins (STS HQ)
+
+Super Admins have **global access** across all offices/branches and can manage roles, permissions, and system-wide settings.
+
+## Who can create Super Admins?
+
+Only an **existing Super Admin** can:
+- Grant the \`super_admin\` role
+- Revoke the \`super_admin\` role
+- Modify Super Admin accounts
+
+This is enforced by the server for safety.
+
+## How to promote a user to Super Admin (recommended)
+
+1. Log in as an existing **Super Admin**
+2. Go to **User Management**
+3. Search for the user by email/name
+4. Click **Actions (⋮)** → **Change Role**
+5. Select **Super Admin (STS HQ)**
+6. (Optional) Add a reason for audit history
+7. Click **Update Role**
+
+## What Super Admin unlocks
+
+- Full access to all features (same as Admin)
+- Global visibility across offices (HQ view)
+- Ability to create/modify other Super Admins
+
+## Emergency setup (only if you have no Super Admins)
+
+There is a one-time setup endpoint:
+
+- \`POST /api/setup/make-admin\`
+- Body: \`{ "email": "user@example.com", "role": "super_admin" }\`
+
+Use this carefully. If you need help running this safely in your environment, contact your system owner/admin.
+      `
+    },
+    {
+      id: "admin-remember-me",
+      title: "Login: 'Remember Me' / 'Keep me signed in'",
+      category: "Security & Access",
+      excerpt: "What Remember Me does, when to use it, and how session vs persistent login behaves.",
+      lastUpdated: "Jan 3, 2026",
+      audience: "admin",
+      content: `
+# Login: 'Remember Me' / 'Keep me signed in'
+
+The login screens include a **Remember Me / Keep me signed in** option.
+
+## What it does
+
+- **ON**: Creates a **persistent session cookie** (up to ~30 days), so you stay logged in across browser restarts.
+- **OFF**: Uses a **session-only cookie**, so you will be logged out when the browser session ends.
+
+## Important notes
+
+- This does **not** store your password in the app.
+- If your browser clears cookies on exit, "Remember Me" won’t persist.
+- For PWAs, "Remember Me" can still be turned off/on; the app will respect your last saved preference.
+
+## Troubleshooting
+
+If you log in successfully but get logged out immediately:
+- Confirm the browser is accepting cookies for this site
+- Confirm the login response includes a \`Set-Cookie\` header
+- Confirm \`/api/auth/user\` returns a user after login
+      `
+    },
+    {
       id: "admin-1",
       title: "Dashboard Overview for Admins",
       category: "Getting Started",
