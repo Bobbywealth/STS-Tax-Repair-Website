@@ -505,6 +505,9 @@ function App() {
             ) : isRedeemRoute ? (
               <Switch>
                 <Route path="/redeem-invite" component={RedeemInvite} />
+        <Route path="/accept-invite">
+          <Redirect to={(params) => `/redeem-invite${window.location.search}`} />
+        </Route>
               </Switch>
             ) : isRegisterRoute ? (
               <Switch>

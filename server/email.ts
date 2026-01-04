@@ -895,7 +895,7 @@ export async function sendStaffInviteEmail(
   invitedBy?: string,
   branding?: OfficeBranding
 ): Promise<EmailResult> {
-  const inviteLink = `${APP_URL}/accept-invite?code=${inviteCode}`;
+  const inviteLink = `${APP_URL}/redeem-invite?code=${inviteCode}`;
   const template = getEmailTemplate('staff_invite', { role, inviteLink, invitedBy }, branding);
   
   return sendEmail({
