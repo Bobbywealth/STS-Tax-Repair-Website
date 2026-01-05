@@ -224,9 +224,12 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  log("Starting server initialization...");
+  const startTime = Date.now();
+  log(`Starting server initialization (Env: ${app.get("env")}, Production: ${isProduction})...`);
+  
+  const routesStartTime = Date.now();
   const server = await registerRoutes(app);
-  log("Routes registered successfully.");
+  log(`Routes registered successfully in ${Date.now() - routesStartTime}ms.`);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -241,15 +244,18 @@ app.use((req, res, next) => {
     res.status(status).json({ message });
   });
 
+  const viteStartTime = Date.now();
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
   if (app.get("env") === "development") {
     log("Setting up Vite for development...");
     await setupVite(app, server);
+    log(`Vite setup completed in ${Date.now() - viteStartTime}ms.`);
   } else {
     log("Setting up static file serving for production...");
     serveStatic(app);
+    log(`Static serving setup completed in ${Date.now() - viteStartTime}ms.`);
   }
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
@@ -265,7 +271,7 @@ app.use((req, res, next) => {
       host: "0.0.0.0",
     },
     () => {
-      log(`SUCCESS: Server is listening on port ${port} (host: 0.0.0.0)`);
+      log(`SUCCESS: Server is listening on port ${port} (host: 0.0.0.0) in ${Date.now() - startTime}ms total.`);
     },
   );
 })();
