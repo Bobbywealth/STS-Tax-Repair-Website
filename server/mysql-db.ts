@@ -1,21 +1,24 @@
 import mysql from 'mysql2/promise';
 import { drizzle } from 'drizzle-orm/mysql2';
 import * as schema from "@shared/mysql-schema";
+import { getMySQLConfigFromEnv, REQUIRED_MYSQL_ENV_VARS } from "./dbConfig";
 
-const requiredEnvVars = ['MYSQL_HOST', 'MYSQL_DATABASE', 'MYSQL_USER', 'MYSQL_PASSWORD'];
-const missingVars = requiredEnvVars.filter(v => !process.env[v]);
+const hasDatabaseUrl = typeof process.env.DATABASE_URL === "string" && process.env.DATABASE_URL.trim().length > 0;
+const missingVars = REQUIRED_MYSQL_ENV_VARS.filter(v => !process.env[v]);
 
-if (missingVars.length > 0) {
+if (missingVars.length > 0 && !hasDatabaseUrl) {
   console.warn(`Missing MySQL environment variables: ${missingVars.join(', ')}`);
-  console.warn('Falling back to PostgreSQL if available, or app will fail on DB operations.');
+  console.warn('No DATABASE_URL provided. App will fail on DB operations.');
 }
 
+const mysqlConfig = getMySQLConfigFromEnv();
+
 const poolConnection = mysql.createPool({
-  host: process.env.MYSQL_HOST,
-  user: process.env.MYSQL_USER,
-  password: process.env.MYSQL_PASSWORD,
-  database: process.env.MYSQL_DATABASE,
-  port: parseInt(process.env.MYSQL_PORT || '3306'),
+  host: mysqlConfig?.host || process.env.MYSQL_HOST || "127.0.0.1",
+  user: mysqlConfig?.user || process.env.MYSQL_USER || "root",
+  password: mysqlConfig?.password || process.env.MYSQL_PASSWORD || "",
+  database: mysqlConfig?.database || process.env.MYSQL_DATABASE || "mysql",
+  port: mysqlConfig?.port || parseInt(process.env.MYSQL_PORT || '3306'),
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,

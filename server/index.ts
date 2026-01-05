@@ -37,13 +37,20 @@ const isProduction = process.env.NODE_ENV === 'production';
 if (isProduction) {
   const missing = requiredEnvVars.filter(v => !process.env[v]);
   
-  // Also check for MySQL variables if not in demo mode
+  // Require DB config in production: either MYSQL_* vars OR DATABASE_URL (mysql://...)
+  const hasDatabaseUrl =
+    typeof process.env.DATABASE_URL === "string" && process.env.DATABASE_URL.trim().length > 0;
+
   const mysqlVars = ['MYSQL_HOST', 'MYSQL_DATABASE', 'MYSQL_USER', 'MYSQL_PASSWORD'];
-  const missingMysql = mysqlVars.filter(v => !process.env[v]);
+  const hasMysqlVars = mysqlVars.every(v => typeof process.env[v] === "string" && process.env[v]!.trim().length > 0);
+  const missingMysql = hasMysqlVars || hasDatabaseUrl ? [] : mysqlVars;
   
   if (missing.length > 0 || missingMysql.length > 0) {
     const allMissing = [...missing, ...missingMysql];
     console.error(`CRITICAL: Missing required environment variables in production: ${allMissing.join(', ')}`);
+    if (!hasMysqlVars && hasDatabaseUrl) {
+      console.error("CRITICAL: DATABASE_URL is set but MYSQL_* variables are missing; configure DATABASE_URL as a MySQL DSN (mysql://user:pass@host:port/db).");
+    }
     process.exit(1);
   }
   

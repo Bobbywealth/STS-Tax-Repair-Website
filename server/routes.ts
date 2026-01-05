@@ -768,12 +768,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Redirect Perfex document URLs to the actual Perfex server
   // Perfex stores files at: uploads/clients/perfex-{CLIENT_ID}/filename
   // Accessed via: /download/preview_image?path=uploads/clients/perfex-{CLIENT_ID}/filename
-  app.get("/perfex-uploads/uploads/customers/:clientId/:filename*", (req, res) => {
+  // Express v5 (path-to-regexp) requires named wildcards; use *filename to match nested paths safely.
+  app.get("/perfex-uploads/uploads/customers/:clientId/*filename", (req, res) => {
     const perfexBaseUrl = "https://ststaxrepair.org";
     const perfexId = req.params.clientId;
-    // Get filename from the path (everything after /customers/clientId/)
-    const pathParts = req.path.split(`/customers/${perfexId}/`);
-    const filename = pathParts[1] || "";
+    const filename = req.params.filename || "";
     // Convert Perfex numeric ID to CRM folder format: perfex-{id}
     const clientFolder = perfexId.startsWith('perfex-') ? perfexId : `perfex-${perfexId}`;
     const filePath = `uploads/clients/${clientFolder}/${filename}`;
@@ -6413,7 +6412,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Serve uploaded files (keep for backward compatibility)
-  app.get("/objects/*", isAuthenticated, async (req, res) => {
+  // Express v5 requires named wildcards; use *path for backward-compatible object URLs.
+  app.get("/objects/*path", isAuthenticated, async (req, res) => {
     try {
       const objectStorageService = new ObjectStorageService();
       const objectFile = await objectStorageService.getObjectEntityFile(
