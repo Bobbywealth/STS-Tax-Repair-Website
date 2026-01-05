@@ -667,9 +667,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Run MySQL migrations on startup
+  // Run MySQL migrations on startup (non-blocking to prevent port scan timeouts)
   if (!isDemoStorage) {
-    await runMySQLMigrations();
+    runMySQLMigrations()
+      .then(() => console.log("[DB] MySQL migrations completed successfully."))
+      .catch((err) => console.error("[DB] MySQL migration error:", err));
   } else {
     console.warn("[DB] MySQL not configured; skipping migrations (demo/no-DB mode).");
   }

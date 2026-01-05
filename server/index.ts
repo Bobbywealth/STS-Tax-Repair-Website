@@ -224,7 +224,9 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  log("Starting server initialization...");
   const server = await registerRoutes(app);
+  log("Routes registered successfully.");
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -243,8 +245,10 @@ app.use((req, res, next) => {
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
   if (app.get("env") === "development") {
+    log("Setting up Vite for development...");
     await setupVite(app, server);
   } else {
+    log("Setting up static file serving for production...");
     serveStatic(app);
   }
 
@@ -253,6 +257,7 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
+  log(`Attempting to bind to port ${port}...`);
   // Avoid reusePort to prevent ENOTSUP on platforms that don't support it (e.g., Render/macOS)
   server.listen(
     {
@@ -260,7 +265,7 @@ app.use((req, res, next) => {
       host: "0.0.0.0",
     },
     () => {
-      log(`serving on port ${port}`);
+      log(`SUCCESS: Server is listening on port ${port} (host: 0.0.0.0)`);
     },
   );
 })();
