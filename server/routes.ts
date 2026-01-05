@@ -768,7 +768,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Redirect Perfex document URLs to the actual Perfex server
   // Perfex stores files at: uploads/clients/perfex-{CLIENT_ID}/filename
   // Accessed via: /download/preview_image?path=uploads/clients/perfex-{CLIENT_ID}/filename
-  app.get("/perfex-uploads/uploads/customers/:clientId/*", (req, res) => {
+  app.get("/perfex-uploads/uploads/customers/:clientId/:filename*", (req, res) => {
     const perfexBaseUrl = "https://ststaxrepair.org";
     const perfexId = req.params.clientId;
     // Get filename from the path (everything after /customers/clientId/)
