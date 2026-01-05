@@ -31,13 +31,19 @@ process.on('uncaughtException', (error) => {
 });
 
 // Environment variable validation
-const requiredEnvVars = ['SESSION_SECRET', 'DATABASE_URL'];
+const requiredEnvVars = ['SESSION_SECRET'];
 const isProduction = process.env.NODE_ENV === 'production';
 
 if (isProduction) {
   const missing = requiredEnvVars.filter(v => !process.env[v]);
-  if (missing.length > 0) {
-    console.error(`CRITICAL: Missing required environment variables in production: ${missing.join(', ')}`);
+  
+  // Also check for MySQL variables if not in demo mode
+  const mysqlVars = ['MYSQL_HOST', 'MYSQL_DATABASE', 'MYSQL_USER', 'MYSQL_PASSWORD'];
+  const missingMysql = mysqlVars.filter(v => !process.env[v]);
+  
+  if (missing.length > 0 || missingMysql.length > 0) {
+    const allMissing = [...missing, ...missingMysql];
+    console.error(`CRITICAL: Missing required environment variables in production: ${allMissing.join(', ')}`);
     process.exit(1);
   }
   
