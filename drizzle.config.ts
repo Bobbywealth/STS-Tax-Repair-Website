@@ -1,14 +1,22 @@
 import { defineConfig } from "drizzle-kit";
 
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL, ensure the database is provisioned");
+const requiredEnvVars = ['MYSQL_HOST', 'MYSQL_DATABASE', 'MYSQL_USER', 'MYSQL_PASSWORD'];
+const missingVars = requiredEnvVars.filter(v => !process.env[v]);
+
+if (missingVars.length > 0) {
+  // Don't throw during build time if DB isn't needed, but log warning
+  console.warn(`Warning: Missing MySQL environment variables for Drizzle: ${missingVars.join(', ')}`);
 }
 
 export default defineConfig({
-  out: "./migrations",
-  schema: "./shared/schema.ts",
-  dialect: "postgresql",
+  out: "./migrations-mysql",
+  schema: "./shared/mysql-schema.ts",
+  dialect: "mysql",
   dbCredentials: {
-    url: process.env.DATABASE_URL,
+    host: process.env.MYSQL_HOST || '',
+    user: process.env.MYSQL_USER || '',
+    password: process.env.MYSQL_PASSWORD || '',
+    database: process.env.MYSQL_DATABASE || '',
+    port: parseInt(process.env.MYSQL_PORT || '3306'),
   },
 });
