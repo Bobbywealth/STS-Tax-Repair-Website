@@ -22,7 +22,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="min-h-svh flex items-center justify-center bg-background p-4">
           <div className="max-w-md w-full bg-card border border-destructive/50 rounded-lg p-6 shadow-lg text-center">
             <h2 className="text-2xl font-bold text-destructive mb-4">Something went wrong</h2>
             <p className="text-muted-foreground mb-6">
@@ -299,7 +299,7 @@ function AdminLayout() {
 
   if (isLoading || isCheckingAuth) {
     return (
-      <div className="flex items-center justify-center h-screen bg-animated-mesh">
+      <div className="flex items-center justify-center min-h-svh bg-animated-mesh">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <p className="text-muted-foreground">Loading...</p>
@@ -313,7 +313,7 @@ function AdminLayout() {
     if (isPWA) {
       window.location.href = '/client-login';
       return (
-        <div className="flex items-center justify-center h-screen bg-animated-mesh">
+        <div className="flex items-center justify-center min-h-svh bg-animated-mesh">
           <div className="flex flex-col items-center gap-4">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="text-muted-foreground">Redirecting to login...</p>
@@ -323,7 +323,7 @@ function AdminLayout() {
     }
     
     return (
-      <div className="flex items-center justify-center h-screen bg-animated-mesh">
+      <div className="flex items-center justify-center min-h-svh bg-animated-mesh">
         <div className="flex flex-col items-center gap-6 p-8 bg-card rounded-lg border shadow-sm max-w-md w-full mx-4">
           <div className="text-center space-y-2">
             <h2 className="text-xl font-semibold">Staff Portal Access</h2>
@@ -372,7 +372,7 @@ function AdminLayout() {
   if (user.role === 'client') {
     navigate('/client-portal');
     return (
-      <div className="flex items-center justify-center h-screen bg-animated-mesh">
+      <div className="flex items-center justify-center min-h-svh bg-animated-mesh">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <p className="text-muted-foreground">Redirecting to your portal...</p>
@@ -407,10 +407,10 @@ function AdminLayout() {
 
   return (
     <SidebarProvider style={sidebarStyle as React.CSSProperties}>
-      <div className="flex h-screen w-full">
+      <div className="flex min-h-svh w-full overflow-hidden">
         <AppSidebar user={sidebarUser} />
-        <div className="flex flex-col flex-1 overflow-hidden w-full">
-          <header className="flex items-center justify-between px-3 md:px-4 py-2 md:py-3 border-b border-border/50 md:border-border bg-background/80 supports-[backdrop-filter]:bg-background/60 backdrop-blur-xl sticky top-0 z-50 safe-area-top">
+        <div className="flex flex-col flex-1 min-w-0">
+          <header className="flex items-center justify-between px-3 md:px-4 py-2 md:py-3 border-b border-border/50 md:border-border bg-background/80 supports-[backdrop-filter]:bg-background/60 backdrop-blur-xl sticky top-0 z-50 safe-area-top shrink-0">
             <SidebarTrigger data-testid="button-sidebar-toggle" />
             <div className="flex items-center gap-2 md:gap-3">
               <NotificationBell />
@@ -426,8 +426,8 @@ function AdminLayout() {
               <ThemeToggle />
             </div>
           </header>
-          <main className="flex-1 overflow-y-auto p-4 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] md:pb-4 bg-muted/30 md:bg-transparent">
-            <div className="max-w-7xl mx-auto">
+          <main className="flex-1 overflow-y-auto p-4 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] md:pb-4 bg-muted/30 md:bg-transparent overscroll-contain">
+            <div className="max-w-7xl mx-auto w-full">
               <AdminRouter />
             </div>
           </main>
@@ -510,7 +510,7 @@ function App() {
               <Switch>
                 <Route path="/redeem-invite" component={RedeemInvite} />
         <Route path="/accept-invite">
-          <Redirect to={(params) => `/redeem-invite${window.location.search}`} />
+          <Redirect to={`/redeem-invite${window.location.search}`} />
         </Route>
               </Switch>
             ) : isRegisterRoute ? (

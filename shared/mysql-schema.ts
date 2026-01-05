@@ -76,6 +76,27 @@ export const insertOfficeBrandingSchema = createInsertSchema(officeBranding).omi
 export type InsertOfficeBranding = z.infer<typeof insertOfficeBrandingSchema>;
 export type OfficeBranding = typeof officeBranding.$inferSelect;
 
+// Tax Deadlines Table
+export const taxDeadlines = mysqlTable("tax_deadlines", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+  title: text("title").notNull(),
+  description: text("description"),
+  deadlineDate: timestamp("deadline_date").notNull(),
+  deadlineType: varchar("deadline_type", { length: 50 }).notNull(),
+  taxYear: int("tax_year").notNull(),
+  isRecurring: boolean("is_recurring").default(false),
+  notifyDaysBefore: int("notify_days_before").default(7),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertTaxDeadlineSchema = createInsertSchema(taxDeadlines).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertTaxDeadline = z.infer<typeof insertTaxDeadlineSchema>;
+export type TaxDeadline = typeof taxDeadlines.$inferSelect;
+
 // Notification Preferences per user
 export const notificationPreferences = mysqlTable("notification_preferences", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),

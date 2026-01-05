@@ -235,8 +235,8 @@ export default function Leads() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-lg bg-flow-gradient">
+    <div className="space-y-6 animate-fade-in pb-[calc(6rem+env(safe-area-inset-bottom,0px))] md:pb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-lg bg-flow-gradient shadow-sm">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Leads</h1>
           <p className="text-muted-foreground mt-1">
@@ -314,13 +314,13 @@ export default function Leads() {
 
       {!leads || leads.length === 0 ? (
         <Card>
-          <CardContent className="p-12 text-center">
-            <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+          <CardContent className="p-8 md:p-12 text-center">
+            <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4 opacity-50" />
             <h3 className="text-lg font-medium mb-2">No Leads Found</h3>
-            <p className="text-muted-foreground mb-4">
+            <p className="text-muted-foreground mb-6 text-sm md:text-base">
               Start adding leads to track your sales pipeline.
             </p>
-            <Button onClick={openAddDialog}>
+            <Button onClick={openAddDialog} className="w-full sm:w-auto h-12">
               <UserPlus className="h-4 w-4 mr-2" />
               Add Your First Lead
             </Button>

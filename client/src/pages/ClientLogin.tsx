@@ -575,7 +575,7 @@ export default function ClientLogin() {
         <div className="scanline" />
       </div>
 
-      <div className="relative min-h-screen flex items-center justify-center p-6 pt-28 z-10">
+      <div className="relative min-h-svh flex items-center justify-center p-6 pt-28 z-10">
         <div className="w-full max-w-5xl space-y-8 animate-fade-in">
           {/* Logo and Header */}
           <div className="text-center space-y-4">

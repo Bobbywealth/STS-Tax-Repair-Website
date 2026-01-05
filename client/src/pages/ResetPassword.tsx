@@ -115,7 +115,7 @@ export default function ResetPassword() {
   const passwordsMatch = password === confirmPassword && confirmPassword.length > 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#1a4d2e] via-[#2d5a3f] to-[#1a4d2e] flex items-center justify-center p-4">
+    <div className="min-h-svh bg-gradient-to-br from-[#1a4d2e] via-[#2d5a3f] to-[#1a4d2e] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <img src={logoUrl} alt="STS Tax Repair" className="h-20 mx-auto mb-4" />

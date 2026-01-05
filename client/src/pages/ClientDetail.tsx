@@ -348,7 +348,7 @@ export default function ClientDetail() {
   const ssn = (client as any).ssn;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] md:pb-8">
       <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-wrap">
         <Link href="/clients">
           <Button variant="ghost" size="icon" data-testid="button-back">

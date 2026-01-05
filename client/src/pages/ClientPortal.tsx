@@ -261,7 +261,7 @@ export default function ClientPortal() {
   // Show loading while checking auth
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-animated-mesh flex items-center justify-center">
+      <div className="min-h-svh bg-animated-mesh flex items-center justify-center">
         <div className="text-center">
           <div className="h-12 w-12 rounded-full border-4 border-primary border-t-transparent animate-spin mx-auto mb-4" />
           <p className="text-muted-foreground">Loading...</p>
@@ -306,9 +306,9 @@ export default function ClientPortal() {
   const signedSignatures = signatures?.filter(s => s.status === "signed") || [];
 
   return (
-    <div className="min-h-screen bg-animated-mesh">
+    <div className="min-h-svh bg-animated-mesh flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="bg-flow-gradient border-b border-border backdrop-blur-sm sticky top-0 z-10">
+      <header className="bg-flow-gradient border-b border-border backdrop-blur-sm sticky top-0 z-10 shrink-0 safe-area-top">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-2">
           {/* Left: Logo + Portal Title */}
           <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-shrink">
@@ -347,8 +347,9 @@ export default function ClientPortal() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-8 space-y-4 sm:space-y-6 animate-fade-in pb-20 md:pb-8">
-        {impersonation?.isImpersonating && (
+      <main className="flex-1 overflow-y-auto overscroll-contain">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-8 space-y-4 sm:space-y-6 animate-fade-in pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] md:pb-8">
+          {impersonation?.isImpersonating && (
           <div className="rounded-lg border bg-amber-50/80 dark:bg-amber-950/30 px-4 py-3 flex items-center justify-between gap-3">
             <div className="text-sm">
               <span className="font-semibold">Viewing as client.</span>{" "}
@@ -641,6 +642,7 @@ export default function ClientPortal() {
             )}
           </CardContent>
         </Card>
+      </div>
       </main>
 
       {/* Sign Document Dialog */}

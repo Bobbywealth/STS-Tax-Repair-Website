@@ -68,6 +68,15 @@ export interface IStorage {
     city: string;
     state: string;
     zipCode: string;
+    phoneSecondary: string;
+    dateOfBirth: string;
+    occupation: string;
+    ssn: string;
+    irsUsernameEncrypted: string;
+    irsPasswordEncrypted: string;
+    directDepositBank: string;
+    bankRoutingEncrypted: string;
+    bankAccountEncrypted: string;
   }>): Promise<User | undefined>;
   getUsersByRole(role: UserRole): Promise<User[]>;
   getAdminUsers(): Promise<User[]>;

@@ -35,8 +35,8 @@ export function MobileNav() {
   const navItems = isClient ? clientNavItems : staffNavItems;
 
   return (
-    <nav className="mobile-bottom-nav md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border/60 bg-background/80 supports-[backdrop-filter]:bg-background/60 backdrop-blur-xl saturate-150 safe-area-bottom">
-      <div className="flex items-center justify-around h-14 px-2">
+    <nav className="mobile-bottom-nav md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border/60 bg-background/80 supports-[backdrop-filter]:bg-background/60 backdrop-blur-xl saturate-150 safe-area-bottom shrink-0">
+      <div className="flex items-center justify-around h-16 px-2">
         {navItems.map((item) => {
           const isActive = location === item.url || (item.url === "/dashboard" && location === "/") || (item.url === "/client-portal" && location === "/client-portal");
           return (

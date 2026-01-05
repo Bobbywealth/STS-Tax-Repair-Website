@@ -514,17 +514,17 @@ export default function Settings() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] md:pb-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground mt-1">Manage your profile and system preferences.</p>
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Settings</h1>
+        <p className="text-muted-foreground mt-1 text-sm md:text-base">Manage your profile and system preferences.</p>
       </div>
 
       <Tabs defaultValue="profile" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="profile" data-testid="tab-profile">Profile</TabsTrigger>
-          <TabsTrigger value="company" data-testid="tab-company">Company</TabsTrigger>
-          <TabsTrigger value="notifications" data-testid="tab-notifications">Notifications</TabsTrigger>
+        <TabsList className="w-full flex md:w-auto h-auto p-1 bg-muted/50 overflow-x-auto scrollbar-hide">
+          <TabsTrigger value="profile" className="flex-1 md:flex-none py-2" data-testid="tab-profile">Profile</TabsTrigger>
+          <TabsTrigger value="company" className="flex-1 md:flex-none py-2" data-testid="tab-company">Company</TabsTrigger>
+          <TabsTrigger value="notifications" className="flex-1 md:flex-none py-2" data-testid="tab-notifications">Notifications</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="space-y-4">
@@ -658,7 +658,7 @@ export default function Settings() {
                     data-testid="input-address" 
                   />
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="city">City</Label>
                     <Input 

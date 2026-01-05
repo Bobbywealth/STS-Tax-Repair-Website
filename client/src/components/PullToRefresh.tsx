@@ -3,18 +3,22 @@ import { motion } from "framer-motion";
 import { RefreshCw } from "lucide-react";
 import { triggerHaptic } from "@/lib/haptics";
 
+import { cn } from "@/lib/utils";
+
 interface PullToRefreshProps {
   onRefresh: () => Promise<void>;
   children: React.ReactNode;
   disabled?: boolean;
   threshold?: number;
+  className?: string;
 }
 
 export function PullToRefresh({ 
   onRefresh, 
   children, 
   disabled = false,
-  threshold = 80 
+  threshold = 80,
+  className
 }: PullToRefreshProps) {
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -95,7 +99,7 @@ export function PullToRefresh({
   const isReady = pullDistance >= threshold;
 
   return (
-    <div ref={containerRef} className="h-full overflow-y-auto overscroll-contain">
+    <div ref={containerRef} className={cn("h-full overflow-y-auto overscroll-contain", className)}>
       <motion.div
         className="flex items-center justify-center overflow-hidden"
         animate={{

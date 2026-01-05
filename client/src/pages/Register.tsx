@@ -300,8 +300,8 @@ export default function Register() {
   // If account exists, redirect to forgot password
   if (accountExistsEmail) {
     return (
-      <div className="min-h-screen bg-animated-mesh flex items-center justify-center px-4">
-        <Card className="w-full max-w-md">
+      <div className="min-h-svh bg-animated-mesh flex items-center justify-center px-4">
+        <Card className="w-full max-w-md shadow-xl border-amber-200/50">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
               <AlertCircle className="h-8 w-8 text-amber-600 dark:text-amber-400" />
@@ -343,8 +343,10 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen bg-animated-mesh py-8 px-4">
-      <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
+    <div className="min-h-svh bg-animated-mesh flex flex-col overflow-hidden">
+      <div className="flex-1 overflow-y-auto overscroll-contain">
+        <div className="min-h-full py-8 px-4 flex items-center justify-center">
+          <div className="max-w-4xl w-full space-y-6 animate-fade-in pb-12">
         {/* Header with Logo */}
         <div className="text-center space-y-4">
           <img 
@@ -1006,5 +1008,7 @@ export default function Register() {
         </div>
       </div>
     </div>
+  </div>
+</div>
   );
 }

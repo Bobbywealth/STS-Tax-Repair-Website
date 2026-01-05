@@ -563,8 +563,8 @@ export default function Dashboard() {
         <div className="scanline" />
       </div>
 
-      <PullToRefresh onRefresh={handleRefresh}>
-        <div className="space-y-6 relative z-10">
+      <PullToRefresh onRefresh={handleRefresh} className="flex-1 min-h-0">
+        <div className="space-y-6 relative z-10 p-1">
           {/* Hero Section - Compact on Mobile */}
         <div className="hero-section rounded-2xl p-4 md:p-8 text-white">
           <div className="hero-grid" />
@@ -956,9 +956,8 @@ export default function Dashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <ScrollArea className="h-96">
-                  <div className="space-y-3 pr-4">
-                    {activityLogs && activityLogs.length > 0 ? (
+                <div className="md:h-96 md:overflow-y-auto pr-0 md:pr-4 space-y-3">
+                  {activityLogs && activityLogs.length > 0 ? (
                       activityLogs.slice(0, 8).map((log, index) => {
                         const actionLabels: Record<string, { label: string; color: string; icon: string }> = {
                           'staff_request.submit': { label: 'Staff Request', color: 'text-blue-400', icon: 'bg-blue-500/20' },
@@ -1012,7 +1011,6 @@ export default function Dashboard() {
                       </div>
                     )}
                   </div>
-                </ScrollArea>
               </CardContent>
             </Card>
 
