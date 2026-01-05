@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Phone, Mail, MapPin, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -40,7 +41,8 @@ export default function ContactPage() {
     location: "",
     phone: "",
     email: "",
-    message: ""
+    message: "",
+    smsConsent: false
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -65,7 +67,7 @@ export default function ContactPage() {
       description: "We'll get back to you as soon as possible.",
     });
     
-    setFormData({ name: "", location: "", phone: "", email: "", message: "" });
+    setFormData({ name: "", location: "", phone: "", email: "", message: "", smsConsent: false });
     setIsSubmitting(false);
   };
 
@@ -259,10 +261,29 @@ export default function ContactPage() {
                       data-testid="input-message"
                     />
                   </div>
+                  <div className="flex items-start space-x-3 p-4 rounded-md border bg-gray-50/50">
+                    <Checkbox
+                      id="sms-consent-contact"
+                      checked={formData.smsConsent}
+                      onCheckedChange={(checked) => setFormData({ ...formData, smsConsent: !!checked })}
+                      data-testid="checkbox-sms-consent-contact"
+                    />
+                    <div className="space-y-1 leading-none">
+                      <label 
+                        htmlFor="sms-consent-contact"
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                      >
+                        SMS Opt-In Consent
+                      </label>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
+                        I consent to receive appointment reminders, scheduling updates, and tax service notifications via SMS/text message from STS TaxRepair LLC to the phone number I provided. Message and data rates may apply. Reply HELP for information, STOP to unsubscribe. See our <Link href="/privacy-policy" className="text-sts-primary hover:underline">Privacy Policy</Link> and <Link href="/terms-conditions" className="text-sts-primary hover:underline">Terms & Conditions</Link>.
+                      </p>
+                    </div>
+                  </div>
                   <Button 
                     type="submit"
                     className="w-full bg-sts-primary hover:bg-sts-primary/90 h-12 text-lg font-bold"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !formData.smsConsent}
                     data-testid="button-submit"
                   >
                     {isSubmitting ? "Sending..." : "Submit"}

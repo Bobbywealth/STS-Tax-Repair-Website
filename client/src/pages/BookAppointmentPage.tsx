@@ -367,7 +367,7 @@ export default function BookAppointmentPage() {
                             SMS Opt-In Consent
                           </FormLabel>
                           <p className="text-xs text-muted-foreground mt-1">
-                            By providing your phone number, I agree to receive SMS messages from Stephedena Tax Services LLC about appointment reminders, consultation scheduling, and tax preparation updates. Message and data rates apply. Reply STOP to opt out, HELP for help. See our <Link href="/privacy-policy" className="text-sts-green hover:underline">Privacy Policy</Link> and <Link href="/terms-conditions" className="text-sts-green hover:underline">Terms & Conditions</Link>.
+                            I consent to receive appointment reminders, scheduling updates, and tax service notifications via SMS/text message from STS TaxRepair LLC to the phone number I provided. Message and data rates may apply. Reply HELP for information, STOP to unsubscribe. See our <Link href="/privacy-policy" className="text-sts-green hover:underline">Privacy Policy</Link> and <Link href="/terms-conditions" className="text-sts-green hover:underline">Terms & Conditions</Link>.
                           </p>
                           <FormMessage />
                         </div>
@@ -442,7 +442,7 @@ export default function BookAppointmentPage() {
                   <Button 
                     type="submit" 
                     className="w-full bg-sts-green hover:bg-sts-dark h-12 text-lg"
-                    disabled={bookingMutation.isPending || !selectedDate || !selectedTime}
+                    disabled={bookingMutation.isPending || !selectedDate || !selectedTime || !form.watch("smsConsent")}
                     data-testid="button-submit-booking"
                   >
                     {bookingMutation.isPending ? "Booking..." : "Book Appointment"}

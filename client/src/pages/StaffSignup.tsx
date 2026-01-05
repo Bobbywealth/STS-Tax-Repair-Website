@@ -8,6 +8,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -47,12 +48,25 @@ const staffSignupSchema = z.object({
   lastName: z.string().min(1, "Last name is required"),
   email: z.string().email("Valid email is required"),
   phone: z.string().optional(),
+  smsConsent: z.boolean().optional().refine(val => {
+    // If phone is provided, smsConsent must be true
+    return true; // We'll handle the requirement in the form submission or UI
+  }),
   roleRequested: z.enum(["agent", "tax_office"], {
     required_error: "Please select a role",
   }),
   officeId: z.string().optional(),
   reason: z.string().min(10, "Please provide at least 10 characters explaining why you want to join"),
   experience: z.string().optional(),
+}).refine((data) => {
+  // If phone is provided, smsConsent must be true
+  if (data.phone && data.phone.trim().length > 0) {
+    return data.smsConsent === true;
+  }
+  return true;
+}, {
+  message: "SMS consent is required when providing a phone number",
+  path: ["smsConsent"],
 });
 
 type StaffSignupForm = z.infer<typeof staffSignupSchema>;
@@ -127,6 +141,7 @@ export default function StaffSignup() {
       lastName: "",
       email: "",
       phone: "",
+      smsConsent: false,
       roleRequested: undefined,
       officeId: "",
       reason: "",
@@ -443,6 +458,31 @@ export default function StaffSignup() {
 
               <FormField
                 control={form.control}
+                name="smsConsent"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        data-testid="checkbox-sms-consent"
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                        SMS Opt-In Consent
+                      </FormLabel>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        I consent to receive appointment reminders, scheduling updates, and tax service notifications via SMS/text message from STS TaxRepair LLC to the phone number I provided. Message and data rates may apply. Reply HELP for information, STOP to unsubscribe. See our <Link href="/privacy-policy" className="text-primary hover:underline">Privacy Policy</Link> and <Link href="/terms-conditions" className="text-primary hover:underline">Terms & Conditions</Link>.
+                      </p>
+                      <FormMessage />
+                    </div>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="roleRequested"
                 render={({ field }) => (
                   <FormItem>
@@ -567,7 +607,7 @@ export default function StaffSignup() {
               <Button 
                 type="submit" 
                 className="w-full" 
-                disabled={submitMutation.isPending}
+                disabled={submitMutation.isPending || (!!form.watch("phone")?.trim() && !form.watch("smsConsent"))}
                 data-testid="button-submit"
               >
                 {submitMutation.isPending ? (

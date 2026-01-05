@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Menu, 
   X, 
@@ -120,7 +121,8 @@ export default function HomePage() {
     location: "",
     phone: "",
     email: "",
-    message: ""
+    message: "",
+    smsConsent: false
   });
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -208,7 +210,8 @@ export default function HomePage() {
         location: "",
         phone: "",
         email: "",
-        message: ""
+        message: "",
+        smsConsent: false
       });
     } catch {
       toast({
@@ -1899,10 +1902,29 @@ export default function HomePage() {
                     className="min-h-[120px] resize-none"
                     data-testid="input-inquiry-message"
                   />
+                  <div className="flex items-start space-x-3 p-4 rounded-md border bg-white/50">
+                    <Checkbox
+                      id="sms-consent-inquiry"
+                      checked={inquiryForm.smsConsent}
+                      onCheckedChange={(checked) => setInquiryForm(prev => ({ ...prev, smsConsent: !!checked }))}
+                      data-testid="checkbox-sms-consent-inquiry"
+                    />
+                    <div className="space-y-1 leading-none">
+                      <label 
+                        htmlFor="sms-consent-inquiry"
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                      >
+                        SMS Opt-In Consent
+                      </label>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
+                        I consent to receive appointment reminders, scheduling updates, and tax service notifications via SMS/text message from STS TaxRepair LLC to the phone number I provided. Message and data rates may apply. Reply HELP for information, STOP to unsubscribe. See our <Link href="/privacy-policy" className="text-sts-primary hover:underline">Privacy Policy</Link> and <Link href="/terms-conditions" className="text-sts-primary hover:underline">Terms & Conditions</Link>.
+                      </p>
+                    </div>
+                  </div>
                   <Button 
                     type="submit"
                     className="w-full bg-gradient-to-r from-sts-primary to-sts-dark hover:from-sts-primary/90 hover:to-sts-dark/90 text-white font-bold h-12"
-                    disabled={isInquirySubmitting}
+                    disabled={isInquirySubmitting || !inquiryForm.smsConsent}
                     data-testid="button-inquiry-submit"
                   >
                     {isInquirySubmitting ? "Sending..." : "Send Message"}
