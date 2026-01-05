@@ -963,6 +963,13 @@ export default function UserManagement() {
                       <Badge className={roleConfig.admin.color}>Administrator</Badge>
                     </div>
                   </SelectItem>
+                  {isSuperAdmin && (
+                    <SelectItem value="super_admin">
+                      <div className="flex items-center gap-2">
+                        <Badge className={roleConfig.super_admin.color}>Super Admin</Badge>
+                      </div>
+                    </SelectItem>
+                  )}
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">

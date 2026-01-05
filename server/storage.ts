@@ -70,6 +70,7 @@ export interface IStorage {
     zipCode: string;
   }>): Promise<User | undefined>;
   getUsersByRole(role: UserRole): Promise<User[]>;
+  getAdminUsers(): Promise<User[]>;
   getStaffUsers(): Promise<User[]>;
 
   // Appointments

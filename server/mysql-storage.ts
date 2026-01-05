@@ -97,7 +97,7 @@ import {
 import { mysqlPool } from "./mysql-db";
 import { randomUUID } from "crypto";
 import { mysqlDb } from "./mysql-db";
-import { eq, and, gte, lte, lt, desc, asc } from "drizzle-orm";
+import { eq, and, gte, lte, lt, desc, asc, sql } from "drizzle-orm";
 import type { IStorage } from "./storage";
 
 // Helper function to extract affectedRows from MySQL2/Drizzle delete result
@@ -790,6 +790,17 @@ export class MySQLStorage implements IStorage {
   async getUsersByRole(role: UserRole): Promise<User[]> {
     return await mysqlDb.select().from(usersTable)
       .where(eq(usersTable.role, role))
+      .orderBy(asc(usersTable.firstName));
+  }
+
+  async getAdminUsers(): Promise<User[]> {
+    return await mysqlDb.select().from(usersTable)
+      .where(
+        and(
+          sql`${usersTable.role} IN ('admin', 'super_admin')`,
+          eq(usersTable.isActive, true)
+        )
+      )
       .orderBy(asc(usersTable.firstName));
   }
 
@@ -2244,7 +2255,7 @@ export class MySQLStorage implements IStorage {
   }
 
   async createNotificationsForAdmins(notification: Omit<InsertNotification, 'userId'>): Promise<void> {
-    const admins = await this.getUsersByRole('admin');
+    const admins = await this.getAdminUsers();
     for (const admin of admins) {
       await this.createNotification({
         ...notification,

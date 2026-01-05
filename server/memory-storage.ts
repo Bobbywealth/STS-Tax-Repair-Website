@@ -324,6 +324,12 @@ export class MemoryStorage {
     return (await this.getUsers()).filter((u) => (u.role || "client") === role);
   }
 
+  async getAdminUsers(): Promise<User[]> {
+    return (await this.getUsers()).filter(
+      (u) => ((u.role || "client") === "admin" || (u.role || "client") === "super_admin") && u.isActive,
+    );
+  }
+
   async getStaffUsers(): Promise<User[]> {
     return (await this.getUsers()).filter((u) => (u.role || "client") !== "client");
   }

@@ -946,10 +946,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Save original session identity
         req.session.__impersonation = {
-          userId: req.session.userId,
-          userRole: req.session.userRole,
-          isClientLogin: req.session.isClientLogin,
-          isAdminLogin: req.session.isAdminLogin,
+          userId: req.userId,
+          userRole: req.userRole,
+          isClientLogin: !!req.session.isClientLogin,
+          isAdminLogin: !!req.session.isAdminLogin,
           startedAt: Date.now(),
           impersonatedUserId: clientId,
         };
@@ -960,6 +960,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.session.isClientLogin = true;
         req.session.isAdminLogin = false;
 
+        // Explicitly save session to ensure it persists across redirect
+        await new Promise<void>((resolve, reject) => {
+          req.session.save((err: any) => {
+            if (err) {
+              console.error("Session save error during impersonation:", err);
+              reject(err);
+            } else {
+              resolve();
+            }
+          });
+        });
+
+        console.log(`[IMPERSONATION] Staff ${req.userId} is now viewing as client ${clientId}`);
         return res.json({ ok: true });
       } catch (error: any) {
         console.error("Impersonation failed:", error);
@@ -1017,6 +1030,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       delete req.session.__impersonation;
 
+      // Explicitly save session to ensure it persists
+      await new Promise<void>((resolve, reject) => {
+        req.session.save((err: any) => {
+          if (err) {
+            console.error("Session save error during stop-impersonation:", err);
+            reject(err);
+          } else {
+            resolve();
+          }
+        });
+      });
+
+      console.log(`[IMPERSONATION] Staff member restored original identity: ${info.userId}`);
       return res.json({ ok: true });
     } catch (error: any) {
       console.error("Error stopping impersonation:", error);
@@ -1264,10 +1290,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           // Safety fallback: if no office recipients exist, notify global admins
           if (recipients.length === 0) {
-            recipients = await mysqlStorage.getUsersByRole('admin');
+            recipients = await mysqlStorage.getAdminUsers();
           }
         } else {
-          recipients = await mysqlStorage.getUsersByRole('admin');
+          recipients = await mysqlStorage.getAdminUsers();
         }
 
         const adminPortalUrl =
@@ -1807,10 +1833,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               return u.officeId === clientOfficeId && (r === "tax_office" || r === "admin");
             });
             if (recipients.length === 0) {
-              recipients = await mysqlStorage.getUsersByRole("admin");
+              recipients = await mysqlStorage.getAdminUsers();
             }
           } else {
-            recipients = await mysqlStorage.getUsersByRole("admin");
+            recipients = await mysqlStorage.getAdminUsers();
           }
 
           // Dedupe per recipient: don't create another notification within 30 minutes for the same client/reason.
@@ -2041,7 +2067,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // CRITICAL: Admins see ALL users, agents only see assigned clients
         // Admins have full system visibility
-        if (userRole === 'admin' || userRole === 'owner') {
+        if (userRole === 'admin' || userRole === 'super_admin' || userRole === 'owner') {
           return res.json(allUsers);
         }
         
@@ -2227,13 +2253,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             `(u.assigned_to = ? OR EXISTS (SELECT 1 FROM agent_client_assignments aca WHERE aca.agent_id = ? AND aca.client_id = u.id AND aca.is_active = 1) OR EXISTS (SELECT 1 FROM tax_filings tf2 WHERE tf2.client_id = u.id AND tf2.preparer_id = ?))`,
           );
           paramsBase.push(userId, userId, userId);
-        } else if (role === "tax_office" || role === "admin") {
+        } else if (role === "tax_office") {
           if (officeId) {
             // Try office scoping; if schema lacks office_id we will retry without it.
             whereBase.push(`u.office_id = ?`);
             paramsBase.push(officeId);
           }
-        } else if (role === "super_admin") {
+        } else if (role === "admin" || role === "super_admin") {
           // Global
         }
 
@@ -3826,7 +3852,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (r === 'super_admin') return true;
               return (u.officeId === officeId) && (r === 'tax_office' || r === 'admin');
             })
-          : await mysqlStorage.getUsersByRole('admin');
+          : await mysqlStorage.getAdminUsers();
 
         for (const staff of recipients as any[]) {
           await mysqlStorage.createNotification({
@@ -4120,7 +4146,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (result.data.clientId && result.data.paymentStatus === 'completed') {
           try {
             const client = await storage.getUser(result.data.clientId);
-            const admins = await storage.getUsersByRole('admin');
+            const admins = await storage.getAdminUsers();
             for (const admin of admins) {
               await storage.createNotification({
                 userId: admin.id,
@@ -4694,7 +4720,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Send in-app notification to all admins about task creation
         try {
-          const admins = await storage.getUsersByRole('admin');
+          const admins = await storage.getAdminUsers();
           for (const admin of admins) {
             await storage.createNotification({
               userId: admin.id,
@@ -5133,7 +5159,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Send in-app notification to all admins about document upload
           try {
             const client = await storage.getUser(result.data.clientId);
-            const admins = await storage.getUsersByRole('admin');
+            const admins = await storage.getAdminUsers();
             for (const admin of admins) {
               await storage.createNotification({
                 userId: admin.id,
@@ -6801,7 +6827,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.userId || req.user?.claims?.sub;
       const currentUser = await storage.getUser(userId);
       const userRole = currentUser?.role?.toLowerCase() || 'client';
-      const isStaffOrAdmin = userRole === 'admin' || userRole === 'tax_office' || userRole === 'staff' || userRole === 'manager';
+      const isStaffOrAdmin = userRole === 'admin' || userRole === 'super_admin' || userRole === 'tax_office' || userRole === 'staff' || userRole === 'manager';
       
       // Clients can only see limited dashboard stats - return early BEFORE any DB queries
       if (!isStaffOrAdmin) {
@@ -6837,11 +6863,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       let taskCount = 0;
       try {
+        const isAdminScope = userRole === 'admin' || userRole === 'super_admin' || userRole === 'tax_office';
         const [taskRows] = await mysqlPool.query(
-          userRole === 'admin' || userRole === 'tax_office'
+          isAdminScope
             ? `SELECT COUNT(*) as count FROM tasks`
             : `SELECT COUNT(*) as count FROM tasks WHERE assigned_to_id = ?`,
-          userRole === 'admin' || userRole === 'tax_office' ? [] : [userId]
+          isAdminScope ? [] : [userId]
         );
         taskCount = (taskRows as any)[0]?.count || 0;
       } catch (e) {
@@ -6912,7 +6939,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // SCOPE ENFORCEMENT: Filter based on user role
-      if (userRole === 'admin') {
+      if (userRole === 'admin' || userRole === 'super_admin') {
         // Admin has global access - no filtering needed
       } else if (userRole === 'tax_office') {
         // Tax Office: only clients in their office
@@ -6988,7 +7015,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let tickets;
       if (userRole === 'client') {
         tickets = await storage.getTicketsByClient(userId);
-      } else if (userRole === 'admin' || userRole === 'tax_office') {
+      } else if (userRole === 'admin' || userRole === 'super_admin' || userRole === 'tax_office') {
         tickets = await storage.getTickets();
       } else {
         tickets = await storage.getTicketsByAssignee(userId);
@@ -7046,7 +7073,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Send in-app notification to all admins about new ticket
           try {
             const client = await storage.getUser(clientId);
-            const admins = await storage.getUsersByRole('admin');
+            const admins = await storage.getAdminUsers();
             for (const admin of admins) {
               await storage.createNotification({
                 userId: admin.id,
@@ -8096,15 +8123,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Send notification emails and in-app notifications to all admins
       try {
-        const admins = await mysqlStorage.getUsersByRole('admin');
-        const superAdmins = await mysqlStorage.getUsersByRole('super_admin');
-        const recipients = Array.from(
-          new Map(
-            [...admins, ...superAdmins]
-              .filter((user) => user.email && user.isActive !== false)
-              .map((user) => [user.id ?? user.email, user])
-          ).values()
-        );
+        const recipients = await mysqlStorage.getAdminUsers();
 
         for (const admin of recipients) {
           // Send email notification
