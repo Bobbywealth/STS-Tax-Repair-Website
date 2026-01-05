@@ -24,6 +24,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -65,6 +66,7 @@ const registerSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   phone: z.string().optional(),
+  smsConsent: z.boolean().optional(),
   password: z.string().min(8, "Password must be at least 8 characters"),
   confirmPassword: z.string().min(1, "Please confirm your password"),
   address: z.string().optional(),
@@ -86,6 +88,15 @@ const registerSchema = z.object({
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
+}).refine((data) => {
+  // If phone is provided, smsConsent must be true
+  if (data.phone && data.phone.length > 0) {
+    return data.smsConsent === true;
+  }
+  return true;
+}, {
+  message: "SMS consent is required when providing a phone number",
+  path: ["smsConsent"],
 });
 
 type RegisterForm = z.infer<typeof registerSchema>;
@@ -168,6 +179,7 @@ export default function Register() {
       firstName: "",
       lastName: "",
       phone: "",
+      smsConsent: false,
       password: "",
       confirmPassword: "",
       address: "",
@@ -234,7 +246,7 @@ export default function Register() {
   };
 
   const stepRequiredFields: Record<number, Array<keyof RegisterForm>> = {
-    1: ["firstName", "lastName", "email", "password", "confirmPassword"],
+    1: ["firstName", "lastName", "email", "password", "confirmPassword", "smsConsent"],
     2: [],
     3: ["referredById"],
     4: [],
@@ -275,7 +287,8 @@ export default function Register() {
         values.lastName &&
         values.email &&
         values.password &&
-        values.confirmPassword
+        values.confirmPassword &&
+        (!values.phone || (values.phone && values.smsConsent))
       );
     }
     if (currentStep === 3) {
@@ -488,6 +501,31 @@ export default function Register() {
                             </div>
                           </FormControl>
                           <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="smsConsent"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 col-span-1 md:col-span-2">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                              data-testid="checkbox-sms-consent"
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                              SMS Opt-In Consent
+                            </FormLabel>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              By providing your phone number, I agree to receive SMS messages from Stephedena Tax Services LLC about appointment reminders, consultation scheduling, and tax preparation updates. Message and data rates apply. Reply STOP to opt out, HELP for help. See our <Link href="/privacy-policy" className="text-primary hover:underline">Privacy Policy</Link> and <Link href="/terms-conditions" className="text-primary hover:underline">Terms & Conditions</Link>.
+                            </p>
+                            <FormMessage />
+                          </div>
                         </FormItem>
                       )}
                     />

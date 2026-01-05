@@ -14,6 +14,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, CalendarDays, Clock, User, Mail, Phone, CheckCircle2, FileText, Building } from "lucide-react";
 import defaultLogoUrl from "@/assets/sts-logo.png";
@@ -24,6 +26,7 @@ const bookingSchema = z.object({
   lastName: z.string().min(2, "Last name is required"),
   email: z.string().email("Valid email is required"),
   phone: z.string().min(10, "Valid phone number is required"),
+  smsConsent: z.boolean().refine(val => val === true, "SMS consent is required"),
   service: z.string().min(1, "Please select a service"),
   notes: z.string().optional(),
 });
@@ -72,6 +75,7 @@ export default function BookAppointmentPage() {
       lastName: "",
       email: "",
       phone: "",
+      smsConsent: false,
       service: "",
       notes: "",
     },
@@ -342,6 +346,31 @@ export default function BookAppointmentPage() {
                           <Input type="tel" placeholder="Phone number" {...field} data-testid="input-phone" />
                         </FormControl>
                         <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="smsConsent"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            data-testid="checkbox-sms-consent"
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                            SMS Opt-In Consent
+                          </FormLabel>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            By providing your phone number, I agree to receive SMS messages from Stephedena Tax Services LLC about appointment reminders, consultation scheduling, and tax preparation updates. Message and data rates apply. Reply STOP to opt out, HELP for help. See our <Link href="/privacy-policy" className="text-sts-green hover:underline">Privacy Policy</Link> and <Link href="/terms-conditions" className="text-sts-green hover:underline">Terms & Conditions</Link>.
+                          </p>
+                          <FormMessage />
+                        </div>
                       </FormItem>
                     )}
                   />

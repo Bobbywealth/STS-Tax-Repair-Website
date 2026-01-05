@@ -95,6 +95,8 @@ const AboutPage = lazy(() => import("@/pages/AboutPage"));
 const ContactPage = lazy(() => import("@/pages/ContactPage"));
 const FAQPage = lazy(() => import("@/pages/FAQPage"));
 const BookAppointmentPage = lazy(() => import("@/pages/BookAppointmentPage"));
+const PrivacyPolicy = lazy(() => import("@/pages/PrivacyPolicy"));
+const TermsConditions = lazy(() => import("@/pages/TermsConditions"));
 const StaffSignup = lazy(() => import("@/pages/StaffSignup"));
 const AgentManagement = lazy(() => import("@/pages/AgentManagement"));
 const AIAssistant = lazy(() => import("@/pages/AIAssistant"));
@@ -442,7 +444,7 @@ function App() {
   const { isPWA } = usePWA();
   
   const isHomePage = location === '/';
-  const isPublicPage = location === '/services' || location === '/agents' || location === '/pricing' || location === '/about' || location === '/contact' || location === '/faq' || location === '/book-appointment' || location === '/staff-signup';
+  const isPublicPage = location === '/services' || location === '/agents' || location === '/pricing' || location === '/about' || location === '/contact' || location === '/faq' || location === '/book-appointment' || location === '/staff-signup' || location === '/privacy-policy' || location === '/terms-conditions';
   const isClientRoute = location.startsWith('/client-login') || location.startsWith('/client-portal');
   const isPasswordResetRoute = location === '/forgot-password' || location.startsWith('/reset-password');
   const isVerifyEmailRoute = location.startsWith('/verify-email');
@@ -481,6 +483,8 @@ function App() {
                 <Route path="/contact" component={ContactPage} />
                 <Route path="/faq" component={FAQPage} />
                 <Route path="/book-appointment" component={BookAppointmentPage} />
+                <Route path="/privacy-policy" component={PrivacyPolicy} />
+                <Route path="/terms-conditions" component={TermsConditions} />
                 <Route path="/staff-signup" component={StaffSignup} />
               </Switch>
             ) : isAdminLoginRoute ? (
