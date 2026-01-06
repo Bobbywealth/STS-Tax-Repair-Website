@@ -1503,14 +1503,33 @@ export class MySQLStorage implements IStorage {
   // ============================================================================
   
   async getAgentAssignedClientIds(agentId: string): Promise<string[]> {
-    const results = await mysqlDb
-      .select({ clientId: agentAssignmentsTable.clientId })
-      .from(agentAssignmentsTable)
-      .where(and(
-        eq(agentAssignmentsTable.agentId, agentId),
-        eq(agentAssignmentsTable.isActive, true)
-      ));
-    return results.map(r => r.clientId);
+    // IMPORTANT:
+    // Client visibility for agents is supported via multiple assignment mechanisms:
+    // - agent_client_assignments (new, explicit)
+    // - users.assigned_to (legacy)
+    // - tax_filings.preparer_id (assignment via filing)
+    //
+    // Document access must match client visibility, so we union all sources here.
+    const [rows] = await mysqlPool.query(
+      `
+        SELECT DISTINCT client_id AS clientId
+        FROM agent_client_assignments
+        WHERE agent_id = ? AND is_active = 1
+        UNION
+        SELECT DISTINCT id AS clientId
+        FROM users
+        WHERE role = 'client' AND assigned_to = ?
+        UNION
+        SELECT DISTINCT client_id AS clientId
+        FROM tax_filings
+        WHERE preparer_id = ?
+      `,
+      [agentId, agentId, agentId],
+    );
+
+    return (rows as any[])
+      .map((r) => r?.clientId)
+      .filter((id): id is string => typeof id === "string" && id.trim().length > 0);
   }
 
   async getAgentAssignments(agentId: string): Promise<AgentClientAssignment[]> {
