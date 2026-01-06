@@ -1157,7 +1157,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // If we don't have an explicit office context, fall back to the referrer's office.
       if (!clientOfficeId) {
-        clientOfficeId = referrer.officeId || null;
+        // IMPORTANT: On the main STS domain (no explicit office context), we should not accidentally
+        // "white-label" a client just because they selected an STS admin as referrer.
+        // Only inherit office from referrers that are truly office-scoped roles.
+        const refRole = (referrer.role || "").toLowerCase();
+        const isOfficeScopedReferrer = refRole === "tax_office" || refRole === "agent";
+        clientOfficeId = isOfficeScopedReferrer ? (referrer.officeId || null) : null;
       }
       // Set referrer as the client's assigned agent
       assignedTo = referrer.id;
@@ -2776,6 +2781,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(user);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Update a user's office assignment (admin/super_admin)
+  // - super_admin can set any officeId or clear it (null) to use default STS branding
+  // - admin can only set to their own officeId (cannot clear or move across offices)
+  app.patch("/api/admin/users/:id/office", isAuthenticated, requireAdmin(), async (req: any, res) => {
+    try {
+      const requesterId = req.userId || req.user?.claims?.sub;
+      if (!requesterId) return res.status(401).json({ error: "Not authenticated" });
+
+      const requester = await storage.getUser(requesterId);
+      if (!requester) return res.status(401).json({ error: "User not found" });
+
+      const targetUserId = req.params.id;
+      const target = await storage.getUser(targetUserId);
+      if (!target) return res.status(404).json({ error: "User not found" });
+
+      const officeId = (req.body?.officeId ?? null) as string | null;
+
+      // Validate officeId if provided
+      if (officeId !== null) {
+        const office = await storage.getOffice(officeId);
+        if (!office) return res.status(400).json({ error: "Office not found" });
+      }
+
+      const requesterRole = (requester.role || "").toLowerCase();
+      if (requesterRole === "admin") {
+        const requesterOfficeId = (requester as any).officeId || null;
+        if (!requesterOfficeId) {
+          return res.status(403).json({ error: "Admin is not linked to an office" });
+        }
+        if (officeId !== requesterOfficeId) {
+          return res.status(403).json({ error: "Admins can only assign users to their own office" });
+        }
+      }
+
+      const updated = await storage.updateUser(targetUserId, { officeId } as any);
+      if (!updated) return res.status(404).json({ error: "User not found" });
+
+      res.json({ ok: true, userId: targetUserId, officeId });
+    } catch (error: any) {
+      console.error("Error updating user office:", error);
+      res.status(500).json({ error: error.message || "Failed to update office" });
     }
   });
 
