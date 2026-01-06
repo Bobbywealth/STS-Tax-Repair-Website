@@ -896,7 +896,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const user = await storage.getUser(req.session.userId);
         if (user) {
           const ensured = await ensureTaxOfficeHasOffice(user);
-          return res.json(ensured);
+          const role = ((ensured as any)?.role || "").toLowerCase();
+          const allowAdminSuperAdmin = (process.env.ALLOW_ADMIN_SUPERADMIN_ROLE_CHANGE || "").toLowerCase() === "true";
+          const hasCode = typeof process.env.ADMIN_SUPERADMIN_CODE === "string" && process.env.ADMIN_SUPERADMIN_CODE.trim().length > 0;
+          return res.json({
+            ...ensured,
+            canAssignSuperAdmin: role === "super_admin" || (allowAdminSuperAdmin && role === "admin"),
+            superAdminCodeRequired: role !== "super_admin" && allowAdminSuperAdmin && hasCode,
+          });
         }
       }
 
@@ -904,7 +911,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.user?.claims?.sub) {
         const user = await storage.getUser(req.user.claims.sub);
         const ensured = await ensureTaxOfficeHasOffice(user);
-        return res.json(ensured);
+        const role = ((ensured as any)?.role || "").toLowerCase();
+        const allowAdminSuperAdmin = (process.env.ALLOW_ADMIN_SUPERADMIN_ROLE_CHANGE || "").toLowerCase() === "true";
+        const hasCode = typeof process.env.ADMIN_SUPERADMIN_CODE === "string" && process.env.ADMIN_SUPERADMIN_CODE.trim().length > 0;
+        return res.json({
+          ...ensured,
+          canAssignSuperAdmin: role === "super_admin" || (allowAdminSuperAdmin && role === "admin"),
+          superAdminCodeRequired: role !== "super_admin" && allowAdminSuperAdmin && hasCode,
+        });
       }
 
       // Not authenticated
@@ -2715,7 +2729,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Admin access required" });
       }
 
-      const { role, reason } = req.body;
+      const { role, reason, superAdminCode } = req.body;
       if (!role || !["client", "agent", "tax_office", "admin", "super_admin"].includes(role)) {
         return res.status(400).json({ error: "Invalid role" });
       }
@@ -2727,13 +2741,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Only a super admin can grant OR revoke super admin access.
       // (Non-super admins should not be able to modify super admin accounts.)
-      if (
-        adminUser.role !== "super_admin" &&
-        ((targetUser.role || "").toLowerCase() === "super_admin" || role === "super_admin")
-      ) {
-        return res
-          .status(403)
-          .json({ error: "Super Admin access required to modify Super Admin role" });
+      const requesterRole = (adminUser.role || "").toLowerCase();
+      const targetIsSuperAdmin = ((targetUser.role || "").toLowerCase() === "super_admin");
+      const wantsSuperAdmin = role === "super_admin";
+      const allowAdminSuperAdmin = (process.env.ALLOW_ADMIN_SUPERADMIN_ROLE_CHANGE || "").toLowerCase() === "true";
+      const requiredCode = (process.env.ADMIN_SUPERADMIN_CODE || "").trim();
+
+      if (requesterRole !== "super_admin" && (targetIsSuperAdmin || wantsSuperAdmin)) {
+        // Temporary unlock: allow admins to manage super_admin when explicitly enabled via env var.
+        if (!allowAdminSuperAdmin || requesterRole !== "admin") {
+          return res
+            .status(403)
+            .json({ error: "Super Admin access required to modify Super Admin role" });
+        }
+
+        // Optional extra protection: require a shared code if configured.
+        if (requiredCode && String(superAdminCode || "").trim() !== requiredCode) {
+          return res.status(403).json({ error: "Invalid Super Admin code" });
+        }
       }
 
       const adminName =

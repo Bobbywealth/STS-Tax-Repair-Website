@@ -92,13 +92,16 @@ export default function UserManagement() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [newRole, setNewRole] = useState<UserRole>("client");
   const [roleReason, setRoleReason] = useState("");
+  const [superAdminCode, setSuperAdminCode] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<UserRole>("agent");
 
-  const { data: currentUser } = useQuery<User | null>({
+  const { data: currentUser } = useQuery<(User & { canAssignSuperAdmin?: boolean; superAdminCodeRequired?: boolean }) | null>({
     queryKey: ['/api/auth/user'],
   });
   const isSuperAdmin = currentUser?.role === 'super_admin';
+  const canAssignSuperAdmin = !!currentUser?.canAssignSuperAdmin;
+  const superAdminCodeRequired = !!currentUser?.superAdminCodeRequired;
 
   const { data: users, isLoading: loadingUsers } = useQuery<User[]>({
     queryKey: ['/api/users'],
@@ -146,7 +149,11 @@ export default function UserManagement() {
 
   const updateRoleMutation = useMutation({
     mutationFn: async ({ userId, role, reason }: { userId: string; role: UserRole; reason: string }) => {
-      await apiRequest('PATCH', `/api/users/${userId}/role`, { role, reason });
+      await apiRequest('PATCH', `/api/users/${userId}/role`, { 
+        role, 
+        reason,
+        ...(role === "super_admin" ? { superAdminCode } : {}),
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
@@ -155,6 +162,7 @@ export default function UserManagement() {
       setShowRoleDialog(false);
       setSelectedUser(null);
       setRoleReason("");
+      setSuperAdminCode("");
     },
     onError: (error: Error) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -869,7 +877,7 @@ export default function UserManagement() {
                 </SelectTrigger>
                 <SelectContent>
                   {Object.entries(roleConfig)
-                    .filter(([role]) => role !== 'super_admin' || isSuperAdmin)
+                    .filter(([role]) => role !== 'super_admin' || canAssignSuperAdmin)
                     .map(([role, config]) => (
                     <SelectItem key={role} value={role}>
                       <div className="flex items-center gap-2">
@@ -882,12 +890,26 @@ export default function UserManagement() {
               <p className="text-xs text-muted-foreground">
                 {roleConfig[newRole].description}
               </p>
-              {!isSuperAdmin && (
+              {!canAssignSuperAdmin && (
                 <p className="text-xs text-muted-foreground">
                   Note: Only Super Admins can assign or revoke the Super Admin role.
                 </p>
               )}
             </div>
+            {superAdminCodeRequired && !isSuperAdmin && newRole === "super_admin" && (
+              <div className="space-y-2">
+                <Label>Super Admin Code</Label>
+                <Input
+                  value={superAdminCode}
+                  onChange={(e) => setSuperAdminCode(e.target.value)}
+                  placeholder="Enter Super Admin code..."
+                  data-testid="input-super-admin-code"
+                />
+                <p className="text-xs text-muted-foreground">
+                  This code is required when an Administrator assigns Super Admin temporarily.
+                </p>
+              </div>
+            )}
             <div className="space-y-2">
               <Label>Reason for Change (Optional)</Label>
               <Textarea
@@ -963,7 +985,7 @@ export default function UserManagement() {
                       <Badge className={roleConfig.admin.color}>Administrator</Badge>
                     </div>
                   </SelectItem>
-                  {isSuperAdmin && (
+                  {canAssignSuperAdmin && (
                     <SelectItem value="super_admin">
                       <div className="flex items-center gap-2">
                         <Badge className={roleConfig.super_admin.color}>Super Admin</Badge>
