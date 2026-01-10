@@ -192,6 +192,34 @@ export async function runMySQLMigrations(): Promise<void> {
         console.log('Adding ero_pin_encrypted column to users table...');
         await connection.query(`ALTER TABLE users ADD COLUMN ero_pin_encrypted TEXT NULL`);
       }
+
+      // CTIA/Twilio compliance: express SMS consent tracking
+      const [smsConsentAtColumn] = await connection.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'sms_consent_at'`,
+        [dbName]
+      );
+      if (Array.isArray(smsConsentAtColumn) && smsConsentAtColumn.length === 0) {
+        console.log('Adding sms_consent_at column to users table...');
+        await connection.query(`ALTER TABLE users ADD COLUMN sms_consent_at TIMESTAMP NULL`);
+      }
+
+      const [smsConsentSourceColumn] = await connection.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'sms_consent_source'`,
+        [dbName]
+      );
+      if (Array.isArray(smsConsentSourceColumn) && smsConsentSourceColumn.length === 0) {
+        console.log('Adding sms_consent_source column to users table...');
+        await connection.query(`ALTER TABLE users ADD COLUMN sms_consent_source VARCHAR(50) NULL`);
+      }
+
+      const [smsOptedOutAtColumn] = await connection.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'sms_opted_out_at'`,
+        [dbName]
+      );
+      if (Array.isArray(smsOptedOutAtColumn) && smsOptedOutAtColumn.length === 0) {
+        console.log('Adding sms_opted_out_at column to users table...');
+        await connection.query(`ALTER TABLE users ADD COLUMN sms_opted_out_at TIMESTAMP NULL`);
+      }
     } catch (err: any) { console.error('Error in users table updates:', err.message); }
 
     // 3. OTHER TABLES

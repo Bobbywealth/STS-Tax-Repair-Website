@@ -169,6 +169,17 @@ export class MySQLStorage implements IStorage {
       userValues.emailVerifiedAt = userData.emailVerifiedAt;
     }
 
+    // Handle CTIA/Twilio SMS consent fields if provided
+    if ((userData as any).smsConsentAt !== undefined) {
+      userValues.smsConsentAt = (userData as any).smsConsentAt;
+    }
+    if ((userData as any).smsConsentSource !== undefined) {
+      userValues.smsConsentSource = (userData as any).smsConsentSource;
+    }
+    if ((userData as any).smsOptedOutAt !== undefined) {
+      userValues.smsOptedOutAt = (userData as any).smsOptedOutAt;
+    }
+
     // Handle officeId if provided
     if (userData.officeId !== undefined) {
       userValues.officeId = userData.officeId;
