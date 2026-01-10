@@ -52,6 +52,8 @@ type User = {
   email?: string | null;
   phone?: string | null;
   role?: string | null;
+  smsConsentAt?: string | null;
+  smsOptedOutAt?: string | null;
 };
 
 type EmailTemplate = { id: string; name: string; subject: string; body: string; lastUsed?: string };
@@ -99,6 +101,10 @@ function parseRecipients(input: string): string[] {
 function displayName(user: User) {
   const name = `${user.firstName || ""} ${user.lastName || ""}`.trim();
   return name || user.email || user.phone || "Contact";
+}
+
+function hasSmsConsent(user: User) {
+  return !!user.smsConsentAt && !user.smsOptedOutAt;
 }
 
 export default function Marketing() {
@@ -201,7 +207,7 @@ export default function Marketing() {
   const selectAllSms = () => {
     const ids = new Set<string>(selectedSmsIds);
     filteredUsers.forEach((u) => {
-      if (u.phone) ids.add(u.id);
+      if (u.phone && hasSmsConsent(u)) ids.add(u.id);
     });
     setSelectedSmsIds(ids);
   };
@@ -237,14 +243,7 @@ export default function Marketing() {
     return emails;
   }, [selectedEmailIds, userById]);
 
-  const selectedSmsNumbers = useMemo(() => {
-    const phones: string[] = [];
-    selectedSmsIds.forEach((id) => {
-      const u = userById.get(id);
-      if (u?.phone) phones.push(u.phone);
-    });
-    return phones;
-  }, [selectedSmsIds, userById]);
+  const selectedSmsUserIds = useMemo(() => Array.from(selectedSmsIds), [selectedSmsIds]);
 
   const emailMutation = useMutation({
     mutationFn: async () => {
@@ -287,11 +286,8 @@ export default function Marketing() {
 
   const smsMutation = useMutation({
     mutationFn: async () => {
-      const to = Array.from(
-        new Set([...selectedSmsNumbers, ...parseRecipients(smsRecipients)])
-      );
       const res = await apiRequest("POST", "/api/marketing/sms", {
-        to,
+        toUserIds: selectedSmsUserIds,
         message: smsBody,
         name: smsCampaignName,
       });
@@ -328,8 +324,8 @@ export default function Marketing() {
     [emailRecipients, selectedEmailAddresses]
   );
   const smsRecipientCount = useMemo(
-    () => parseRecipients(smsRecipients).length + selectedSmsNumbers.length,
-    [smsRecipients, selectedSmsNumbers]
+    () => selectedSmsUserIds.length,
+    [selectedSmsUserIds]
   );
 
   const emailDisabled =
@@ -698,6 +694,12 @@ export default function Marketing() {
                         <Users className="h-3 w-3 mr-2" /> Change Audience
                       </Button>
                     </div>
+                    <div className="bg-muted/30 p-3 rounded-lg flex items-start gap-3">
+                      <AlertCircle className="h-4 w-4 text-green-600 mt-0.5" />
+                      <p className="text-[11px] leading-relaxed text-muted-foreground">
+                        SMS can only be sent to contacts who explicitly opted in (express SMS consent).
+                      </p>
+                    </div>
 
                     <Button 
                       className="w-full bg-green-600 hover:bg-green-700 shadow-sm" 
@@ -993,13 +995,13 @@ export default function Marketing() {
                   </div>
                   <ScrollArea className="h-[400px] rounded-xl border bg-muted/10">
                     <div className="p-4 space-y-2">
-                      {filteredUsers.filter(u => u.phone).length === 0 ? (
+                      {filteredUsers.filter((u) => u.phone && hasSmsConsent(u)).length === 0 ? (
                         <div className="py-10 text-center text-muted-foreground">
                           <Smartphone className="h-8 w-8 mx-auto mb-2 opacity-20" />
                           <p className="text-sm">No contacts with phone found.</p>
                         </div>
                       ) : (
-                        filteredUsers.filter(u => u.phone).map(u => (
+                        filteredUsers.filter((u) => u.phone && hasSmsConsent(u)).map((u) => (
                           <div 
                             key={u.id} 
                             className={cn(
@@ -1042,11 +1044,15 @@ export default function Marketing() {
                 <div className="space-y-2">
                   <Label>Bulk Add Phone Numbers (Manual)</Label>
                   <Textarea 
-                    placeholder="+15551234567, +15559876543..."
+                    placeholder="Disabled: recipients must be selected from opted-in contacts."
                     className="h-20"
                     value={smsRecipients}
                     onChange={(e) => setSmsRecipients(e.target.value)}
+                    disabled
                   />
+                  <p className="text-[11px] text-muted-foreground">
+                    For compliance, manual phone entry is disabled. Add/update the contact and collect SMS opt-in first.
+                  </p>
                 </div>
               </div>
             </CardContent>

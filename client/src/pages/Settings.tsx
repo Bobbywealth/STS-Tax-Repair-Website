@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -85,6 +86,7 @@ export default function Settings() {
     firstName: "",
     lastName: "",
     phone: "",
+    smsConsent: false,
     address: "",
     city: "",
     state: "",
@@ -127,6 +129,7 @@ export default function Settings() {
         firstName: user.firstName || "",
         lastName: user.lastName || "",
         phone: user.phone || "",
+        smsConsent: !!(user as any).smsConsentAt && !(user as any).smsOptedOutAt,
         address: user.address || "",
         city: user.city || "",
         state: user.state || "",
@@ -636,6 +639,28 @@ export default function Settings() {
                       onChange={(e) => setFormData({ ...formData, phoneSecondary: e.target.value })}
                       data-testid="input-phone-secondary" 
                     />
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-3 p-4 rounded-md border bg-muted/20">
+                  <Checkbox
+                    id="sms-consent-settings"
+                    checked={formData.smsConsent}
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, smsConsent: !!checked })
+                    }
+                    data-testid="checkbox-sms-consent-settings"
+                  />
+                  <div className="space-y-1 leading-none">
+                    <Label htmlFor="sms-consent-settings">SMS Consent (Optional)</Label>
+                    <p className="text-xs text-muted-foreground">
+                      By checking this box, you agree to receive SMS/text messages from STS Tax Repair at the phone number provided.
+                      Message frequency varies. Msg &amp; data rates may apply. Reply STOP to opt out, HELP for help.
+                      Consent is not a condition of purchase. See our{" "}
+                      <a href="/privacy-policy" className="underline">Privacy Policy</a>{" "}
+                      and{" "}
+                      <a href="/terms-conditions" className="underline">Terms &amp; Conditions</a>.
+                    </p>
                   </div>
                 </div>
 

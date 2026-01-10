@@ -89,14 +89,15 @@ const registerSchema = z.object({
   message: "Passwords don't match",
   path: ["confirmPassword"],
 }).refine((data) => {
-  // If phone is provided, smsConsent must be true
-  if (data.phone && data.phone.length > 0) {
-    return data.smsConsent === true;
+  // CTIA/Twilio: SMS consent is an explicit opt-in checkbox (unchecked by default).
+  // If the user opts in, a phone number is required.
+  if (data.smsConsent) {
+    return !!(data.phone && data.phone.trim().length > 0);
   }
   return true;
 }, {
-  message: "SMS consent is required when providing a phone number",
-  path: ["smsConsent"],
+  message: "Phone number is required to opt in to SMS",
+  path: ["phone"],
 });
 
 type RegisterForm = z.infer<typeof registerSchema>;
@@ -246,7 +247,7 @@ export default function Register() {
   };
 
   const stepRequiredFields: Record<number, Array<keyof RegisterForm>> = {
-    1: ["firstName", "lastName", "email", "password", "confirmPassword", "smsConsent"],
+    1: ["firstName", "lastName", "email", "password", "confirmPassword"],
     2: [],
     3: ["referredById"],
     4: [],
@@ -287,8 +288,7 @@ export default function Register() {
         values.lastName &&
         values.email &&
         values.password &&
-        values.confirmPassword &&
-        (!values.phone || (values.phone && values.smsConsent))
+        values.confirmPassword
       );
     }
     if (currentStep === 3) {
@@ -521,10 +521,15 @@ export default function Register() {
                           </FormControl>
                           <div className="space-y-1 leading-none">
                             <FormLabel className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                            SMS Opt-In Consent
+                            SMS Consent (Optional)
                           </FormLabel>
                           <p className="text-xs text-muted-foreground mt-1">
-                            I consent to receive appointment reminders, scheduling updates, and tax service notifications via SMS/text message from STS TaxRepair LLC to the phone number I provided. Message and data rates may apply. Reply HELP for information, STOP to unsubscribe. See our <Link href="/privacy-policy" className="text-primary hover:underline">Privacy Policy</Link> and <Link href="/terms-conditions" className="text-primary hover:underline">Terms & Conditions</Link>.
+                            By checking this box, you agree to receive SMS/text messages from {companyName} at the phone number provided.
+                            Message frequency varies. Msg &amp; data rates may apply. Reply STOP to opt out, HELP for help.
+                            Consent is not a condition of purchase. See our{" "}
+                            <Link href="/privacy-policy" className="text-primary hover:underline">Privacy Policy</Link>{" "}
+                            and{" "}
+                            <Link href="/terms-conditions" className="text-primary hover:underline">Terms &amp; Conditions</Link>.
                           </p>
                           <FormMessage />
                         </div>

@@ -132,6 +132,12 @@ export const users = mysqlTable("users", {
   lastName: varchar("last_name", { length: 255 }),
   profileImageUrl: varchar("profile_image_url", { length: 500 }),
   phone: varchar("phone", { length: 20 }),
+  // CTIA/Twilio compliance: express consent for SMS
+  // - sms_consent_at is set when the user explicitly checks the SMS consent checkbox
+  // - sms_opted_out_at is set if the user later revokes consent (or opts out)
+  smsConsentAt: timestamp("sms_consent_at"),
+  smsConsentSource: varchar("sms_consent_source", { length: 50 }),
+  smsOptedOutAt: timestamp("sms_opted_out_at"),
   address: text("address"),
   city: varchar("city", { length: 100 }),
   state: varchar("state", { length: 100 }),

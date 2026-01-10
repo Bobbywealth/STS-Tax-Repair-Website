@@ -1041,6 +1041,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         firstName,
         lastName,
         phone,
+        smsConsent,
         password,
         address,
         city,
@@ -1086,6 +1087,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Hash password
       const passwordHash = await bcrypt.hash(password, 10);
+
+      // CTIA/Twilio: explicit SMS consent is opt-in (unchecked by default).
+      // Only record consent when the user explicitly checks the consent box.
+      const wantsSms = smsConsent === true;
+      if (wantsSms && !(phone && String(phone).trim())) {
+        return res.status(400).json({
+          message: "Phone number is required when opting in to SMS",
+          code: "SMS_CONSENT_REQUIRES_PHONE",
+        });
+      }
 
       // Encrypt sensitive data
       const irsUsernameEncrypted = irsUsername ? encrypt(irsUsername) : null;
@@ -1159,6 +1170,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         firstName,
         lastName,
         phone: phone || null,
+        smsConsentAt: wantsSms ? new Date() : null,
+        smsConsentSource: wantsSms ? "register" : null,
+        smsOptedOutAt: null,
         address: address || null,
         city: city || null,
         state: state || null,
@@ -2949,6 +2963,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         firstName,
         lastName,
         phone,
+        smsConsent,
         address,
         city,
         state,
@@ -2966,6 +2981,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Agent-only: 5-digit ERO PIN (stored encrypted; never returned)
         eroPin,
       } = req.body;
+
+      // CTIA/Twilio: only send SMS to users with explicit consent.
+      // This endpoint lets the user opt-in/out and records timestamps.
+      const smsConsentAtExisting = (existingUser as any)?.smsConsentAt || null;
+      const smsOptedOutAtExisting = (existingUser as any)?.smsOptedOutAt || null;
+      const wantsSmsNow = smsConsent === true;
+      const wantsSmsUpdate = smsConsent !== undefined;
+
+      if (wantsSmsUpdate && wantsSmsNow) {
+        const effectivePhone = (phone ?? existingUser.phone) as any;
+        if (!effectivePhone || !String(effectivePhone).trim()) {
+          return res.status(400).json({ error: "Phone number is required to opt in to SMS" });
+        }
+      }
+
+      const nextSmsConsentAt =
+        wantsSmsUpdate && wantsSmsNow
+          ? (smsConsentAtExisting || new Date())
+          : smsConsentAtExisting;
+      const nextSmsConsentSource =
+        wantsSmsUpdate && wantsSmsNow
+          ? ((existingUser as any)?.smsConsentSource || "profile")
+          : (existingUser as any)?.smsConsentSource;
+      const nextSmsOptedOutAt =
+        wantsSmsUpdate
+          ? (wantsSmsNow ? null : (smsOptedOutAtExisting || new Date()))
+          : smsOptedOutAtExisting;
 
       // Encrypt sensitive fields if provided
       const irsUsernameEncrypted = irsUsername ? encrypt(irsUsername) : undefined;
@@ -2997,6 +3039,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lastName: lastName ?? existingUser.lastName,
         profileImageUrl: existingUser.profileImageUrl,
         phone: phone ?? existingUser.phone,
+        smsConsentAt: nextSmsConsentAt,
+        smsConsentSource: nextSmsConsentSource,
+        smsOptedOutAt: nextSmsOptedOutAt,
         address: address ?? existingUser.address,
         city: city ?? existingUser.city,
         state: state ?? existingUser.state,
@@ -8862,13 +8907,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Send marketing SMS via Twilio
   app.post("/api/marketing/sms", isAuthenticated, requireAdmin(), async (req: AuthenticatedRequest, res) => {
     try {
-      const { to, message, name } = req.body || {};
+      const { toUserIds, to, message, name } = req.body || {};
 
-      if (!Array.isArray(to) || to.length === 0) {
-        return res.status(400).json({ error: "At least one recipient is required" });
-      }
       if (!message) {
         return res.status(400).json({ error: "Message is required" });
+      }
+      // CTIA/Twilio compliance:
+      // - We only allow sending SMS to users who provided express consent via an explicit checkbox.
+      // - Direct/manual phone numbers are rejected because they do not prove consent.
+      if (!Array.isArray(toUserIds) || toUserIds.length === 0) {
+        if (Array.isArray(to) && to.length > 0) {
+          return res.status(400).json({
+            error:
+              "Direct phone numbers are not allowed. Select recipients from the opted-in user list (express SMS consent required).",
+            code: "SMS_CONSENT_REQUIRED",
+          });
+        }
+        return res.status(400).json({ error: "At least one recipient is required" });
       }
       if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_FROM) {
         return res.status(500).json({ error: "Twilio is not configured (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM)" });
@@ -8878,20 +8933,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let sent = 0;
       const errors: string[] = [];
 
-      // Clean phone numbers: Keep only digits, then ensure E.164
-      const cleanNumbers = to.map(num => {
-        const digits = num.replace(/\D/g, "");
+      const normalizeToE164 = (raw: string) => {
+        const digits = String(raw || "").replace(/\D/g, "");
+        if (!digits) return null;
         if (digits.length === 10) return `+1${digits}`; // US number
-        if (digits.length > 10 && !num.startsWith("+")) return `+${digits}`;
-        return num.startsWith("+") ? num : `+${num}`;
-      });
+        if (digits.length > 10) return `+${digits}`;
+        // Too short/invalid
+        return null;
+      };
 
-      for (const recipient of cleanNumbers) {
+      // Load recipients and enforce express consent
+      const uniqueIds = Array.from(new Set(toUserIds.map((id: any) => String(id)).filter(Boolean)));
+      const users = await Promise.all(uniqueIds.map((id) => storage.getUser(id)));
+
+      const blocked: string[] = [];
+      const allowedNumbers: string[] = [];
+      for (const u of users) {
+        if (!u) continue;
+        const hasConsent = !!(u as any).smsConsentAt && !(u as any).smsOptedOutAt;
+        if (!hasConsent) {
+          blocked.push(`${u.id}: missing SMS express consent`);
+          continue;
+        }
+        const e164 = normalizeToE164((u as any).phone);
+        if (!e164) {
+          blocked.push(`${u.id}: missing/invalid phone`);
+          continue;
+        }
+        allowedNumbers.push(e164);
+      }
+
+      // Add STOP/HELP footer if not already present (helps keep campaigns compliant)
+      const footerParts: string[] = [];
+      if (!/(\bstop\b)/i.test(message)) footerParts.push("STOP to opt out");
+      if (!/(\bhelp\b)/i.test(message)) footerParts.push("HELP for help");
+      const body = (message || "").trim() + (footerParts.length ? ` Reply ${footerParts.join(", ")}.` : "");
+
+      for (const recipient of allowedNumbers) {
         try {
           await client.messages.create({
             from: TWILIO_FROM,
             to: recipient,
-            body: message,
+            body,
           });
           sent += 1;
         } catch (err: any) {
@@ -8900,7 +8983,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const failed = cleanNumbers.length - sent;
+      const failed = allowedNumbers.length - sent;
 
       // Track campaign record
       try {
@@ -8909,8 +8992,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           type: "sms",
           status: failed === 0 ? "completed" : (sent > 0 ? "partial" : "failed"),
           subject: null,
-          content: message,
-          recipientCount: cleanNumbers.length,
+          content: body,
+          recipientCount: allowedNumbers.length,
           sentCount: sent,
           errorCount: failed,
           createdById: req.userId || null,
@@ -8920,7 +9003,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error("[MARKETING][SMS] Failed to save campaign record:", dbErr);
       }
 
-      res.json({ success: failed === 0, sent, failed, errors });
+      res.json({
+        success: failed === 0,
+        sent,
+        failed,
+        blockedCount: blocked.length,
+        blocked,
+        errors,
+      });
     } catch (error: any) {
       console.error("[MARKETING][SMS] Error:", error);
       res.status(500).json({ error: error.message });

@@ -273,17 +273,22 @@ export default function ContactPage() {
                         htmlFor="sms-consent-contact"
                         className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
                       >
-                        SMS Opt-In Consent
+                        SMS Consent (Optional)
                       </label>
                       <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
-                        I consent to receive appointment reminders, scheduling updates, and tax service notifications via SMS/text message from STS TaxRepair LLC to the phone number I provided. Message and data rates may apply. Reply HELP for information, STOP to unsubscribe. See our <Link href="/privacy-policy" className="text-sts-primary hover:underline">Privacy Policy</Link> and <Link href="/terms-conditions" className="text-sts-primary hover:underline">Terms & Conditions</Link>.
+                        By checking this box, you agree to receive SMS/text messages from STS Tax Repair at the phone number provided.
+                        Message frequency varies. Msg &amp; data rates may apply. Reply STOP to opt out, HELP for help.
+                        Consent is not a condition of purchase. See our{" "}
+                        <Link href="/privacy-policy" className="text-sts-primary hover:underline">Privacy Policy</Link>{" "}
+                        and{" "}
+                        <Link href="/terms-conditions" className="text-sts-primary hover:underline">Terms &amp; Conditions</Link>.
                       </p>
                     </div>
                   </div>
                   <Button 
                     type="submit"
                     className="w-full bg-sts-primary hover:bg-sts-primary/90 h-12 text-lg font-bold"
-                    disabled={isSubmitting || !formData.smsConsent}
+                    disabled={isSubmitting}
                     data-testid="button-submit"
                   >
                     {isSubmitting ? "Sending..." : "Submit"}
