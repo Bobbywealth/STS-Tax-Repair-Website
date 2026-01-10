@@ -82,6 +82,15 @@ export function usePWA() {
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.ready.then((registration) => {
+        // If a worker is already waiting when we load, expose the update immediately.
+        if (registration.waiting && navigator.serviceWorker.controller) {
+          setHasUpdate(true);
+          setWaitingWorker(registration.waiting);
+        }
+        
+        // Proactively check for updates on load (helps PWA clients pick up new builds faster).
+        registration.update().catch(() => undefined);
+
         registration.addEventListener('updatefound', () => {
           const newWorker = registration.installing;
           if (newWorker) {

@@ -6,6 +6,7 @@ import type { Express, RequestHandler } from "express";
 import memoize from "memoizee";
 import MySQLStore from "express-mysql-session";
 import { storage } from "./storage";
+import { normalizeUserRole } from "./authorization";
 import { mysqlPool } from "./mysql-db";
 import { isMySQLConfigured } from "./dbConfig";
 
@@ -264,7 +265,7 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
     try {
       const user = await storage.getUser(req.session.userId);
       if (user) {
-        req.userRole = user.role || 'client';
+        req.userRole = normalizeUserRole(user.role);
         req.userId = user.id;
         // Load office context for scope enforcement (tax_office users)
         if (user.officeId) {
@@ -314,7 +315,7 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
     if (userId) {
       const dbUser = await storage.getUser(userId);
       if (dbUser) {
-        req.userRole = dbUser.role || 'client';
+        req.userRole = normalizeUserRole(dbUser.role);
         req.userId = userId;
         // Load office context for scope enforcement (tax_office users)
         if ((dbUser as any).officeId) {

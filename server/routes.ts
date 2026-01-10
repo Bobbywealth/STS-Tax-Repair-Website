@@ -13,6 +13,7 @@ import {
   requireClientScope,
   clearAgentScopeCache,
   type AuthenticatedRequest,
+  normalizeUserRole,
 } from "./authorization";
 import { mysqlStorage } from "./mysql-storage";
 import { setObjectAclPolicy } from "./objectAcl";
@@ -90,6 +91,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       email === "system" ||
       email.startsWith("system@")
     );
+  };
+  
+  // Never expose encrypted secrets or password hashes to the client.
+  const sanitizeUser = (u: any) => {
+    if (!u) return u;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const {
+      passwordHash,
+      irsUsernameEncrypted,
+      irsPasswordEncrypted,
+      bankRoutingEncrypted,
+      bankAccountEncrypted,
+      eroPinEncrypted,
+      ...rest
+    } = u;
+    return rest;
   };
 
   async function getEmailBrandingForOffice(officeId?: string | null): Promise<EmailBranding | undefined> {
@@ -280,36 +297,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: emailResult.success ? "sent" : "failed",
       });
 
-      // If the user is not verified yet, also (re)send a verification email.
-      // This addresses cases where the original verification email never arrived.
-      try {
-        if (!user.emailVerifiedAt) {
-          const existingToken = await storage.getEmailVerificationTokenByUserId(user.id);
-          let verificationTokenToSend: string | null = null;
-
-          if (existingToken && (existingToken.resendCount || 0) < 5) {
-            await storage.incrementEmailVerificationResendCount(existingToken.token);
-            verificationTokenToSend = existingToken.token;
-          } else {
-            const newToken = generateSecureToken();
-            const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
-            await storage.createEmailVerificationToken(user.id, email, newToken, expiresAt);
-            verificationTokenToSend = newToken;
-          }
-
-          if (verificationTokenToSend) {
-            sendEmailVerificationEmail(email, verificationTokenToSend, user.firstName || undefined, emailBranding)
-              .then((r) => {
-                if (r.success) console.log(`[VERIFY EMAIL] Sent verification email during forgot-password to ${email}`);
-                else console.warn(`[VERIFY EMAIL] Failed to send verification email during forgot-password to ${email}:`, r.error);
-              })
-              .catch((e) => console.warn(`[VERIFY EMAIL] Error sending verification email during forgot-password to ${email}:`, e));
-          }
-        }
-      } catch (e) {
-        console.warn("[VERIFY EMAIL] forgot-password verification send failed (non-blocking):", e);
-      }
-
+      // IMPORTANT:
+      // Do NOT send email verification as part of password reset flows.
+      // Verification remains available via:
+      // - POST /api/auth/resend-verification
+      // - /verify-email?token=...
       return res.json({ 
         success: true, 
         message: "If an account exists with this email, you will receive a password reset link shortly." 
@@ -403,36 +395,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`Password reset completed for user: ${user?.email || resetToken.userId}`);
 
-      // If still unverified, trigger a verification email resend (best effort).
-      try {
-        if (user && user.email && !user.emailVerifiedAt) {
-          const emailBranding = await getEmailBrandingForUser(user.id);
-          const existingToken = await storage.getEmailVerificationTokenByUserId(user.id);
-          let verificationTokenToSend: string | null = null;
-
-          if (existingToken && (existingToken.resendCount || 0) < 5) {
-            await storage.incrementEmailVerificationResendCount(existingToken.token);
-            verificationTokenToSend = existingToken.token;
-          } else {
-            const newToken = generateSecureToken();
-            const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
-            await storage.createEmailVerificationToken(user.id, user.email, newToken, expiresAt);
-            verificationTokenToSend = newToken;
-          }
-
-          if (verificationTokenToSend) {
-            sendEmailVerificationEmail(user.email, verificationTokenToSend, user.firstName || undefined, emailBranding)
-              .then((r) => {
-                if (r.success) console.log(`[VERIFY EMAIL] Sent verification email during reset-password to ${user.email}`);
-                else console.warn(`[VERIFY EMAIL] Failed to send verification email during reset-password to ${user.email}:`, r.error);
-              })
-              .catch((e) => console.warn(`[VERIFY EMAIL] Error sending verification email during reset-password to ${user.email}:`, e));
-          }
-        }
-      } catch (e) {
-        console.warn("[VERIFY EMAIL] reset-password verification send failed (non-blocking):", e);
-      }
-
+      // IMPORTANT:
+      // Do NOT send email verification as part of password reset completion.
+      // Verification remains available via:
+      // - POST /api/auth/resend-verification
+      // - /verify-email?token=...
       return res.json({ 
         success: true, 
         message: "Your password has been reset successfully. You can now log in with your new password." 
@@ -772,7 +739,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/perfex-uploads/uploads/customers/:clientId/*filename", (req, res) => {
     const perfexBaseUrl = "https://ststaxrepair.org";
     const perfexId = req.params.clientId;
-    const filename = req.params.filename || "";
+    const filename = (req.params as any).filename || "";
     // Convert Perfex numeric ID to CRM folder format: perfex-{id}
     const clientFolder = perfexId.startsWith('perfex-') ? perfexId : `perfex-${perfexId}`;
     const filePath = `uploads/clients/${clientFolder}/${filename}`;
@@ -896,11 +863,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const user = await storage.getUser(req.session.userId);
         if (user) {
           const ensured = await ensureTaxOfficeHasOffice(user);
+          const safeUser = sanitizeUser(ensured);
           const role = ((ensured as any)?.role || "").toLowerCase();
           const allowAdminSuperAdmin = (process.env.ALLOW_ADMIN_SUPERADMIN_ROLE_CHANGE || "").toLowerCase() === "true";
           const hasCode = typeof process.env.ADMIN_SUPERADMIN_CODE === "string" && process.env.ADMIN_SUPERADMIN_CODE.trim().length > 0;
           return res.json({
-            ...ensured,
+            ...safeUser,
             canAssignSuperAdmin: role === "super_admin" || (allowAdminSuperAdmin && role === "admin"),
             superAdminCodeRequired: role !== "super_admin" && allowAdminSuperAdmin && hasCode,
           });
@@ -911,11 +879,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.user?.claims?.sub) {
         const user = await storage.getUser(req.user.claims.sub);
         const ensured = await ensureTaxOfficeHasOffice(user);
+        const safeUser = sanitizeUser(ensured);
         const role = ((ensured as any)?.role || "").toLowerCase();
         const allowAdminSuperAdmin = (process.env.ALLOW_ADMIN_SUPERADMIN_ROLE_CHANGE || "").toLowerCase() === "true";
         const hasCode = typeof process.env.ADMIN_SUPERADMIN_CODE === "string" && process.env.ADMIN_SUPERADMIN_CODE.trim().length > 0;
         return res.json({
-          ...ensured,
+          ...safeUser,
           canAssignSuperAdmin: role === "super_admin" || (allowAdminSuperAdmin && role === "admin"),
           superAdminCodeRequired: role !== "super_admin" && allowAdminSuperAdmin && hasCode,
         });
@@ -2202,8 +2171,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const userId = req.userId || req.user?.claims?.sub;
         const currentUser = userId ? await storage.getUser(userId) : null;
-        const role = (currentUser?.role || "").toLowerCase();
-        const officeId = (currentUser as any)?.officeId || null;
+        // Use normalized role from auth middleware to avoid "staff/manager/owner" bypassing scope checks.
+        const role = String(req.userRole || normalizeUserRole(currentUser?.role)).toLowerCase();
+        const officeId = (req as any)?.officeId || (currentUser as any)?.officeId || null;
 
         const year = Number.parseInt(String(req.query.year || new Date().getFullYear()), 10);
         const q = String(req.query.q || "").trim();
@@ -2710,7 +2680,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(404).json({ error: "Client not found" });
         }
 
-        res.json(user);
+        res.json(sanitizeUser(user));
       } catch (error: any) {
         res.status(500).json({ error: error.message });
       }
@@ -2930,7 +2900,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ error: "Invalid role" });
         }
         const users = await storage.getUsersByRole(role);
-        res.json(users);
+        res.json((users || []).map(sanitizeUser));
       } catch (error: any) {
         res.status(500).json({ error: error.message });
       }
@@ -2993,6 +2963,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         directDepositBank,
         bankRoutingNumber,
         bankAccountNumber,
+        // Agent-only: 5-digit ERO PIN (stored encrypted; never returned)
+        eroPin,
       } = req.body;
 
       // Encrypt sensitive fields if provided
@@ -3000,6 +2972,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const irsPasswordEncrypted = irsPassword ? encrypt(irsPassword) : undefined;
       const bankRoutingEncrypted = bankRoutingNumber ? encrypt(bankRoutingNumber) : undefined;
       const bankAccountEncrypted = bankAccountNumber ? encrypt(bankAccountNumber) : undefined;
+      
+      // Agent ERO PIN: allow agents/tax_office/admin to set/clear their own ERO PIN.
+      let eroPinEncrypted: string | null | undefined = undefined;
+      const role = String((existingUser as any)?.role || "").toLowerCase();
+      const canSetEroPin = role === "agent" || role === "tax_office" || role === "admin" || role === "super_admin";
+      if (eroPin !== undefined && canSetEroPin) {
+        const raw = String(eroPin || "").trim();
+        if (!raw) {
+          // explicit clear
+          eroPinEncrypted = null;
+        } else {
+          if (!/^\d{5}$/.test(raw)) {
+            return res.status(400).json({ error: "ERO PIN must be exactly 5 digits" });
+          }
+          eroPinEncrypted = encrypt(raw);
+        }
+      }
 
       const updatedUser = await storage.upsertUser({
         id: userId,
@@ -3022,11 +3011,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         directDepositBank: directDepositBank ?? (existingUser as any).directDepositBank,
         bankRoutingEncrypted: bankRoutingEncrypted ?? (existingUser as any).bankRoutingEncrypted,
         bankAccountEncrypted: bankAccountEncrypted ?? (existingUser as any).bankAccountEncrypted,
+        eroPinEncrypted: eroPinEncrypted ?? (existingUser as any).eroPinEncrypted,
         role: existingUser.role,
         isActive: existingUser.isActive,
       } as any);
 
-      res.json(updatedUser);
+      res.json(sanitizeUser(updatedUser));
     } catch (error: any) {
       console.error("Profile update error:", error);
       res.status(500).json({ error: error.message });
@@ -3740,18 +3730,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "User not found" });
       }
 
-      // Admin and Super Admin have all permissions
-      if (user.role === "admin" || user.role === "super_admin") {
+      const normalizedRole = normalizeUserRole(user.role);
+
+      // Admin and Super Admin have all permissions (legacy "owner" maps to admin)
+      if (normalizedRole === "admin" || normalizedRole === "super_admin") {
         const allPermissions = await storage.getPermissions();
         return res.json({
-          role: user.role,
+          role: normalizedRole,
+          rawRole: user.role,
           permissions: allPermissions.map((p) => p.slug),
         });
       }
 
-      const permissions = await storage.getRolePermissions(user.role || 'client');
+      const permissions = await storage.getRolePermissions(normalizedRole);
       res.json({
-        role: user.role,
+        role: normalizedRole,
+        rawRole: user.role,
         permissions,
       });
     } catch (error: any) {
@@ -5616,9 +5610,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         // Part III - ERO EFIN/PIN
-        if (formData.eroPin) {
-          setTextField("f1_20", formData.eroPin);
-          setTextField("f1_21", formData.eroPin);
+        // Prefer value stored on the signature formData; otherwise derive from the client's assigned agent.
+        // IMPORTANT: we intentionally do NOT write this back to formData to avoid exposing the ERO PIN to clients.
+        let effectiveEroPin = (formData.eroPin || "").trim();
+        if (!effectiveEroPin && signature.clientId) {
+          try {
+            const client = await storage.getUser(signature.clientId);
+            const assignedAgentId = (client as any)?.assignedTo as string | undefined;
+            if (assignedAgentId) {
+              const agent = await storage.getUser(assignedAgentId);
+              effectiveEroPin = decrypt((agent as any)?.eroPinEncrypted || "").trim();
+            }
+          } catch {
+            // non-blocking
+          }
+        }
+        if (effectiveEroPin) {
+          setTextField("f1_20", effectiveEroPin);
+          setTextField("f1_21", effectiveEroPin);
         }
 
         // If no form fields matched, use precise coordinate-based placement
@@ -5784,8 +5793,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
 
           // Part III - ERO EFIN/PIN (y~195)
-          if (formData.eroPin) {
-            firstPage.drawText(formData.eroPin, {
+          if (effectiveEroPin) {
+            firstPage.drawText(effectiveEroPin, {
               x: 400,
               y: 195,
               size: fontSize,

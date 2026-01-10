@@ -82,6 +82,11 @@ export default function ForgotPassword() {
                 : "Enter your email address and we'll send you a link to reset your password."
               }
             </CardDescription>
+            {!isSubmitted && (
+              <p className="text-xs text-muted-foreground">
+                Trying to verify your email instead? Use your verification email, or resend it from the login page.
+              </p>
+            )}
           </CardHeader>
           <CardContent>
             {needsSignup ? (

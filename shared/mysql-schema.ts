@@ -141,6 +141,8 @@ export const users = mysqlTable("users", {
   dateOfBirth: varchar("date_of_birth", { length: 50 }),
   occupation: varchar("occupation", { length: 255 }),
   ssn: varchar("ssn", { length: 255 }),
+  // Agent-only: encrypted 5-digit ERO PIN used to fill Form 8879 PDFs (never exposed to clients)
+  eroPinEncrypted: text("ero_pin_encrypted"),
   irsUsernameEncrypted: text("irs_username_encrypted"),
   irsPasswordEncrypted: text("irs_password_encrypted"),
   directDepositBank: varchar("direct_deposit_bank", { length: 255 }),

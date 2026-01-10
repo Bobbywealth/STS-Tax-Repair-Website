@@ -700,6 +700,7 @@ export default function ESignatures() {
                 initialData={selectedSignature?.formData as Form8879Data}
                 onSubmit={handleForm8879Submit}
                 isSubmitting={signMutation.isPending}
+                eroPinMode="optional"
               />
             </>
           ) : (

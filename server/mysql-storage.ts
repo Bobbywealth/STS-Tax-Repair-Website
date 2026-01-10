@@ -193,6 +193,11 @@ export class MySQLStorage implements IStorage {
     if ((userData as any).dateOfBirth !== undefined) {
       userValues.dateOfBirth = (userData as any).dateOfBirth;
     }
+    
+    // Handle agent ERO PIN (encrypted) if provided
+    if ((userData as any).eroPinEncrypted !== undefined) {
+      userValues.eroPinEncrypted = (userData as any).eroPinEncrypted;
+    }
 
     if (existing) {
       await mysqlDb
@@ -751,6 +756,7 @@ export class MySQLStorage implements IStorage {
     dateOfBirth?: string;
     occupation?: string;
     ssn?: string;
+    eroPinEncrypted?: string | null;
     irsUsernameEncrypted?: string;
     irsPasswordEncrypted?: string;
     directDepositBank?: string;
@@ -773,6 +779,7 @@ export class MySQLStorage implements IStorage {
     if (data.dateOfBirth !== undefined) updateData.dateOfBirth = data.dateOfBirth;
     if (data.occupation !== undefined) updateData.occupation = data.occupation;
     if (data.ssn !== undefined) updateData.ssn = data.ssn;
+    if (data.eroPinEncrypted !== undefined) updateData.eroPinEncrypted = data.eroPinEncrypted;
     if (data.irsUsernameEncrypted !== undefined) updateData.irsUsernameEncrypted = data.irsUsernameEncrypted;
     if (data.irsPasswordEncrypted !== undefined) updateData.irsPasswordEncrypted = data.irsPasswordEncrypted;
     if (data.directDepositBank !== undefined) updateData.directDepositBank = data.directDepositBank;

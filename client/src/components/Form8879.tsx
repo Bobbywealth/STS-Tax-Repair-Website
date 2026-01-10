@@ -26,6 +26,8 @@ interface Form8879Props {
   initialData?: Form8879Data;
   onSubmit: (formData: Form8879Data, signatureData: string) => void;
   isSubmitting?: boolean;
+  // ERO PIN is an office/agent value; clients often should not be forced to enter it.
+  eroPinMode?: "required" | "optional" | "hidden";
 }
 
 export function Form8879({ 
@@ -36,7 +38,8 @@ export function Form8879({
   clientZip = "",
   initialData,
   onSubmit,
-  isSubmitting = false
+  isSubmitting = false,
+  eroPinMode = "required",
 }: Form8879Props) {
   const signaturePadRef = useRef<SignaturePadRef>(null);
   const currentYear = new Date().getFullYear();
@@ -108,10 +111,14 @@ export function Form8879({
       newErrors.taxpayerSSN = "Valid SSN is required (9 digits)";
     }
     
-    if (!formData.eroPin?.trim()) {
+    const shouldRequireEroPin = eroPinMode === "required";
+    const ero = (formData.eroPin || "").trim();
+    if (shouldRequireEroPin && !ero) {
       newErrors.eroPin = "ERO PIN is required";
-    } else if (formData.eroPin.length !== 5 || !/^\d+$/.test(formData.eroPin)) {
-      newErrors.eroPin = "ERO PIN must be 5 digits";
+    } else if (ero) {
+      if (ero.length !== 5 || !/^\d+$/.test(ero)) {
+        newErrors.eroPin = "ERO PIN must be 5 digits";
+      }
     }
     
     if (!formData.taxpayerPin?.trim()) {
@@ -351,32 +358,43 @@ export function Form8879({
             
             <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mb-4">
               <p className="text-sm text-amber-800 dark:text-amber-200">
-                <strong>Important:</strong> Enter your unique 5-digit ERO PIN provided by STS TaxRepair. 
-                This PIN authorizes the electronic filing of your tax return.
+                {eroPinMode === "required" ? (
+                  <>
+                    <strong>Important:</strong> Enter your unique 5-digit ERO PIN provided by STS TaxRepair.{" "}
+                    This PIN authorizes the electronic filing of your tax return.
+                  </>
+                ) : (
+                  <>
+                    <strong>Important:</strong> Choose your 5-digit Taxpayer PIN.{" "}
+                    The ERO PIN will be completed by your assigned agent.
+                  </>
+                )}
               </p>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="eroPin" className="flex items-center gap-2">
-                  ERO PIN <span className="text-destructive">*</span>
-                  <Badge variant="outline" className="text-xs">5 digits</Badge>
-                </Label>
-                <Input
-                  id="eroPin"
-                  value={formData.eroPin}
-                  onChange={(e) => updateField("eroPin", e.target.value.replace(/\D/g, '').slice(0, 5))}
-                  placeholder="00000"
-                  maxLength={5}
-                  className={`text-center text-lg font-mono tracking-widest ${errors.eroPin ? "border-destructive" : ""}`}
-                  data-testid="input-ero-pin"
-                />
-                {errors.eroPin && (
-                  <p className="text-sm text-destructive flex items-center gap-1">
-                    <AlertCircle className="h-3 w-3" /> {errors.eroPin}
-                  </p>
-                )}
-              </div>
+              {eroPinMode !== "hidden" && (
+                <div className="space-y-2">
+                  <Label htmlFor="eroPin" className="flex items-center gap-2">
+                    ERO PIN {eroPinMode === "required" && <span className="text-destructive">*</span>}
+                    <Badge variant="outline" className="text-xs">5 digits</Badge>
+                  </Label>
+                  <Input
+                    id="eroPin"
+                    value={formData.eroPin}
+                    onChange={(e) => updateField("eroPin", e.target.value.replace(/\D/g, '').slice(0, 5))}
+                    placeholder="00000"
+                    maxLength={5}
+                    className={`text-center text-lg font-mono tracking-widest ${errors.eroPin ? "border-destructive" : ""}`}
+                    data-testid="input-ero-pin"
+                  />
+                  {errors.eroPin && (
+                    <p className="text-sm text-destructive flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" /> {errors.eroPin}
+                    </p>
+                  )}
+                </div>
+              )}
               
               <div className="space-y-2">
                 <Label htmlFor="taxpayerPin" className="flex items-center gap-2">

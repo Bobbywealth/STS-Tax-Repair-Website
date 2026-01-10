@@ -182,6 +182,16 @@ export async function runMySQLMigrations(): Promise<void> {
         console.log('Adding date_of_birth column to users table...');
         await connection.query(`ALTER TABLE users ADD COLUMN date_of_birth VARCHAR(50) NULL`);
       }
+
+      // Agent-only encrypted ERO PIN (used to fill Form 8879 PDFs)
+      const [eroPinEncryptedColumn] = await connection.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'ero_pin_encrypted'`,
+        [dbName]
+      );
+      if (Array.isArray(eroPinEncryptedColumn) && eroPinEncryptedColumn.length === 0) {
+        console.log('Adding ero_pin_encrypted column to users table...');
+        await connection.query(`ALTER TABLE users ADD COLUMN ero_pin_encrypted TEXT NULL`);
+      }
     } catch (err: any) { console.error('Error in users table updates:', err.message); }
 
     // 3. OTHER TABLES

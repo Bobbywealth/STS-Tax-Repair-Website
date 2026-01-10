@@ -33,6 +33,23 @@ const ROLE_HIERARCHY: Record<UserRole, number> = {
   super_admin: 5,
 };
 
+/**
+ * Normalize legacy/alias roles into the supported permission roles.
+ *
+ * The DB and UI historically used additional roles (e.g. "staff", "manager", "owner"),
+ * but the permission matrix is defined for `UserRole` only. Without normalization,
+ * these users end up with an empty permission set and get blocked from core features
+ * like viewing clients.
+ */
+export function normalizeUserRole(input: unknown): UserRole {
+  const role = String(input || "").trim().toLowerCase();
+  if (role === "super_admin") return "super_admin";
+  if (role === "admin" || role === "owner") return "admin";
+  if (role === "tax_office" || role === "tax_office_admin" || role === "manager") return "tax_office";
+  if (role === "agent" || role === "staff") return "agent";
+  return "client";
+}
+
 // Cache for agent's assigned client IDs (with TTL)
 const agentScopeCache = new Map<string, { clientIds: Set<string>; timestamp: number }>();
 const SCOPE_CACHE_TTL = 2 * 60 * 1000; // 2 minutes

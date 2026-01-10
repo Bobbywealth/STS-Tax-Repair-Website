@@ -94,6 +94,9 @@ export default function Settings() {
     ssn: "",
     phoneSecondary: "",
     occupation: "",
+    // Optional; when undefined we don't send it (prevents accidental clearing).
+    // When set to "" we explicitly clear it.
+    eroPin: undefined as string | undefined,
   });
 
   const [companyForm, setCompanyForm] = useState({
@@ -133,6 +136,8 @@ export default function Settings() {
         ssn: (user as any).ssn || "",
         phoneSecondary: (user as any).phoneSecondary || "",
         occupation: (user as any).occupation || "",
+        // Never display secrets back in the UI; allow agents to set/clear explicitly.
+        eroPin: undefined,
       });
     }
   }, [user]);
@@ -643,6 +648,30 @@ export default function Settings() {
                     data-testid="input-occupation" 
                   />
                 </div>
+
+                {(user?.role === "agent" || user?.role === "tax_office") && (
+                  <div className="space-y-2">
+                    <Label htmlFor="eroPin">ERO PIN (for Form 8879)</Label>
+                    <Input
+                      id="eroPin"
+                      value={formData.eroPin ?? ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          eroPin: e.target.value.replace(/\D/g, "").slice(0, 5),
+                        })
+                      }
+                      placeholder="5 digits"
+                      maxLength={5}
+                      inputMode="numeric"
+                      data-testid="input-ero-pin"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Your ERO PIN is stored encrypted and used to fill signed Form 8879 PDFs for clients assigned to you.
+                      Leave blank to keep unchanged; clear the field and save to remove it.
+                    </p>
+                  </div>
+                )}
               </div>
 
               <Separator />
