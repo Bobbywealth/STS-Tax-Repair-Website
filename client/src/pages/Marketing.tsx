@@ -13,6 +13,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   Megaphone,
   Mail,
@@ -110,7 +112,13 @@ function hasSmsConsent(user: User) {
 export default function Marketing() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("campaigns");
+  const [campaignChannel, setCampaignChannel] = useState<"email" | "sms">("email");
+  const [sendMode, setSendMode] = useState<"now" | "schedule">("now");
+  const [scheduledFor, setScheduledFor] = useState("");
+  const [audiencePreset, setAudiencePreset] = useState<
+    "selected" | "all_customers" | "all_staff" | "all_contacts"
+  >("selected");
 
   const [emailCampaignName, setEmailCampaignName] = useState("");
   const [emailRecipients, setEmailRecipients] = useState("");
@@ -245,13 +253,69 @@ export default function Marketing() {
 
   const selectedSmsUserIds = useMemo(() => Array.from(selectedSmsIds), [selectedSmsIds]);
 
+  const customerUsers = useMemo(() => {
+    return users.filter((u) => {
+      const role = (u.role || "").toLowerCase();
+      return role === "client" || role === "lead";
+    });
+  }, [users]);
+
+  const staffUsers = useMemo(() => {
+    return users.filter((u) => {
+      const role = (u.role || "").toLowerCase();
+      return role === "admin" || role === "super_admin" || role === "tax_office" || role === "agent";
+    });
+  }, [users]);
+
+  const totalReach = useMemo(() => {
+    if (campaignChannel === "sms") {
+      return users.filter((u) => u.phone && hasSmsConsent(u)).length;
+    }
+    return users.filter((u) => u.email).length;
+  }, [campaignChannel, users]);
+
+  const computedEmailTo = useMemo(() => {
+    if (campaignChannel !== "email") return [];
+
+    const to =
+      audiencePreset === "selected"
+        ? [...selectedEmailAddresses, ...parseRecipients(emailRecipients)]
+        : audiencePreset === "all_customers"
+          ? customerUsers.map((u) => u.email).filter(Boolean)
+          : audiencePreset === "all_staff"
+            ? staffUsers.map((u) => u.email).filter(Boolean)
+            : users.map((u) => u.email).filter(Boolean);
+
+    return Array.from(new Set(to as string[]));
+  }, [
+    audiencePreset,
+    campaignChannel,
+    customerUsers,
+    emailRecipients,
+    selectedEmailAddresses,
+    staffUsers,
+    users,
+  ]);
+
+  const computedSmsUserIds = useMemo(() => {
+    if (campaignChannel !== "sms") return [];
+
+    const ids =
+      audiencePreset === "selected"
+        ? selectedSmsUserIds
+        : audiencePreset === "all_customers"
+          ? customerUsers.filter((u) => u.phone && hasSmsConsent(u)).map((u) => u.id)
+          : audiencePreset === "all_staff"
+            ? staffUsers.filter((u) => u.phone && hasSmsConsent(u)).map((u) => u.id)
+            : users.filter((u) => u.phone && hasSmsConsent(u)).map((u) => u.id);
+
+    return Array.from(new Set(ids));
+  }, [audiencePreset, campaignChannel, customerUsers, selectedSmsUserIds, staffUsers, users]);
+
   const emailMutation = useMutation({
     mutationFn: async () => {
-      const to = Array.from(
-        new Set([...selectedEmailAddresses, ...parseRecipients(emailRecipients)])
-      );
       const res = await apiRequest("POST", "/api/marketing/email", {
-        to,
+        to: computedEmailTo,
         subject: emailSubject,
         message: emailBody,
         name: emailCampaignName,
@@ -287,7 +351,7 @@ export default function Marketing() {
   const smsMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/marketing/sms", {
-        toUserIds: selectedSmsUserIds,
+        toUserIds: computedSmsUserIds,
         message: smsBody,
         name: smsCampaignName,
       });
@@ -319,14 +383,8 @@ export default function Marketing() {
     },
   });
 
-  const emailRecipientCount = useMemo(
-    () => parseRecipients(emailRecipients).length + selectedEmailAddresses.length,
-    [emailRecipients, selectedEmailAddresses]
-  );
-  const smsRecipientCount = useMemo(
-    () => selectedSmsUserIds.length,
-    [selectedSmsUserIds]
-  );
+  const emailRecipientCount = useMemo(() => computedEmailTo.length, [computedEmailTo]);
+  const smsRecipientCount = useMemo(() => computedSmsUserIds.length, [computedSmsUserIds]);
 
   const emailDisabled =
     emailMutation.isPending ||
@@ -384,7 +442,7 @@ export default function Marketing() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
             <div className="p-2 bg-primary/10 rounded-lg">
@@ -396,33 +454,54 @@ export default function Marketing() {
             Powerful multi-channel engagement for your tax office.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="px-3 py-1 text-sm font-medium">
-            <CheckCircle2 className="h-3 w-3 mr-1 text-green-500" /> System Active
-          </Badge>
-          <Badge variant="outline" className="px-3 py-1 text-sm font-medium">Admin Access</Badge>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-end">
+          <div className="rounded-xl border bg-card px-4 py-3 shadow-sm min-w-[220px]">
+            <p className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+              Total Reach
+            </p>
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-3xl font-bold leading-none">
+                {usersLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : totalReach.toLocaleString()}
+              </div>
+              <Users className="h-5 w-5 text-muted-foreground" />
+            </div>
+          </div>
+          <div className="flex items-center gap-2 justify-end">
+            <Badge variant="secondary" className="px-3 py-1 text-sm font-medium">
+              <CheckCircle2 className="h-3 w-3 mr-1 text-green-500" /> System Active
+            </Badge>
+            <Badge variant="outline" className="px-3 py-1 text-sm font-medium">Admin Access</Badge>
+          </div>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="bg-muted/50 p-1 rounded-xl h-auto flex-wrap">
-          <TabsTrigger value="overview" className="rounded-lg px-6 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            <BarChart3 className="h-4 w-4 mr-2" />
-            Overview
-          </TabsTrigger>
-          <TabsTrigger value="campaigns" className="rounded-lg px-6 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            <Send className="h-4 w-4 mr-2" />
-            New Campaign
-          </TabsTrigger>
-          <TabsTrigger value="templates" className="rounded-lg px-6 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            <Layout className="h-4 w-4 mr-2" />
-            Templates
-          </TabsTrigger>
-          <TabsTrigger value="audience" className="rounded-lg px-6 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            <Users className="h-4 w-4 mr-2" />
-            Audience
-          </TabsTrigger>
-        </TabsList>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <TabsList className="bg-background border p-1 rounded-xl h-auto flex-wrap w-full md:w-auto">
+            <TabsTrigger value="campaigns" className="rounded-lg px-5 py-2.5 data-[state=active]:bg-muted data-[state=active]:shadow-sm">
+              <Plus className="h-4 w-4 mr-2" />
+              New Campaign
+            </TabsTrigger>
+            <TabsTrigger value="overview" className="rounded-lg px-5 py-2.5 data-[state=active]:bg-muted data-[state=active]:shadow-sm">
+              <History className="h-4 w-4 mr-2" />
+              History &amp; Status
+            </TabsTrigger>
+            <TabsTrigger value="inbox" className="rounded-lg px-5 py-2.5 data-[state=active]:bg-muted data-[state=active]:shadow-sm">
+              <MessageSquare className="h-4 w-4 mr-2" />
+              SMS Inbox
+            </TabsTrigger>
+          </TabsList>
+          <div className="flex items-center gap-2 justify-end">
+            <Button variant="outline" size="sm" onClick={() => setActiveTab("templates")}>
+              <Layout className="h-4 w-4 mr-2" />
+              Templates
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setActiveTab("audience")}>
+              <Users className="h-4 w-4 mr-2" />
+              Audience
+            </Button>
+          </div>
+        </div>
 
         <TabsContent value="overview" className="space-y-6 outline-none">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -551,234 +630,321 @@ export default function Marketing() {
         </TabsContent>
 
         <TabsContent value="campaigns" className="outline-none">
-          <div className="grid gap-6 lg:grid-cols-2">
-            <div className="space-y-6">
-              <Card className="border-none shadow-md overflow-hidden">
-                <div className="h-2 bg-blue-500" />
-                <CardHeader>
+          <div className="grid gap-6 lg:grid-cols-12">
+            <Card className="lg:col-span-7 border-none shadow-sm">
+              <CardHeader className="flex flex-row items-center justify-between gap-4">
+                <div>
                   <CardTitle className="flex items-center gap-2">
-                    <Mail className="h-5 w-5 text-blue-500" />
-                    Email Campaign
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <Send className="h-4 w-4 text-primary" />
+                    </div>
+                    Campaign Details
                   </CardTitle>
-                  <CardDescription>Send rich HTML or plain text emails via Gmail.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
+                  <CardDescription>Configure audience, schedule, and message content.</CardDescription>
+                </div>
+                <ToggleGroup
+                  type="single"
+                  value={campaignChannel}
+                  onValueChange={(v) => {
+                    if (!v) return;
+                    setCampaignChannel(v as "email" | "sms");
+                    setSendMode("now");
+                    setScheduledFor("");
+                  }}
+                  className="bg-muted/40 p-1 rounded-lg"
+                >
+                  <ToggleGroupItem value="email" className="px-4 data-[state=on]:bg-background data-[state=on]:shadow-sm">
+                    <Mail className="h-4 w-4 mr-2" />
+                    Email
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="sms" className="px-4 data-[state=on]:bg-background data-[state=on]:shadow-sm">
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    SMS
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              </CardHeader>
+
+              <CardContent className="space-y-6">
+                <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="email-campaign-name">Campaign Name</Label>
-                    <Input
-                      id="email-campaign-name"
-                      placeholder="e.g. Spring 2024 Promo"
-                      value={emailCampaignName}
-                      onChange={(e) => setEmailCampaignName(e.target.value)}
-                      className="border-muted-foreground/20"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email-subject">Subject Line</Label>
-                    <Input
-                      id="email-subject"
-                      placeholder="e.g. Important Tax Deadline Update"
-                      value={emailSubject}
-                      onChange={(e) => setEmailSubject(e.target.value)}
-                      className="border-muted-foreground/20"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email-body">Message Content</Label>
-                    <Textarea
-                      id="email-body"
-                      className="min-h-[250px] border-muted-foreground/20 font-sans"
-                      placeholder="Dear {{name}}, ..."
-                      value={emailBody}
-                      onChange={(e) => setEmailBody(e.target.value)}
-                    />
+                    <Label className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                      Select Audience
+                    </Label>
+                    <Select value={audiencePreset} onValueChange={(v) => setAudiencePreset(v as any)}>
+                      <SelectTrigger className="h-10">
+                        <SelectValue placeholder="Select audience" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="selected">Selected Audience (via Audience tab)</SelectItem>
+                        <SelectItem value="all_customers">All Customers (Leads + Clients)</SelectItem>
+                        <SelectItem value="all_staff">All Staff</SelectItem>
+                        <SelectItem value="all_contacts">All Contacts</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <div className="flex items-center justify-between">
-                      <p className="text-[10px] text-muted-foreground italic">
-                        Tip: Use {"{{name}}"} for personalization.
+                      <p className="text-xs text-muted-foreground">
+                        {campaignChannel === "email"
+                          ? `${emailRecipientCount} email recipients`
+                          : `${smsRecipientCount} SMS recipients (opted-in)`}
                       </p>
-                      <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setEmailBody(emailBody + " {{name}}")}>
-                        <Plus className="h-3 w-3 mr-1" /> Add Placeholder
+                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setActiveTab("audience")}>
+                        <Users className="h-3.5 w-3.5 mr-1.5" />
+                        Manage
                       </Button>
                     </div>
                   </div>
 
-                  <div className="pt-4 border-t space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <p className="text-sm font-semibold">Recipients</p>
-                        <p className="text-xs text-muted-foreground">{emailRecipientCount} contacts selected</p>
-                      </div>
-                      <Button variant="outline" size="sm" onClick={() => setActiveTab("audience")}>
-                        <Users className="h-3 w-3 mr-2" /> Change Audience
-                      </Button>
-                    </div>
-                    
-                    <div className="bg-muted/30 p-3 rounded-lg flex items-start gap-3">
-                      <AlertCircle className="h-4 w-4 text-blue-500 mt-0.5" />
-                      <p className="text-[11px] leading-relaxed text-muted-foreground">
-                        Emails are sent through your configured Gmail account. Ensure your SMTP settings are correct in the environment configuration.
-                      </p>
-                    </div>
-
-                    <div className="flex gap-3">
-                      <Button 
-                        className="flex-1 bg-blue-600 hover:bg-blue-700 shadow-sm" 
-                        onClick={() => emailMutation.mutate()}
-                        disabled={emailDisabled}
-                      >
-                        {emailMutation.isPending ? "Sending..." : "Launch Campaign"}
-                        <Send className="ml-2 h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" className="flex-none" onClick={() => {
-                        setEmailSubject("");
-                        setEmailBody("");
-                        setEmailCampaignName("");
-                      }}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-none shadow-md overflow-hidden">
-                <div className="h-2 bg-green-500" />
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MessageSquare className="h-5 w-5 text-green-500" />
-                    SMS Campaign
-                  </CardTitle>
-                  <CardDescription>Deliver instant mobile notifications via Twilio.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="sms-campaign-name">Campaign Name</Label>
-                    <Input
-                      id="sms-campaign-name"
-                      placeholder="e.g. Appt Reminder Blast"
-                      value={smsCampaignName}
-                      onChange={(e) => setSmsCampaignName(e.target.value)}
-                      className="border-muted-foreground/20"
-                    />
+                    <Label className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                      Sender Account
+                    </Label>
+                    <div className="h-10 rounded-md border bg-muted/10 px-3 flex items-center text-sm">
+                      {campaignChannel === "email" ? (
+                        <span className="text-muted-foreground">Configured Gmail SMTP</span>
+                      ) : (
+                        <span className="text-muted-foreground">Configured Twilio Sender</span>
+                      )}
+                    </div>
                   </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="sms-body">SMS Message</Label>
-                    <Textarea
-                      id="sms-body"
-                      className="min-h-[120px] border-muted-foreground/20"
-                      placeholder="Hi {{name}}, your tax return is ready for review!"
-                      value={smsBody}
-                      onChange={(e) => setSmsBody(e.target.value)}
-                      maxLength={480}
-                    />
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className={cn(
-                        "font-medium",
-                        smsBody.length > 160 ? "text-orange-500" : "text-muted-foreground"
-                      )}>
-                        {smsBody.length} / 480 characters {smsBody.length > 160 && "(Multi-part)"}
-                      </span>
-                      <Button variant="ghost" size="sm" className="h-6 text-[10px]" onClick={() => setSmsBody(smsBody + " {{name}}")}>
-                        <Plus className="h-2 w-2 mr-1" /> Placeholder
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="pt-2 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <p className="text-sm font-semibold">Recipients</p>
-                        <p className="text-xs text-muted-foreground">{smsRecipientCount} phone numbers</p>
-                      </div>
-                      <Button variant="outline" size="sm" onClick={() => setActiveTab("audience")}>
-                        <Users className="h-3 w-3 mr-2" /> Change Audience
-                      </Button>
-                    </div>
-                    <div className="bg-muted/30 p-3 rounded-lg flex items-start gap-3">
-                      <AlertCircle className="h-4 w-4 text-green-600 mt-0.5" />
-                      <p className="text-[11px] leading-relaxed text-muted-foreground">
-                        SMS can only be sent to contacts who explicitly opted in (express SMS consent).
-                      </p>
-                    </div>
-
-                    <Button 
-                      className="w-full bg-green-600 hover:bg-green-700 shadow-sm" 
-                      onClick={() => smsMutation.mutate()}
-                      disabled={smsDisabled}
+                    <Label className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                      Send Mode
+                    </Label>
+                    <Select
+                      value={sendMode}
+                      onValueChange={(v) => setSendMode(v as "now" | "schedule")}
                     >
-                      {smsMutation.isPending ? "Sending..." : "Send SMS Blast"}
-                      <Smartphone className="ml-2 h-4 w-4" />
-                    </Button>
+                      <SelectTrigger className="h-10">
+                        <SelectValue placeholder="Send mode" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="now">Send Now</SelectItem>
+                        <SelectItem value="schedule" disabled>
+                          Schedule (coming soon)
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {sendMode === "schedule" && (
+                      <p className="text-[11px] text-muted-foreground">
+                        Scheduling isn’t enabled yet; campaigns send immediately.
+                      </p>
+                    )}
                   </div>
-                </CardContent>
-              </Card>
-            </div>
 
-            <div className="space-y-6">
-              <Card className="border-none shadow-sm bg-muted/20 sticky top-6">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Eye className="h-4 w-4 text-primary" />
-                    Real-time Preview
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
                   <div className="space-y-2">
-                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Mobile SMS View</Label>
-                    <div className="mx-auto w-[240px] h-[400px] border-[8px] border-slate-800 rounded-[40px] bg-slate-100 relative shadow-xl overflow-hidden">
-                      <div className="absolute top-0 inset-x-0 h-6 bg-slate-800 flex justify-center items-end pb-1">
-                        <div className="w-12 h-3 bg-black rounded-full" />
+                    <Label className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                      Scheduled For
+                    </Label>
+                    <Input
+                      type="datetime-local"
+                      value={scheduledFor}
+                      onChange={(e) => setScheduledFor(e.target.value)}
+                      disabled={sendMode !== "schedule"}
+                      className="h-10"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                      Campaign Name
+                    </Label>
+                    <Input
+                      placeholder="e.g. January Tax Season Push"
+                      value={campaignChannel === "email" ? emailCampaignName : smsCampaignName}
+                      onChange={(e) =>
+                        campaignChannel === "email"
+                          ? setEmailCampaignName(e.target.value)
+                          : setSmsCampaignName(e.target.value)
+                      }
+                      className="h-10"
+                    />
+                  </div>
+
+                  {campaignChannel === "email" ? (
+                    <div className="space-y-2">
+                      <Label className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                        Email Subject
+                      </Label>
+                      <Input
+                        placeholder="Exciting updates from STS Tax Repair..."
+                        value={emailSubject}
+                        onChange={(e) => setEmailSubject(e.target.value)}
+                        className="h-10"
+                      />
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                        SMS Length
+                      </Label>
+                      <div className="h-10 rounded-md border bg-muted/10 px-3 flex items-center text-sm text-muted-foreground">
+                        {smsBody.length} / 480 {smsBody.length > 160 ? "(Multi-part)" : ""}
                       </div>
-                      <div className="p-4 pt-10">
-                        <div className="bg-slate-300/50 rounded-lg p-2 mb-4 text-[10px] text-center">
-                          Today 10:45 AM
-                        </div>
-                        {smsBody ? (
-                          <div className="bg-white rounded-2xl rounded-tl-none p-3 shadow-sm text-xs text-slate-800 animate-in fade-in slide-in-from-left-2 duration-300">
-                            {smsBody.replace(/{{name}}/g, "Alex")}
-                          </div>
-                        ) : (
-                          <div className="text-xs text-slate-400 italic text-center mt-10">
-                            Start typing to see preview...
-                          </div>
-                        )}
+                    </div>
+                  )}
+                </div>
+
+                {campaignChannel === "email" && audiencePreset === "selected" && (
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                      Additional Emails (manual)
+                    </Label>
+                    <Textarea
+                      placeholder="Separate emails with commas, semicolons, or new lines..."
+                      className="min-h-[90px]"
+                      value={emailRecipients}
+                      onChange={(e) => setEmailRecipients(e.target.value)}
+                    />
+                    <p className="text-[11px] text-muted-foreground">
+                      Added emails will be merged with your selected audience.
+                    </p>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                    Message Content
+                  </Label>
+                  {campaignChannel === "email" ? (
+                    <>
+                      <Textarea
+                        className="min-h-[220px] font-sans"
+                        placeholder="Write your marketing email here (HTML supported)..."
+                        value={emailBody}
+                        onChange={(e) => setEmailBody(e.target.value)}
+                      />
+                      <div className="flex items-center justify-between">
+                        <p className="text-[10px] text-muted-foreground italic">
+                          Tip: Use {"{{name}}"} for personalization.
+                        </p>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => setEmailBody(emailBody + " {{name}}")}
+                        >
+                          <Plus className="h-3 w-3 mr-1" /> Add Placeholder
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <Textarea
+                        className="min-h-[140px]"
+                        placeholder="Write your SMS message here..."
+                        value={smsBody}
+                        onChange={(e) => setSmsBody(e.target.value)}
+                        maxLength={480}
+                      />
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className={cn(
+                          "font-medium",
+                          smsBody.length > 160 ? "text-orange-500" : "text-muted-foreground"
+                        )}>
+                          {smsBody.length} / 480 characters {smsBody.length > 160 && "(Multi-part)"}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-xs"
+                          onClick={() => setSmsBody(smsBody + " {{name}}")}
+                        >
+                          <Plus className="h-3 w-3 mr-1" /> Placeholder
+                        </Button>
+                      </div>
+                      <div className="bg-muted/30 p-3 rounded-lg flex items-start gap-3">
+                        <AlertCircle className="h-4 w-4 text-green-600 mt-0.5" />
+                        <p className="text-[11px] leading-relaxed text-muted-foreground">
+                          SMS can only be sent to contacts who explicitly opted in (express SMS consent).
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="lg:col-span-5 border-none shadow-sm bg-muted/10 lg:sticky lg:top-6 h-fit">
+              <CardHeader>
+                <CardTitle>Campaign Summary</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Channel</span>
+                    <Badge variant="secondary" className="uppercase">
+                      {campaignChannel}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Recipients</span>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold leading-none">
+                        {campaignChannel === "email" ? emailRecipientCount : smsRecipientCount}
+                      </div>
+                      <div className="text-[10px] tracking-wider text-muted-foreground uppercase">
+                        People reachable
                       </div>
                     </div>
                   </div>
-
-                  <Separator />
-
-                  <div className="space-y-2">
-                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Desktop Email View</Label>
-                    <div className="border rounded-lg bg-white shadow-sm overflow-hidden min-h-[200px]">
-                      <div className="bg-muted p-2 flex items-center gap-2 border-b">
-                        <div className="flex gap-1">
-                          <div className="w-2 h-2 rounded-full bg-red-400" />
-                          <div className="w-2 h-2 rounded-full bg-yellow-400" />
-                          <div className="w-2 h-2 rounded-full bg-green-400" />
-                        </div>
-                        <div className="bg-background px-2 py-0.5 rounded text-[10px] text-muted-foreground truncate flex-1">
-                          {emailSubject || "New Message"}
-                        </div>
-                      </div>
-                      <div className="p-4">
-                        <div className="flex items-center gap-2 mb-4">
-                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs">S</div>
-                          <div>
-                            <p className="text-[11px] font-bold">STS Marketing Center</p>
-                            <p className="text-[9px] text-muted-foreground">to: customer@example.com</p>
-                          </div>
-                        </div>
-                        <div 
-                          className="text-xs prose prose-sm max-w-none"
-                          dangerouslySetInnerHTML={{ __html: emailBody.replace(/{{name}}/g, "Alex") || "<p class='text-muted-foreground italic'>Email content will appear here...</p>" }}
-                        />
-                      </div>
-                    </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Schedule</span>
+                    <span className="text-sm font-semibold">Now (Instant)</span>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
+                </div>
+
+                <div className="rounded-lg border bg-amber-50/60 p-4 text-amber-900">
+                  <div className="flex items-center gap-2 font-semibold text-xs tracking-wider uppercase">
+                    <AlertCircle className="h-4 w-4" />
+                    Final Check
+                  </div>
+                  <p className="mt-2 text-xs leading-relaxed text-amber-900/80">
+                    You are about to send a mass {campaignChannel === "email" ? "email" : "SMS"} to{" "}
+                    <span className="font-semibold">
+                      {campaignChannel === "email" ? emailRecipientCount : smsRecipientCount}
+                    </span>{" "}
+                    people. This action cannot be reversed once started.
+                  </p>
+                </div>
+
+                <Button
+                  className={cn(
+                    "w-full h-12 text-base font-semibold",
+                    campaignChannel === "email"
+                      ? "bg-blue-600 hover:bg-blue-700"
+                      : "bg-green-600 hover:bg-green-700"
+                  )}
+                  onClick={() => {
+                    if (campaignChannel === "email") emailMutation.mutate();
+                    else smsMutation.mutate();
+                  }}
+                  disabled={campaignChannel === "email" ? emailDisabled : smsDisabled}
+                >
+                  {campaignChannel === "email"
+                    ? emailMutation.isPending
+                      ? "Launching..."
+                      : "Launch Campaign"
+                    : smsMutation.isPending
+                      ? "Launching..."
+                      : "Launch Campaign"}
+                  <Send className="ml-2 h-4 w-4" />
+                </Button>
+
+                <div className="flex items-start gap-3 rounded-lg bg-muted/30 p-3">
+                  <AlertCircle className={cn("h-4 w-4 mt-0.5", campaignChannel === "email" ? "text-blue-600" : "text-green-600")} />
+                  <p className="text-[11px] leading-relaxed text-muted-foreground">
+                    {campaignChannel === "email"
+                      ? "Emails are sent through your configured Gmail SMTP connection."
+                      : "SMS are delivered via your configured Twilio connection."}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </TabsContent>
 
@@ -897,6 +1063,22 @@ export default function Marketing() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="inbox" className="outline-none">
+          <Card className="border-none shadow-sm">
+            <CardHeader>
+              <CardTitle>SMS Inbox</CardTitle>
+              <CardDescription>
+                View inbound SMS replies and conversations (coming soon).
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-lg border bg-muted/20 p-6 text-sm text-muted-foreground">
+                This section will show inbound SMS messages once the inbox feature is enabled.
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="audience" className="outline-none">
