@@ -2861,23 +2861,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Not authorized to update this profile" });
       }
       
-      const { 
-        firstName, lastName, email, phone, address, city, state, zipCode,
-        phoneSecondary, dateOfBirth, occupation, ssn,
-        irsUsername, irsPassword, directDepositBank, bankRoutingNumber, bankAccountNumber 
-      } = req.body;
-
-      // Encrypt sensitive fields if provided
-      const irsUsernameEncrypted = irsUsername ? encrypt(irsUsername) : undefined;
-      const irsPasswordEncrypted = irsPassword ? encrypt(irsPassword) : undefined;
-      const bankRoutingEncrypted = bankRoutingNumber ? encrypt(bankRoutingNumber) : undefined;
-      const bankAccountEncrypted = bankAccountNumber ? encrypt(bankAccountNumber) : undefined;
-      
-      const user = await storage.updateUser(targetUserId, {
+      const {
         firstName,
         lastName,
         email,
         phone,
+        smsConsent,
         address,
         city,
         state,
@@ -2886,12 +2875,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
         dateOfBirth,
         occupation,
         ssn,
-        irsUsernameEncrypted,
-        irsPasswordEncrypted,
+        irsUsername,
+        irsPassword,
         directDepositBank,
-        bankRoutingEncrypted,
-        bankAccountEncrypted
-      });
+        bankRoutingNumber,
+        bankAccountNumber,
+      } = req.body;
+
+      const existingTargetUser = await storage.getUser(targetUserId);
+      if (!existingTargetUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // CTIA/Twilio: only send SMS to users with explicit consent.
+      // Allow staff/admin to record opt-in/out for the target user (with a phone number).
+      const smsConsentAtExisting = (existingTargetUser as any)?.smsConsentAt || null;
+      const smsOptedOutAtExisting = (existingTargetUser as any)?.smsOptedOutAt || null;
+      const wantsSmsNow = smsConsent === true;
+      const wantsSmsUpdate = smsConsent !== undefined;
+
+      if (wantsSmsUpdate && wantsSmsNow) {
+        const effectivePhone = (phone ?? (existingTargetUser as any).phone) as any;
+        if (!effectivePhone || !String(effectivePhone).trim()) {
+          return res.status(400).json({ error: "Phone number is required to opt in to SMS" });
+        }
+      }
+
+      const nextSmsConsentAt =
+        wantsSmsUpdate && wantsSmsNow ? (smsConsentAtExisting || new Date()) : smsConsentAtExisting;
+      const nextSmsConsentSource =
+        wantsSmsUpdate && wantsSmsNow
+          ? ((existingTargetUser as any)?.smsConsentSource ||
+              (isSelf ? "profile" : isAdmin ? "admin" : "staff"))
+          : (existingTargetUser as any)?.smsConsentSource;
+      const nextSmsOptedOutAt =
+        wantsSmsUpdate ? (wantsSmsNow ? null : (smsOptedOutAtExisting || new Date())) : smsOptedOutAtExisting;
+
+      // Encrypt sensitive fields if provided
+      const irsUsernameEncrypted = irsUsername ? encrypt(irsUsername) : undefined;
+      const irsPasswordEncrypted = irsPassword ? encrypt(irsPassword) : undefined;
+      const bankRoutingEncrypted = bankRoutingNumber ? encrypt(bankRoutingNumber) : undefined;
+      const bankAccountEncrypted = bankAccountNumber ? encrypt(bankAccountNumber) : undefined;
+      
+      const user = await storage.upsertUser({
+        id: targetUserId,
+        email: email ?? (existingTargetUser as any).email,
+        firstName: firstName ?? (existingTargetUser as any).firstName,
+        lastName: lastName ?? (existingTargetUser as any).lastName,
+        profileImageUrl: (existingTargetUser as any).profileImageUrl,
+        phone: phone ?? (existingTargetUser as any).phone,
+        smsConsentAt: nextSmsConsentAt,
+        smsConsentSource: nextSmsConsentSource,
+        smsOptedOutAt: nextSmsOptedOutAt,
+        address: address ?? (existingTargetUser as any).address,
+        city: city ?? (existingTargetUser as any).city,
+        state: state ?? (existingTargetUser as any).state,
+        zipCode: zipCode ?? (existingTargetUser as any).zipCode,
+        country: (existingTargetUser as any).country,
+        phoneSecondary: phoneSecondary ?? (existingTargetUser as any).phoneSecondary,
+        dateOfBirth: dateOfBirth ?? (existingTargetUser as any).dateOfBirth,
+        occupation: occupation ?? (existingTargetUser as any).occupation,
+        ssn: ssn ?? (existingTargetUser as any).ssn,
+        irsUsernameEncrypted: irsUsernameEncrypted ?? (existingTargetUser as any).irsUsernameEncrypted,
+        irsPasswordEncrypted: irsPasswordEncrypted ?? (existingTargetUser as any).irsPasswordEncrypted,
+        directDepositBank: directDepositBank ?? (existingTargetUser as any).directDepositBank,
+        bankRoutingEncrypted: bankRoutingEncrypted ?? (existingTargetUser as any).bankRoutingEncrypted,
+        bankAccountEncrypted: bankAccountEncrypted ?? (existingTargetUser as any).bankAccountEncrypted,
+        eroPinEncrypted: (existingTargetUser as any).eroPinEncrypted,
+        role: (existingTargetUser as any).role,
+        officeId: (existingTargetUser as any).officeId,
+        assignedTo: (existingTargetUser as any).assignedTo,
+        referralSource: (existingTargetUser as any).referralSource,
+        themePreference: (existingTargetUser as any).themePreference,
+        isActive: (existingTargetUser as any).isActive,
+        passwordHash: (existingTargetUser as any).passwordHash,
+        emailVerifiedAt: (existingTargetUser as any).emailVerifiedAt,
+      } as any);
       
       if (!user) {
         return res.status(404).json({ error: "User not found" });
@@ -8838,7 +8897,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Send marketing email via Gmail SMTP
   app.post("/api/marketing/email", isAuthenticated, requireAdmin(), async (req: AuthenticatedRequest, res) => {
     try {
-      const { to, subject, message, name } = req.body || {};
+      const { to, subject, message, name, sendMode, scheduledFor } = req.body || {};
 
       if (!Array.isArray(to) || to.length === 0) {
         return res.status(400).json({ error: "At least one recipient is required" });
@@ -8846,6 +8905,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!subject || !message) {
         return res.status(400).json({ error: "Subject and message are required" });
       }
+
+      const wantsSchedule = String(sendMode || "now").toLowerCase() === "schedule";
+      if (wantsSchedule) {
+        const dt = scheduledFor ? new Date(String(scheduledFor)) : null;
+        if (!dt || Number.isNaN(dt.getTime())) {
+          return res.status(400).json({ error: "Valid scheduledFor datetime is required" });
+        }
+        if (dt.getTime() < Date.now() + 30_000) {
+          return res.status(400).json({ error: "scheduledFor must be at least 30 seconds in the future" });
+        }
+        try {
+          const campaign = await storage.createMarketingCampaign({
+            name: name || subject || "Email Campaign",
+            type: "email",
+            status: "scheduled",
+            subject,
+            content: message,
+            recipientCount: to.length,
+            sentCount: 0,
+            errorCount: 0,
+            sendMode: "schedule" as any,
+            scheduledFor: dt as any,
+            recipientEmails: to as any,
+            recipientUserIds: null as any,
+            createdById: req.userId || null,
+            officeId: (req.user as any)?.officeId || null,
+          } as any);
+          return res.json({ success: true, scheduled: true, campaignId: campaign.id, scheduledFor: dt.toISOString() });
+        } catch (dbErr: any) {
+          console.error("[MARKETING][EMAIL] Failed to save scheduled campaign record:", dbErr);
+          return res.status(500).json({ error: "Failed to schedule campaign" });
+        }
+      }
+
       if (!GMAIL_USER || !GMAIL_APP_PASSWORD) {
         return res.status(500).json({ error: "Gmail credentials are not configured (GMAIL_USER, GMAIL_APP_PASSWORD)" });
       }
@@ -8907,7 +9000,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Send marketing SMS via Twilio
   app.post("/api/marketing/sms", isAuthenticated, requireAdmin(), async (req: AuthenticatedRequest, res) => {
     try {
-      const { toUserIds, to, message, name } = req.body || {};
+      const { toUserIds, to, message, name, sendMode, scheduledFor } = req.body || {};
 
       if (!message) {
         return res.status(400).json({ error: "Message is required" });
@@ -8927,6 +9020,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_FROM) {
         return res.status(500).json({ error: "Twilio is not configured (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM)" });
+      }
+
+      const wantsSchedule = String(sendMode || "now").toLowerCase() === "schedule";
+      if (wantsSchedule) {
+        const dt = scheduledFor ? new Date(String(scheduledFor)) : null;
+        if (!dt || Number.isNaN(dt.getTime())) {
+          return res.status(400).json({ error: "Valid scheduledFor datetime is required" });
+        }
+        if (dt.getTime() < Date.now() + 30_000) {
+          return res.status(400).json({ error: "scheduledFor must be at least 30 seconds in the future" });
+        }
+
+        const uniqueIds = Array.from(new Set(toUserIds.map((id: any) => String(id)).filter(Boolean)));
+
+        // Save scheduled campaign; consent/phone is re-validated at send time
+        try {
+          const campaign = await storage.createMarketingCampaign({
+            name: name || "SMS Blast",
+            type: "sms",
+            status: "scheduled",
+            subject: null,
+            content: String(message || "").trim(),
+            recipientCount: uniqueIds.length,
+            sentCount: 0,
+            errorCount: 0,
+            sendMode: "schedule" as any,
+            scheduledFor: dt as any,
+            recipientEmails: null as any,
+            recipientUserIds: uniqueIds as any,
+            createdById: req.userId || null,
+            officeId: (req.user as any)?.officeId || null,
+          } as any);
+          return res.json({ success: true, scheduled: true, campaignId: campaign.id, scheduledFor: dt.toISOString() });
+        } catch (dbErr: any) {
+          console.error("[MARKETING][SMS] Failed to save scheduled campaign record:", dbErr);
+          return res.status(500).json({ error: "Failed to schedule campaign" });
+        }
       }
 
       const client = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);

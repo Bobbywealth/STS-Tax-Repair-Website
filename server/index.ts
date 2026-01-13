@@ -7,6 +7,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { storage } from "./storage";
 import type { Office, OfficeBranding } from "@shared/mysql-schema";
+import { startMarketingScheduler } from "./marketing-scheduler";
 
 // Extend Express Request to include office context
 declare global {
@@ -237,6 +238,9 @@ app.use((req, res, next) => {
   const routesStartTime = Date.now();
   const server = await registerRoutes(app);
   log(`Routes registered successfully in ${Date.now() - routesStartTime}ms.`);
+
+  // Background jobs (MySQL only): scheduled marketing campaigns
+  startMarketingScheduler();
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

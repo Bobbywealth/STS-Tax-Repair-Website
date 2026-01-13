@@ -34,6 +34,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -65,6 +66,7 @@ interface EditFormData {
   lastName: string;
   email: string;
   phone: string;
+  smsConsent: boolean;
   address: string;
   city: string;
   state: string;
@@ -99,6 +101,7 @@ export default function ClientDetail() {
     lastName: "",
     email: "",
     phone: "",
+    smsConsent: false,
     address: "",
     city: "",
     state: "",
@@ -259,6 +262,7 @@ export default function ClientDetail() {
         lastName: client.lastName || "",
         email: client.email || "",
         phone: client.phone || "",
+        smsConsent: !!((client as any).smsConsentAt && !(client as any).smsOptedOutAt),
         address: client.address || "",
         city: client.city || "",
         state: client.state || "",
@@ -765,6 +769,25 @@ export default function ClientDetail() {
                   onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
                   data-testid="input-edit-phone"
                 />
+              </div>
+              <div className="col-span-2">
+                <div className="flex items-start gap-3 p-4 rounded-md border bg-muted/20">
+                  <Checkbox
+                    id="sms-consent-client"
+                    checked={editFormData.smsConsent}
+                    onCheckedChange={(checked) =>
+                      setEditFormData({ ...editFormData, smsConsent: !!checked })
+                    }
+                    data-testid="checkbox-sms-consent-client"
+                  />
+                  <div className="space-y-1 leading-none">
+                    <Label htmlFor="sms-consent-client">SMS Consent (Opt-In)</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Only enable this if the client has explicitly consented to receive SMS/text messages.
+                      Reply STOP to opt out. Msg &amp; data rates may apply.
+                    </p>
+                  </div>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="ssn">SSN</Label>

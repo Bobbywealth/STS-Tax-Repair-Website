@@ -45,6 +45,9 @@ type MarketingResult = {
   sent: number;
   failed: number;
   errors?: string[];
+  scheduled?: boolean;
+  campaignId?: string;
+  scheduledFor?: string;
 };
 
 type User = {
@@ -109,6 +112,21 @@ function hasSmsConsent(user: User) {
   return !!user.smsConsentAt && !user.smsOptedOutAt;
 }
 
+function timeAgo(input: Date) {
+  const seconds = Math.floor((Date.now() - input.getTime()) / 1000);
+  if (seconds < 60) return "Just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} min${minutes === 1 ? "" : "s"} ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days} day${days === 1 ? "" : "s"} ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months} month${months === 1 ? "" : "s"} ago`;
+  const years = Math.floor(months / 12);
+  return `${years} year${years === 1 ? "" : "s"} ago`;
+}
+
 export default function Marketing() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -116,6 +134,9 @@ export default function Marketing() {
   const [campaignChannel, setCampaignChannel] = useState<"email" | "sms">("email");
   const [sendMode, setSendMode] = useState<"now" | "schedule">("now");
   const [scheduledFor, setScheduledFor] = useState("");
+  const [recipientMode, setRecipientMode] = useState<"broadcast" | "individual">("broadcast");
+  const [individualUserId, setIndividualUserId] = useState<string>("");
+  const [individualEmailOverride, setIndividualEmailOverride] = useState("");
   const [audiencePreset, setAudiencePreset] = useState<
     "selected" | "all_customers" | "all_staff" | "all_contacts"
   >("selected");
@@ -274,8 +295,19 @@ export default function Marketing() {
     return users.filter((u) => u.email).length;
   }, [campaignChannel, users]);
 
+  const individualUser = useMemo(() => {
+    if (!individualUserId) return null;
+    return userById.get(individualUserId) || null;
+  }, [individualUserId, userById]);
+
   const computedEmailTo = useMemo(() => {
     if (campaignChannel !== "email") return [];
+
+    if (recipientMode === "individual") {
+      const fromUser = individualUser?.email ? [individualUser.email] : [];
+      const manual = parseRecipients(individualEmailOverride);
+      return Array.from(new Set([...fromUser, ...manual].map(String).filter(Boolean)));
+    }
 
     const to =
       audiencePreset === "selected"
@@ -291,6 +323,9 @@ export default function Marketing() {
     audiencePreset,
     campaignChannel,
     customerUsers,
+    individualEmailOverride,
+    individualUser,
+    recipientMode,
     emailRecipients,
     selectedEmailAddresses,
     staffUsers,
@@ -299,6 +334,13 @@ export default function Marketing() {
 
   const computedSmsUserIds = useMemo(() => {
     if (campaignChannel !== "sms") return [];
+
+    if (recipientMode === "individual") {
+      if (!individualUserId) return [];
+      const u = individualUser;
+      if (!u?.phone || !hasSmsConsent(u)) return [];
+      return [String(individualUserId)];
+    }
 
     const ids =
       audiencePreset === "selected"
@@ -310,7 +352,17 @@ export default function Marketing() {
             : users.filter((u) => u.phone && hasSmsConsent(u)).map((u) => u.id);
 
     return Array.from(new Set(ids));
-  }, [audiencePreset, campaignChannel, customerUsers, selectedSmsUserIds, staffUsers, users]);
+  }, [
+    audiencePreset,
+    campaignChannel,
+    customerUsers,
+    individualUser,
+    individualUserId,
+    recipientMode,
+    selectedSmsUserIds,
+    staffUsers,
+    users,
+  ]);
 
   const emailMutation = useMutation({
     mutationFn: async () => {
@@ -319,10 +371,22 @@ export default function Marketing() {
         subject: emailSubject,
         message: emailBody,
         name: emailCampaignName,
+        sendMode,
+        scheduledFor: sendMode === "schedule" ? new Date(scheduledFor).toISOString() : undefined,
       });
       return (await res.json()) as MarketingResult;
     },
     onSuccess: (data) => {
+      if (data.scheduled) {
+        toast({
+          title: "Email campaign scheduled",
+          description: data.scheduledFor ? `Scheduled for ${new Date(data.scheduledFor).toLocaleString()}.` : "Scheduled successfully.",
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/marketing/campaigns"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/marketing/stats"] });
+        setActiveTab("overview");
+        return;
+      }
       if (data.failed > 0) {
         toast({
           title: "Email campaign partially sent",
@@ -354,10 +418,22 @@ export default function Marketing() {
         toUserIds: computedSmsUserIds,
         message: smsBody,
         name: smsCampaignName,
+        sendMode,
+        scheduledFor: sendMode === "schedule" ? new Date(scheduledFor).toISOString() : undefined,
       });
       return (await res.json()) as MarketingResult;
     },
     onSuccess: (data) => {
+      if (data.scheduled) {
+        toast({
+          title: "SMS campaign scheduled",
+          description: data.scheduledFor ? `Scheduled for ${new Date(data.scheduledFor).toLocaleString()}.` : "Scheduled successfully.",
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/marketing/campaigns"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/marketing/stats"] });
+        setActiveTab("overview");
+        return;
+      }
       if (data.failed > 0) {
         toast({
           title: "SMS campaign partially sent",
@@ -396,6 +472,24 @@ export default function Marketing() {
     smsMutation.isPending ||
     !smsBody.trim() ||
     smsRecipientCount === 0;
+
+  const individualInvalid = useMemo(() => {
+    if (recipientMode !== "individual") return false;
+    if (!individualUserId && campaignChannel === "sms") return true;
+    if (campaignChannel === "sms") {
+      const u = individualUser;
+      return !(u?.phone && hasSmsConsent(u));
+    }
+    // email: allow manual override, but require at least one recipient
+    return emailRecipientCount === 0;
+  }, [campaignChannel, emailRecipientCount, individualUser, individualUserId, recipientMode]);
+
+  const scheduleInvalid = useMemo(() => {
+    if (sendMode !== "schedule") return false;
+    const dt = scheduledFor ? new Date(scheduledFor) : null;
+    if (!dt || Number.isNaN(dt.getTime())) return true;
+    return dt.getTime() < Date.now() + 30_000;
+  }, [sendMode, scheduledFor]);
 
   const handleApplyEmailTemplate = (tpl: EmailTemplate) => {
     setEmailSubject(tpl.subject);
@@ -504,129 +598,132 @@ export default function Marketing() {
         </div>
 
         <TabsContent value="overview" className="space-y-6 outline-none">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card className="border-none shadow-sm bg-gradient-to-br from-primary/5 to-transparent">
-              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                <CardTitle className="text-sm font-medium">Total Sent</CardTitle>
-                <Send className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{statsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (stats?.totalSent || 0).toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground">
-                  Across all channels
-                </p>
+          {campaignsLoading ? (
+            <div className="flex items-center justify-center py-10">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : campaigns.length === 0 ? (
+            <Card className="border-none shadow-sm">
+              <CardContent className="py-10 text-center text-muted-foreground">
+                <History className="h-8 w-8 mx-auto mb-2 opacity-20" />
+                <p>No marketing history yet.</p>
               </CardContent>
             </Card>
-            <Card className="border-none shadow-sm bg-gradient-to-br from-blue-500/5 to-transparent">
-              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                <CardTitle className="text-sm font-medium">Email Sent</CardTitle>
-                <Mail className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{statsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (stats?.emailSent || 0).toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground">
-                  Gmail delivery
-                </p>
-              </CardContent>
-            </Card>
-            <Card className="border-none shadow-sm bg-gradient-to-br from-purple-500/5 to-transparent">
-              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                <CardTitle className="text-sm font-medium">SMS Sent</CardTitle>
-                <Smartphone className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{statsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (stats?.smsSent || 0).toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground">
-                  Twilio delivery
-                </p>
-              </CardContent>
-            </Card>
-            <Card className="border-none shadow-sm bg-gradient-to-br from-orange-500/5 to-transparent">
-              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                <CardTitle className="text-sm font-medium">Errors</CardTitle>
-                <AlertCircle className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{statsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (stats?.errorCount || 0).toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground font-medium text-orange-500">
-                  Needs attention
-                </p>
-              </CardContent>
-            </Card>
-          </div>
+          ) : (
+            <div className="space-y-4">
+              {[...campaigns]
+                .sort((a, b) => {
+                  const ad = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                  const bd = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                  return bd - ad;
+                })
+                .map((item) => {
+                  const total = item.recipientCount || 0;
+                  const successful = item.sentCount || 0;
+                  const failed = item.errorCount || 0;
+                  const pct = total > 0 ? Math.min(100, Math.round((successful / total) * 100)) : 0;
+                  const isEmail = item.type === "email";
+                  const meta =
+                    total === 1 ? "INDIVIDUAL" : total > 1 ? `BROADCAST` : "DRAFT";
+                  const sentLabel = item.createdAt ? timeAgo(new Date(item.createdAt)) : "Sent";
 
-          <div className="grid gap-6 md:grid-cols-7">
-            <Card className="md:col-span-4 border-none shadow-sm">
-              <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
-                <CardDescription>Your latest marketing campaigns and their performance.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {campaignsLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  </div>
-                ) : campaigns.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <History className="h-8 w-8 mx-auto mb-2 opacity-20" />
-                    <p>No recent marketing activity.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {campaigns.slice(0, 5).map((item) => (
-                      <div key={item.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/20">
-                        <div className="flex items-center gap-3">
-                          <div className={cn(
-                            "p-2 rounded-md",
-                            item.type === "email" ? "bg-blue-100 text-blue-600" : "bg-green-100 text-green-600"
-                          )}>
-                            {item.type === "email" ? <Mail className="h-4 w-4" /> : <MessageSquare className="h-4 w-4" />}
+                  return (
+                    <Card key={item.id} className="border bg-card shadow-sm">
+                      <CardContent className="p-0">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 p-4">
+                          <div className="flex items-center gap-4 min-w-0">
+                            <div
+                              className={cn(
+                                "w-16 h-16 rounded-xl flex items-center justify-center shrink-0",
+                                isEmail ? "bg-blue-50 text-blue-600" : "bg-green-50 text-green-600"
+                              )}
+                            >
+                              {isEmail ? <Mail className="h-7 w-7" /> : <MessageSquare className="h-7 w-7" />}
+                            </div>
+
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="font-semibold text-lg truncate max-w-[40ch]">
+                                  {item.name || (isEmail ? "Email Campaign" : "SMS Campaign")}
+                                </p>
+                                <Badge variant="outline" className="text-[10px] tracking-wider">
+                                  {meta}
+                                </Badge>
+                                <Badge
+                                  variant={item.status === "completed" ? "secondary" : "default"}
+                                  className="text-[10px] h-6 capitalize"
+                                >
+                                  {item.status || "completed"}
+                                </Badge>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 text-[11px]"
+                                  disabled={failed === 0}
+                                  onClick={() =>
+                                    toast({
+                                      title: failed === 0 ? "No failures" : "Failures recorded",
+                                      description:
+                                        failed === 0
+                                          ? "No failed deliveries were recorded for this campaign."
+                                          : `${failed} failed deliveries were recorded. (Detailed failure logs are not stored yet.)`,
+                                    })
+                                  }
+                                >
+                                  <Eye className="h-3.5 w-3.5 mr-2" />
+                                  View Failures
+                                </Button>
+                              </div>
+
+                              <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                                <History className="h-3.5 w-3.5" />
+                                <span>{sentLabel}</span>
+                                <span className="hidden sm:inline">•</span>
+                                <span className="capitalize">
+                                  {item.type} • {total.toLocaleString()} recipient{total === 1 ? "" : "s"}
+                                </span>
+                              </div>
+
+                              {failed > 0 && (
+                                <div className="mt-2 text-xs text-destructive flex items-center gap-2">
+                                  <AlertCircle className="h-3.5 w-3.5" />
+                                  <span>
+                                    {failed.toLocaleString()} failed deliver{failed === 1 ? "y" : "ies"}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-medium text-sm">{item.name}</p>
-                            <p className="text-xs text-muted-foreground capitalize">{item.type} • {item.sentCount} recipients</p>
+
+                          <div className="w-full md:w-[280px] shrink-0">
+                            <div className="flex items-end justify-between">
+                              <div className="text-3xl font-bold leading-none">
+                                {successful.toLocaleString()}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                / {total.toLocaleString()}
+                              </div>
+                            </div>
+                            <div className="mt-2 text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
+                              Successful
+                            </div>
+                            <div className="mt-3 h-2 w-full rounded-full bg-muted overflow-hidden">
+                              <div
+                                className={cn(
+                                  "h-full rounded-full",
+                                  isEmail ? "bg-blue-600" : "bg-green-600"
+                                )}
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <Badge variant={item.status === "completed" ? "secondary" : "default"} className="text-[10px] h-5 capitalize">
-                            {item.status}
-                          </Badge>
-                          <p className="text-xs font-semibold mt-1">
-                            {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'N/A'}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="md:col-span-3 border-none shadow-sm">
-              <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
-                <CardDescription>Common marketing tasks.</CardDescription>
-              </CardHeader>
-              <CardContent className="grid gap-3">
-                <Button variant="outline" className="justify-start h-12" onClick={() => setActiveTab("campaigns")}>
-                  <Mail className="mr-2 h-4 w-4 text-blue-500" />
-                  Compose Email Campaign
-                </Button>
-                <Button variant="outline" className="justify-start h-12" onClick={() => setActiveTab("campaigns")}>
-                  <MessageSquare className="mr-2 h-4 w-4 text-green-500" />
-                  Create SMS Notification
-                </Button>
-                <Button variant="outline" className="justify-start h-12" onClick={() => setActiveTab("templates")}>
-                  <Layout className="mr-2 h-4 w-4 text-purple-500" />
-                  Browse Template Library
-                </Button>
-                <Button variant="outline" className="justify-start h-12" onClick={() => setActiveTab("audience")}>
-                  <Users className="mr-2 h-4 w-4 text-orange-500" />
-                  Manage Customer Segments
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="campaigns" className="outline-none">
@@ -668,29 +765,87 @@ export default function Marketing() {
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-                      Select Audience
+                      Recipient Type
                     </Label>
-                    <Select value={audiencePreset} onValueChange={(v) => setAudiencePreset(v as any)}>
+                    <Select value={recipientMode} onValueChange={(v) => setRecipientMode(v as any)}>
                       <SelectTrigger className="h-10">
-                        <SelectValue placeholder="Select audience" />
+                        <SelectValue placeholder="Choose recipient type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="selected">Selected Audience (via Audience tab)</SelectItem>
-                        <SelectItem value="all_customers">All Customers (Leads + Clients)</SelectItem>
-                        <SelectItem value="all_staff">All Staff</SelectItem>
-                        <SelectItem value="all_contacts">All Contacts</SelectItem>
+                        <SelectItem value="broadcast">Broadcast</SelectItem>
+                        <SelectItem value="individual">Individual</SelectItem>
                       </SelectContent>
                     </Select>
+
+                    {recipientMode === "broadcast" ? (
+                      <div className="mt-2">
+                        <Label className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                          Audience Preset
+                        </Label>
+                        <div className="mt-2">
+                          <Select value={audiencePreset} onValueChange={(v) => setAudiencePreset(v as any)}>
+                            <SelectTrigger className="h-10">
+                              <SelectValue placeholder="Select audience" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="selected">Selected Audience (via Audience tab)</SelectItem>
+                              <SelectItem value="all_customers">All Customers (Leads + Clients)</SelectItem>
+                              <SelectItem value="all_staff">All Staff</SelectItem>
+                              <SelectItem value="all_contacts">All Contacts</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mt-2 space-y-2">
+                        <Label className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                          Select Individual
+                        </Label>
+                        <Select value={individualUserId} onValueChange={(v) => setIndividualUserId(String(v))}>
+                          <SelectTrigger className="h-10">
+                            <SelectValue placeholder={campaignChannel === "sms" ? "Choose opted-in SMS recipient" : "Choose email recipient"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(campaignChannel === "sms"
+                              ? users.filter((u) => u.phone && hasSmsConsent(u))
+                              : users.filter((u) => u.email)
+                            ).slice(0, 500).map((u) => (
+                              <SelectItem key={u.id} value={u.id}>
+                                {displayName(u)}
+                                {campaignChannel === "sms" ? ` • ${(u.phone || "").toString()}` : ` • ${(u.email || "").toString()}`}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+
+                        {campaignChannel === "email" && (
+                          <div className="space-y-2">
+                            <Label className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                              Or enter an email (manual)
+                            </Label>
+                            <Input
+                              className="h-10"
+                              placeholder="customer@example.com"
+                              value={individualEmailOverride}
+                              onChange={(e) => setIndividualEmailOverride(e.target.value)}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     <div className="flex items-center justify-between">
                       <p className="text-xs text-muted-foreground">
                         {campaignChannel === "email"
                           ? `${emailRecipientCount} email recipients`
                           : `${smsRecipientCount} SMS recipients (opted-in)`}
                       </p>
-                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setActiveTab("audience")}>
-                        <Users className="h-3.5 w-3.5 mr-1.5" />
-                        Manage
-                      </Button>
+                      {recipientMode === "broadcast" && (
+                        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setActiveTab("audience")}>
+                          <Users className="h-3.5 w-3.5 mr-1.5" />
+                          Manage
+                        </Button>
+                      )}
                     </div>
                   </div>
 
@@ -722,14 +877,12 @@ export default function Marketing() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="now">Send Now</SelectItem>
-                        <SelectItem value="schedule" disabled>
-                          Schedule (coming soon)
-                        </SelectItem>
+                        <SelectItem value="schedule">Schedule</SelectItem>
                       </SelectContent>
                     </Select>
-                    {sendMode === "schedule" && (
+                    {sendMode === "schedule" && scheduleInvalid && (
                       <p className="text-[11px] text-muted-foreground">
-                        Scheduling isn’t enabled yet; campaigns send immediately.
+                        Pick a time at least 30 seconds in the future.
                       </p>
                     )}
                   </div>
@@ -894,7 +1047,11 @@ export default function Marketing() {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Schedule</span>
-                    <span className="text-sm font-semibold">Now (Instant)</span>
+                    <span className="text-sm font-semibold">
+                      {sendMode === "schedule" && scheduledFor
+                        ? new Date(scheduledFor).toLocaleString()
+                        : "Now (Instant)"}
+                    </span>
                   </div>
                 </div>
 
@@ -904,7 +1061,8 @@ export default function Marketing() {
                     Final Check
                   </div>
                   <p className="mt-2 text-xs leading-relaxed text-amber-900/80">
-                    You are about to send a mass {campaignChannel === "email" ? "email" : "SMS"} to{" "}
+                    You are about to {sendMode === "schedule" ? "schedule" : "send"} a mass{" "}
+                    {campaignChannel === "email" ? "email" : "SMS"} to{" "}
                     <span className="font-semibold">
                       {campaignChannel === "email" ? emailRecipientCount : smsRecipientCount}
                     </span>{" "}
@@ -923,15 +1081,19 @@ export default function Marketing() {
                     if (campaignChannel === "email") emailMutation.mutate();
                     else smsMutation.mutate();
                   }}
-                  disabled={campaignChannel === "email" ? emailDisabled : smsDisabled}
+                  disabled={
+                    (campaignChannel === "email" ? emailDisabled : smsDisabled) ||
+                    scheduleInvalid ||
+                    individualInvalid
+                  }
                 >
                   {campaignChannel === "email"
                     ? emailMutation.isPending
-                      ? "Launching..."
-                      : "Launch Campaign"
+                      ? (sendMode === "schedule" ? "Scheduling..." : "Launching...")
+                      : (sendMode === "schedule" ? "Schedule Campaign" : "Launch Campaign")
                     : smsMutation.isPending
-                      ? "Launching..."
-                      : "Launch Campaign"}
+                      ? (sendMode === "schedule" ? "Scheduling..." : "Launching...")
+                      : (sendMode === "schedule" ? "Schedule Campaign" : "Launch Campaign")}
                   <Send className="ml-2 h-4 w-4" />
                 </Button>
 

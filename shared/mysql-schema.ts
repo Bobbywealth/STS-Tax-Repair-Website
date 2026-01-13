@@ -1215,6 +1215,14 @@ export const marketingCampaigns = mysqlTable("marketing_campaigns", {
   recipientCount: int("recipient_count").default(0),
   sentCount: int("sent_count").default(0),
   errorCount: int("error_count").default(0),
+  // Scheduling + delivery tracking
+  sendMode: varchar("send_mode", { length: 20 }).default("now"), // 'now' | 'schedule'
+  scheduledFor: timestamp("scheduled_for"),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  // Stored recipients for scheduled campaigns
+  recipientEmails: json("recipient_emails").$type<string[] | null>(),
+  recipientUserIds: json("recipient_user_ids").$type<string[] | null>(),
   createdById: varchar("created_by_id", { length: 36 }),
   officeId: varchar("office_id", { length: 36 }),
   createdAt: timestamp("created_at").defaultNow(),

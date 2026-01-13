@@ -220,6 +220,27 @@ export async function runMySQLMigrations(): Promise<void> {
         console.log('Adding sms_opted_out_at column to users table...');
         await connection.query(`ALTER TABLE users ADD COLUMN sms_opted_out_at TIMESTAMP NULL`);
       }
+
+      // Bulk enable SMS consent for existing users with phone numbers.
+      // Idempotent: only sets consent where sms_consent_at is NULL and user has NOT opted out.
+      // This helps ensure existing clients/staff appear in the Marketing → Audience → SMS list.
+      try {
+        const [result]: any = await connection.query(
+          `UPDATE users
+           SET sms_consent_at = COALESCE(sms_consent_at, NOW()),
+               sms_consent_source = COALESCE(sms_consent_source, 'bulk_migration')
+           WHERE phone IS NOT NULL
+             AND TRIM(phone) <> ''
+             AND sms_consent_at IS NULL
+             AND sms_opted_out_at IS NULL`
+        );
+        const affected = (result as any)?.affectedRows;
+        if (typeof affected === 'number' && affected > 0) {
+          console.log(`Bulk SMS consent applied to ${affected} users (phone present).`);
+        }
+      } catch (err: any) {
+        console.error('Error applying bulk SMS consent to existing users:', err.message);
+      }
     } catch (err: any) { console.error('Error in users table updates:', err.message); }
 
     // 3. OTHER TABLES
@@ -564,7 +585,7 @@ export async function runMySQLMigrations(): Promise<void> {
       'ai_chat_sessions': `CREATE TABLE IF NOT EXISTS ai_chat_sessions (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), user_id VARCHAR(36) NOT NULL, title TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
       'ai_chat_messages': `CREATE TABLE IF NOT EXISTS ai_chat_messages (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), session_id VARCHAR(36) NOT NULL, role ENUM('user', 'assistant', 'system') NOT NULL, content TEXT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
       'ai_document_analysis': `CREATE TABLE IF NOT EXISTS ai_document_analysis (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), document_id VARCHAR(36) NOT NULL, analysis_type VARCHAR(50) NOT NULL, results JSON NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
-      'marketing_campaigns': `CREATE TABLE IF NOT EXISTS marketing_campaigns (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), name VARCHAR(255) NOT NULL, type VARCHAR(20) NOT NULL, status VARCHAR(20) DEFAULT 'completed', subject VARCHAR(255), content TEXT NOT NULL, recipient_count INT DEFAULT 0, sent_count INT DEFAULT 0, error_count INT DEFAULT 0, created_by_id VARCHAR(36), office_id VARCHAR(36), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`
+      'marketing_campaigns': `CREATE TABLE IF NOT EXISTS marketing_campaigns (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), name VARCHAR(255) NOT NULL, type VARCHAR(20) NOT NULL, status VARCHAR(20) DEFAULT 'completed', subject VARCHAR(255), content TEXT NOT NULL, recipient_count INT DEFAULT 0, sent_count INT DEFAULT 0, error_count INT DEFAULT 0, send_mode VARCHAR(20) DEFAULT 'now', scheduled_for TIMESTAMP NULL, started_at TIMESTAMP NULL, completed_at TIMESTAMP NULL, recipient_emails JSON NULL, recipient_user_ids JSON NULL, created_by_id VARCHAR(36), office_id VARCHAR(36), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`
     };
 
     for (const [tName, sql] of Object.entries(tablesToCreate)) {
@@ -574,6 +595,31 @@ export async function runMySQLMigrations(): Promise<void> {
           await connection.query(sql);
         }
       } catch (err: any) { console.error(`Error in ${tName} fallback migration:`, err.message); }
+    }
+
+    // Marketing campaigns: ensure scheduling columns exist
+    try {
+      if (await tableExists('marketing_campaigns')) {
+        const ensureColumn = async (columnName: string, alterSql: string) => {
+          const [col] = await connection.query(
+            `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'marketing_campaigns' AND COLUMN_NAME = ?`,
+            [dbName, columnName],
+          );
+          if (Array.isArray(col) && col.length === 0) {
+            console.log(`Adding ${columnName} column to marketing_campaigns table...`);
+            await connection.query(alterSql);
+          }
+        };
+
+        await ensureColumn('send_mode', `ALTER TABLE marketing_campaigns ADD COLUMN send_mode VARCHAR(20) DEFAULT 'now'`);
+        await ensureColumn('scheduled_for', `ALTER TABLE marketing_campaigns ADD COLUMN scheduled_for TIMESTAMP NULL`);
+        await ensureColumn('started_at', `ALTER TABLE marketing_campaigns ADD COLUMN started_at TIMESTAMP NULL`);
+        await ensureColumn('completed_at', `ALTER TABLE marketing_campaigns ADD COLUMN completed_at TIMESTAMP NULL`);
+        await ensureColumn('recipient_emails', `ALTER TABLE marketing_campaigns ADD COLUMN recipient_emails JSON NULL`);
+        await ensureColumn('recipient_user_ids', `ALTER TABLE marketing_campaigns ADD COLUMN recipient_user_ids JSON NULL`);
+      }
+    } catch (err: any) {
+      console.error('Error updating marketing_campaigns table:', err.message);
     }
 
     // Ensure permissions are seeded even if tables were created via fallback section
