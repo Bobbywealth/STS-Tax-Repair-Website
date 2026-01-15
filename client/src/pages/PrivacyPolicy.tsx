@@ -41,7 +41,7 @@ export default function PrivacyPolicy() {
 
           <section className="mb-8 text-gray-700 space-y-4">
             <h2 className="text-xl font-semibold text-gray-900 mb-3">4. Contact Us</h2>
-            <p>If you have any questions about this Privacy Policy, please contact us at ststaxrepair@gmail.com.</p>
+            <p>If you have any questions about this Privacy Policy, please contact us at Info.ststax@gmail.com.</p>
           </section>
         </article>
       </div>

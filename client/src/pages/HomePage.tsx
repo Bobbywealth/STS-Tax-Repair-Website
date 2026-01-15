@@ -122,7 +122,7 @@ export default function HomePage() {
     phone: "",
     email: "",
     message: "",
-    smsConsent: false
+    smsConsent: true
   });
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -211,7 +211,7 @@ export default function HomePage() {
         phone: "",
         email: "",
         message: "",
-        smsConsent: false
+        smsConsent: true
       });
     } catch {
       toast({
@@ -289,7 +289,7 @@ export default function HomePage() {
       role: "Service Support",
       phone: "954-534-5227",
       email: "Info.ststax@gmail.com",
-      address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
+      address: "24 Greenway Plz, Houston, TX 77046",
       image: "https://iili.io/fxO48DF.jpg"
     },
     {
@@ -297,7 +297,7 @@ export default function HomePage() {
       role: "Service Support",
       phone: "4074277619",
       email: "Withney.ststax@yahoo.com",
-      address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
+      address: "24 Greenway Plz, Houston, TX 77046",
       image: "https://iili.io/fxO4Uog.png"
     },
     {
@@ -337,7 +337,7 @@ export default function HomePage() {
       role: "Service Support",
       phone: "4074613644",
       email: "Alixalexandre36@gmail.com",
-      address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
+      address: "24 Greenway Plz, Houston, TX 77046",
       image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Alix-Alexandre.webp"
     },
     {
@@ -361,7 +361,7 @@ export default function HomePage() {
       role: "Service Support",
       phone: "786-557-9906",
       email: "Witnyder.Nordelus@gmail.com",
-      address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
+      address: "24 Greenway Plz, Houston, TX 77046",
       image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/Witnyder-Nordelus.webp"
     },
     {
@@ -369,7 +369,7 @@ export default function HomePage() {
       role: "Service Support",
       phone: "786-229-9224",
       email: "Dukens@duketaxpros.com",
-      address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
+      address: "24 Greenway Plz, Houston, TX 77046",
       image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/WhatsApp-Image-2024-12-28-at-23.14.07_9982c8c1-1.jpg"
     },
     {
@@ -377,7 +377,7 @@ export default function HomePage() {
       role: "Credit Specialist",
       phone: "786-805-1104",
       email: "Zephirfinancialgroup@outlook.com",
-      address: "24 Greenway Plz Suite 1800, Houston, TX 77046, USA",
+      address: "24 Greenway Plz, Houston, TX 77046",
       image: "https://www.ststaxrepair.net/wp-content/uploads/2024/12/whatsapp-image-2025-01-02-at-064332-2898178b-6779657b30e6d.webp"
     },
     {
@@ -1825,9 +1825,9 @@ export default function HomePage() {
 
               <div className="space-y-6">
                 {[
-                  { icon: Phone, label: "Phone", value: "(929) 235-0185", subtext: "Mon-Sat 8am-8pm" },
-                  { icon: Mail, label: "Email", value: "ststaxrepair@gmail.com", subtext: "We reply within 24 hours" },
-                  { icon: MapPin, label: "Office", value: "4000 Hollywood Blvd, Suite 555-S", subtext: "Hollywood FL, 33021" }
+                  { icon: Phone, label: "Phone", value: "954-534-5227", subtext: "Mon-Sat 8am-8pm" },
+                  { icon: Mail, label: "Email", value: "Info.ststax@gmail.com", subtext: "We reply within 24 hours" },
+                  { icon: MapPin, label: "Office", value: "24 Greenway Plz", subtext: "Houston, TX 77046" }
                 ].map((item) => (
                   <div key={item.label} className="flex items-start gap-4">
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-sts-primary to-sts-dark flex items-center justify-center flex-shrink-0">
@@ -1959,14 +1959,14 @@ export default function HomePage() {
                 <h4 className="font-bold text-lg">Address</h4>
               </div>
               <div className="space-y-3 text-gray-400">
-                <p>4000 Hollywood Blvd, Suite 555-S, Hollywood FL, 33021</p>
+                <p>24 Greenway Plz, Houston, TX 77046</p>
                 <p className="flex items-center gap-2">
                   <Phone className="w-4 h-4" />
-                  (929) 235-0185
+                  954-534-5227
                 </p>
                 <p className="flex items-center gap-2">
                   <Mail className="w-4 h-4" />
-                  amtaxrepair@gmail.com
+                  Info.ststax@gmail.com
                 </p>
               </div>
             </div>
@@ -1978,14 +1978,14 @@ export default function HomePage() {
                 <h4 className="font-bold text-lg">Address</h4>
               </div>
               <div className="space-y-3 text-gray-400">
-                <p>24 Greenway Plz Suite 1800, Houston, TX 77046, USA</p>
+                <p>24 Greenway Plz, Houston, TX 77046</p>
                 <p className="flex items-center gap-2">
                   <Phone className="w-4 h-4" />
-                  (954) 851-4159
+                  954-534-5227
                 </p>
                 <p className="flex items-center gap-2">
                   <Mail className="w-4 h-4" />
-                  ststaxrepair@gmail.com
+                  Info.ststax@gmail.com
                 </p>
               </div>
             </div>
@@ -1997,14 +1997,14 @@ export default function HomePage() {
                 <h4 className="font-bold text-lg">Address</h4>
               </div>
               <div className="space-y-3 text-gray-400">
-                <p>110 East Broward Blvd., Suite 1700, Fort Lauderdale, 33301</p>
+                <p>24 Greenway Plz, Houston, TX 77046</p>
                 <p className="flex items-center gap-2">
                   <Phone className="w-4 h-4" />
-                  9548514159
+                  954-534-5227
                 </p>
                 <p className="flex items-center gap-2">
                   <Mail className="w-4 h-4" />
-                  ststaxrepair@gmail.com
+                  Info.ststax@gmail.com
                 </p>
               </div>
             </div>

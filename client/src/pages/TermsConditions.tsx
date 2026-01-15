@@ -46,7 +46,7 @@ export default function TermsConditions() {
 
           <section className="mb-8 text-gray-700 space-y-4">
             <h2 className="text-xl font-semibold text-gray-900 mb-3">5. Contact Information</h2>
-            <p>Questions about the Terms & Conditions should be sent to us at ststaxrepair@gmail.com.</p>
+            <p>Questions about the Terms & Conditions should be sent to us at Info.ststax@gmail.com.</p>
           </section>
         </article>
       </div>

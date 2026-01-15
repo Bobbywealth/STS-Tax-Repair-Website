@@ -141,7 +141,7 @@ export default function StaffSignup() {
       lastName: "",
       email: "",
       phone: "",
-      smsConsent: false,
+      smsConsent: true,
       roleRequested: undefined,
       officeId: "",
       reason: "",

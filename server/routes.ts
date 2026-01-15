@@ -1088,7 +1088,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Hash password
       const passwordHash = await bcrypt.hash(password, 10);
 
-      // CTIA/Twilio: explicit SMS consent is opt-in (unchecked by default).
+      // CTIA/Twilio: explicit SMS consent is opt-in (checked by default).
       // Only record consent when the user explicitly checks the consent box.
       const wantsSms = smsConsent === true;
       if (wantsSms && !(phone && String(phone).trim())) {

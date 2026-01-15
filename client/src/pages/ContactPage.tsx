@@ -13,21 +13,9 @@ import logoUrl from "@/assets/sts-logo.png";
 
 const offices = [
   {
-    address: "70 E Sunrise Hwy, Valley Stream, NY 11581 [5th floor East]",
-    phone: "(929) 235-0185",
-    email: "amtaxrepair@gmail.com",
-    social: "@amtaxrepair"
-  },
-  {
-    address: "2100 West Loop South, Suite 900, Houston, 77027",
-    phone: "(954) 851-4159",
-    email: "ststaxrepair@gmail.com",
-    social: "@ststaxrepair"
-  },
-  {
-    address: "110 East Broward Blvd., Suite 1700, Fort Lauderdale, 33301",
-    phone: "(954) 851-4159",
-    email: "ststaxrepair@gmail.com",
+    address: "24 Greenway Plz, Houston, TX 77046",
+    phone: "954-534-5227",
+    email: "Info.ststax@gmail.com",
     social: "@ststaxrepair"
   }
 ];
@@ -42,7 +30,7 @@ export default function ContactPage() {
     phone: "",
     email: "",
     message: "",
-    smsConsent: false
+    smsConsent: true
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -67,7 +55,7 @@ export default function ContactPage() {
       description: "We'll get back to you as soon as possible.",
     });
     
-    setFormData({ name: "", location: "", phone: "", email: "", message: "", smsConsent: false });
+    setFormData({ name: "", location: "", phone: "", email: "", message: "", smsConsent: true });
     setIsSubmitting(false);
   };
 

@@ -89,7 +89,7 @@ const registerSchema = z.object({
   message: "Passwords don't match",
   path: ["confirmPassword"],
 }).refine((data) => {
-  // CTIA/Twilio: SMS consent is an explicit opt-in checkbox (unchecked by default).
+  // CTIA/Twilio: SMS consent is an explicit opt-in checkbox (checked by default).
   // If the user opts in, a phone number is required.
   if (data.smsConsent) {
     return !!(data.phone && data.phone.trim().length > 0);
@@ -180,7 +180,7 @@ export default function Register() {
       firstName: "",
       lastName: "",
       phone: "",
-      smsConsent: false,
+      smsConsent: true,
       password: "",
       confirmPassword: "",
       address: "",
@@ -1006,8 +1006,8 @@ export default function Register() {
           </p>
           <p className="text-xs text-muted-foreground">
             Need help? Contact us at{" "}
-            <a href="mailto:support@ststaxrepair.com" className="text-primary hover:underline">
-              support@ststaxrepair.com
+            <a href="mailto:Info.ststax@gmail.com" className="text-primary hover:underline">
+              Info.ststax@gmail.com
             </a>
           </p>
         </div>

@@ -75,7 +75,7 @@ export default function BookAppointmentPage() {
       lastName: "",
       email: "",
       phone: "",
-      smsConsent: false,
+      smsConsent: true,
       service: "",
       notes: "",
     },

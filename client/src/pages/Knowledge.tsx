@@ -1584,7 +1584,7 @@ Steps:
 5. Click **Send**
 
 ### Option 2: Email
-- Send to: support@ststaxrepair.com
+- Send to: Info.ststax@gmail.com
 - Monitored business hours
 - Include your reference number
 - Keep copy of email

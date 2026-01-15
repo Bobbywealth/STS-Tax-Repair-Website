@@ -24,7 +24,7 @@ const DEFAULT_BRANDING: BrandingData = {
   secondaryColor: '#4CAF50',
   accentColor: '#22c55e',
   defaultTheme: 'light',
-  replyToEmail: 'support@ststaxrepair.org',
+  replyToEmail: 'Info.ststax@gmail.com',
   replyToName: 'STS TaxRepair Support',
   isCustom: false
 };
