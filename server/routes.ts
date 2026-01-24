@@ -146,12 +146,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
   // Password reset endpoint - works for both Replit and Render
   // This resets the password hash fresh so it works in the current environment
+  // SECURITY: Requires SETUP_SECRET_KEY environment variable to be configured
   app.post("/api/setup/reset-password", async (req, res) => {
     try {
       const { email, newPassword, secretKey } = req.body;
 
-      // Simple secret key protection (change this in production)
-      if (secretKey !== "sts-admin-reset-2025") {
+      // SECURITY: Require secret key from environment variable (never hardcoded)
+      const expectedSecret = process.env.SETUP_SECRET_KEY;
+      if (!expectedSecret) {
+        console.error("[SECURITY] SETUP_SECRET_KEY not configured - setup endpoints disabled");
+        return res.status(503).json({ error: "Setup endpoints not configured" });
+      }
+      if (!secretKey || secretKey !== expectedSecret) {
         return res.status(403).json({ error: "Invalid secret key" });
       }
 
@@ -200,9 +206,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // One-time setup endpoint to make a user admin or super_admin by email
+  // SECURITY: Requires SETUP_SECRET_KEY environment variable to be configured
   app.post("/api/setup/make-admin", async (req, res) => {
     try {
-      const { email, role } = req.body;
+      const { email, role, secretKey } = req.body;
+
+      // SECURITY: Require secret key from environment variable (never hardcoded)
+      const expectedSecret = process.env.SETUP_SECRET_KEY;
+      if (!expectedSecret) {
+        console.error("[SECURITY] SETUP_SECRET_KEY not configured - setup endpoints disabled");
+        return res.status(503).json({ error: "Setup endpoints not configured" });
+      }
+      if (!secretKey || secretKey !== expectedSecret) {
+        return res.status(403).json({ error: "Invalid secret key" });
+      }
+
       if (!email) {
         return res.status(400).json({ error: "Email required" });
       }
@@ -226,6 +244,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         targetRole,
         user.id,
       ]);
+
+      console.log(`[SETUP] User ${email} role changed to ${targetRole}`);
 
       return res.json({
         success: true,
@@ -410,8 +430,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Debug endpoint to test MySQL connection
-  app.get("/api/debug/mysql-test", async (req, res) => {
+  // Debug endpoint to test MySQL connection - SECURITY: Admin only
+  app.get("/api/debug/mysql-test", isAuthenticated, requireAdmin(), async (req: any, res) => {
     try {
       const host = process.env.MYSQL_HOST || "not set";
       const user = process.env.MYSQL_USER || "not set";
@@ -443,9 +463,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // COMPREHENSIVE DATABASE DIAGNOSTIC ROUTE
+  // COMPREHENSIVE DATABASE DIAGNOSTIC ROUTE - SECURITY: Admin only
   // Claude AI diagnosis: Render connects but returns 0 results (should be 869 clients)
-  app.get("/api/debug/database", async (req, res) => {
+  app.get("/api/debug/database", isAuthenticated, requireAdmin(), async (req: any, res) => {
     const diagnostics: any = {
       timestamp: new Date().toISOString(),
       environment: process.env.REPL_ID ? "Replit" : "Render/Other",
@@ -662,8 +682,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/auth/forgot-password", authLimiter);
   app.use("/api/auth/reset-password", authLimiter);
 
-  // DEBUG SESSION ROUTE - Check session state (must be AFTER setupAuth)
-  app.get("/api/debug/session", (req: any, res) => {
+  // DEBUG SESSION ROUTE - Check session state (must be AFTER setupAuth) - SECURITY: Admin only
+  app.get("/api/debug/session", isAuthenticated, requireAdmin(), (req: any, res) => {
     return res.json({
       sessionID: req.sessionID,
       hasSession: !!req.session,
@@ -6020,8 +6040,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
-  // Email Logs
-  app.get("/api/emails", async (req, res) => {
+  // Email Logs - SECURITY: Requires authentication and staff permissions
+  app.get("/api/emails", isAuthenticated, requirePermission("clients.view"), async (req: any, res) => {
     const { clientId } = req.query;
 
     if (clientId) {
@@ -6033,7 +6053,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(emails);
   });
 
-  app.post("/api/emails", async (req, res) => {
+  app.post("/api/emails", isAuthenticated, requirePermission("clients.view"), async (req: any, res) => {
     try {
       const result = insertEmailLogSchema.safeParse(req.body);
       if (!result.success) {
@@ -6046,13 +6066,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Document Request Templates
-  app.get("/api/templates", async (req, res) => {
+  // Document Request Templates - SECURITY: Requires authentication
+  app.get("/api/templates", isAuthenticated, requireStaff(), async (req: any, res) => {
     const templates = await storage.getDocumentRequestTemplates();
     res.json(templates);
   });
 
-  app.post("/api/templates", async (req, res) => {
+  app.post("/api/templates", isAuthenticated, requireAdmin(), async (req: any, res) => {
     try {
       const result = insertDocumentRequestTemplateSchema.safeParse(req.body);
       if (!result.success) {
@@ -6065,7 +6085,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/templates/:id", async (req, res) => {
+  app.patch("/api/templates/:id", isAuthenticated, requireAdmin(), async (req: any, res) => {
     try {
       const template = await storage.updateDocumentRequestTemplate(
         req.params.id,
@@ -6080,7 +6100,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/templates/:id", async (req, res) => {
+  app.delete("/api/templates/:id", isAuthenticated, requireAdmin(), async (req: any, res) => {
     const success = await storage.deleteDocumentRequestTemplate(req.params.id);
     if (!success) {
       return res.status(404).json({ error: "Template not found" });

@@ -6,13 +6,31 @@ const SALT_LENGTH = 64;
 const TAG_LENGTH = 16;
 const KEY_LENGTH = 32;
 
+// Track if we've already warned about missing salt (to avoid repeated warnings)
+let hasWarnedAboutSalt = false;
+
 function getEncryptionKey(): Buffer {
   const secret = process.env.ENCRYPTION_SECRET || process.env.SESSION_SECRET;
-  const salt = process.env.ENCRYPTION_SALT || 'sts-default-salt-2024';
-  
+  const isProduction = process.env.NODE_ENV === 'production';
+
   if (!secret) {
     throw new Error('ENCRYPTION_SECRET or SESSION_SECRET must be set');
   }
+
+  // SECURITY: In production, require ENCRYPTION_SALT to be explicitly set
+  let salt = process.env.ENCRYPTION_SALT;
+  if (!salt) {
+    if (isProduction) {
+      throw new Error('[SECURITY] ENCRYPTION_SALT environment variable must be set in production');
+    }
+    // In development, use a derived salt from the secret (still deterministic but not hardcoded)
+    salt = crypto.createHash('sha256').update(secret + '-dev-salt').digest('hex').slice(0, 32);
+    if (!hasWarnedAboutSalt) {
+      console.warn('[SECURITY WARNING] ENCRYPTION_SALT not set - using derived salt for development. Set ENCRYPTION_SALT in production!');
+      hasWarnedAboutSalt = true;
+    }
+  }
+
   return crypto.scryptSync(secret, salt, KEY_LENGTH);
 }
 
