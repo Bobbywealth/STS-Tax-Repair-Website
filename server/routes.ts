@@ -667,9 +667,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await setupAuth(app);
 
   // Auth-specific rate limiting (stricter than global)
+  // Increased to 20 for tax season to avoid blocking legitimate users
   const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 10, // Limit each IP to 10 login/password-reset attempts per windowMs
+    max: 20, // Limit each IP to 20 login/password-reset attempts per windowMs (increased for tax season)
     standardHeaders: true,
     legacyHeaders: false,
     message: { message: "Too many login attempts, please try again after 15 minutes" },
@@ -1561,7 +1562,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Check if user has a password hash set
       if (!user.passwordHash) {
-        return res.status(401).json({ message: "Invalid email or password" });
+        return res.status(401).json({
+          message: "Invalid email or password",
+          code: "NO_PASSWORD_SET"
+        });
       }
 
       // Verify password
@@ -1810,7 +1814,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if user has a password hash set
       if (!user.passwordHash) {
         console.log(`[CLIENT-LOGIN] No password hash for email: ${email}`);
-        return res.status(401).json({ message: "Invalid email or password" });
+        return res.status(401).json({
+          message: "Invalid email or password",
+          code: "NO_PASSWORD_SET"
+        });
       }
 
       // Verify password

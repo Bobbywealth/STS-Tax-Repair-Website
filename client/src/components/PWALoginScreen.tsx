@@ -91,7 +91,17 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Login failed");
+        // Provide more helpful error messages based on error code
+        let errorMessage = data.message || "Login failed";
+        
+        if (data.code === "NO_PASSWORD_SET") {
+          errorMessage = "This account doesn't have a password set. Please use the login method you originally used.";
+        } else if (response.status === 403) {
+          // Account deactivated or role access denied
+          errorMessage = data.message || "Access denied";
+        }
+        
+        throw new Error(errorMessage);
       }
 
       // Save auth token with remember me option
@@ -151,7 +161,17 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Login failed");
+        // Provide more helpful error messages based on error code
+        let errorMessage = data.message || "Login failed";
+        
+        if (data.code === "NO_PASSWORD_SET") {
+          errorMessage = "This account doesn't have a password set. Please use the login method you originally used.";
+        } else if (response.status === 403) {
+          // Account deactivated or role access denied
+          errorMessage = data.message || "Access denied";
+        }
+        
+        throw new Error(errorMessage);
       }
 
       // Save auth token with remember me option
