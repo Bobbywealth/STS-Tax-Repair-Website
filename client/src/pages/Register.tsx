@@ -116,6 +116,7 @@ export default function Register() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [accountExistsEmail, setAccountExistsEmail] = useState<string | null>(null);
+  const [skipDirectDeposit, setSkipDirectDeposit] = useState(false);
   const officeSlug = new URLSearchParams(window.location.search).get('_office') || undefined;
 
   // Office branding for white-label customization
@@ -887,58 +888,88 @@ export default function Register() {
                       <div className="flex items-start gap-3">
                         <CreditCard className="h-5 w-5 text-green-600 mt-0.5" />
                         <div>
-                          <p className="font-medium text-sm">Direct Deposit Setup</p>
+                          <p className="font-medium text-sm">Direct Deposit Setup (Optional)</p>
                           <p className="text-xs text-muted-foreground">Get your refund faster with direct deposit to your bank account.</p>
                         </div>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="directDepositBank"
-                        render={({ field }) => (
-                          <FormItem className="md:col-span-2">
-                            <FormLabel>Bank Name</FormLabel>
-                            <FormControl>
-                              <div className="relative">
-                                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input {...field} className="pl-10" placeholder="e.g., Chase, Bank of America" data-testid="input-bank-name" />
-                              </div>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
+                    {/* Skip Direct Deposit Option */}
+                    <div className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                      <Checkbox
+                        id="skip-direct-deposit"
+                        checked={skipDirectDeposit}
+                        onCheckedChange={(checked) => {
+                          setSkipDirectDeposit(checked === true);
+                          if (checked) {
+                            form.setValue("directDepositBank", "");
+                            form.setValue("bankRoutingNumber", "");
+                            form.setValue("bankAccountNumber", "");
+                          }
+                        }}
+                        data-testid="checkbox-skip-direct-deposit"
                       />
-
-                      <FormField
-                        control={form.control}
-                        name="bankRoutingNumber"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Routing Number</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="9 digits" data-testid="input-routing-number" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="bankAccountNumber"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Account Number</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="Your account number" data-testid="input-account-number" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      <div className="space-y-1 leading-none">
+                        <label
+                          htmlFor="skip-direct-deposit"
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                        >
+                          Skip Direct Deposit Setup
+                        </label>
+                        <p className="text-xs text-muted-foreground">
+                          I'll add my bank information later. I understand this may delay my refund.
+                        </p>
+                      </div>
                     </div>
+
+                    {!skipDirectDeposit && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="directDepositBank"
+                          render={({ field }) => (
+                            <FormItem className="md:col-span-2">
+                              <FormLabel>Bank Name</FormLabel>
+                              <FormControl>
+                                <div className="relative">
+                                  <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                  <Input {...field} className="pl-10" placeholder="e.g., Chase, Bank of America" data-testid="input-bank-name" />
+                                </div>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="bankRoutingNumber"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Routing Number</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="9 digits" data-testid="input-routing-number" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="bankAccountNumber"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Account Number</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="Your account number" data-testid="input-account-number" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
 
