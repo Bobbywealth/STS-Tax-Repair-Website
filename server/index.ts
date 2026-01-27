@@ -32,7 +32,7 @@ process.on('uncaughtException', (error) => {
 });
 
 // Environment variable validation
-const requiredEnvVars = ['SESSION_SECRET'];
+const requiredEnvVars = ['SESSION_SECRET', 'ENCRYPTION_SALT'];
 const isProduction = process.env.NODE_ENV === 'production';
 
 if (isProduction) {
@@ -108,6 +108,7 @@ declare module 'http' {
   }
 }
 app.use(express.json({
+  limit: '50mb', // Increase from default 100kb to support file uploads and large data payloads
   verify: (req, _res, buf) => {
     req.rawBody = buf;
   }

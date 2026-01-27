@@ -2704,7 +2704,14 @@ export class MySQLStorage implements IStorage {
 
   async createMarketingCampaign(campaign: InsertMarketingCampaign): Promise<MarketingCampaign> {
     const id = randomUUID();
-    const data = { ...campaign, id, createdAt: new Date() };
+    // Cast json fields to ensure proper type inference for drizzle
+    const data = {
+      ...campaign,
+      id,
+      createdAt: new Date(),
+      recipientEmails: campaign.recipientEmails as unknown as string[] | null,
+      recipientUserIds: campaign.recipientUserIds as unknown as string[] | null,
+    };
     await mysqlDb.insert(marketingCampaignsTable).values(data);
     const [inserted] = await mysqlDb.select().from(marketingCampaignsTable).where(eq(marketingCampaignsTable.id, id));
     return inserted;

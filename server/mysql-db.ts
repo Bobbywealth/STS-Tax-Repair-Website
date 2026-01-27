@@ -44,7 +44,7 @@ export async function testMySQLConnection(): Promise<boolean> {
 }
 
 export async function runMySQLMigrations(): Promise<void> {
-  let connection;
+  let connection: mysql.PoolConnection | null = null;
   try {
     console.log('Starting MySQL migrations...');
     connection = await poolConnection.getConnection();
@@ -601,13 +601,13 @@ export async function runMySQLMigrations(): Promise<void> {
     try {
       if (await tableExists('marketing_campaigns')) {
         const ensureColumn = async (columnName: string, alterSql: string) => {
-          const [col] = await connection.query(
+          const [col] = await connection!.query(
             `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'marketing_campaigns' AND COLUMN_NAME = ?`,
             [dbName, columnName],
           );
           if (Array.isArray(col) && col.length === 0) {
             console.log(`Adding ${columnName} column to marketing_campaigns table...`);
-            await connection.query(alterSql);
+            await connection!.query(alterSql);
           }
         };
 
@@ -633,7 +633,7 @@ export async function runMySQLMigrations(): Promise<void> {
     }
 
     console.log('MySQL migrations completed successfully!');
-    connection.release();
+    if (connection) connection.release();
   } catch (error: any) {
     console.error('Fatal MySQL migration error:', error.message);
     if (connection) connection.release();
