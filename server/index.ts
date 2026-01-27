@@ -32,7 +32,7 @@ process.on('uncaughtException', (error) => {
 });
 
 // Environment variable validation
-const requiredEnvVars = ['SESSION_SECRET', 'ENCRYPTION_SALT'];
+const requiredEnvVars = ['SESSION_SECRET'];
 const isProduction = process.env.NODE_ENV === 'production';
 
 if (isProduction) {
