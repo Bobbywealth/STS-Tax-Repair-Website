@@ -124,7 +124,7 @@ export default function ClientLogin() {
         let errorMessage = data.message || "Login failed";
         
         if (data.code === "NO_PASSWORD_SET") {
-          errorMessage = "This account doesn't have a password set. Please use the login method you originally used (e.g., Google, Replit, or other SSO provider).";
+          errorMessage = "This account doesn't have a password set. Please use your original login method (e.g., Google, Replit, or other SSO provider), or use Forgot password to set one.";
         } else if (response.status === 403) {
           // Account deactivated or role access denied
           errorMessage = data.message || "Access denied";

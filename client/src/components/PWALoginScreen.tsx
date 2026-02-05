@@ -95,7 +95,7 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
         let errorMessage = data.message || "Login failed";
         
         if (data.code === "NO_PASSWORD_SET") {
-          errorMessage = "This account doesn't have a password set. Please use the login method you originally used.";
+          errorMessage = "This account doesn't have a password set. Please use your original login method, or use Forgot password to set one.";
         } else if (response.status === 403) {
           // Account deactivated or role access denied
           errorMessage = data.message || "Access denied";
@@ -165,7 +165,7 @@ export function PWALoginScreen({ onLoginSuccess }: PWALoginScreenProps) {
         let errorMessage = data.message || "Login failed";
         
         if (data.code === "NO_PASSWORD_SET") {
-          errorMessage = "This account doesn't have a password set. Please use the login method you originally used.";
+          errorMessage = "This account doesn't have a password set. Please use your original login method, or use Forgot password to set one.";
         } else if (response.status === 403) {
           // Account deactivated or role access denied
           errorMessage = data.message || "Access denied";

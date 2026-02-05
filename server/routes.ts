@@ -322,9 +322,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Verification remains available via:
       // - POST /api/auth/resend-verification
       // - /verify-email?token=...
-      return res.json({ 
-        success: true, 
-        message: "If an account exists with this email, you will receive a password reset link shortly." 
+      if (!emailResult.success) {
+        return res.status(502).json({
+          success: false,
+          error: "We couldn't send the password reset email. Please contact our office or try again later.",
+        });
+      }
+
+      return res.json({
+        success: true,
+        message: "If an account exists with this email, you will receive a password reset link shortly."
       });
     } catch (error: any) {
       console.error("Forgot password error:", error);
