@@ -408,6 +408,52 @@ export default function Clients() {
     console.log('Edit client:', id);
   }, []);
 
+  const passwordResetMutation = useMutation({
+    mutationFn: async ({ email }: { email: string }) => {
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to send password reset email.");
+      }
+      return data;
+    },
+    onSuccess: (_data, variables) => {
+      toast({
+        title: "Password Reset Email Sent",
+        description: `A reset link was sent to ${variables.email}.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Password Reset Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handlePasswordReset = useCallback(
+    (client: ClientTableData) => {
+      if (!client.email) {
+        toast({
+          title: "Missing Email",
+          description: "This client does not have an email address on file.",
+          variant: "destructive",
+        });
+        return;
+      }
+      const confirmed = window.confirm(`Send a password reset link to ${client.email}?`);
+      if (!confirmed) return;
+      passwordResetMutation.mutate({ email: client.email });
+    },
+    [passwordResetMutation, toast]
+  );
+
   const handleAddClient = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newClientForm.email) {
@@ -688,6 +734,7 @@ export default function Clients() {
               selectedYear={selectedYear}
               onViewClient={handleViewClient}
               onEditClient={handleEditClient}
+              onResetPassword={handlePasswordReset}
               onStatusChange={handleStatusChange}
               onAssignClient={handleAssignClient}
               onBulkAssign={handleBulkAssign}

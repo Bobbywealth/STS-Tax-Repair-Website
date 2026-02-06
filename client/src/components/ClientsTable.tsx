@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, MoreVertical, Users, UserCheck, CheckCircle2 } from "lucide-react";
+import { Search, MoreVertical, Users, UserCheck, CheckCircle2, KeyRound } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,6 +51,7 @@ interface ClientsTableProps {
   selectedYear?: number;
   onViewClient?: (id: string) => void;
   onEditClient?: (id: string) => void;
+  onResetPassword?: (client: Client) => void;
   onStatusChange?: (id: string, newStatus: Client["status"]) => void;
   onAssignClient?: (clientId: string, preparerId: string, preparerName: string) => void;
   onBulkAssign?: (clientIds: string[], preparerId: string, preparerName: string) => void;
@@ -63,6 +64,7 @@ export const ClientsTable = memo(function ClientsTable({
   selectedYear,
   onViewClient, 
   onEditClient, 
+  onResetPassword,
   onStatusChange,
   onAssignClient,
   onBulkAssign,
@@ -119,6 +121,10 @@ export const ClientsTable = memo(function ClientsTable({
       onBulkStatusChange(Array.from(selectedClients), newStatus);
       setSelectedClients(new Set());
     }
+  };
+
+  const handlePasswordReset = (client: Client) => {
+    onResetPassword?.(client);
   };
 
   const allSelected = clients.length > 0 && clients.every(c => selectedClients.has(c.id));
@@ -242,6 +248,16 @@ export const ClientsTable = memo(function ClientsTable({
                                   <DropdownMenuContent align="end">
                                     <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setLocation(`/clients/${client.id}`); }}>
                                       View Details
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handlePasswordReset(client);
+                                      }}
+                                      disabled={!client.email}
+                                    >
+                                      <KeyRound className="mr-2 h-4 w-4" />
+                                      Send Password Reset
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onClick={(e) => e.stopPropagation()}>Export Data</DropdownMenuItem>
                                   </DropdownMenuContent>
@@ -390,6 +406,13 @@ export const ClientsTable = memo(function ClientsTable({
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => setLocation(`/clients/${client.id}`)}>
                             View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handlePasswordReset(client)}
+                            disabled={!client.email}
+                          >
+                            <KeyRound className="mr-2 h-4 w-4" />
+                            Send Password Reset
                           </DropdownMenuItem>
                           <DropdownMenuItem>Export Data</DropdownMenuItem>
                         </DropdownMenuContent>
