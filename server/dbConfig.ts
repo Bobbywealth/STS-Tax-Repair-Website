@@ -56,6 +56,27 @@ export function getMySQLConfigFromEnv(): MySQLConnectionConfig | null {
 }
 
 export function isMySQLConfigured(): boolean {
-  return getMySQLConfigFromEnv() !== null;
+  const config = getMySQLConfigFromEnv();
+  const configured = config !== null;
+  
+  if (!configured) {
+    console.error('[STORAGE CONFIG] MySQL is NOT configured. App will use in-memory storage.');
+    console.error('[STORAGE CONFIG] Required environment variables:', {
+      MYSQL_HOST: !!process.env.MYSQL_HOST,
+      MYSQL_DATABASE: !!process.env.MYSQL_DATABASE,
+      MYSQL_USER: !!process.env.MYSQL_USER,
+      MYSQL_PASSWORD: !!process.env.MYSQL_PASSWORD,
+      DATABASE_URL: !!process.env.DATABASE_URL
+    });
+  } else {
+    console.log('[STORAGE CONFIG] MySQL is properly configured:', {
+      host: config.host,
+      database: config.database,
+      user: config.user,
+      port: config.port
+    });
+  }
+  
+  return configured;
 }
 

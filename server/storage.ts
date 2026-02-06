@@ -276,8 +276,17 @@ import { isMySQLConfigured } from "./dbConfig";
 // Storage selection:
 // - Production should always have MySQL configured.
 // - Local/dev without MySQL should still be able to render pages and test layout.
-export const storage: IStorage = (isMySQLConfigured()
+const mysqlConfigured = isMySQLConfigured();
+console.log(`[STORAGE INIT] Storage backend selection:`, {
+  isMySQLConfigured: mysqlConfigured,
+  storageType: mysqlConfigured ? 'MYSQL' : 'MEMORY',
+  mysqlHost: process.env.MYSQL_HOST,
+  mysqlDatabase: process.env.MYSQL_DATABASE,
+  hasDatabaseUrl: !!process.env.DATABASE_URL,
+  timestamp: new Date().toISOString()
+});
+export const storage: IStorage = (mysqlConfigured
   ? mysqlStorage
   : (new MemoryStorage() as any)) as IStorage;
 
-export const isDemoStorage = !isMySQLConfigured();
+export const isDemoStorage = !mysqlConfigured;

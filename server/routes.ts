@@ -1091,8 +1091,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         officeSlug,
       } = req.body;
 
+      // Trim and normalize email to prevent issues with whitespace or case
+      const normalizedEmail = email?.trim().toLowerCase();
+
+      // DEBUG LOG: Log incoming registration request
+      console.log(`[REGISTER DEBUG] Incoming registration request:`, {
+        email: email ? `${email.substring(0, 3)}***@***${email.substring(email.lastIndexOf('@'))}` : 'MISSING',
+        emailLength: email?.length,
+        emailTrimmed: email?.trim(),
+        emailLower: email?.toLowerCase().trim(),
+        normalizedEmail,
+        emailOriginal: email,
+        firstName,
+        lastName,
+        hasPassword: !!password,
+        passwordLength: password?.length,
+        referredById,
+        hasBankingInfo: !!(directDepositBank || bankRoutingNumber || bankAccountNumber),
+        storageType: isDemoStorage ? 'MEMORY' : 'MYSQL',
+        timestamp: new Date().toISOString()
+      });
+
       // Validate required fields
-      if (!firstName || !lastName || !email || !password || !referredById) {
+      if (!firstName || !lastName || !normalizedEmail || !password || !referredById) {
+        console.log(`[REGISTER DEBUG] Validation failed - missing required fields:`, {
+          hasFirstName: !!firstName,
+          hasLastName: !!lastName,
+          hasEmail: !!email,
+          hasPassword: !!password,
+          hasReferredById: !!referredById
+        });
         return res
           .status(400)
           .json({
@@ -1102,14 +1130,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check if email already exists
-      const existingUser = await storage.getUserByEmail(email);
+      console.log(`[REGISTER DEBUG] Checking for existing user with email:`, {
+        email,
+        emailTrimmed: email.trim(),
+        emailLower: email.toLowerCase().trim()
+      });
+      const existingUser = await storage.getUserByEmail(normalizedEmail);
+      console.log(`[REGISTER DEBUG] Existing user check result:`, {
+        found: !!existingUser,
+        userId: existingUser?.id,
+        userEmail: existingUser?.email,
+        userRole: existingUser?.role
+      });
       if (existingUser) {
         // Return specific error code to handle on frontend
         const errorCode = existingUser.emailVerifiedAt ? 'ACCOUNT_EXISTS_VERIFIED' : 'ACCOUNT_EXISTS_UNVERIFIED';
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: "An account with this email already exists",
           code: errorCode,
-          email: email
+          email: normalizedEmail
         });
       }
 
@@ -1194,7 +1233,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create user with basic profile fields (extended fields stored separately if needed)
       const user = await storage.upsertUser({
         id: crypto.randomUUID(),
-        email,
+        email: normalizedEmail,
         firstName,
         lastName,
         phone: phone || null,
@@ -1807,32 +1846,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { email, password, rememberMe } = req.body;
 
+      // DEBUG LOG: Log incoming login request
+      console.log(`[LOGIN DEBUG] Incoming login request:`, {
+        email: email ? `${email.substring(0, 3)}***@***${email.substring(email.lastIndexOf('@'))}` : 'MISSING',
+        emailLength: email?.length,
+        emailTrimmed: email?.trim(),
+        emailLower: email?.toLowerCase().trim(),
+        hasPassword: !!password,
+        passwordLength: password?.length,
+        rememberMe,
+        storageType: isDemoStorage ? 'MEMORY' : 'MYSQL',
+        timestamp: new Date().toISOString()
+      });
+
       if (!email || !password) {
+        console.log(`[LOGIN DEBUG] Validation failed - missing email or password`);
         return res
           .status(400)
           .json({ message: "Email and password are required" });
       }
 
+      // Normalize email for consistent lookup
+      const normalizedEmail = email?.trim().toLowerCase();
+
       // Find user by email
-      const user = await storage.getUserByEmail(email);
+      console.log(`[LOGIN DEBUG] Looking up user with email:`, {
+        email,
+        emailTrimmed: email.trim(),
+        emailLower: email.toLowerCase().trim(),
+        normalizedEmail
+      });
+      const user = await storage.getUserByEmail(normalizedEmail);
+      console.log(`[LOGIN DEBUG] User lookup result:`, {
+        found: !!user,
+        userId: user?.id,
+        userEmail: user?.email,
+        userRole: user?.role,
+        hasPasswordHash: !!user?.passwordHash,
+        passwordHashLength: user?.passwordHash?.length,
+        isActive: user?.isActive
+      });
       if (!user) {
-        console.log(`[CLIENT-LOGIN] User not found for email: ${email}`);
+        console.log(`[CLIENT-LOGIN] User not found for email: ${normalizedEmail}`);
         return res.status(401).json({ message: "Invalid email or password" });
       }
-
+ 
       // Check if user has a password hash set
       if (!user.passwordHash) {
-        console.log(`[CLIENT-LOGIN] No password hash for email: ${email}`);
+        console.log(`[CLIENT-LOGIN] No password hash for email: ${normalizedEmail}`);
         return res.status(401).json({
           message: "Invalid email or password",
           code: "NO_PASSWORD_SET"
         });
       }
-
+ 
       // Verify password
       const isValidPassword = await bcrypt.compare(password, user.passwordHash);
       if (!isValidPassword) {
-        console.log(`[CLIENT-LOGIN] Invalid password for email: ${email}`);
+        console.log(`[CLIENT-LOGIN] Invalid password for email: ${normalizedEmail}`);
         return res.status(401).json({ message: "Invalid email or password" });
       }
 

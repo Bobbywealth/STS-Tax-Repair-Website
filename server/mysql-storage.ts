@@ -121,7 +121,33 @@ export class MySQLStorage implements IStorage {
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await mysqlDb.select().from(usersTable).where(eq(usersTable.email, email));
+    // Trim and normalize email for consistent lookup
+    const normalizedEmail = email?.trim().toLowerCase();
+    
+    console.log(`[STORAGE DEBUG] getUserByEmail called with:`, {
+      email,
+      emailLength: email?.length,
+      emailTrimmed: email?.trim(),
+      emailLower: email?.toLowerCase().trim(),
+      normalizedEmail,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Use case-insensitive comparison with LOWER() function for MySQL compatibility
+    const [user] = await mysqlDb.select().from(usersTable).where(
+      sql`LOWER(${usersTable.email}) = ${normalizedEmail}`
+    );
+    
+    console.log(`[STORAGE DEBUG] getUserByEmail result:`, {
+      found: !!user,
+      userId: user?.id,
+      userEmail: user?.email,
+      userEmailLength: user?.email?.length,
+      emailsMatch: user?.email === email,
+      emailsMatchTrimmed: user?.email?.trim() === email?.trim(),
+      emailsMatchLower: user?.email?.toLowerCase() === email?.toLowerCase(),
+      timestamp: new Date().toISOString()
+    });
     return user;
   }
 
@@ -132,6 +158,19 @@ export class MySQLStorage implements IStorage {
   async upsertUser(userData: UpsertUser): Promise<User> {
     const id = userData.id || randomUUID();
     const existing = await this.getUser(id);
+    
+    console.log(`[STORAGE DEBUG] upsertUser called:`, {
+      id,
+      email: userData.email,
+      emailTrimmed: userData.email?.trim(),
+      emailLower: userData.email?.toLowerCase().trim(),
+      hasPasswordHash: !!userData.passwordHash,
+      passwordHashLength: userData.passwordHash?.length,
+      hasBankingInfo: !!(userData.directDepositBank || userData.bankRoutingEncrypted || userData.bankAccountEncrypted),
+      role: userData.role,
+      isUpdate: !!existing,
+      timestamp: new Date().toISOString()
+    });
     
     const userValues: Record<string, any> = {
       id,
