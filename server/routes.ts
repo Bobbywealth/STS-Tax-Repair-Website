@@ -1581,8 +1581,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid email or password" });
       }
 
+      const normalizedRole = normalizeUserRole(user.role);
+
       // Check if user is admin or staff (not client)
-      if (user.role === "client") {
+      if (normalizedRole === "client") {
         return res
           .status(403)
           .json({
@@ -1600,7 +1602,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Create session for admin/staff
       req.session.userId = user.id;
-      req.session.userRole = user.role;
+      req.session.userRole = normalizedRole;
       req.session.isAdminLogin = true;
       // "Remember me" = persistent cookie (30 days). Otherwise session cookie.
       try {
@@ -1834,8 +1836,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid email or password" });
       }
 
+      const normalizedRole = normalizeUserRole(user.role);
+
       // Check if user is NOT a client (staff/admin should use /api/admin/login)
-      if (user.role !== "client") {
+      if (normalizedRole !== "client") {
         return res
           .status(403)
           .json({
@@ -1926,7 +1930,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Create session for the client
       req.session.userId = user.id;
-      req.session.userRole = user.role;
+      req.session.userRole = normalizedRole;
       req.session.isClientLogin = true;
       req.session.isAdminLogin = false;
       // "Remember me" = persistent cookie (30 days). Otherwise session cookie.
