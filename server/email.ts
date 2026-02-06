@@ -5,7 +5,7 @@ import crypto from 'crypto';
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 const FROM_EMAIL =
   process.env.FROM_EMAIL ||
-  'ststaxrepair@gmail.com'; // requested SendGrid sender
+  'noreply@ststaxrepair.org';
 const FROM_NAME = process.env.FROM_NAME || 'STS TaxRepair';
 
 export interface OfficeBranding {
