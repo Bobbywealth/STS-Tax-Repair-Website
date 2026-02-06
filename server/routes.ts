@@ -1696,7 +1696,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const sendGridConfigured = !!process.env.SENDGRID_API_KEY;
     res.json({
       sendGridConfigured,
-      fromEmail: 'ststaxrepair@gmail.com',
+      fromEmail: process.env.FROM_EMAIL || 'noreply@ststaxrepair.org',
       appUrl: process.env.APP_URL || process.env.RENDER_EXTERNAL_URL || (process.env.NODE_ENV === 'production' ? 'https://ststaxrepair.org' : 'development'),
       nodeEnv: process.env.NODE_ENV || 'not set',
       message: sendGridConfigured 
