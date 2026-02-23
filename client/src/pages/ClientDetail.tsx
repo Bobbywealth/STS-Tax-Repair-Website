@@ -8,9 +8,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RefundStatusTracker } from "@/components/RefundStatusTracker";
 import { DocumentUpload } from "@/components/DocumentUpload";
-import { 
-  ArrowLeft, Mail, Phone, Calendar, User, Edit, MapPin, Building, Loader2, 
-  Plus, DollarSign, FileText, Clock, CheckCircle2, ChevronRight, Eye, Shield
+import {
+  ArrowLeft, Mail, Phone, Calendar, User, Edit, MapPin, Building, Building2, Loader2,
+  Plus, DollarSign, FileText, Clock, CheckCircle2, ChevronRight, Eye, Shield, CreditCard
 } from "lucide-react";
 import { Link } from "wouter";
 import type { User as UserType, TaxFiling, FilingStatus } from "@shared/mysql-schema";
@@ -73,6 +73,9 @@ interface EditFormData {
   zipCode: string;
   dateOfBirth: string;
   ssn: string;
+  directDepositBank: string;
+  bankRoutingNumber: string;
+  bankAccountNumber: string;
 }
 
 export default function ClientDetail() {
@@ -108,6 +111,9 @@ export default function ClientDetail() {
     zipCode: "",
     dateOfBirth: "",
     ssn: "",
+    directDepositBank: "",
+    bankRoutingNumber: "",
+    bankAccountNumber: "",
   });
   const { toast } = useToast();
 
@@ -123,6 +129,22 @@ export default function ClientDetail() {
         credentials: "include",
       });
       if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!clientId,
+  });
+
+  const { data: bankDetails } = useQuery<{
+    directDepositBank: string;
+    bankRoutingNumber: string;
+    bankAccountNumber: string;
+  }>({
+    queryKey: ["/api/users", clientId, "bank-details"],
+    queryFn: async () => {
+      const res = await fetch(`/api/users/${clientId}/bank-details`, {
+        credentials: "include",
+      });
+      if (!res.ok) return { directDepositBank: "", bankRoutingNumber: "", bankAccountNumber: "" };
       return res.json();
     },
     enabled: !!clientId,
@@ -213,6 +235,7 @@ export default function ClientDetail() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users", clientId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/users", clientId, "bank-details"] });
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       toast({
         title: "Profile Updated",
@@ -269,6 +292,9 @@ export default function ClientDetail() {
         zipCode: client.zipCode || "",
         dateOfBirth: (client as any).dateOfBirth || "",
         ssn: (client as any).ssn || "",
+        directDepositBank: bankDetails?.directDepositBank || "",
+        bankRoutingNumber: bankDetails?.bankRoutingNumber || "",
+        bankAccountNumber: bankDetails?.bankAccountNumber || "",
       });
       setShowEditDialog(true);
     }
@@ -440,6 +466,24 @@ export default function ClientDetail() {
                   <div className="flex items-center gap-2">
                     <Shield className="h-4 w-4 text-muted-foreground" />
                     <span>SSN: {ssn}</span>
+                  </div>
+                )}
+                {bankDetails?.directDepositBank && (
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                    <span>Bank: {bankDetails.directDepositBank}</span>
+                  </div>
+                )}
+                {bankDetails?.bankRoutingNumber && (
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="h-4 w-4 text-muted-foreground" />
+                    <span>Routing: ****{bankDetails.bankRoutingNumber.slice(-4)}</span>
+                  </div>
+                )}
+                {bankDetails?.bankAccountNumber && (
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="h-4 w-4 text-muted-foreground" />
+                    <span>Account: ****{bankDetails.bankAccountNumber.slice(-4)}</span>
                   </div>
                 )}
                 <div className="flex items-center gap-2">
@@ -861,6 +905,42 @@ export default function ClientDetail() {
                   value={editFormData.ssn}
                   onChange={(e) => setEditFormData({ ...editFormData, ssn: e.target.value })}
                   data-testid="input-edit-ssn"
+                />
+              </div>
+              <div className="col-span-2 pt-2">
+                <h4 className="text-sm font-semibold flex items-center gap-2 mb-3">
+                  <CreditCard className="h-4 w-4" />
+                  Direct Deposit / Banking
+                </h4>
+              </div>
+              <div className="col-span-2 space-y-2">
+                <Label htmlFor="directDepositBank">Bank Name</Label>
+                <Input
+                  id="directDepositBank"
+                  placeholder="e.g., Chase, Bank of America"
+                  value={editFormData.directDepositBank}
+                  onChange={(e) => setEditFormData({ ...editFormData, directDepositBank: e.target.value })}
+                  data-testid="input-edit-directDepositBank"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="bankRoutingNumber">Routing Number</Label>
+                <Input
+                  id="bankRoutingNumber"
+                  placeholder="9 digits"
+                  value={editFormData.bankRoutingNumber}
+                  onChange={(e) => setEditFormData({ ...editFormData, bankRoutingNumber: e.target.value })}
+                  data-testid="input-edit-bankRoutingNumber"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="bankAccountNumber">Account Number</Label>
+                <Input
+                  id="bankAccountNumber"
+                  placeholder="Account number"
+                  value={editFormData.bankAccountNumber}
+                  onChange={(e) => setEditFormData({ ...editFormData, bankAccountNumber: e.target.value })}
+                  data-testid="input-edit-bankAccountNumber"
                 />
               </div>
             </div>
