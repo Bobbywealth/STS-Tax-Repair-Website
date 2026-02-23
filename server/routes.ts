@@ -2810,6 +2810,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
+  // Get client bank details (decrypted) - admin/staff only
+  app.get(
+    "/api/users/:id/bank-details",
+    isAuthenticated,
+    requirePermission("clients.view"),
+    async (req: any, res) => {
+      try {
+        const user = await storage.getUser(req.params.id);
+        if (!user) {
+          return res.status(404).json({ error: "Client not found" });
+        }
+
+        const bankRouting = (user as any).bankRoutingEncrypted
+          ? decrypt((user as any).bankRoutingEncrypted)
+          : "";
+        const bankAccount = (user as any).bankAccountEncrypted
+          ? decrypt((user as any).bankAccountEncrypted)
+          : "";
+
+        res.json({
+          directDepositBank: (user as any).directDepositBank || "",
+          bankRoutingNumber: bankRouting,
+          bankAccountNumber: bankAccount,
+        });
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    },
+  );
+
   // Update user role (admin only)
   app.patch("/api/users/:id/role", isAuthenticated, async (req: any, res) => {
     try {
