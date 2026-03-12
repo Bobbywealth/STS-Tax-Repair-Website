@@ -8571,7 +8571,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const currentUser = await storage.getUser(userId);
       const userRole = currentUser?.role?.toLowerCase() || 'client';
       
-      if (!['admin', 'tax_office'].includes(userRole)) {
+      if (!['admin', 'tax_office', 'super_admin'].includes(userRole)) {
         return res.status(403).json({ error: 'Access denied' });
       }
       
